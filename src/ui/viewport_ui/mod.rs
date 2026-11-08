@@ -1,0 +1,107 @@
+//! Center 3D viewports: layout, 3ds Max navigation, gizmo, selection,
+//! marquee, modal tools and the right-click quad menu.
+
+mod gizmo;
+mod overlay;
+
+use crate::editor::Editor;
+use crate::editor::select::SelectOp;
+use crate::viewport::layout::ScreenRect;
+use bevy::math::Vec2;
+use bevy_egui::egui::{self, PointerButton, Sense};
+use transform_gizmo_egui::Gizmo;
+
+#[derive(Default)]
+pub struct ViewportUiState {
+    gizmos: [Gizmo; 4],
+    marquee: Option<(usize, Vec2)>,
+    gizmo_dragging: bool,
+    nav: Option<usize>,
+}
+
+fn v2(p: egui::Pos2) -> Vec2 {
+    Vec2::new(p.x, p.y)
+}
+
+pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: egui::Rect) {
+    ed.viewports.layout(ScreenRect { min: v2(area.min), max: v2(area.max) }, 3.0);
+    let (mods, scroll, delta, mmb_down, pointer) =
+        ui.input(|i| (i.modifiers, i.smooth_scroll_delta.y, i.pointer.delta(), i.pointer.middle_down(), i.pointer.hover_pos()));
+    for vi in 0..4 {
+        if !ed.viewports.views[vi].visible {
+            continue;
+        }
+        let r = ed.viewports.views[vi].rect;
+        let rect = egui::Rect::from_min_max(egui::pos2(r.min.x, r.min.y), egui::pos2(r.max.x, r.max.y));
+        let resp = ui.interact(rect, egui::Id::new(("viewport", vi)), Sense::click_and_drag());
+        let hovered = resp.hovered() || resp.dragged();
+        if hovered && ui.input(|i| i.pointer.any_pressed()) {
+            ed.viewports.active = vi;
+        }
+        // ---- navigation: MMB pan, Alt+MMB orbit, Ctrl+Alt+MMB zoom, wheel zoom
+        if mmb_down && (st.nav == Some(vi) || (st.nav.is_none() && resp.hovered())) {
+            st.nav = Some(vi);
+            let d = Vec2::new(delta.x, delta.y);
+            let h = r.size().y;
+            let pivot = ed.selection_center().unwrap_or(ed.viewports.views[vi].camera.target);
+            let cam = &mut ed.viewports.views[vi].camera;
+            if mods.alt && (mods.ctrl || mods.command) {
+                cam.zoom(-d.y * 0.02);
+            } else if mods.alt {
+                cam.orbit(d, pivot);
+            } else {
+                cam.pan(d, h);
+            }
+        }
+        if !mmb_down && st.nav == Some(vi) {
+            st.nav = None;
+        }
+        if resp.hovered() && scroll.abs() > 0.0 {
+            ed.viewports.views[vi].camera.zoom(scroll / 60.0);
+        }
+        // ---- gizmo (active viewport only)
+        let mut gizmo_hot = false;
+        if vi == ed.viewports.active && ed.tool == crate::editor::Tool::None {
+            gizmo_hot = gizmo::run(ui, ed, &mut st.gizmos[vi], vi, resp.hovered(), &mut st.gizmo_dragging);
+        }
+        // ---- clicks, marquee, tools
+        let ctrl = mods.ctrl || mods.command;
+        let op = if ctrl {
+            SelectOp::Add
+        } else if mods.alt {
+            SelectOp::Subtract
+        } else {
+            SelectOp::Replace
+        };
+        if !gizmo_hot && !st.gizmo_dragging {
+            if resp.drag_started_by(PointerButton::Primary)
+                && ed.tool == crate::editor::Tool::None
+                && let Some(p) = resp.interact_pointer_pos()
+            {
+                st.marquee = Some((vi, v2(p) - Vec2::new(delta.x, delta.y)));
+            }
+            if resp.clicked_by(PointerButton::Primary)
+                && let Some(p) = resp.interact_pointer_pos()
+                && !ed.tool_click(vi, v2(p))
+            {
+                ed.click_select(vi, v2(p), op);
+            }
+            if resp.double_clicked() && ed.sub.is_edge_like() {
+                ed.edit_selection(|m, _| m.select_loop());
+            }
+        }
+        if let Some((mv, start)) = st.marquee
+            && mv == vi
+            && resp.drag_stopped()
+        {
+            if let Some(p) = pointer {
+                ed.marquee_select(vi, start, v2(p), op);
+            }
+            st.marquee = None;
+        }
+        if resp.clicked_by(PointerButton::Secondary) && !ed.cancel_tool() {
+            ed.quad_menu = resp.interact_pointer_pos().map(v2);
+        }
+        overlay::draw(ui, ed, vi, rect, st.marquee.filter(|m| m.0 == vi).map(|m| m.1), pointer.map(v2));
+    }
+}

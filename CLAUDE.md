@@ -241,6 +241,25 @@ Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by add
   - Replicates the classic **3ds Max Rendered Frame Window** with top toolbar controls:
     - `[ Render ]` button | `Viewport / Camera` dropdown | `[ Region / Crop ]` toggle | `[ 💾 Save Image (.PNG / .EXR / .JPG) ]` | `[ Copy to Clipboard ]` | `[ Clone Render Window ]` (to compare two renders side-by-side) | `[ R ] [ G ] [ B ] [ A ] [ Monochrome ]` channel buttons.
 
+---
+
+### G. 3ds Max Lighting System & Viewport Illumination (`src/render/lighting.rs`)
+- **Default Modeling Lights (`Ctrl + L` toggle):**
+  - When no user lights exist in the scene (or when `Ctrl + L` Default Lights mode is active), illuminate the viewport with a 3ds Max-style **2-Light Headlight Rig** (a primary key light slightly offset from the active camera + a warm/cool opposite fill light) so polygons are clearly shaded from every orbit angle while modeling.
+  - As soon as the user places an active light from `Create -> Lights`, automatically switch viewport illumination to **Scene Lights** (unless `Ctrl + L` is toggled).
+- **Create Tab -> Lights (`💡` icon):**
+  - **Omni (Point Light):** Emits in all directions with optional Near/Far Attenuation spheres.
+  - **Target Spot & Free Spot:** Cone light with interactive wireframe **Hotspot (Inner Cone)** and **Falloff (Outer Cone)** gizmos. `Target Spot` creates a linked `Target` helper object you can move independently with `W` to aim the light.
+  - **Target Directional & Free Directional (Sun):** Parallel rays with an adjustable beam cylinder radius and target handle.
+  - **Skylight / Dome Light:** Ambient hemisphere/HDRI dome light for soft global illumination and AO shadows.
+- **Light Parameters Rollout (in `Modify` panel when a Light is selected):**
+  - *General Parameters:* `[✓] Light On`, `Type` dropdown, `[✓] Cast Shadows` checkbox.
+  - *Intensity / Color / Attenuation:* `Multiplier` spinner (right-click resets to `1.0`), `Color Swatch` + `Kelvin Preset` dropdown, `Decay / Range` spinner + `[ ] Show Attenuation Wireframe`.
+  - *Spotlight Parameters:* `Hotspot/Beam` angle spinner and `Falloff/Field` angle spinner.
+  - *Shadow Parameters:* `Shadow Bias`, `Softness / Radius`, `Shadow Color / Density`.
+- **Environment & Quick Studio Rigs (`8` Key Dialog):**
+  - Includes a **1-Click Lighting Preset** selector (`Default Modeling Headlight`, `3-Point Studio (Key/Fill/Rim)`, `High-Contrast Rim`, `Outdoor Daylight`, `Pitch Black (Scene Lights Only)`), plus `Background Color`, `Ambient Tint`, and `Exponential Fog`.
+
 ## 6. Priority 2 Features (Splines, Clone/Array & Secondary Modifiers)
 
 ### A. Splines + Lathe / Extrude (`src/splines/`)
@@ -386,8 +405,8 @@ When building or extending the application, execute these phases in exact sequen
 - **Phase 3 (FFD, UVW Map & Unwrap UVW):**
   Implement **FFD 2x2x2 / 3x3x3 / 4x4x4** (with interactive lattice control points), **UVW Map** (Planar, Cylindrical, Spherical, Box with interactive gizmo), and **Unwrap UVW** (2D UV Editor window + 1-click **Smart UV Project** via `uvunwrap`).
 
-- **Phase 4 (Materials `M`, 3D Model Painting & `F9`/`F10` Rendering):**
-  Implement the **Compact Material Editor (`M`)** with 24 sample slots, PBR/Crystal/Wood/Rubber/Metal/Cel-Shade presets, Universal Ink Outlines on any material, **3D Viewport Vertex & Texture Painting**, **Render Setup (`F10`)**, and the **Rendered Frame Window (`F9`)** with PNG/EXR export + Cycles CLI bridge option.
+- **Phase 4 (Materials `M`, 3D Model Painting, Lighting & `F9`/`F10` Rendering):**
+  Implement the **Compact Material Editor (`M`)** with 24 sample slots, PBR/Crystal/Wood/Rubber/Metal/Cel-Shade presets, Universal Ink Outlines on any material, **3D Viewport Vertex & Texture Painting**, **Render Setup (`F10`)**, and the **Rendered Frame Window (`F9`)** with PNG/EXR export + Cycles CLI bridge option, plus the **3ds Max Lighting System** (`Ctrl + L` Default Headlight Rig, Omni / Target & Free Spot / Directional / Skylight lights, Light Parameters rollout, and `8`-key Quick Studio Rig presets — see §5.G).
 
 - **Phase 5 (Splines, Lathe, Array, Rock/Crystal Generator & Remaining Modifiers):**
   Implement **Splines + Lathe + Spline Extrude**, the **3ds Max Array Dialog**, **GeoGen (Crystals, Rocks, Stalagmites)**, **Greeble**, **Symmetry**, **Shell**, **TurboSmooth**, **Bend/Twist/Taper/Push**, **Edit Normals**, **Boolean (`boolmesh`)**, and **ProOptimizer (`meshoptimizer-rs`)**.
