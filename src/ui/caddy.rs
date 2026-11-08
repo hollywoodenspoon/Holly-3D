@@ -90,7 +90,9 @@ pub fn params(ui: &mut egui::Ui, op: &mut PolyOp) -> bool {
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor) {
-    let Some(mut caddy) = ed.caddy.clone() else { return };
+    let Some(mut caddy) = ed.caddy.clone() else {
+        return;
+    };
     let vr = ed.viewports.active_view().rect;
     let center = vr.center();
     let x = (center.x + 60.0).min(vr.max.x - 360.0).max(vr.min.x + 8.0);

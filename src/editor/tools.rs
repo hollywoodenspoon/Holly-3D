@@ -25,7 +25,9 @@ impl Editor {
                 self.tool = Tool::None;
             }
             Tool::TargetWeld { first } => {
-                let Some(vid) = self.pick_cursor_vertex(view, cursor) else { return true };
+                let Some(vid) = self.pick_cursor_vertex(view, cursor) else {
+                    return true;
+                };
                 match first {
                     None => self.tool = Tool::TargetWeld { first: Some(vid) },
                     Some(a) => {
@@ -36,7 +38,9 @@ impl Editor {
             }
             Tool::InsertVertex => {
                 if self.sub.is_face_like() {
-                    let Some(o) = self.current_obj() else { return true };
+                    let Some(o) = self.current_obj() else {
+                        return true;
+                    };
                     if let Some(h) = pick_polygon(&o.level_mesh, o.world_matrix(), &v.ray(cursor), true) {
                         let local = o.world_to_mesh().transform_point3(h.point);
                         self.apply_op(PolyOp::InsertVertexInPolygon { poly: h.poly, point: local });
@@ -46,7 +50,9 @@ impl Editor {
                 }
             }
             Tool::Cut { last } => {
-                let Some(pt) = self.pick_cut_point(view, cursor, true) else { return true };
+                let Some(pt) = self.pick_cut_point(view, cursor, true) else {
+                    return true;
+                };
                 let world_pos = self.cut_point_world(pt);
                 match last {
                     None => {
@@ -95,10 +101,8 @@ impl Editor {
     }
 
     fn pick_cut_point(&self, view: usize, cursor: Vec2, vertices: bool) -> Option<CutPoint> {
-        if vertices {
-            if let Some(v) = self.pick_cursor_vertex(view, cursor) {
-                return Some(CutPoint::Vertex(v));
-            }
+        if vertices && let Some(v) = self.pick_cursor_vertex(view, cursor) {
+            return Some(CutPoint::Vertex(v));
         }
         let o = self.current_obj()?;
         let v = &self.viewports.views[view];
@@ -109,7 +113,9 @@ impl Editor {
     }
 
     fn cut_point_world(&self, p: CutPoint) -> Vec3 {
-        let Some(o) = self.current_obj() else { return Vec3::ZERO };
+        let Some(o) = self.current_obj() else {
+            return Vec3::ZERO;
+        };
         let m = &o.level_mesh;
         let local = match p {
             CutPoint::Vertex(v) => m.pos(v),
@@ -121,11 +127,7 @@ impl Editor {
     fn nearest_vertex(&self, world: Vec3) -> Option<crate::mesh::VertexId> {
         let o = self.current_obj()?;
         let local = o.world_to_mesh().transform_point3(world);
-        o.level_mesh
-            .vertices
-            .iter()
-            .min_by(|a, b| a.1.position.distance(local).total_cmp(&b.1.position.distance(local)))
-            .map(|x| x.0)
+        o.level_mesh.vertices.iter().min_by(|a, b| a.1.position.distance(local).total_cmp(&b.1.position.distance(local))).map(|x| x.0)
     }
 
     /// QuickSlice: plane through the two screen points along the view direction.
@@ -146,7 +148,9 @@ impl Editor {
 
     /// `[ Slice ]` with the interactive Slice Plane.
     pub fn slice_with_plane(&mut self) {
-        let Some(sp) = self.slice_plane.clone() else { return };
+        let Some(sp) = self.slice_plane.clone() else {
+            return;
+        };
         let Some(o) = self.current_obj() else { return };
         let m = sp.xform.matrix();
         let (pw, nw) = (m.transform_point3(Vec3::ZERO), m.transform_vector3(Vec3::Z));
@@ -165,7 +169,8 @@ impl Editor {
             let b = o.evaluated_mesh.bounds()?;
             Some(o.world_matrix().transform_point3(b.center()))
         });
-        self.slice_plane = Some(SlicePlane { xform: Xform { translation: center.unwrap_or(Vec3::ZERO), ..Default::default() }, split: false });
+        self.slice_plane =
+            Some(SlicePlane { xform: Xform { translation: center.unwrap_or(Vec3::ZERO), ..Default::default() }, split: false });
     }
 
     pub fn reset_slice_plane(&mut self) {

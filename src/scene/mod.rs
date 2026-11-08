@@ -194,12 +194,9 @@ impl Scene {
 
     /// Totals for the status bar: (verts, edges, polys).
     pub fn stats(&self) -> (usize, usize, usize) {
-        self.objects
-            .values()
-            .filter(|o| !o.hidden)
-            .fold((0, 0, 0), |a, o| {
-                let c = o.evaluated_mesh.counts();
-                (a.0 + c.0, a.1 + c.1, a.2 + c.2)
-            })
+        self.objects.values().filter(|o| !o.hidden).fold((0, 0, 0), |a, o| {
+            let c = o.evaluated_mesh.counts();
+            (a.0 + c.0, a.1 + c.1, a.2 + c.2)
+        })
     }
 }

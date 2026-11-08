@@ -166,7 +166,9 @@ pub fn chamfer_edges_ex(m: &mut EditablePoly, amount: f32, segments: u32, tensio
         if k[&vtx] < 3 || kept.contains(&vtx) {
             continue;
         }
-        let Some(&start) = next.keys().min() else { continue };
+        let Some(&start) = next.keys().min() else {
+            continue;
+        };
         let mut lp = vec![start];
         let mut cur = start;
         while let Some(&n) = next.get(&cur) {
@@ -324,7 +326,9 @@ pub fn chamfer_vertices(m: &mut EditablePoly, amount: f32) {
     m.clear_selection();
     for (v, next) in cap_next {
         m.vertices.remove(v);
-        let Some(&start) = next.keys().min() else { continue };
+        let Some(&start) = next.keys().min() else {
+            continue;
+        };
         let mut lp = vec![start];
         let mut cur = start;
         while let Some(&n) = next.get(&cur) {

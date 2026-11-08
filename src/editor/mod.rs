@@ -54,10 +54,16 @@ pub enum Tool {
     #[default]
     None,
     Create(PrimitiveKind),
-    TargetWeld { first: Option<crate::mesh::VertexId> },
+    TargetWeld {
+        first: Option<crate::mesh::VertexId>,
+    },
     InsertVertex,
-    Cut { last: Option<crate::mesh::VertexId> },
-    QuickSlice { start: Option<Vec2> },
+    Cut {
+        last: Option<crate::mesh::VertexId>,
+    },
+    QuickSlice {
+        start: Option<Vec2>,
+    },
     Attach,
 }
 

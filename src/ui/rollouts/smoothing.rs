@@ -31,11 +31,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             .current_obj()
             .map(|o| {
                 let sel: Vec<u32> = o.level_mesh.polygons.values().filter(|p| p.selected).map(|p| p.smoothing_group).collect();
-                if sel.is_empty() {
-                    (0, 0)
-                } else {
-                    (sel.iter().fold(u32::MAX, |a, b| a & b), sel.iter().fold(0, |a, b| a | b))
-                }
+                if sel.is_empty() { (0, 0) } else { (sel.iter().fold(u32::MAX, |a, b| a & b), sel.iter().fold(0, |a, b| a | b)) }
             })
             .unwrap_or((0, 0));
         let cell = (CONTENT_W - 7.0 * 3.0) / 8.0;
@@ -44,7 +40,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 let on = all & (1 << bit) != 0;
                 let partial = !on && any & (1 << bit) != 0;
                 let text = RichText::new(format!("{}", bit + 1)).size(11.0);
-                let text = if on { text.color(theme::INPUT).strong() } else if partial { text.color(theme::AMBER) } else { text };
+                let text = if on {
+                    text.color(theme::INPUT).strong()
+                } else if partial {
+                    text.color(theme::AMBER)
+                } else {
+                    text
+                };
                 let r = ui.add_sized([cell, 22.0], egui::Button::new(text).selected(on));
                 if r.clicked() {
                     ed.apply_op(PolyOp::SetSmoothing { bit, on: !on });

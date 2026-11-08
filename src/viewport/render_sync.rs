@@ -92,7 +92,10 @@ pub fn sync_cameras(
         }
         cam.viewport = Some(Viewport { physical_position: pos, physical_size: size, ..default() });
         let clear = if vc.0 == first_visible { ClearColorConfig::Custom(VIEWPORT_BG) } else { ClearColorConfig::None };
-        if !matches!((&cam.clear_color, &clear), (ClearColorConfig::None, ClearColorConfig::None) | (ClearColorConfig::Custom(_), ClearColorConfig::Custom(_))) {
+        if !matches!(
+            (&cam.clear_color, &clear),
+            (ClearColorConfig::None, ClearColorConfig::None) | (ClearColorConfig::Custom(_), ClearColorConfig::Custom(_))
+        ) {
             cam.clear_color = clear;
         }
         *tf = Transform::from_matrix(v.camera.world_from_view());
@@ -185,9 +188,24 @@ pub fn sync_meshes(
                 .spawn((Mesh3d(mesh.clone()), MeshMaterial3d(material.clone()), Transform::default(), RenderLayers::layer(LAYER_MESH)))
                 .id();
             let overlay = commands
-                .spawn((SelectionOverlay, Mesh3d(overlay_mesh.clone()), MeshMaterial3d(overlay_mat.clone()), Transform::default(), RenderLayers::layer(LAYER_MESH)))
+                .spawn((
+                    SelectionOverlay,
+                    Mesh3d(overlay_mesh.clone()),
+                    MeshMaterial3d(overlay_mat.clone()),
+                    Transform::default(),
+                    RenderLayers::layer(LAYER_MESH),
+                ))
                 .id();
-            ObjRender { entity, mesh, material, version: o.version, look: (u32::MAX, false), overlay, overlay_mesh, sel_version: (u64::MAX, SubObject::Object, false) }
+            ObjRender {
+                entity,
+                mesh,
+                material,
+                version: o.version,
+                look: (u32::MAX, false),
+                overlay,
+                overlay_mesh,
+                sel_version: (u64::MAX, SubObject::Object, false),
+            }
         });
         if r.version != o.version {
             r.version = o.version;

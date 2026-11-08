@@ -58,11 +58,15 @@ impl Scene {
 
     /// After editing `id`: pushes base/stack changes to instances and references.
     pub fn propagate_from(&mut self, id: ObjId) {
-        let Some(src) = self.objects.get(id).cloned() else { return };
+        let Some(src) = self.objects.get(id).cloned() else {
+            return;
+        };
         let targets: Vec<ObjId> = self
             .objects
             .iter()
-            .filter(|(k, o)| *k != id && ((src.instance_group.is_some() && o.instance_group == src.instance_group) || o.reference_parent == Some(id)))
+            .filter(|(k, o)| {
+                *k != id && ((src.instance_group.is_some() && o.instance_group == src.instance_group) || o.reference_parent == Some(id))
+            })
             .map(|(k, _)| k)
             .collect();
         for t in targets {

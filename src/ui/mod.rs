@@ -45,7 +45,8 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     }
     let ed = &mut *ed;
     hotkeys::handle(&ctx, ed);
-    let mut root = Ui::new(ctx.clone(), "minimax_root".into(), UiBuilder::new().layer_id(LayerId::background()).max_rect(ctx.viewport_rect()));
+    let mut root =
+        Ui::new(ctx.clone(), "minimax_root".into(), UiBuilder::new().layer_id(LayerId::background()).max_rect(ctx.viewport_rect()));
     let screen = ctx.viewport_rect();
     let top = toolbar::show(&mut root, ed).max.y;
     let bottom = status_bar::show(&mut root, ed).min.y;

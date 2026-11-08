@@ -85,7 +85,9 @@ pub fn remove_edges(m: &mut EditablePoly, remove_verts: bool) {
     let mut ends = HashSet::new();
     for (a, b) in pairs {
         let adj = Adjacency::build(m);
-        let (Some(&f), Some(&g)) = (adj.half_edge.get(&(a, b)), adj.half_edge.get(&(b, a))) else { continue };
+        let (Some(&f), Some(&g)) = (adj.half_edge.get(&(a, b)), adj.half_edge.get(&(b, a))) else {
+            continue;
+        };
         if f == g {
             continue;
         }

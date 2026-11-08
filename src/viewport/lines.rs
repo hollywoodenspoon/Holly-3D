@@ -105,7 +105,9 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, i: usize) {
 fn brackets(g: &mut Gizmos<OverlayLines>, w: Mat4, b: crate::mesh::Aabb) {
     let s = b.size() * 0.25;
     for corner in 0..8 {
-        let pick = |bit: usize, axis: usize| if corner >> bit & 1 == 1 { b.max[axis] } else { b.min[axis] };
+        let pick = |bit: usize, axis: usize| {
+            if corner >> bit & 1 == 1 { b.max[axis] } else { b.min[axis] }
+        };
         let c = Vec3::new(pick(0, 0), pick(1, 1), pick(2, 2));
         for axis in 0..3 {
             let mut d = Vec3::ZERO;
@@ -132,37 +134,41 @@ fn draw_lines(
     let current = ed.current();
     for (id, o) in ed.scene.objects.iter().filter(|(_, o)| o.selected && !o.hidden) {
         let w = o.world_matrix();
-        if !(ed.in_sub_object() && Some(id) == current) {
-            if let Some(b) = o.evaluated_mesh.bounds() {
-                brackets(&mut ov, w, b);
-            }
+        if !(ed.in_sub_object() && Some(id) == current)
+            && let Some(b) = o.evaluated_mesh.bounds()
+        {
+            brackets(&mut ov, w, b);
         }
     }
-    if ed.in_sub_object() {
-        if let Some(o) = ed.current_obj() {
-            let w = o.world_matrix();
-            let m = &o.level_mesh;
-            let red = Color::srgb(1.0, 0.18, 0.12);
-            let dim = Color::srgba(0.75, 0.78, 0.85, 0.35);
-            let sel_polys = ed.sub.is_face_like();
-            let poly_edges: std::collections::HashSet<_> = if sel_polys {
-                m.selected_polygons().iter().flat_map(|&p| m.polygons[p].half_edges().map(|(a, b)| crate::mesh::edge_key(a, b)).collect::<Vec<_>>()).collect()
-            } else {
-                Default::default()
-            };
-            for e in m.edges.values() {
-                let (a, b) = (w.transform_point3(m.pos(e.v0)), w.transform_point3(m.pos(e.v1)));
-                let hot = (ed.sub.is_edge_like() && e.selected) || poly_edges.contains(&(e.v0, e.v1));
-                ov.line(a, b, if hot { red } else { dim });
-            }
-            let _ = SubObject::Vertex;
+    if ed.in_sub_object()
+        && let Some(o) = ed.current_obj()
+    {
+        let w = o.world_matrix();
+        let m = &o.level_mesh;
+        let red = Color::srgb(1.0, 0.18, 0.12);
+        let dim = Color::srgba(0.75, 0.78, 0.85, 0.35);
+        let sel_polys = ed.sub.is_face_like();
+        let poly_edges: std::collections::HashSet<_> = if sel_polys {
+            m.selected_polygons()
+                .iter()
+                .flat_map(|&p| m.polygons[p].half_edges().map(|(a, b)| crate::mesh::edge_key(a, b)).collect::<Vec<_>>())
+                .collect()
+        } else {
+            Default::default()
+        };
+        for e in m.edges.values() {
+            let (a, b) = (w.transform_point3(m.pos(e.v0)), w.transform_point3(m.pos(e.v1)));
+            let hot = (ed.sub.is_edge_like() && e.selected) || poly_edges.contains(&(e.v0, e.v1));
+            ov.line(a, b, if hot { red } else { dim });
         }
+        let _ = SubObject::Vertex;
     }
     if let (Some(sp), true) = (&ed.slice_plane, ed.in_sub_object()) {
         let m = sp.xform.matrix();
         let size = ed.current_obj().and_then(|o| o.evaluated_mesh.bounds()).map(|b| b.size().length() * 0.75).unwrap_or(1.0);
         let yellow = Color::srgb(1.0, 0.86, 0.1);
-        let c = [Vec3::new(-1., -1., 0.), Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.), Vec3::new(-1., 1., 0.)].map(|p| m.transform_point3(p * size));
+        let c = [Vec3::new(-1., -1., 0.), Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.), Vec3::new(-1., 1., 0.)]
+            .map(|p| m.transform_point3(p * size));
         for k in 0..4 {
             ov.line(c[k], c[(k + 1) % 4], yellow);
         }

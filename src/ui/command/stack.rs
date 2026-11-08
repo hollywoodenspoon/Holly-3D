@@ -12,7 +12,8 @@ use bevy_egui::egui::{self, RichText};
 const SUBS: [SubObject; 5] = [SubObject::Vertex, SubObject::Edge, SubObject::Border, SubObject::Polygon, SubObject::Element];
 
 pub fn modifier_list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
-    let r = ui.add(egui::TextEdit::singleline(&mut ed.modifier_filter).hint_text("Modifier List…  (type to filter)").desired_width(CONTENT_W));
+    let r =
+        ui.add(egui::TextEdit::singleline(&mut ed.modifier_filter).hint_text("Modifier List…  (type to filter)").desired_width(CONTENT_W));
     if r.gained_focus() || r.changed() {
         st.modifier_list_open = true;
     }
@@ -25,7 +26,11 @@ pub fn modifier_list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         ui.set_width(CONTENT_W - 12.0);
         egui::ScrollArea::vertical().max_height(160.0).id_salt("modlist").show(ui, |ui| {
             for item in MODIFIER_LIST.iter().filter(|m| filter.is_empty() || m.name.to_lowercase().contains(&filter)) {
-                let text = if item.available { RichText::new(item.name) } else { RichText::new(format!("{}  ·  later phase", item.name)).color(theme::TEXT_DIM) };
+                let text = if item.available {
+                    RichText::new(item.name)
+                } else {
+                    RichText::new(format!("{}  ·  later phase", item.name)).color(theme::TEXT_DIM)
+                };
                 if ui.add_enabled(item.available, egui::Button::new(text).frame(false)).clicked() {
                     chosen = Some(item.name);
                 }

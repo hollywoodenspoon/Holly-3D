@@ -109,16 +109,11 @@ mod tests {
 
     #[test]
     fn concave_l_shape_triangulates() {
-        let pts: Vec<Vec3> = [(0., 0.), (2., 0.), (2., 1.), (1., 1.), (1., 2.), (0., 2.)]
-            .iter()
-            .map(|&(x, y)| Vec3::new(x, y, 0.))
-            .collect();
+        let pts: Vec<Vec3> =
+            [(0., 0.), (2., 0.), (2., 1.), (1., 1.), (1., 2.), (0., 2.)].iter().map(|&(x, y)| Vec3::new(x, y, 0.)).collect();
         let tris = triangulate_polygon(&pts);
         assert_eq!(tris.len(), 4);
-        let area: f32 = tris
-            .iter()
-            .map(|t| (pts[t[1]] - pts[t[0]]).cross(pts[t[2]] - pts[t[0]]).z * 0.5)
-            .sum();
+        let area: f32 = tris.iter().map(|t| (pts[t[1]] - pts[t[0]]).cross(pts[t[2]] - pts[t[0]]).z * 0.5).sum();
         assert!((area - 3.0).abs() < 1e-5, "area {area}");
     }
 

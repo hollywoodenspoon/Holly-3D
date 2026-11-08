@@ -91,10 +91,7 @@ impl EditablePoly {
         }
         // Faces touching edge (from,v) — the loop edge is the neighbour sharing none of them.
         let faces = adj.faces_of_edge(from, v);
-        adj.neighbors(v)
-            .iter()
-            .copied()
-            .find(|&n| n != from && !adj.faces_of_edge(v, n).iter().any(|f| faces.contains(f)))
+        adj.neighbors(v).iter().copied().find(|&n| n != from && !adj.faces_of_edge(v, n).iter().any(|f| faces.contains(f)))
     }
 
     pub fn select_loop(&mut self) {
@@ -103,8 +100,12 @@ impl EditablePoly {
         for (a, b) in seeds {
             for (mut from, mut cur) in [(a, b), (b, a)] {
                 for _ in 0..10_000 {
-                    let Some(n) = self.loop_next(&adj, from, cur) else { break };
-                    let Some(e) = self.edge_between(cur, n) else { break };
+                    let Some(n) = self.loop_next(&adj, from, cur) else {
+                        break;
+                    };
+                    let Some(e) = self.edge_between(cur, n) else {
+                        break;
+                    };
                     if self.edges[e].selected {
                         break;
                     }
@@ -129,11 +130,11 @@ impl EditablePoly {
                     }
                     let i = p.half_edges().position(|(s, t)| edge_key(s, t) == edge_key(x, y)).unwrap();
                     let (s, t) = p.half_edges().nth((i + 2) % 4).unwrap();
-                    if let Some(e) = self.edge_between(s, t) {
-                        if !self.edges[e].selected {
-                            self.edges[e].selected = true;
-                            stack.push((s, t));
-                        }
+                    if let Some(e) = self.edge_between(s, t)
+                        && !self.edges[e].selected
+                    {
+                        self.edges[e].selected = true;
+                        stack.push((s, t));
                     }
                 }
             }
@@ -161,12 +162,8 @@ impl EditablePoly {
             }
         }
         // interior edges are not borders
-        let interior: Vec<EdgeId> = self
-            .edges
-            .iter()
-            .filter(|(_, e)| e.selected && !adj.is_open_edge(e.v0, e.v1))
-            .map(|(k, _)| k)
-            .collect();
+        let interior: Vec<EdgeId> =
+            self.edges.iter().filter(|(_, e)| e.selected && !adj.is_open_edge(e.v0, e.v1)).map(|(k, _)| k).collect();
         interior.into_iter().for_each(|e| self.edges[e].selected = false);
     }
 

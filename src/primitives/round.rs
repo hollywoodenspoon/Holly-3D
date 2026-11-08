@@ -42,6 +42,7 @@ fn planar_uvs(m: &EditablePoly, vs: &[VertexId], r: f32) -> Vec<Vec2> {
 }
 
 /// Cap made of an inner N-gon plus concentric quad rings sharing `outer`.
+#[allow(clippy::too_many_arguments)]
 fn cap(m: &mut EditablePoly, outer: &[VertexId], radius: f32, z: f32, cap_segs: u32, top: bool, sg: u32, mat: u16) {
     if outer.len() < 3 {
         return;

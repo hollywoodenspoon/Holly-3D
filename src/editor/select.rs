@@ -45,7 +45,9 @@ impl Editor {
             o.level_mesh.vertices.iter().map(|(k, v)| (k, w.transform_point3(v.position))).collect();
         let nmat = w.inverse().transpose();
         move |id| {
-            let Some(n) = normals.as_ref().and_then(|ns| ns.get(&id)) else { return true };
+            let Some(n) = normals.as_ref().and_then(|ns| ns.get(&id)) else {
+                return true;
+            };
             let p = positions[&id];
             let to_eye = if cam.is_ortho() { -cam.forward() } else { cam.eye() - p };
             nmat.transform_vector3(*n).dot(to_eye) > 0.0
@@ -61,11 +63,13 @@ impl Editor {
                 (SelectOp::Subtract, Some(h)) => self.scene.objects[h].selected = false,
                 _ => {}
             }
-            if let Some(o) = self.current_obj_mut() {
-                if op == SelectOp::Replace && o.active_level.is_none() && !o.modifiers.is_empty() {
-                    let top = o.modifiers.len() - 1;
-                    o.set_active_level(Some(top));
-                }
+            if let Some(o) = self.current_obj_mut()
+                && op == SelectOp::Replace
+                && o.active_level.is_none()
+                && !o.modifiers.is_empty()
+            {
+                let top = o.modifiers.len() - 1;
+                o.set_active_level(Some(top));
             }
             return;
         }
@@ -131,7 +135,10 @@ impl Editor {
                 .selectable()
                 .filter(|(_, o)| {
                     let w = o.world_matrix();
-                    o.evaluated_mesh.vertices.values().any(|p| v.to_screen(w.transform_point3(p.position)).is_some_and(|s| in_rect(s, min, max)))
+                    o.evaluated_mesh
+                        .vertices
+                        .values()
+                        .any(|p| v.to_screen(w.transform_point3(p.position)).is_some_and(|s| in_rect(s, min, max)))
                 })
                 .map(|x| x.0)
                 .collect();

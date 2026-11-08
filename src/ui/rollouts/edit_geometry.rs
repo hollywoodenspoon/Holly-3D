@@ -20,7 +20,11 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             op_cell(ui, ed, "Collapse", PolyOp::Collapse { level: sub }, in_sub);
             ui.end_row();
             let attaching = ed.tool == Tool::Attach;
-            if ui.add_sized([HALF, 24.0], egui::Button::new("Attach").selected(attaching)).on_hover_text("Click an object to merge it").clicked() {
+            if ui
+                .add_sized([HALF, 24.0], egui::Button::new("Attach").selected(attaching))
+                .on_hover_text("Click an object to merge it")
+                .clicked()
+            {
                 ed.tool = if attaching { Tool::None } else { Tool::Attach };
             }
             let poly_sel = ed.current_obj().is_some_and(|o| !o.level_mesh.selected_polygons().is_empty());
@@ -43,10 +47,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 ed.toggle_slice_plane();
             }
             let mut split = ed.slice_plane.as_ref().is_some_and(|s| s.split);
-            if ui.add_enabled(slicing, egui::Checkbox::new(&mut split, "Split")).changed() {
-                if let Some(s) = ed.slice_plane.as_mut() {
-                    s.split = split;
-                }
+            if ui.add_enabled(slicing, egui::Checkbox::new(&mut split, "Split")).changed()
+                && let Some(s) = ed.slice_plane.as_mut()
+            {
+                s.split = split;
             }
             ui.end_row();
             if ui.add_enabled(slicing, egui::Button::new("Slice").min_size(egui::vec2(HALF, 24.0))).clicked() {
@@ -69,7 +73,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.separator();
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
-            if ui.add_enabled(in_sub, egui::Button::new("Make Planar").min_size(egui::vec2(CONTENT_W - 3.0 * 34.0 - 12.0, 24.0))).clicked() {
+            if ui.add_enabled(in_sub, egui::Button::new("Make Planar").min_size(egui::vec2(CONTENT_W - 3.0 * 34.0 - 12.0, 24.0))).clicked()
+            {
                 ed.apply_op(PolyOp::MakePlanar { level: sub });
             }
             for (axis, label) in ["X", "Y", "Z"].iter().enumerate() {

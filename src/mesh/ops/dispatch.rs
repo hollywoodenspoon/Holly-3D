@@ -160,7 +160,9 @@ impl PolyOp {
                 m.vertices[v].selected = true;
             }
             Cut { from, to, view_dir } => {
-                let (Some(a), Some(b)) = (resolve_cut_point(m, *from), resolve_cut_point(m, *to)) else { return false };
+                let (Some(a), Some(b)) = (resolve_cut_point(m, *from), resolve_cut_point(m, *to)) else {
+                    return false;
+                };
                 insert::cut(m, a, b, *view_dir);
             }
             Slice { point, normal, only_selected, split } => {

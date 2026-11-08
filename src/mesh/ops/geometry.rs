@@ -111,11 +111,11 @@ pub fn tessellate(m: &mut EditablePoly, face_center: bool) {
         let hes: Vec<_> = m.polygons[pid].half_edges().collect();
         for (a, b) in hes {
             let k = edge_key(a, b);
-            if !mids.contains_key(&k) {
+            mids.entry(k).or_insert_with(|| {
                 let mid = m.pos(a).lerp(m.pos(b), 0.5);
                 let v = m.add_vertex(mid);
-                mids.insert(k, vec![(v, 0.5)]);
-            }
+                vec![(v, 0.5)]
+            });
         }
     }
     insert_edge_points(m, &mids);

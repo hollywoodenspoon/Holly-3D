@@ -68,7 +68,14 @@ pub fn point_segment(p: Vec2, a: Vec2, b: Vec2) -> (f32, f32) {
 /// Screen-projection callback: world point -> screen pixel (None if clipped).
 pub type Project<'a> = &'a dyn Fn(Vec3) -> Option<Vec2>;
 
-pub fn pick_vertex(mesh: &EditablePoly, world: Mat4, project: Project, cursor: Vec2, radius: f32, visible: &dyn Fn(VertexId) -> bool) -> Option<VertexId> {
+pub fn pick_vertex(
+    mesh: &EditablePoly,
+    world: Mat4,
+    project: Project,
+    cursor: Vec2,
+    radius: f32,
+    visible: &dyn Fn(VertexId) -> bool,
+) -> Option<VertexId> {
     mesh.vertices
         .iter()
         .filter(|(id, _)| visible(*id))
@@ -79,7 +86,14 @@ pub fn pick_vertex(mesh: &EditablePoly, world: Mat4, project: Project, cursor: V
 }
 
 /// Nearest edge to the cursor (screen space) and the parameter along v0 -> v1.
-pub fn pick_edge(mesh: &EditablePoly, world: Mat4, project: Project, cursor: Vec2, radius: f32, visible: &dyn Fn(EdgeId) -> bool) -> Option<(EdgeId, f32)> {
+pub fn pick_edge(
+    mesh: &EditablePoly,
+    world: Mat4,
+    project: Project,
+    cursor: Vec2,
+    radius: f32,
+    visible: &dyn Fn(EdgeId) -> bool,
+) -> Option<(EdgeId, f32)> {
     let mut best: Option<(EdgeId, f32, f32)> = None;
     for (id, e) in &mesh.edges {
         if !visible(id) {

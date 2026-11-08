@@ -21,11 +21,7 @@ impl EditablePoly {
     }
 
     pub fn add_polygon_uv(&mut self, verts: &[VertexId], uvs: &[Vec2]) -> PolyId {
-        let corners = verts
-            .iter()
-            .zip(uvs.iter().chain(std::iter::repeat(&Vec2::ZERO)))
-            .map(|(&v, &uv)| FaceCorner::new(v, uv))
-            .collect();
+        let corners = verts.iter().zip(uvs.iter().chain(std::iter::repeat(&Vec2::ZERO))).map(|(&v, &uv)| FaceCorner::new(v, uv)).collect();
         self.polygons.insert(Polygon::new(corners))
     }
 
@@ -57,12 +53,7 @@ impl EditablePoly {
                 }
             }
         }
-        let stale: Vec<EdgeId> = self
-            .edges
-            .iter()
-            .filter(|(_, e)| !wanted.contains(&edge_key(e.v0, e.v1)))
-            .map(|(id, _)| id)
-            .collect();
+        let stale: Vec<EdgeId> = self.edges.iter().filter(|(_, e)| !wanted.contains(&edge_key(e.v0, e.v1))).map(|(id, _)| id).collect();
         for id in stale {
             if let Some(e) = self.edges.remove(id) {
                 self.edge_map.remove(&edge_key(e.v0, e.v1));
@@ -256,10 +247,7 @@ mod tests {
 
     pub fn quad_plane() -> EditablePoly {
         let mut m = EditablePoly::new();
-        let v: Vec<_> = [(0., 0.), (1., 0.), (1., 1.), (0., 1.)]
-            .iter()
-            .map(|&(x, y)| m.add_vertex(Vec3::new(x, y, 0.)))
-            .collect();
+        let v: Vec<_> = [(0., 0.), (1., 0.), (1., 1.), (0., 1.)].iter().map(|&(x, y)| m.add_vertex(Vec3::new(x, y, 0.))).collect();
         m.add_polygon(&v);
         m.rebuild_edges();
         m

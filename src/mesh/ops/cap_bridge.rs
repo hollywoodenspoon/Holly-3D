@@ -112,10 +112,8 @@ pub fn bridge_polygons(m: &mut EditablePoly, segments: u32, taper: f32, twist: i
     let adj = Adjacency::build(m);
     let sel: HashSet<PolyId> = m.selected_polygons().into_iter().collect();
     let mut seen = HashSet::new();
-    let regions: Vec<Vec<PolyId>> = sel
-        .iter()
-        .filter_map(|&p| if seen.contains(&p) { None } else { Some(adj.flood(m, p, &mut seen, |g| sel.contains(&g))) })
-        .collect();
+    let regions: Vec<Vec<PolyId>> =
+        sel.iter().filter_map(|&p| if seen.contains(&p) { None } else { Some(adj.flood(m, p, &mut seen, |g| sel.contains(&g))) }).collect();
     if regions.len() != 2 {
         return false;
     }
@@ -131,7 +129,9 @@ pub fn bridge_polygons(m: &mut EditablePoly, segments: u32, taper: f32, twist: i
     let adj = Adjacency::build(m);
     let loops = adj.boundary_loops();
     let find = |set: &HashSet<VertexId>| loops.iter().find(|lp| lp.iter().all(|v| set.contains(v))).cloned();
-    let (Some(a), Some(b)) = (find(&vsets[0]), find(&vsets[1])) else { return false };
+    let (Some(a), Some(b)) = (find(&vsets[0]), find(&vsets[1])) else {
+        return false;
+    };
     m.clear_selection();
     bridge_loops(m, &a, &b, segments, taper, twist)
 }

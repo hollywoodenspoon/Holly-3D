@@ -122,16 +122,11 @@ pub fn extrude_border_edges(m: &mut EditablePoly, offset: Vec3) -> Vec<VertexId>
         };
         let f = m.polygons[adj.half_edge[&(a, b)]].clone();
         for v in [a, b] {
-            if !dup.contains_key(&v) {
-                let nv = m.add_vertex(m.pos(v) + offset);
-                dup.insert(v, nv);
-            }
+            dup.entry(v).or_insert_with(|| m.add_vertex(m.pos(v) + offset));
         }
         let (a2, b2) = (dup[&a], dup[&b]);
-        let corners = [(b, 0., 0.), (a, 1., 0.), (a2, 1., 1.), (b2, 0., 1.)]
-            .iter()
-            .map(|&(v, u, w)| FaceCorner::new(v, Vec2::new(u, w)))
-            .collect();
+        let corners =
+            [(b, 0., 0.), (a, 1., 0.), (a2, 1., 1.), (b2, 0., 1.)].iter().map(|&(v, u, w)| FaceCorner::new(v, Vec2::new(u, w))).collect();
         m.add_polygon_corners(corners, &f);
         new_edges.push((a2, b2));
     }
@@ -170,11 +165,7 @@ pub fn extrude_vertices(m: &mut EditablePoly, height: f32, width: f32) {
     m.clear_selection();
     for pid in caps {
         let c = m.poly_centroid(pid);
-        let d = dirs
-            .iter()
-            .min_by(|a, b| a.0.distance(c).total_cmp(&b.0.distance(c)))
-            .map(|x| x.1)
-            .unwrap_or(Vec3::Z);
+        let d = dirs.iter().min_by(|a, b| a.0.distance(c).total_cmp(&b.0.distance(c))).map(|x| x.1).unwrap_or(Vec3::Z);
         let tip = super::insert::poke_polygon(m, pid, c + d * height);
         m.vertices[tip].selected = true;
     }

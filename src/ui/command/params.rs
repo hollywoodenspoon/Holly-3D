@@ -31,7 +31,9 @@ impl Rows<'_> {
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     let Some(id) = ed.current() else { return };
-    let Some(mut prim) = ed.scene.objects[id].primitive_mut().cloned() else { return };
+    let Some(mut prim) = ed.scene.objects[id].primitive_mut().cloned() else {
+        return;
+    };
     let mut changed = false;
     let mut started = false;
     rollout(ui, "Parameters", true, |ui| {

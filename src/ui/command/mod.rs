@@ -23,7 +23,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) -> egui::Rect 
         .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(egui::Margin::same(10)))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                for (tab, label) in [(CommandTab::Create, "➕ Create"), (CommandTab::Modify, "🌈 Modify"), (CommandTab::Pivot, "⌖ Pivot")] {
+                for (tab, label) in [(CommandTab::Create, "➕ Create"), (CommandTab::Modify, "🌈 Modify"), (CommandTab::Pivot, "⌖ Pivot")]
+                {
                     let w = (CONTENT_W + 10.0) / 3.0 - 4.0;
                     let r = ui.add_sized([w, 26.0], egui::Button::new(label).selected(ed.tab == tab));
                     if r.clicked() {

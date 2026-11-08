@@ -34,7 +34,8 @@ pub fn connect_edges(m: &mut EditablePoly, segments: u32, pinch: f32, slide: f32
     let sset: HashSet<_> = sel.iter().copied().collect();
     let n = segments.max(1) as usize;
     // polygons with exactly two selected edges, recorded before insertion
-    let mut targets: Vec<(PolyId, (VertexId, VertexId), (VertexId, VertexId))> = vec![];
+    type HalfEdge = (VertexId, VertexId);
+    let mut targets: Vec<(PolyId, HalfEdge, HalfEdge)> = vec![];
     for (pid, p) in &m.polygons {
         let hits: Vec<_> = p.half_edges().filter(|&(a, b)| sset.contains(&edge_key(a, b))).collect();
         if hits.len() == 2 {
@@ -68,7 +69,9 @@ pub fn connect_edges(m: &mut EditablePoly, segments: u32, pinch: f32, slide: f32
         let mut cur = pid;
         for i in 0..n {
             let (x, y) = (p[i], q[n - 1 - i]);
-            let Some((r1, r2)) = split_polygon(m, cur, x, y) else { break };
+            let Some((r1, r2)) = split_polygon(m, cur, x, y) else {
+                break;
+            };
             new_edges.push((x, y));
             if i + 1 < n {
                 cur = if m.polygons[r1].position_of(p[i + 1]).is_some() { r1 } else { r2 };
@@ -94,16 +97,11 @@ pub fn connect_vertices(m: &mut EditablePoly) {
         if vs.len() < 2 {
             continue;
         }
-        let pairs: Vec<(VertexId, VertexId)> = if vs.len() == 2 {
-            vec![(vs[0], vs[1])]
-        } else {
-            (0..vs.len()).map(|i| (vs[i], vs[(i + 1) % vs.len()])).collect()
-        };
+        let pairs: Vec<(VertexId, VertexId)> =
+            if vs.len() == 2 { vec![(vs[0], vs[1])] } else { (0..vs.len()).map(|i| (vs[i], vs[(i + 1) % vs.len()])).collect() };
         let mut pieces = vec![pid];
         for (a, b) in pairs {
-            let Some(&holder) = pieces
-                .iter()
-                .find(|&&p| m.polygons[p].position_of(a).is_some() && m.polygons[p].position_of(b).is_some())
+            let Some(&holder) = pieces.iter().find(|&&p| m.polygons[p].position_of(a).is_some() && m.polygons[p].position_of(b).is_some())
             else {
                 continue;
             };

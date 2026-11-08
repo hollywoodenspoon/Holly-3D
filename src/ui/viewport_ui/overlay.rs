@@ -14,10 +14,9 @@ fn p(v: Vec2) -> Pos2 {
 }
 
 fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
-    egui::Area::new(egui::Id::new(("vp_labels", vi)))
-        .fixed_pos(rect.min + egui::vec2(6.0, 4.0))
-        .order(egui::Order::Middle)
-        .show(ui.ctx(), |ui| {
+    egui::Area::new(egui::Id::new(("vp_labels", vi))).fixed_pos(rect.min + egui::vec2(6.0, 4.0)).order(egui::Order::Middle).show(
+        ui.ctx(),
+        |ui| {
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
                 ui.spacing_mut().button_padding = egui::vec2(4.0, 1.0);
@@ -55,7 +54,8 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                     ui.checkbox(&mut v.edged_faces, "Edged Faces   F4");
                 });
             });
-        });
+        },
+    );
 }
 
 fn tripod(painter: &egui::Painter, cam: &ViewCamera, rect: egui::Rect) {
@@ -84,7 +84,9 @@ fn vertex_dots(painter: &egui::Painter, ed: &Editor, vi: usize) {
         None
     };
     for (id, vx) in &m.vertices {
-        let Some(s) = v.to_screen(w.transform_point3(vx.position)) else { continue };
+        let Some(s) = v.to_screen(w.transform_point3(vx.position)) else {
+            continue;
+        };
         if !v.rect.contains(s) {
             continue;
         }
@@ -122,7 +124,9 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
             ed.current_obj().and_then(|o| o.level_mesh.vertices.get(v).map(|x| o.world_matrix().transform_point3(x.position)))
         };
         let anchor = match &ed.tool {
-            Tool::TargetWeld { first: Some(v) } | Tool::Cut { last: Some(v) } => world_of(ed, *v).and_then(|w| ed.viewports.views[vi].to_screen(w)),
+            Tool::TargetWeld { first: Some(v) } | Tool::Cut { last: Some(v) } => {
+                world_of(ed, *v).and_then(|w| ed.viewports.views[vi].to_screen(w))
+            }
             Tool::QuickSlice { start: Some(s) } => Some(*s),
             _ => None,
         };
@@ -131,7 +135,13 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
             painter.add(egui::Shape::dashed_line(&[p(a), p(b)], Stroke::new(1.5, color), 6.0, 4.0));
         }
         if let Some(hint) = ed.tool.label() {
-            painter.text(rect.center_bottom() - egui::vec2(0.0, 14.0), egui::Align2::CENTER_BOTTOM, hint, FontId::proportional(13.0), theme::AMBER);
+            painter.text(
+                rect.center_bottom() - egui::vec2(0.0, 14.0),
+                egui::Align2::CENTER_BOTTOM,
+                hint,
+                FontId::proportional(13.0),
+                theme::AMBER,
+            );
         }
     }
     label_menus(ui, ed, vi, rect);

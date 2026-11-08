@@ -71,7 +71,11 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
         TransformMode::Rotate => GizmoMode::all_rotate(),
         TransformMode::Scale => GizmoMode::all_scale(),
     };
-    let modes = if ed.affect_pivot_only || ed.slice_plane.is_some() && ed.mode == TransformMode::Scale { GizmoMode::all_translate() } else { modes };
+    let modes = if ed.affect_pivot_only || ed.slice_plane.is_some() && ed.mode == TransformMode::Scale {
+        GizmoMode::all_translate()
+    } else {
+        modes
+    };
     let Some(t) = targets(ed) else { return false };
     let gtargets: Vec<GTransform> = match &t {
         Targets::Objects(_, xs) => xs.iter().map(to_g).collect(),
@@ -86,7 +90,11 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
         viewport: egui::Rect::from_min_max(egui::pos2(r.min.x, r.min.y), egui::pos2(r.max.x, r.max.y)),
         modes,
         orientation: if ed.coord == CoordSystem::Local { GizmoOrientation::Local } else { GizmoOrientation::Global },
-        pivot_point: if ed.pivot_mode == PivotMode::PivotPoint { TransformPivotPoint::IndividualOrigins } else { TransformPivotPoint::MedianPoint },
+        pivot_point: if ed.pivot_mode == PivotMode::PivotPoint {
+            TransformPivotPoint::IndividualOrigins
+        } else {
+            TransformPivotPoint::MedianPoint
+        },
         snapping,
         snap_angle: 5f32.to_radians(),
         snap_distance: 0.25,
@@ -95,9 +103,8 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
         visuals: GizmoVisuals { gizmo_size: 80.0, stroke_width: 3.0, ..Default::default() },
         ..Default::default()
     });
-    let (cursor, pressed, down, shift) = ui.input(|i| {
-        (i.pointer.hover_pos().unwrap_or_default(), i.pointer.primary_pressed(), i.pointer.primary_down(), i.modifiers.shift)
-    });
+    let (cursor, pressed, down, shift) =
+        ui.input(|i| (i.pointer.hover_pos().unwrap_or_default(), i.pointer.primary_pressed(), i.pointer.primary_down(), i.modifiers.shift));
     let result = gz.update(
         GizmoInteraction { cursor_pos: (cursor.x, cursor.y), hovered, drag_started: pressed && hovered, dragging: down },
         &gtargets,

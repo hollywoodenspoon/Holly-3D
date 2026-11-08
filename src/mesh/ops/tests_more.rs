@@ -106,7 +106,12 @@ fn cut_across_grid() {
     let find_edge = |g: &EditablePoly, x: f32, ylo: f32| {
         g.edges
             .values()
-            .find(|e| (g.pos(e.v0).x - x).abs() < 1e-4 && (g.pos(e.v1).x - x).abs() < 1e-4 && g.pos(e.v0).y.min(g.pos(e.v1).y) > ylo - 1e-4 && g.pos(e.v0).y.min(g.pos(e.v1).y) < ylo + 1e-4)
+            .find(|e| {
+                (g.pos(e.v0).x - x).abs() < 1e-4
+                    && (g.pos(e.v1).x - x).abs() < 1e-4
+                    && g.pos(e.v0).y.min(g.pos(e.v1).y) > ylo - 1e-4
+                    && g.pos(e.v0).y.min(g.pos(e.v1).y) < ylo + 1e-4
+            })
             .map(|e| (e.v0, e.v1))
             .unwrap()
     };
@@ -277,4 +282,3 @@ fn selection_grow_shrink_loop_ring() {
     g.select_ring();
     assert_eq!(g.selection_count(SubObject::Edge), 5);
 }
-

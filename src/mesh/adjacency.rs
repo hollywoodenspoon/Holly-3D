@@ -53,12 +53,7 @@ impl Adjacency {
 
     /// Directed half-edges with no twin: the mesh border.
     pub fn open_half_edges(&self) -> Vec<(VertexId, VertexId)> {
-        let mut v: Vec<_> = self
-            .half_edge
-            .keys()
-            .filter(|(a, b)| !self.half_edge.contains_key(&(*b, *a)))
-            .copied()
-            .collect();
+        let mut v: Vec<_> = self.half_edge.keys().filter(|(a, b)| !self.half_edge.contains_key(&(*b, *a))).copied().collect();
         v.sort();
         v
     }
@@ -86,11 +81,7 @@ impl Adjacency {
             p.corners[(i + 1) % p.corners.len()].vertex_id
         };
         // Start at a face whose "next" edge (v -> next) has no twin, if any.
-        let start = faces
-            .iter()
-            .copied()
-            .find(|&f| !self.half_edge.contains_key(&(next_of(f), v)))
-            .unwrap_or(faces[0]);
+        let start = faces.iter().copied().find(|&f| !self.half_edge.contains_key(&(next_of(f), v))).unwrap_or(faces[0]);
         let mut out = vec![start];
         let mut seen: HashSet<PolyId> = HashSet::from([start]);
         let mut cur = start;
@@ -154,13 +145,7 @@ impl Adjacency {
     }
 
     /// Flood fill across shared edges, restricted by `allow`.
-    pub fn flood(
-        &self,
-        m: &EditablePoly,
-        start: PolyId,
-        seen: &mut HashSet<PolyId>,
-        allow: impl Fn(PolyId) -> bool,
-    ) -> Vec<PolyId> {
+    pub fn flood(&self, m: &EditablePoly, start: PolyId, seen: &mut HashSet<PolyId>, allow: impl Fn(PolyId) -> bool) -> Vec<PolyId> {
         let mut stack = vec![start];
         seen.insert(start);
         let mut out = Vec::new();

@@ -17,11 +17,7 @@ fn main() {
     }
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: "MiniMax — 3ds Max-style Modeler".into(),
-            resolution: (1600, 920).into(),
-            ..default()
-        }),
+        primary_window: Some(Window { title: "MiniMax — 3ds Max-style Modeler".into(), resolution: (1600, 920).into(), ..default() }),
         ..default()
     }))
     .add_plugins(EguiPlugin::default())

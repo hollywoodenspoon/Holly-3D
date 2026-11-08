@@ -1,7 +1,7 @@
 //! Right-click Quad Menu (4 quadrants around the cursor).
 
 use super::theme;
-use crate::editor::{Editor, TransformMode, Tool};
+use crate::editor::{Editor, Tool, TransformMode};
 use crate::mesh::SubObject;
 use crate::mesh::ops::{ExtrudeMode, PolyOp};
 use crate::scene::CloneKind;
@@ -51,10 +51,36 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         .show(ctx, |ui| {
             egui::Grid::new("quad").spacing([8.0, 8.0]).show(ui, |ui| {
                 quadrant(ui, "tools 1", &tools, &mut picked);
-                quadrant(ui, "display", &[("Hide Selected", Item::Hide), ("Unhide All", Item::UnhideAll), ("Freeze Selected", Item::Freeze), ("Isolate Selection", Item::Isolate)], &mut picked);
+                quadrant(
+                    ui,
+                    "display",
+                    &[
+                        ("Hide Selected", Item::Hide),
+                        ("Unhide All", Item::UnhideAll),
+                        ("Freeze Selected", Item::Freeze),
+                        ("Isolate Selection", Item::Isolate),
+                    ],
+                    &mut picked,
+                );
                 ui.end_row();
-                quadrant(ui, "convert to", &[("Convert to Editable Poly", Item::ToPoly), ("Convert to Editable Spline", Item::ToSpline)], &mut picked);
-                quadrant(ui, "transform", &[("Move", Item::Move), ("Rotate", Item::Rotate), ("Scale", Item::Scale), ("Clone", Item::Clone), ("Align", Item::Align)], &mut picked);
+                quadrant(
+                    ui,
+                    "convert to",
+                    &[("Convert to Editable Poly", Item::ToPoly), ("Convert to Editable Spline", Item::ToSpline)],
+                    &mut picked,
+                );
+                quadrant(
+                    ui,
+                    "transform",
+                    &[
+                        ("Move", Item::Move),
+                        ("Rotate", Item::Rotate),
+                        ("Scale", Item::Scale),
+                        ("Clone", Item::Clone),
+                        ("Align", Item::Align),
+                    ],
+                    &mut picked,
+                );
                 ui.end_row();
             });
         });

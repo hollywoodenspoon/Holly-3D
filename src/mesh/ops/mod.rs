@@ -7,8 +7,8 @@ pub mod connect;
 pub mod dispatch;
 pub mod extrude;
 pub mod geometry;
-pub mod inset;
 pub mod insert;
+pub mod inset;
 pub mod remove;
 pub mod slice;
 pub mod weld;
@@ -37,11 +37,8 @@ pub fn split_edge(m: &mut EditablePoly, a: VertexId, b: VertexId, t: f32) -> Ver
         for i in 0..n {
             let (x, y) = (p.corners[i].vertex_id, p.corners[(i + 1) % n].vertex_id);
             if (x == a && y == b) || (x == b && y == a) {
-                let (ua, ub) = if x == a {
-                    (p.corners[i].uv, p.corners[(i + 1) % n].uv)
-                } else {
-                    (p.corners[(i + 1) % n].uv, p.corners[i].uv)
-                };
+                let (ua, ub) =
+                    if x == a { (p.corners[i].uv, p.corners[(i + 1) % n].uv) } else { (p.corners[(i + 1) % n].uv, p.corners[i].uv) };
                 insert_at = Some((i + 1, ua.lerp(ub, t)));
                 break;
             }

@@ -23,7 +23,12 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
     });
     for (key, ev_mods) in keys {
         // Combine the event's modifiers with the held state (robust to event ordering).
-        let m = egui::Modifiers { alt: ev_mods.alt || held.alt, ctrl: ev_mods.ctrl || held.ctrl, shift: ev_mods.shift || held.shift, ..ev_mods };
+        let m = egui::Modifiers {
+            alt: ev_mods.alt || held.alt,
+            ctrl: ev_mods.ctrl || held.ctrl,
+            shift: ev_mods.shift || held.shift,
+            ..ev_mods
+        };
         let ctrl = m.command || m.ctrl;
         if m.alt && !matches!(key, Key::W | Key::X | Key::Q | Key::R | Key::L) {
             continue;

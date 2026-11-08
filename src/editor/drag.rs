@@ -24,8 +24,8 @@ pub struct Drag {
 impl Editor {
     /// Starts a drag; `frame` is the gizmo's world frame at the start.
     pub fn begin_drag(&mut self, frame: Mat4, shift: bool) {
-        if self.slice_plane.is_some() && self.in_sub_object() {
-            let start = self.slice_plane.as_ref().unwrap().xform;
+        if let (Some(sp), true) = (&self.slice_plane, self.in_sub_object()) {
+            let start = sp.xform;
             self.drag = Some(Drag { target: DragTarget::SlicePlane { start }, start: frame, last_total: Mat4::IDENTITY });
             return;
         }
@@ -78,16 +78,18 @@ impl Editor {
                 o.transform = xf;
             }
         }
-        if let Some(Drag { target: DragTarget::Objects { starts, .. }, last_total, .. }) = &mut self.drag {
-            if let (Some(s), Some(n)) = (starts.first(), new.first()) {
-                *last_total = n.1.matrix() * s.1.matrix().inverse();
-            }
+        if let Some(Drag { target: DragTarget::Objects { starts, .. }, last_total, .. }) = &mut self.drag
+            && let (Some(s), Some(n)) = (starts.first(), new.first())
+        {
+            *last_total = n.1.matrix() * s.1.matrix().inverse();
         }
     }
 
     /// Updates a sub-object / pivot / slice-plane drag from the gizmo frame.
     pub fn drag_frame(&mut self, frame: Mat4) {
-        let Some(drag) = self.drag.as_mut() else { return };
+        let Some(drag) = self.drag.as_mut() else {
+            return;
+        };
         let total = frame * drag.start.inverse();
         drag.last_total = total;
         match drag.target.clone() {
@@ -134,7 +136,9 @@ impl Editor {
 
     /// Clone Options [OK]: creates N clones stepping by the drag delta.
     pub fn confirm_clone(&mut self) {
-        let Some(d) = self.clone_dialog.take() else { return };
+        let Some(d) = self.clone_dialog.take() else {
+            return;
+        };
         self.checkpoint("Clone");
         let mut created = vec![];
         for (id, start) in &d.sources {
@@ -178,9 +182,7 @@ mod tests {
 
     #[test]
     fn sub_object_move_and_undo() {
-        let mut ed = Editor::default();
-        ed.scene = top_selected_box();
-        ed.sub = SubObject::Polygon;
+        let mut ed = Editor { scene: top_selected_box(), sub: SubObject::Polygon, ..Default::default() };
         ed.begin_drag(Mat4::IDENTITY, false);
         ed.drag_frame(Mat4::from_translation(Vec3::Z));
         ed.drag_frame(Mat4::from_translation(Vec3::Z * 0.5));
@@ -196,10 +198,8 @@ mod tests {
 
     #[test]
     fn shift_drag_border_edges_extrudes() {
-        let mut ed = Editor::default();
-        ed.scene = top_selected_box();
+        let mut ed = Editor { scene: top_selected_box(), sub: SubObject::Polygon, ..Default::default() };
         let id = ed.current().unwrap();
-        ed.sub = SubObject::Polygon;
         ed.apply_op(PolyOp::Delete { level: SubObject::Polygon });
         ed.sub = SubObject::Border;
         ed.edit_selection(|m, _| {

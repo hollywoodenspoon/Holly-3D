@@ -10,7 +10,7 @@ fn thousands(n: usize) -> String {
     let s = n.to_string();
     let mut out = String::new();
     for (i, c) in s.chars().enumerate() {
-        if i > 0 && (s.len() - i) % 3 == 0 {
+        if i > 0 && (s.len() - i).is_multiple_of(3) {
             out.push(',');
         }
         out.push(c);
@@ -89,7 +89,8 @@ fn typein(ui: &mut egui::Ui, ed: &mut Editor) {
             let target = if ed.typein_offset { start + Vec3::from_array(vals) } else { Vec3::from_array(vals) };
             ed.drag_frame(Mat4::from_translation(target));
         } else {
-            let delta = if ed.typein_offset { Vec3::from_array(vals) - Vec3::from_array(offset_vals) } else { Vec3::from_array(vals) - abs };
+            let delta =
+                if ed.typein_offset { Vec3::from_array(vals) - Vec3::from_array(offset_vals) } else { Vec3::from_array(vals) - abs };
             for k in ed.scene.selected() {
                 ed.scene.objects[k].transform.translation += delta;
             }

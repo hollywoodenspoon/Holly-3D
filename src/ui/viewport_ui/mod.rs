@@ -25,9 +25,8 @@ fn v2(p: egui::Pos2) -> Vec2 {
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: egui::Rect) {
     ed.viewports.layout(ScreenRect { min: v2(area.min), max: v2(area.max) }, 3.0);
-    let (mods, scroll, delta, mmb_down, pointer) = ui.input(|i| {
-        (i.modifiers, i.smooth_scroll_delta.y, i.pointer.delta(), i.pointer.middle_down(), i.pointer.hover_pos())
-    });
+    let (mods, scroll, delta, mmb_down, pointer) =
+        ui.input(|i| (i.modifiers, i.smooth_scroll_delta.y, i.pointer.delta(), i.pointer.middle_down(), i.pointer.hover_pos()));
     for vi in 0..4 {
         if !ed.viewports.views[vi].visible {
             continue;
@@ -67,36 +66,41 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
         }
         // ---- clicks, marquee, tools
         let ctrl = mods.ctrl || mods.command;
-        let op = if ctrl { SelectOp::Add } else if mods.alt { SelectOp::Subtract } else { SelectOp::Replace };
+        let op = if ctrl {
+            SelectOp::Add
+        } else if mods.alt {
+            SelectOp::Subtract
+        } else {
+            SelectOp::Replace
+        };
         if !gizmo_hot && !st.gizmo_dragging {
-            if resp.drag_started_by(PointerButton::Primary) && ed.tool == crate::editor::Tool::None {
-                if let Some(p) = resp.interact_pointer_pos() {
-                    st.marquee = Some((vi, v2(p) - Vec2::new(delta.x, delta.y)));
-                }
+            if resp.drag_started_by(PointerButton::Primary)
+                && ed.tool == crate::editor::Tool::None
+                && let Some(p) = resp.interact_pointer_pos()
+            {
+                st.marquee = Some((vi, v2(p) - Vec2::new(delta.x, delta.y)));
             }
-            if resp.clicked_by(PointerButton::Primary) {
-                if let Some(p) = resp.interact_pointer_pos() {
-                    if !ed.tool_click(vi, v2(p)) {
-                        ed.click_select(vi, v2(p), op);
-                    }
-                }
+            if resp.clicked_by(PointerButton::Primary)
+                && let Some(p) = resp.interact_pointer_pos()
+                && !ed.tool_click(vi, v2(p))
+            {
+                ed.click_select(vi, v2(p), op);
             }
             if resp.double_clicked() && ed.sub.is_edge_like() {
                 ed.edit_selection(|m, _| m.select_loop());
             }
         }
-        if let Some((mv, start)) = st.marquee {
-            if mv == vi && resp.drag_stopped() {
-                if let Some(p) = pointer {
-                    ed.marquee_select(vi, start, v2(p), op);
-                }
-                st.marquee = None;
+        if let Some((mv, start)) = st.marquee
+            && mv == vi
+            && resp.drag_stopped()
+        {
+            if let Some(p) = pointer {
+                ed.marquee_select(vi, start, v2(p), op);
             }
+            st.marquee = None;
         }
-        if resp.clicked_by(PointerButton::Secondary) {
-            if !ed.cancel_tool() {
-                ed.quad_menu = resp.interact_pointer_pos().map(v2);
-            }
+        if resp.clicked_by(PointerButton::Secondary) && !ed.cancel_tool() {
+            ed.quad_menu = resp.interact_pointer_pos().map(v2);
         }
         overlay::draw(ui, ed, vi, rect, st.marquee.filter(|m| m.0 == vi).map(|m| m.1), pointer.map(v2));
     }

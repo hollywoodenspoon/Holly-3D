@@ -53,9 +53,9 @@ pub fn slice(m: &mut EditablePoly, point: Vec3, normal: Vec3, only_selected: boo
                 break;
             }
             let (a, b) = (pair[0], pair[1]);
-            let Some(&holder) = pieces.iter().find(|&&p| {
-                m.polygons.get(p).is_some_and(|q| q.position_of(a).is_some() && q.position_of(b).is_some())
-            }) else {
+            let Some(&holder) =
+                pieces.iter().find(|&&p| m.polygons.get(p).is_some_and(|q| q.position_of(a).is_some() && q.position_of(b).is_some()))
+            else {
                 continue;
             };
             if let Some((_, q)) = split_polygon(m, holder, a, b) {

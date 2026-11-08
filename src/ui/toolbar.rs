@@ -30,27 +30,21 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     }
                 }
                 ui.separator();
-                egui::ComboBox::from_id_salt("coord")
-                    .width(70.0)
-                    .selected_text(format!("{:?}", ed.coord))
-                    .show_ui(ui, |ui| {
-                        for c in [CoordSystem::View, CoordSystem::World, CoordSystem::Local] {
-                            ui.selectable_value(&mut ed.coord, c, format!("{c:?}"));
-                        }
-                    });
+                egui::ComboBox::from_id_salt("coord").width(70.0).selected_text(format!("{:?}", ed.coord)).show_ui(ui, |ui| {
+                    for c in [CoordSystem::View, CoordSystem::World, CoordSystem::Local] {
+                        ui.selectable_value(&mut ed.coord, c, format!("{c:?}"));
+                    }
+                });
                 let pivot_label = |p: PivotMode| match p {
                     PivotMode::PivotPoint => "Pivot Point",
                     PivotMode::SelectionCenter => "Selection Center",
                     PivotMode::TransformCenter => "Transform Coord Center",
                 };
-                egui::ComboBox::from_id_salt("pivot")
-                    .width(120.0)
-                    .selected_text(pivot_label(ed.pivot_mode))
-                    .show_ui(ui, |ui| {
-                        for p in [PivotMode::PivotPoint, PivotMode::SelectionCenter, PivotMode::TransformCenter] {
-                            ui.selectable_value(&mut ed.pivot_mode, p, pivot_label(p));
-                        }
-                    });
+                egui::ComboBox::from_id_salt("pivot").width(120.0).selected_text(pivot_label(ed.pivot_mode)).show_ui(ui, |ui| {
+                    for p in [PivotMode::PivotPoint, PivotMode::SelectionCenter, PivotMode::TransformCenter] {
+                        ui.selectable_value(&mut ed.pivot_mode, p, pivot_label(p));
+                    }
+                });
                 ui.separator();
                 if toggle_button(ui, ed.snap, "S Snap").on_hover_text("3D Grid Snap (S)").clicked() {
                     ed.snap = !ed.snap;

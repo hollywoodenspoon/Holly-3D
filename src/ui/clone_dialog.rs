@@ -6,7 +6,9 @@ use crate::scene::CloneKind;
 use bevy_egui::egui::{self, RichText};
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor) {
-    let Some(mut d) = ed.clone_dialog.clone() else { return };
+    let Some(mut d) = ed.clone_dialog.clone() else {
+        return;
+    };
     let mut result = None;
     egui::Modal::new(egui::Id::new("clone_options")).show(ctx, |ui| {
         ui.set_width(260.0);

@@ -1,6 +1,6 @@
 use super::*;
-use crate::mesh::ops::{ExtrudeMode, PolyOp};
 use crate::mesh::SubObject;
+use crate::mesh::ops::{ExtrudeMode, PolyOp};
 use crate::modifiers::make_modifier;
 use crate::primitives::{Primitive, PrimitiveKind};
 

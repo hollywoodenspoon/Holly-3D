@@ -77,7 +77,9 @@ impl Editor {
 
     /// Runs an Edit Poly op on the current object (with undo + Repeat Last).
     pub fn apply_op(&mut self, op: PolyOp) -> bool {
-        let Some(id) = self.current() else { return false };
+        let Some(id) = self.current() else {
+            return false;
+        };
         if !self.scene.objects[id].sub_object_editable() {
             self.status = "Convert to Editable Poly or add an Edit Poly modifier first".into();
             return false;
@@ -212,7 +214,9 @@ impl Editor {
 
     /// Z: frames the selection in the active viewport (all views with `all`).
     pub fn zoom_extents(&mut self, all: bool) {
-        let Some(b) = self.selection_bounds() else { return };
+        let Some(b) = self.selection_bounds() else {
+            return;
+        };
         let active = self.viewports.active;
         for (i, v) in self.viewports.views.iter_mut().enumerate() {
             if all || i == active {

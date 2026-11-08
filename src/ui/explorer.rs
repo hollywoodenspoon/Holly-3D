@@ -8,6 +8,9 @@ use bevy_egui::egui::{self, RichText};
 
 pub const WIDTH: f32 = 200.0;
 
+/// (id, name, selected, hidden, frozen, wire color, icon)
+type Row = (ObjId, String, bool, bool, bool, [f32; 3], &'static str);
+
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::left("scene_explorer")
         .resizable(false)
@@ -26,7 +29,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
             ui.add(egui::TextEdit::singleline(&mut ed.explorer_filter).hint_text("🔍 Filter…").desired_width(f32::INFINITY));
             ui.add_space(4.0);
             let filter = ed.explorer_filter.to_lowercase();
-            let rows: Vec<(ObjId, String, bool, bool, bool, [f32; 3], &'static str)> = ed
+            let rows: Vec<Row> = ed
                 .scene
                 .objects
                 .iter()

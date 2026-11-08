@@ -27,11 +27,7 @@ pub fn outline_region(m: &mut EditablePoly, polys: &[PolyId], amount: f32) {
     let moves: Vec<(VertexId, Vec3)> = inward
         .into_iter()
         .map(|(v, ns)| {
-            let off = if ns.len() == 2 {
-                miter(ns[0], ns[1])
-            } else {
-                ns.iter().sum::<Vec3>().normalize_or_zero()
-            };
+            let off = if ns.len() == 2 { miter(ns[0], ns[1]) } else { ns.iter().sum::<Vec3>().normalize_or_zero() };
             (v, -off * amount)
         })
         .collect();

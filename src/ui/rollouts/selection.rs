@@ -50,12 +50,17 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                     if ui.add_sized([w, 24.0], egui::Button::new("Loop")).on_hover_text("Alt+L / double-click").clicked() {
                         ed.edit_selection(|m, _| m.select_loop());
                     }
-                    max_spinner_range(ui, &mut ed.ring_loop_spin, 0.1, 1, 1..=50).on_hover_text("Ring/Loop shift steps (shifting arrives in a later phase)");
+                    max_spinner_range(ui, &mut ed.ring_loop_spin, 0.1, 1, 1..=50)
+                        .on_hover_text("Ring/Loop shift steps (shifting arrives in a later phase)");
                 });
             });
         });
         let count = ed.current_obj().map(|o| o.level_mesh.selection_count(ed.sub)).unwrap_or(0);
-        let text = if sub { format!("{count} {}{} Selected", ed.sub.label(), if count == 1 { "" } else { "s" }) } else { "Object level — press 1–5".into() };
+        let text = if sub {
+            format!("{count} {}{} Selected", ed.sub.label(), if count == 1 { "" } else { "s" })
+        } else {
+            "Object level — press 1–5".into()
+        };
         ui.label(dim(&text));
     });
 }
