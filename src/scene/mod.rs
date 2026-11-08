@@ -18,6 +18,14 @@ new_key_type! {
     pub struct ObjId;
 }
 
+static VERSION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+/// Globally unique, monotonic version stamp (snapshots restored by undo or
+/// drag previews still get fresh versions, so the renderer always re-uploads).
+pub fn next_version() -> u64 {
+    VERSION.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
+
 #[derive(Clone, Debug)]
 pub enum BaseObject {
     Primitive(Primitive),

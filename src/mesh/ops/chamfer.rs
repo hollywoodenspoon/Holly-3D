@@ -193,17 +193,25 @@ pub fn chamfer_edges_ex(m: &mut EditablePoly, amount: f32, segments: u32, tensio
     }
     m.clear_selection();
     if open {
-        for p in new_polys {
+        for &p in &new_polys {
             m.polygons.remove(p);
         }
     } else {
-        for p in new_polys {
+        for &p in &new_polys {
             if let Some(p) = m.polygons.get_mut(p) {
                 p.selected = true;
             }
         }
     }
     m.finalize();
+    // 3ds Max keeps the new chamfer edges selected in Edge mode.
+    let hes: Vec<(VertexId, VertexId)> =
+        new_polys.iter().filter_map(|&p| m.polygons.get(p)).flat_map(|p| p.half_edges().collect::<Vec<_>>()).collect();
+    for (a, b) in hes {
+        if let Some(e) = m.edge_between(a, b) {
+            m.edges[e].selected = true;
+        }
+    }
 }
 
 /// Replaces each 4-sided strip by `segs` quads whose cross-section follows a

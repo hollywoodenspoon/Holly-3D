@@ -5,4 +5,5 @@ pub mod mesh;
 pub mod modifiers;
 pub mod primitives;
 pub mod scene;
+pub mod ui;
 pub mod viewport;

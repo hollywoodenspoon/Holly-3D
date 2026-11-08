@@ -18,8 +18,8 @@ impl SceneObject {
             }
         }
         self.evaluated_mesh = m;
-        self.version += 1;
-        self.selection_version += 1;
+        self.version = next_version();
+        self.selection_version = next_version();
     }
 
     /// True when sub-object modes (1–5) are available at the active level.
@@ -114,6 +114,13 @@ impl SceneObject {
     /// Edits a primitive's parameters in place (live dimension spinners).
     pub fn primitive_mut(&mut self) -> Option<&mut Primitive> {
         match &mut self.base {
+            BaseObject::Primitive(p) => Some(p),
+            _ => None,
+        }
+    }
+
+    pub fn primitive_mut_ref(&self) -> Option<&Primitive> {
+        match &self.base {
             BaseObject::Primitive(p) => Some(p),
             _ => None,
         }

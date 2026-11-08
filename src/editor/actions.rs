@@ -253,6 +253,7 @@ impl Editor {
 
     pub fn commit_caddy(&mut self) {
         if let Some(c) = self.caddy.take() {
+            self.op_memory.insert(op_key(&c.op), c.op.clone());
             if c.op.repeatable() {
                 self.last_op = Some(c.op.clone());
             }
@@ -272,7 +273,7 @@ impl Editor {
         if let Some(c) = self.caddy.take() {
             if let Some(o) = self.scene.objects.get_mut(c.object) {
                 *o = c.before;
-                o.version += 1;
+                o.version = crate::scene::next_version();
             }
             self.scene.propagate_from(c.object);
             self.history.discard_last();

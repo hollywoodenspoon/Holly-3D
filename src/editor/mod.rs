@@ -116,6 +116,12 @@ pub struct Snapshot {
     pub sub: SubObject,
 }
 
+/// Variant name of an op ("ExtrudePolygons", …) used as memory key.
+pub fn op_key(op: &PolyOp) -> String {
+    let d = format!("{op:?}");
+    d.split([' ', '{', '(']).next().unwrap_or("").to_string()
+}
+
 #[derive(Resource)]
 pub struct Editor {
     pub scene: Scene,
@@ -149,6 +155,8 @@ pub struct Editor {
     pub drag: Option<drag::Drag>,
     pub isolate: Option<Vec<ObjId>>,
     pub ring_loop_spin: i32,
+    /// Last-used parameters per op kind (main buttons reuse them).
+    pub op_memory: std::collections::HashMap<String, PolyOp>,
 }
 
 impl Default for Editor {
@@ -185,11 +193,17 @@ impl Default for Editor {
             drag: None,
             isolate: None,
             ring_loop_spin: 1,
+            op_memory: Default::default(),
         }
     }
 }
 
 impl Editor {
+    /// Op with remembered parameters (or `default`).
+    pub fn remembered(&self, default: PolyOp) -> PolyOp {
+        self.op_memory.get(&op_key(&default)).cloned().unwrap_or(default)
+    }
+
     /// The object the Modify panel works on (first selected).
     pub fn current(&self) -> Option<ObjId> {
         self.scene.objects.iter().find(|(_, o)| o.selected).map(|(k, _)| k)
@@ -246,8 +260,8 @@ impl Editor {
         self.caddy = None;
         self.drag = None;
         for o in self.scene.objects.values_mut() {
-            o.version += 1;
-            o.selection_version += 1;
+            o.version = crate::scene::next_version();
+            o.selection_version = crate::scene::next_version();
         }
     }
 

@@ -67,6 +67,7 @@ pub enum PolyOp {
     Tessellate { face_center: bool },
     MSmooth { strength: f32 },
     Transform { verts: Vec<VertexId>, matrix: Mat4 },
+    SoftTransform { weights: Vec<(VertexId, f32)>, matrix: Mat4 },
     ShiftExtrudeEdges,
     Attach { mesh: Box<EditablePoly> },
 }
@@ -101,7 +102,7 @@ impl PolyOp {
             SetMaterialId { .. } => "Set ID",
             Tessellate { .. } => "Tessellate",
             MSmooth { .. } => "MSmooth",
-            Transform { .. } => "Transform",
+            Transform { .. } | SoftTransform { .. } => "Transform",
             ShiftExtrudeEdges => "Shift Extrude",
             Attach { .. } => "Attach",
         }
@@ -116,6 +117,7 @@ impl PolyOp {
                 | PolyOp::InsertVertexInPolygon { .. }
                 | PolyOp::Cut { .. }
                 | PolyOp::Transform { .. }
+                | PolyOp::SoftTransform { .. }
                 | PolyOp::Attach { .. }
         )
     }
@@ -183,6 +185,7 @@ impl PolyOp {
             Tessellate { face_center } => geometry::tessellate(m, *face_center),
             MSmooth { strength } => geometry::msmooth(m, *strength),
             Transform { verts, matrix } => geometry::transform_vertices(m, verts, *matrix),
+            SoftTransform { weights, matrix } => geometry::soft_transform(m, weights, *matrix),
             ShiftExtrudeEdges => return !extrude::extrude_border_edges(m, Vec3::ZERO).is_empty(),
             Attach { mesh } => {
                 m.append(mesh, Mat4::IDENTITY);

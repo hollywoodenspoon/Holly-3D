@@ -8,7 +8,7 @@ use bevy::math::Mat4;
 #[derive(Clone, Debug)]
 pub enum DragTarget {
     Objects { starts: Vec<(ObjId, Xform)>, clone: bool },
-    SubObject { object: ObjId, before: Box<SceneObject>, verts: Vec<VertexId> },
+    SubObject { object: ObjId, before: Box<SceneObject>, verts: Vec<VertexId>, soft: Option<Vec<(VertexId, f32)>> },
     Pivot { object: ObjId, before: Box<SceneObject> },
     SlicePlane { start: Xform },
 }
@@ -42,8 +42,13 @@ impl Editor {
             }
             let o = &self.scene.objects[id];
             let verts = o.level_mesh.selection_vertices(self.sub);
+            let soft = self.soft.enabled.then(|| {
+                let s = &self.soft;
+                let w = crate::mesh::ops::geometry::soft_weights(&o.level_mesh, &verts, s.falloff, s.pinch, s.bubble);
+                w.into_iter().collect::<Vec<_>>()
+            });
             self.drag = Some(Drag {
-                target: DragTarget::SubObject { object: id, before: Box::new(o.clone()), verts },
+                target: DragTarget::SubObject { object: id, before: Box::new(o.clone()), verts, soft },
                 start: frame,
                 last_total: Mat4::IDENTITY,
             });
@@ -86,12 +91,16 @@ impl Editor {
         let total = frame * drag.start.inverse();
         drag.last_total = total;
         match drag.target.clone() {
-            DragTarget::SubObject { object, before, verts } => {
+            DragTarget::SubObject { object, before, verts, soft } => {
                 let world = before.world_matrix();
                 let local = world.inverse() * total * world;
                 if let Some(o) = self.scene.objects.get_mut(object) {
                     *o = (*before).clone();
-                    o.apply_op(PolyOp::Transform { verts, matrix: local });
+                    let op = match soft {
+                        Some(weights) => PolyOp::SoftTransform { weights, matrix: local },
+                        None => PolyOp::Transform { verts, matrix: local },
+                    };
+                    o.apply_op(op);
                 }
                 self.scene.propagate_from(object);
             }

@@ -169,3 +169,38 @@ pub fn transform_vertices(m: &mut EditablePoly, verts: &[VertexId], mat: Mat4) {
         }
     }
 }
+
+/// Soft Selection weights: 1 for selected vertices, falling off to 0 at
+/// `falloff` distance (shaped by `pinch` / `bubble`, like 3ds Max).
+pub fn soft_weights(m: &EditablePoly, selected: &[VertexId], falloff: f32, pinch: f32, bubble: f32) -> HashMap<VertexId, f32> {
+    let sel: HashSet<VertexId> = selected.iter().copied().collect();
+    let pts: Vec<Vec3> = selected.iter().map(|&v| m.pos(v)).collect();
+    let mut out = HashMap::new();
+    for (id, v) in &m.vertices {
+        if sel.contains(&id) {
+            out.insert(id, 1.0);
+            continue;
+        }
+        if falloff <= 0.0 || pts.is_empty() {
+            continue;
+        }
+        let d = pts.iter().map(|p| p.distance(v.position)).fold(f32::MAX, f32::min);
+        if d >= falloff {
+            continue;
+        }
+        let x = d / falloff;
+        let smooth = (1.0 - x) * (1.0 - x) * (1.0 + 2.0 * x);
+        let w = smooth + bubble * (std::f32::consts::PI * x).sin() * 0.5 - pinch * x * (1.0 - x);
+        out.insert(id, w.clamp(0.0, 1.0));
+    }
+    out
+}
+
+/// Weighted transform used by Soft Selection drags.
+pub fn soft_transform(m: &mut EditablePoly, weights: &[(VertexId, f32)], mat: Mat4) {
+    for &(v, w) in weights {
+        if let Some(v) = m.vertices.get_mut(v) {
+            v.position = v.position.lerp(mat.transform_point3(v.position), w);
+        }
+    }
+}
