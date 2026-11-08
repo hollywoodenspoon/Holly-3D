@@ -1,0 +1,17 @@
+[package]
+name = "minimax"
+version = "0.1.0"
+edition = "2024"
+description = "MiniMax: a clean 3ds Max-style polygon modeler in Rust"
+
+[dependencies]
+bevy = { version = "0.20.0", default-features = false, features = ["default_app", "std", "bevy_winit", "multi_threaded", "x11", "default_font", "3d_bevy_render", "keyboard", "mouse"] }
+bevy_egui = "0.43.1"
+transform-gizmo-egui = "0.11"
+slotmap = "1.0"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
