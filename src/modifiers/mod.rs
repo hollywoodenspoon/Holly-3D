@@ -1,5 +1,14 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
+pub mod ffd;
+pub mod smart_uv;
+pub mod unwrap_uvw;
+pub mod uvw_map;
+
+pub use ffd::FfdMod;
+pub use unwrap_uvw::UnwrapMod;
+pub use uvw_map::{MapType, UvwMapMod};
+
 use crate::mesh::ops::PolyOp;
 use crate::mesh::{EditablePoly, SelectionSets};
 
@@ -25,17 +34,62 @@ impl EditPolyMod {
 #[derive(Clone, Debug)]
 pub enum ModifierKind {
     EditPoly(EditPolyMod),
+    Ffd(FfdMod),
+    UvwMap(UvwMapMod),
+    Unwrap(UnwrapMod),
+}
+
+/// Modifier sub-objects that are not mesh components (gizmos and lattices).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ModSub {
+    ControlPoints,
+    Lattice,
+    Gizmo,
+}
+
+impl ModSub {
+    pub fn label(self) -> &'static str {
+        match self {
+            ModSub::ControlPoints => "Control Points",
+            ModSub::Lattice => "Lattice",
+            ModSub::Gizmo => "Gizmo",
+        }
+    }
 }
 
 impl ModifierKind {
     pub fn default_name(&self) -> &'static str {
         match self {
             ModifierKind::EditPoly(_) => "Edit Poly",
+            ModifierKind::Ffd(f) => f.name(),
+            ModifierKind::UvwMap(_) => "UVW Map",
+            ModifierKind::Unwrap(_) => "Unwrap UVW",
         }
     }
 
+    /// Mesh sub-object modes 1–5 (Edit Poly only).
     pub fn supports_sub_objects(&self) -> bool {
         matches!(self, ModifierKind::EditPoly(_))
+    }
+
+    /// Gizmo-style sub-objects listed under the stack expander (keys 1, 2…).
+    pub fn gizmo_subs(&self) -> &'static [ModSub] {
+        match self {
+            ModifierKind::Ffd(_) => &[ModSub::ControlPoints, ModSub::Lattice],
+            ModifierKind::UvwMap(_) => &[ModSub::Gizmo],
+            _ => &[],
+        }
+    }
+
+    /// Called once with the modifier's input when it is added to a stack
+    /// (fits lattices / gizmos, captures UVs — 3ds Max "Set Volume").
+    pub fn init(&mut self, input: &EditablePoly) {
+        match self {
+            ModifierKind::Ffd(f) => f.fit(input),
+            ModifierKind::UvwMap(u) => u.fit(input),
+            ModifierKind::Unwrap(u) => u.capture(input),
+            ModifierKind::EditPoly(_) => {}
+        }
     }
 }
 
@@ -57,6 +111,9 @@ impl ModifierEntry {
         }
         match &self.kind {
             ModifierKind::EditPoly(e) => e.apply(mesh),
+            ModifierKind::Ffd(f) => f.apply(mesh),
+            ModifierKind::UvwMap(u) => u.apply(mesh),
+            ModifierKind::Unwrap(u) => u.apply(mesh),
         }
     }
 }
@@ -69,11 +126,11 @@ pub struct ModifierListItem {
 
 pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Edit Poly", available: true },
-    ModifierListItem { name: "FFD 2x2x2", available: false },
-    ModifierListItem { name: "FFD 3x3x3", available: false },
-    ModifierListItem { name: "FFD 4x4x4", available: false },
-    ModifierListItem { name: "UVW Map", available: false },
-    ModifierListItem { name: "Unwrap UVW", available: false },
+    ModifierListItem { name: "FFD 2x2x2", available: true },
+    ModifierListItem { name: "FFD 3x3x3", available: true },
+    ModifierListItem { name: "FFD 4x4x4", available: true },
+    ModifierListItem { name: "UVW Map", available: true },
+    ModifierListItem { name: "Unwrap UVW", available: true },
     ModifierListItem { name: "TurboSmooth", available: false },
     ModifierListItem { name: "Symmetry", available: false },
     ModifierListItem { name: "Shell", available: false },
@@ -93,36 +150,14 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
 pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
     match name {
         "Edit Poly" => Some(ModifierEntry::new(ModifierKind::EditPoly(EditPolyMod::default()))),
+        "FFD 2x2x2" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(2)))),
+        "FFD 3x3x3" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(3)))),
+        "FFD 4x4x4" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(4)))),
+        "UVW Map" => Some(ModifierEntry::new(ModifierKind::UvwMap(UvwMapMod::default()))),
+        "Unwrap UVW" => Some(ModifierEntry::new(ModifierKind::Unwrap(UnwrapMod::default()))),
         _ => None,
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::mesh::ops::ExtrudeMode;
-    use crate::primitives::{Primitive, PrimitiveKind};
-    use bevy::math::Vec3;
-
-    #[test]
-    fn edit_poly_replays_recorded_ops() {
-        let base = Primitive::default_of(PrimitiveKind::Box).to_editable_poly();
-        let mut m = base.clone();
-        let top: Vec<_> = m.polygons.keys().filter(|&p| m.poly_normal(p).dot(Vec3::Z) > 0.9).collect();
-        m.polygons[top[0]].selected = true;
-        let sel = m.selection_sets();
-        let op = PolyOp::ExtrudePolygons { mode: ExtrudeMode::Group, height: 1.0 };
-        op.apply(&mut m);
-        let md = EditPolyMod { ops: vec![(sel, op)], selection: m.selection_sets() };
-        let mut out = base.clone();
-        md.apply(&mut out);
-        out.validate().unwrap();
-        assert_eq!(out.counts(), (12, 20, 10));
-        assert_eq!(out.selected_polygons().len(), 1);
-        let mut disabled = ModifierEntry::new(ModifierKind::EditPoly(md));
-        disabled.enabled_in_viewport = false;
-        let mut out2 = base.clone();
-        disabled.apply(&mut out2);
-        assert_eq!(out2.counts(), (8, 12, 6));
-    }
-}
+mod tests;

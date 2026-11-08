@@ -18,6 +18,7 @@ impl Editor {
                 self.create_primitive(kind, p);
                 self.tool = Tool::Create(kind);
             }
+            Tool::NormalAlign => return self.normal_align_click(view, cursor),
             Tool::Attach => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.attach(other);

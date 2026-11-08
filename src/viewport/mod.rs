@@ -3,5 +3,6 @@
 pub mod camera;
 pub mod layout;
 pub mod lines;
+pub mod mod_gizmos;
 pub mod picking;
 pub mod render_sync;

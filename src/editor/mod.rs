@@ -2,6 +2,7 @@
 
 pub mod actions;
 pub mod drag;
+pub mod modsub;
 pub mod select;
 pub mod tools;
 pub mod undo;
@@ -65,6 +66,7 @@ pub enum Tool {
         start: Option<Vec2>,
     },
     Attach,
+    NormalAlign,
 }
 
 impl Tool {
@@ -79,6 +81,7 @@ impl Tool {
             Tool::QuickSlice { start: None } => Some("QuickSlice: click the first point"),
             Tool::QuickSlice { .. } => Some("QuickSlice: click the second point"),
             Tool::Attach => Some("Attach: click an object to merge it"),
+            Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
         }
     }
 }
@@ -163,6 +166,9 @@ pub struct Editor {
     pub ring_loop_spin: i32,
     /// Last-used parameters per op kind (main buttons reuse them).
     pub op_memory: std::collections::HashMap<String, PolyOp>,
+    /// FFD Control Points / Lattice or UVW Map Gizmo sub-object mode.
+    pub mod_sub: Option<crate::modifiers::ModSub>,
+    pub uv_editor_open: bool,
 }
 
 impl Default for Editor {
@@ -200,6 +206,8 @@ impl Default for Editor {
             isolate: None,
             ring_loop_spin: 1,
             op_memory: Default::default(),
+            mod_sub: None,
+            uv_editor_open: false,
         }
     }
 }

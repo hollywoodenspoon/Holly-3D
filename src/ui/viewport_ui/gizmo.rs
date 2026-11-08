@@ -40,6 +40,9 @@ enum Targets {
 }
 
 fn targets(ed: &Editor) -> Option<Targets> {
+    if ed.active_mod_sub().is_some() {
+        return ed.mod_sub_frame().map(Targets::Frame);
+    }
     if ed.in_sub_object() {
         if let Some(sp) = &ed.slice_plane {
             return Some(Targets::Frame(sp.xform));

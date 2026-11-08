@@ -11,6 +11,7 @@ pub enum DragTarget {
     SubObject { object: ObjId, before: Box<SceneObject>, verts: Vec<VertexId>, soft: Option<Vec<(VertexId, f32)>> },
     Pivot { object: ObjId, before: Box<SceneObject> },
     SlicePlane { start: Xform },
+    ModSub { object: ObjId, before: Box<SceneObject>, sub: crate::modifiers::ModSub },
 }
 
 #[derive(Clone, Debug)]
@@ -24,6 +25,12 @@ pub struct Drag {
 impl Editor {
     /// Starts a drag; `frame` is the gizmo's world frame at the start.
     pub fn begin_drag(&mut self, frame: Mat4, shift: bool) {
+        if let (Some(sub), Some(id)) = (self.active_mod_sub(), self.current()) {
+            self.checkpoint(sub.label());
+            let before = Box::new(self.scene.objects[id].clone());
+            self.drag = Some(Drag { target: DragTarget::ModSub { object: id, before, sub }, start: frame, last_total: Mat4::IDENTITY });
+            return;
+        }
         if let (Some(sp), true) = (&self.slice_plane, self.in_sub_object()) {
             let start = sp.xform;
             self.drag = Some(Drag { target: DragTarget::SlicePlane { start }, start: frame, last_total: Mat4::IDENTITY });
@@ -117,6 +124,7 @@ impl Editor {
                     sp.xform = Xform::from_matrix(total * start.matrix());
                 }
             }
+            DragTarget::ModSub { object, before, sub } => self.drag_mod_sub(object, &before, sub, total),
             DragTarget::Objects { .. } => {}
         }
     }

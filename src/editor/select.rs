@@ -55,6 +55,9 @@ impl Editor {
     }
 
     pub fn click_select(&mut self, view: usize, cursor: Vec2, op: SelectOp) {
+        if self.mod_click_select(view, cursor, op) {
+            return;
+        }
         if !self.in_sub_object() {
             let hit = self.pick_object(view, cursor);
             match (op, hit) {
@@ -128,6 +131,9 @@ impl Editor {
     }
 
     pub fn marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) {
+        if self.mod_marquee_select(view, a, b, op) {
+            return;
+        }
         let (min, max) = (a.min(b), a.max(b));
         let v = self.viewports.views[view].clone();
         if !self.in_sub_object() {

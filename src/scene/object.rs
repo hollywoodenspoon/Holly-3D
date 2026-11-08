@@ -52,7 +52,7 @@ impl SceneObject {
                     ep.ops.push((sel, op));
                     ep.selection = m.selection_sets();
                 }
-                None => return false,
+                _ => return false,
             },
         }
         self.evaluate();
@@ -89,11 +89,31 @@ impl SceneObject {
 
     /// Adds a modifier above the active level (3ds Max inserts above the
     /// highlighted entry) and makes it active.
-    pub fn add_modifier(&mut self, md: ModifierEntry) {
+    pub fn add_modifier(&mut self, mut md: ModifierEntry) {
         let at = self.active_level.map(|i| i + 1).unwrap_or(0).min(self.modifiers.len());
+        md.kind.init(&self.input_of(at));
         self.modifiers.insert(at, md);
         self.active_level = Some(at);
         self.evaluate();
+    }
+
+    /// Mesh flowing into modifier `i` (base + enabled modifiers below it).
+    pub fn input_of(&self, i: usize) -> crate::mesh::EditablePoly {
+        let mut m = self.base.to_editable_poly();
+        for md in self.modifiers.iter().take(i) {
+            md.apply(&mut m);
+        }
+        m
+    }
+
+    /// The active modifier, if the stack highlight is on one.
+    pub fn active_modifier(&self) -> Option<&ModifierKind> {
+        self.active_level.and_then(|i| self.modifiers.get(i)).map(|m| &m.kind)
+    }
+
+    pub fn active_modifier_mut(&mut self) -> Option<&mut ModifierKind> {
+        let i = self.active_level?;
+        self.modifiers.get_mut(i).map(|m| &mut m.kind)
     }
 
     pub fn delete_active_modifier(&mut self) {

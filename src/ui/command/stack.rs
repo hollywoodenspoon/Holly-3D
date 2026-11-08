@@ -3,7 +3,7 @@
 use super::CONTENT_W;
 use crate::editor::Editor;
 use crate::mesh::SubObject;
-use crate::modifiers::MODIFIER_LIST;
+use crate::modifiers::{MODIFIER_LIST, ModSub};
 use crate::ui::UiState;
 use crate::ui::theme;
 use crate::ui::widgets::dim;
@@ -50,14 +50,17 @@ pub fn modifier_list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
 pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
     let Some(id) = ed.current() else { return };
     let o = &ed.scene.objects[id];
-    let mut rows: Vec<(Option<usize>, String, bool, bool)> = o
+    type Row = (Option<usize>, String, bool, bool, &'static [ModSub]);
+    let mut rows: Vec<Row> = o
         .modifiers
         .iter()
         .enumerate()
         .rev()
-        .map(|(i, m)| (Some(i), m.name.clone(), m.enabled_in_viewport, m.kind.supports_sub_objects()))
+        .map(|(i, m)| (Some(i), m.name.clone(), m.enabled_in_viewport, m.kind.supports_sub_objects(), m.kind.gizmo_subs()))
         .collect();
-    rows.push((None, o.base.label().to_string(), true, o.is_editable_poly()));
+    rows.push((None, o.base.label().to_string(), true, o.is_editable_poly(), &[]));
+    let mod_sub = ed.active_mod_sub();
+    let mut set_mod_sub = None;
     let active = o.active_level;
     let mut set_level = None;
     let mut toggle = None;
@@ -66,7 +69,8 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.set_width(CONTENT_W - 12.0);
         egui::ScrollArea::vertical().max_height(150.0).min_scrolled_height(150.0).id_salt("stack").show(ui, |ui| {
             ui.set_min_height(138.0);
-            for (level, name, enabled, subs) in rows {
+            for (level, name, enabled, mesh_subs, gizmo_subs) in rows {
+                let subs = mesh_subs || !gizmo_subs.is_empty();
                 let is_active = level == active;
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
@@ -94,7 +98,19 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                     }
                 });
                 let open_id = egui::Id::new(("stack_open", id, level));
-                if subs && ui.data(|d| d.get_temp::<bool>(open_id).unwrap_or(false)) {
+                let open = subs && ui.data(|d| d.get_temp::<bool>(open_id).unwrap_or(false));
+                for &g in gizmo_subs.iter().filter(|_| open) {
+                    ui.horizontal(|ui| {
+                        ui.add_space(48.0);
+                        let on = is_active && mod_sub == Some(g);
+                        let text = if on { RichText::new(g.label()).color(theme::AMBER).strong() } else { RichText::new(g.label()) };
+                        if ui.add(egui::Button::new(text).frame(false)).clicked() {
+                            set_level = Some(level);
+                            set_mod_sub = Some(g);
+                        }
+                    });
+                }
+                if open && mesh_subs {
                     for s in SUBS {
                         ui.horizontal(|ui| {
                             ui.add_space(48.0);
@@ -121,6 +137,10 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
         if ed.scene.objects[id].active_level != level {
             ed.scene.objects[id].set_active_level(level);
             ed.sub = SubObject::Object;
+            ed.mod_sub = None;
+        }
+        if let Some(g) = set_mod_sub {
+            ed.set_mod_sub(Some(g));
         }
         if let Some(s) = set_sub {
             ed.sub = SubObject::Object;

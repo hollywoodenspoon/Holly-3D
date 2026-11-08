@@ -90,6 +90,8 @@ pub struct SceneObject {
     pub hidden: bool,
     pub frozen: bool,
     pub see_through: bool,
+    /// Show the UV checker texture in shaded viewports.
+    pub checker: bool,
     pub selected: bool,
     pub instance_group: Option<u32>,
     pub reference_parent: Option<ObjId>,
@@ -115,6 +117,7 @@ impl SceneObject {
             hidden: false,
             frozen: false,
             see_through: false,
+            checker: false,
             selected: false,
             instance_group: None,
             reference_parent: None,

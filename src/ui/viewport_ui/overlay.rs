@@ -104,6 +104,18 @@ fn vertex_dots(painter: &egui::Painter, ed: &Editor, vi: usize) {
     }
 }
 
+/// FFD control points: orange handles, red when selected (always shown while FFD is active).
+fn control_points(painter: &egui::Painter, ed: &Editor, vi: usize) {
+    let Some((pts, sel)) = ed.ffd_points_world() else { return };
+    let v = &ed.viewports.views[vi];
+    let hot = ed.active_mod_sub() == Some(crate::modifiers::ModSub::ControlPoints);
+    for (w, s) in pts.iter().zip(sel) {
+        let Some(sp) = v.to_screen(*w) else { continue };
+        let (color, r) = if s && hot { (theme::VERTEX_SEL, 4.0) } else { (Color32::from_rgb(255, 140, 30), 3.0) };
+        painter.circle_filled(p(sp), r, color);
+    }
+}
+
 pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee: Option<Vec2>, pointer: Option<Vec2>) {
     let painter = ui.painter().with_clip_rect(rect);
     let active = vi == ed.viewports.active;
@@ -114,6 +126,7 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
     if ed.in_sub_object() && ed.sub == SubObject::Vertex {
         vertex_dots(&painter, ed, vi);
     }
+    control_points(&painter, ed, vi);
     if let (Some(a), Some(b)) = (marquee, pointer) {
         let r = egui::Rect::from_two_pos(p(a), p(b));
         painter.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(229, 156, 36, 18));
