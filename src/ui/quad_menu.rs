@@ -95,7 +95,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         Item::Rotate => ed.mode = TransformMode::Rotate,
         Item::Scale => ed.mode = TransformMode::Scale,
         Item::Clone => ed.clone_selected(CloneKind::Copy),
-        Item::Align => ed.status = "Arrives in Phase 5".into(),
+        Item::Align => ed.status = "Align is not available yet".into(),
         Item::ToSpline => ed.convert_to_editable_spline(),
         Item::Hide => {
             for id in ed.scene.selected() {

@@ -210,6 +210,15 @@ impl Scene {
         format!("{base}{:03}", *c)
     }
 
+    /// Name counters, saved by live-preview dialogs so rebuilt previews
+    /// reuse the same names (Box002, Box003...) instead of skipping ahead.
+    pub fn name_state(&self) -> HashMap<String, u32> {
+        self.name_counters.clone()
+    }
+    pub fn restore_names(&mut self, state: HashMap<String, u32>) {
+        self.name_counters = state;
+    }
+
     pub fn add(&mut self, base: BaseObject, at: Vec3) -> ObjId {
         let name = self.unique_name(base.label());
         let mut o = SceneObject::new(name, base);

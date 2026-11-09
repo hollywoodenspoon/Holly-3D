@@ -6,7 +6,7 @@ use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::CloneKind;
 use bevy_egui::egui::{self, RichText};
 
-const PHASE5: &str = "Arrives in Phase 5 (Splines, Array & Modifiers)";
+const PHASE5: &str = "Not available yet";
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::top("main_toolbar")
@@ -52,8 +52,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     ed.angle_snap = !ed.angle_snap;
                 }
                 ui.separator();
-                ui.add_enabled(false, egui::Button::new("Mirror")).on_disabled_hover_text(PHASE5);
-                ui.add_enabled(false, egui::Button::new("Array...")).on_disabled_hover_text(PHASE5);
+                let any = !ed.scene.selected().is_empty();
+                if ui.add_enabled(any, egui::Button::new("Mirror")).on_hover_text("Mirror the selection (live preview)").clicked() {
+                    ed.open_mirror();
+                }
+                if ui.add_enabled(any, egui::Button::new("Array...")).on_hover_text("3ds Max Array dialog").clicked() {
+                    ed.open_array();
+                }
                 if toggle_button(ui, ed.paint.active, "🖌 Paint")
                     .on_hover_text("Viewport Paint: VertexPaint / texture projection (PaintBox)")
                     .clicked()
@@ -125,9 +130,15 @@ fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
         }
     });
     ui.menu_button("Tools", |ui| {
-        for item in ["Array...", "Mirror...", "Align..."] {
-            ui.add_enabled(false, egui::Button::new(item)).on_disabled_hover_text(PHASE5);
+        if ui.button("Array...").clicked() {
+            ed.open_array();
+            ui.close();
         }
+        if ui.button("Mirror...").clicked() {
+            ed.open_mirror();
+            ui.close();
+        }
+        ui.add_enabled(false, egui::Button::new("Align...")).on_disabled_hover_text(PHASE5);
         if ui.button("Isolate Selection   Alt+Q").clicked() {
             ed.toggle_isolate();
             ui.close();

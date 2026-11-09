@@ -1,9 +1,13 @@
 //! Editor state: scene, modes, tools, dialogs and undo history.
 
 pub mod actions;
+pub mod array;
+#[cfg(test)]
+mod array_tests;
 pub mod drag;
 pub mod lights;
 pub mod materials;
+pub mod mirror;
 pub mod modsub;
 pub mod paint;
 pub mod render;
@@ -51,6 +55,10 @@ pub struct Editor {
     pub caddy: Option<Caddy>,
     pub quad_menu: Option<Vec2>,
     pub clone_dialog: Option<CloneDialog>,
+    pub array_settings: array::ArraySettings,
+    pub array_dialog: Option<array::ArrayDialog>,
+    pub mirror_settings: mirror::MirrorSettings,
+    pub mirror_dialog: Option<mirror::MirrorDialog>,
     pub last_op: Option<PolyOp>,
     pub slice_plane: Option<SlicePlane>,
     pub ignore_backfacing: bool,
@@ -106,6 +114,10 @@ impl Default for Editor {
             caddy: None,
             quad_menu: None,
             clone_dialog: None,
+            array_settings: Default::default(),
+            array_dialog: None,
+            mirror_settings: Default::default(),
+            mirror_dialog: None,
             last_op: None,
             slice_plane: None,
             ignore_backfacing: false,

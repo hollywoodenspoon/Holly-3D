@@ -10,6 +10,18 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
     if ctx.egui_wants_keyboard_input() {
         return;
     }
+    // Array / Mirror dialogs own the keyboard: Esc cancels, Enter confirms.
+    if ed.array_dialog.is_some() || ed.mirror_dialog.is_some() {
+        let (esc, enter) = ctx.input(|i| (i.key_pressed(Key::Escape), i.key_pressed(Key::Enter)));
+        match (esc, enter, ed.array_dialog.is_some()) {
+            (true, _, true) => ed.cancel_array(),
+            (true, _, false) => ed.cancel_mirror(),
+            (_, true, true) => ed.confirm_array(),
+            (_, true, false) => ed.confirm_mirror(),
+            _ => {}
+        }
+        return;
+    }
     let (held, keys): (egui::Modifiers, Vec<(Key, egui::Modifiers)>) = ctx.input(|i| {
         let keys = i
             .events
