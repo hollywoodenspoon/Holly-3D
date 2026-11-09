@@ -33,7 +33,7 @@ struct ObjRender {
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
     version: u64,
-    look: (u32, bool, bool),
+    look: (u32, bool, bool, Option<u64>),
     overlay: Entity,
     overlay_mesh: Handle<Mesh>,
     sel_version: (u64, SubObject, bool),
@@ -185,6 +185,24 @@ fn color_key(c: [f32; 3]) -> u32 {
     q(c[0]) << 16 | q(c[1]) << 8 | q(c[2])
 }
 
+/// Default look: wire color (or the UV checker), like 3ds Max without a material.
+fn wire_material(o: &crate::scene::SceneObject, checker_tex: &Handle<Image>) -> StandardMaterial {
+    let [cr, cg, cb] = o.wire_color;
+    let alpha = if o.see_through { 0.35 } else { 1.0 };
+    let base =
+        if o.checker { Color::srgba(1.0, 1.0, 1.0, alpha) } else { Color::srgba(cr * 0.85 + 0.1, cg * 0.85 + 0.1, cb * 0.85 + 0.1, alpha) };
+    StandardMaterial {
+        base_color: base,
+        base_color_texture: o.checker.then(|| checker_tex.clone()),
+        perceptual_roughness: 0.62,
+        reflectance: 0.35,
+        double_sided: true,
+        cull_mode: None,
+        alpha_mode: if o.see_through { AlphaMode::Blend } else { AlphaMode::Opaque },
+        ..default()
+    }
+}
+
 /// Uploads changed meshes, transforms and selection overlays.
 #[allow(clippy::too_many_arguments)]
 pub fn sync_meshes(
@@ -195,6 +213,7 @@ pub fn sync_meshes(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
     mut checker: Local<Option<Handle<Image>>>,
+    cache: Res<super::mat_sync::MatCache>,
     mut tfs: Query<(&mut Transform, &mut Visibility), Without<ViewportCam>>,
 ) {
     let scene = &editor.scene;
@@ -236,7 +255,7 @@ pub fn sync_meshes(
                 mesh,
                 material,
                 version: o.version,
-                look: (u32::MAX, false, false),
+                look: (u32::MAX, false, false, None),
                 overlay,
                 overlay_mesh,
                 sel_version: (u64::MAX, SubObject::Object, false),
@@ -248,26 +267,16 @@ pub fn sync_meshes(
                 *m = build_mesh(&o.evaluated_mesh.to_tri_mesh());
             }
         }
-        let look = (color_key(o.wire_color), o.see_through, o.checker);
+        // Assigned material (when "Show Shaded Material in Viewport" is on);
+        // the UV checker overrides it while unwrapping.
+        let shown = o.material.and_then(|m| cache.get(m)).filter(|(_, m, _)| m.show_in_viewport && !o.checker);
+        let look = (color_key(o.wire_color), o.see_through, o.checker, shown.map(|(rev, _, _)| rev));
         if r.look != look {
             r.look = look;
             if let Some(mut mat) = materials.get_mut(&r.material) {
-                let [cr, cg, cb] = o.wire_color;
-                let alpha = if o.see_through { 0.35 } else { 1.0 };
-                let base = if o.checker {
-                    Color::srgba(1.0, 1.0, 1.0, alpha)
-                } else {
-                    Color::srgba(cr * 0.85 + 0.1, cg * 0.85 + 0.1, cb * 0.85 + 0.1, alpha)
-                };
-                *mat = StandardMaterial {
-                    base_color: base,
-                    base_color_texture: o.checker.then(|| checker_tex.clone()),
-                    perceptual_roughness: 0.62,
-                    reflectance: 0.35,
-                    double_sided: true,
-                    cull_mode: None,
-                    alpha_mode: if o.see_through { AlphaMode::Blend } else { AlphaMode::Opaque },
-                    ..default()
+                *mat = match shown {
+                    Some((_, m, tex)) => super::mat_sync::standard(m, tex, o.see_through),
+                    None => wire_material(o, &checker_tex),
                 };
             }
         }

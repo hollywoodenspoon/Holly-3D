@@ -5,6 +5,7 @@ pub mod clone_dialog;
 pub mod command;
 pub mod explorer;
 pub mod hotkeys;
+pub mod material_editor;
 pub mod quad_menu;
 pub mod rollouts;
 pub mod status_bar;
@@ -34,6 +35,7 @@ pub struct UiState {
     pub viewport: viewport_ui::ViewportUiState,
     pub modifier_list_open: bool,
     pub uv: uv_editor::UvEditorState,
+    pub mat: material_editor::MatEditorUi,
 }
 
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
@@ -62,6 +64,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     clone_dialog::show(&ctx, ed);
     quad_menu::show(&ctx, ed);
     uv_editor::show(&ctx, ed, &mut st.uv);
+    material_editor::show(&ctx, ed, &mut st.mat);
     ed.update_caddy_preview();
     Ok(())
 }

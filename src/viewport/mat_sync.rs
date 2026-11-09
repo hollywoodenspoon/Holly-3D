@@ -1,0 +1,157 @@
+//! Scene materials -> Bevy `StandardMaterial`s: bakes map textures once per
+//! material change and builds per-object PBR / transmission / unlit looks.
+
+use crate::materials::bake::{BAKE_SIZE, bake_base, bake_emissive, bake_metal_rough, direct_base};
+use crate::materials::shading::lin3;
+use crate::materials::{MatId, Material, ShadingModel, Texture};
+use bevy::asset::RenderAssetUsages;
+use bevy::image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use std::collections::HashMap;
+
+/// GPU textures for one material.
+#[derive(Clone, Default)]
+pub struct MatTextures {
+    pub base: Option<Handle<Image>>,
+    pub metal_rough: Option<Handle<Image>>,
+    pub emissive: Option<(Handle<Image>, f32)>,
+}
+
+struct Entry {
+    mat: Material,
+    rev: u64,
+    tex: MatTextures,
+}
+
+/// Per-material bake cache, refreshed when a material's value changes.
+#[derive(Resource, Default)]
+pub struct MatCache {
+    entries: HashMap<MatId, Entry>,
+}
+
+impl MatCache {
+    /// (revision, material, textures) of a cached material.
+    pub fn get(&self, id: MatId) -> Option<(u64, &Material, &MatTextures)> {
+        self.entries.get(&id).map(|e| (e.rev, &e.mat, &e.tex))
+    }
+}
+
+pub fn to_image(t: &Texture, srgb: bool) -> Image {
+    let format = if srgb { TextureFormat::Rgba8UnormSrgb } else { TextureFormat::Rgba8Unorm };
+    let mut img = Image::new(
+        Extent3d { width: t.width, height: t.height, depth_or_array_layers: 1 },
+        TextureDimension::D2,
+        t.bytes(),
+        format,
+        RenderAssetUsages::default(),
+    );
+    img.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        address_mode_u: ImageAddressMode::Repeat,
+        address_mode_v: ImageAddressMode::Repeat,
+        mag_filter: ImageFilterMode::Linear,
+        min_filter: ImageFilterMode::Linear,
+        ..default()
+    });
+    img
+}
+
+fn bake_all(m: &Material, images: &mut Assets<Image>) -> MatTextures {
+    let base = match direct_base(m) {
+        Some(h) => Some(to_image(&h.tex, true)),
+        None => bake_base(m, BAKE_SIZE).map(|t| to_image(&t, true)),
+    };
+    MatTextures {
+        base: base.map(|i| images.add(i)),
+        metal_rough: bake_metal_rough(m, BAKE_SIZE).map(|t| images.add(to_image(&t, false))),
+        emissive: bake_emissive(m, BAKE_SIZE).map(|(t, peak)| (images.add(to_image(&t, true)), peak)),
+    }
+}
+
+/// Re-bakes materials used by visible objects whose value changed.
+pub fn sync_material_cache(editor: Res<crate::editor::Editor>, mut cache: ResMut<MatCache>, mut images: ResMut<Assets<Image>>) {
+    let lib = &editor.scene.materials;
+    let used: Vec<MatId> = editor.scene.objects.values().filter_map(|o| o.material).filter(|id| lib.mats.contains_key(*id)).collect();
+    cache.entries.retain(|k, _| used.contains(k));
+    for id in used {
+        let m = &lib.mats[id];
+        if cache.entries.get(&id).is_some_and(|e| e.mat == *m) {
+            continue;
+        }
+        let tex = bake_all(m, &mut images);
+        cache.entries.insert(id, Entry { mat: m.clone(), rev: crate::scene::next_version(), tex });
+    }
+}
+
+fn color(c: [f32; 3], a: f32) -> Color {
+    Color::srgba(c[0], c[1], c[2], a)
+}
+
+/// Viewport look for a material (`see_through` = Alt+X x-ray).
+pub fn standard(m: &Material, tex: &MatTextures, see_through: bool) -> StandardMaterial {
+    let textured_base = tex.base.is_some();
+    let opacity = m.opacity * if see_through { 0.35 } else { 1.0 };
+    let base = if textured_base { color([1.0; 3], opacity) } else { color(m.base_color, opacity) };
+    let (emissive, emissive_texture) = match &tex.emissive {
+        Some((h, peak)) => (LinearRgba::rgb(*peak, *peak, *peak).with_alpha(0.0), Some(h.clone())),
+        None => {
+            let e = lin3(m.emissive) * m.emissive_strength;
+            (LinearRgba::rgb(e.x, e.y, e.z).with_alpha(0.0), None)
+        }
+    };
+    let blended = opacity < 1.0 || m.active_map(crate::materials::MapChannel::Opacity).is_some();
+    let mut s = StandardMaterial {
+        base_color: base,
+        base_color_texture: tex.base.clone(),
+        metallic: if tex.metal_rough.is_some() { 1.0 } else { m.metallic },
+        perceptual_roughness: if tex.metal_rough.is_some() { 1.0 } else { m.roughness.max(0.02) },
+        metallic_roughness_texture: tex.metal_rough.clone(),
+        emissive,
+        emissive_texture,
+        double_sided: true,
+        cull_mode: None,
+        alpha_mode: if blended { AlphaMode::Blend } else { AlphaMode::Opaque },
+        ..default()
+    };
+    match m.model {
+        ShadingModel::Physical => {}
+        // Viewport approximation of the cel ramp: flat diffuse, no specular
+        // sheen (F9 renders the true quantised bands, rim and highlights).
+        ShadingModel::Toon => {
+            s.perceptual_roughness = 1.0;
+            s.reflectance = 0.0;
+            s.metallic = 0.0;
+        }
+        ShadingModel::Crystal => {
+            s.specular_transmission = m.transmission.clamp(0.0, 1.0);
+            s.ior = m.ior.max(1.0);
+            s.thickness = m.thickness.max(0.0);
+            s.attenuation_color = color(m.attenuation_color, 1.0);
+            s.attenuation_distance = m.thickness.max(0.01) * 2.0;
+            s.diffuse_transmission = 0.0;
+        }
+        ShadingModel::Unlit => s.unlit = true,
+    }
+    s
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::materials::Preset;
+
+    #[test]
+    fn presets_map_to_matching_standard_materials() {
+        let none = MatTextures::default();
+        let gold = standard(&Preset::PolishedGold.material(), &none, false);
+        assert_eq!((gold.metallic, gold.alpha_mode), (1.0, AlphaMode::Opaque));
+        let crystal = standard(&Preset::Crystal.material(), &none, false);
+        assert!((crystal.specular_transmission - 0.92).abs() < 1e-6 && (crystal.ior - 1.55).abs() < 1e-6);
+        let xray = standard(&Preset::Clay.material(), &none, true);
+        assert_eq!(xray.alpha_mode, AlphaMode::Blend);
+        let mut unlit = Material { model: ShadingModel::Unlit, ..Default::default() };
+        assert!(standard(&unlit, &none, false).unlit);
+        unlit.emissive_strength = 2.0;
+        assert!(standard(&unlit, &none, false).emissive.red > 1.9);
+    }
+}

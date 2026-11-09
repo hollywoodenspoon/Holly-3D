@@ -59,7 +59,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.add_enabled(false, egui::Button::new("▶ Quick Render (F9)")).on_disabled_hover_text(PHASE4);
                     ui.add_enabled(false, egui::Button::new("⚙ Render Setup (F10)")).on_disabled_hover_text(PHASE4);
-                    ui.add_enabled(false, egui::Button::new("⚪ Material Editor (M)")).on_disabled_hover_text(PHASE4);
+                    let open = ed.mat_editor.open;
+                    if toggle_button(ui, open, "⚪ Material Editor (M)").on_hover_text("Compact Material Editor").clicked() {
+                        ed.mat_editor.open = !open;
+                    }
                 });
             });
         })

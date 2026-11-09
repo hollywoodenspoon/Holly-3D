@@ -92,6 +92,8 @@ pub struct SceneObject {
     pub see_through: bool,
     /// Show the UV checker texture in shaded viewports.
     pub checker: bool,
+    /// Assigned material (instances share the id, like 3ds Max).
+    pub material: Option<crate::materials::MatId>,
     pub selected: bool,
     pub instance_group: Option<u32>,
     pub reference_parent: Option<ObjId>,
@@ -118,6 +120,7 @@ impl SceneObject {
             frozen: false,
             see_through: false,
             checker: false,
+            material: None,
             selected: false,
             instance_group: None,
             reference_parent: None,
@@ -138,6 +141,8 @@ impl SceneObject {
 #[derive(Clone, Debug, Default)]
 pub struct Scene {
     pub objects: SlotMap<ObjId, SceneObject>,
+    /// Material library + the 24 Material Editor sample slots.
+    pub materials: crate::materials::MaterialLib,
     name_counters: HashMap<String, u32>,
     next_instance_group: u32,
 }

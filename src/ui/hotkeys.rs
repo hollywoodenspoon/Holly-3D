@@ -95,8 +95,9 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
                     ed.quad_menu = None;
                 }
             }
-            Key::M | Key::F9 | Key::F10 | Key::Num8 => {
-                ed.status = "Materials (M), Render Setup (F10), Quick Render (F9) and Environment (8) arrive in Phase 4".into();
+            Key::M => ed.mat_editor.open = !ed.mat_editor.open,
+            Key::F9 | Key::F10 | Key::Num8 => {
+                ed.status = "Render Setup (F10), Quick Render (F9) and Environment (8) arrive later in Phase 4".into();
             }
             _ => {}
         }

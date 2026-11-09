@@ -19,6 +19,12 @@ impl Editor {
                 self.tool = Tool::Create(kind);
             }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
+            Tool::PickMaterial => {
+                if let Some(other) = self.pick_object(view, cursor) {
+                    self.pick_material_from(other);
+                }
+                self.tool = Tool::None;
+            }
             Tool::Attach => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.attach(other);

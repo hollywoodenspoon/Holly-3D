@@ -23,6 +23,21 @@ pub fn max_spinner_range<T: Numeric>(ui: &mut Ui, value: &mut T, speed: f64, def
     r.on_hover_text("Drag or type • Right-click resets")
 }
 
+/// Tracks spinner/checkbox interaction so undo is recorded once per gesture.
+#[derive(Default)]
+pub struct Track {
+    pub started: bool,
+    pub changed: bool,
+}
+
+impl Track {
+    pub fn r(&mut self, r: Response) -> Response {
+        self.changed |= r.changed();
+        self.started |= r.drag_started() || r.gained_focus() || r.secondary_clicked() || r.clicked();
+        r
+    }
+}
+
 /// Labeled spinner row inside a two-column grid.
 pub fn spin_row<T: Numeric>(ui: &mut Ui, label: &str, value: &mut T, speed: f64, default: T) -> bool {
     ui.label(label);
