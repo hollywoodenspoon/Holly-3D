@@ -11,8 +11,12 @@ use bevy::math::{Mat4, Quat};
 impl Editor {
     /// The modifier sub-object mode in effect (valid for the active stack level).
     pub fn active_mod_sub(&self) -> Option<ModSub> {
-        let s = self.mod_sub?;
         let kind = self.current_obj()?.active_modifier()?;
+        // Edit Normals is always in its Normal sub-object (as in 3ds Max)
+        if matches!(kind, ModifierKind::EditNormals(_)) {
+            return Some(ModSub::Normal);
+        }
+        let s = self.mod_sub?;
         kind.gizmo_subs().contains(&s).then_some(s)
     }
 
@@ -63,6 +67,7 @@ impl Editor {
             }
             (ModSub::Lattice, ModifierKind::Ffd(f)) => (f.lattice.transform_point3(f.bounds.center()), local_rot),
             (ModSub::Gizmo, ModifierKind::UvwMap(u)) => (u.center, rot * u.rotation),
+            (ModSub::Normal, ModifierKind::EditNormals(_)) => (self.normals_center()?, local_rot),
             (ModSub::Axis, ModifierKind::Lathe(l)) => {
                 let shape = o.shape_input_of(o.active_level?)?;
                 (l.axis_point(&shape), local_rot)
@@ -96,6 +101,9 @@ impl Editor {
             }
             (ModSub::Axis, Some(ModifierKind::Lathe(l))) => {
                 l.axis_offset += local.to_scale_rotation_translation().2;
+            }
+            (ModSub::Normal, Some(ModifierKind::EditNormals(e))) => {
+                super::normals::rotate_normals(e, &before.level_mesh, local);
             }
             _ => return,
         }
@@ -137,6 +145,10 @@ impl Editor {
                 self.set_ffd_selection(&hits, op);
                 true
             }
+            Some(ModSub::Normal) => {
+                self.normals_click(view, cursor, op);
+                true
+            }
             Some(_) => true,
             None => false,
         }
@@ -150,6 +162,10 @@ impl Editor {
                 let hits: Vec<usize> =
                     self.ffd_screen_points(view).into_iter().filter(|(_, s)| in_rect(*s, min, max)).map(|x| x.0).collect();
                 self.set_ffd_selection(&hits, op);
+                true
+            }
+            Some(ModSub::Normal) => {
+                self.normals_marquee(view, a, b, op);
                 true
             }
             Some(_) => true,

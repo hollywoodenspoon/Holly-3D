@@ -4,11 +4,13 @@ pub mod actions;
 pub mod array;
 #[cfg(test)]
 mod array_tests;
+pub mod boolean;
 pub mod drag;
 pub mod lights;
 pub mod materials;
 pub mod mirror;
 pub mod modsub;
+pub mod normals;
 pub mod paint;
 pub mod render;
 pub mod select;

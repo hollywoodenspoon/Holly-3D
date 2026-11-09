@@ -71,6 +71,9 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::Twist(_)) => return rollouts::deformers::twist(ui, ed),
         Some(ModifierKind::Taper(_)) => return rollouts::deformers::taper(ui, ed),
         Some(ModifierKind::Push(_)) => return rollouts::deformers::push(ui, ed),
+        Some(ModifierKind::EditNormals(_)) => return rollouts::adv_mods::edit_normals(ui, ed),
+        Some(ModifierKind::Boolean(_)) => return rollouts::adv_mods::boolean(ui, ed),
+        Some(ModifierKind::ProOptimizer(_)) => return rollouts::adv_mods::pro_optimizer(ui, ed),
         _ => {}
     }
     if !o.sub_object_editable() {

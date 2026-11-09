@@ -116,6 +116,22 @@ fn control_points(painter: &egui::Painter, ed: &Editor, vi: usize) {
     }
 }
 
+/// Edit Normals lines: cyan unspecified, blue unified, green explicit, red selected.
+fn normal_lines(painter: &egui::Painter, ed: &Editor, vi: usize) {
+    use crate::modifiers::NormalKind;
+    let v = &ed.viewports.views[vi];
+    for l in ed.normal_lines() {
+        let (Some(a), Some(b)) = (v.to_screen(l.base), v.to_screen(l.tip)) else { continue };
+        let color = match (l.selected, l.kind) {
+            (true, _) => theme::VERTEX_SEL,
+            (_, NormalKind::Explicit) => Color32::from_rgb(70, 220, 90),
+            (_, NormalKind::Unified) => Color32::from_rgb(60, 110, 255),
+            (_, NormalKind::Unspecified) => Color32::from_rgb(40, 220, 230),
+        };
+        painter.line_segment([p(a), p(b)], Stroke::new(if l.selected { 2.0 } else { 1.0 }, color));
+    }
+}
+
 /// Brush ring at the surface point under the cursor (world-sized).
 fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
     let v = &ed.viewports.views[vi];
@@ -146,6 +162,7 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
         vertex_dots(&painter, ed, vi);
     }
     control_points(&painter, ed, vi);
+    normal_lines(&painter, ed, vi);
     if ed.paint.active
         && let Some(ptr) = pointer.filter(|q| rect.contains(p(*q)))
     {

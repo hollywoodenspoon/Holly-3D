@@ -6,6 +6,7 @@
 
 pub mod adjacency;
 pub mod build;
+pub mod merge;
 pub mod normals;
 pub mod ops;
 pub mod selection;

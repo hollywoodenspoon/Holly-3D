@@ -1,11 +1,14 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
+pub mod boolean;
 pub mod chamfer;
 pub mod deformers;
+pub mod edit_normals;
 pub mod ffd;
 pub mod geogen;
 pub mod greeble;
 pub mod lathe;
+pub mod pro_optimizer;
 pub mod shell;
 pub mod smart_uv;
 pub mod spline_extrude;
@@ -15,12 +18,15 @@ pub mod unwrap_uvw;
 pub mod uvw_map;
 pub mod vertex_paint;
 
+pub use boolean::{BoolOp, BooleanMod};
 pub use chamfer::{ChamferFilter, ChamferMod};
 pub use deformers::{BendMod, Limits, PushMod, TaperEffect, TaperMod, TwistMod};
+pub use edit_normals::{EditNormalsMod, NormalKind, NormalSelBy};
 pub use ffd::FfdMod;
 pub use geogen::{GeoGenMod, GeoGenParams, GeoMode};
 pub use greeble::GreebleMod;
 pub use lathe::{LatheAlign, LatheMod};
+pub use pro_optimizer::ProOptimizerMod;
 pub use shell::ShellMod;
 pub use spline_extrude::ExtrudeMod;
 pub use symmetry::SymmetryMod;
@@ -70,6 +76,9 @@ pub enum ModifierKind {
     Twist(TwistMod),
     Taper(TaperMod),
     Push(PushMod),
+    EditNormals(EditNormalsMod),
+    Boolean(BooleanMod),
+    ProOptimizer(ProOptimizerMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -80,6 +89,8 @@ pub enum ModSub {
     Gizmo,
     /// Lathe revolution axis.
     Axis,
+    /// Edit Normals face-corner normals.
+    Normal,
 }
 
 impl ModSub {
@@ -89,6 +100,7 @@ impl ModSub {
             ModSub::Lattice => "Lattice",
             ModSub::Gizmo => "Gizmo",
             ModSub::Axis => "Axis",
+            ModSub::Normal => "Normal",
         }
     }
 }
@@ -113,6 +125,9 @@ impl ModifierKind {
             ModifierKind::Twist(_) => "Twist",
             ModifierKind::Taper(_) => "Taper",
             ModifierKind::Push(_) => "Push",
+            ModifierKind::EditNormals(_) => "Edit Normals",
+            ModifierKind::Boolean(_) => "Boolean",
+            ModifierKind::ProOptimizer(_) => "ProOptimizer",
         }
     }
 
@@ -127,6 +142,7 @@ impl ModifierKind {
             ModifierKind::Ffd(_) => &[ModSub::ControlPoints, ModSub::Lattice],
             ModifierKind::UvwMap(_) => &[ModSub::Gizmo],
             ModifierKind::Lathe(_) => &[ModSub::Axis],
+            ModifierKind::EditNormals(_) => &[ModSub::Normal],
             _ => &[],
         }
     }
@@ -138,6 +154,7 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.fit(input),
             ModifierKind::UvwMap(u) => u.fit(input),
             ModifierKind::Unwrap(u) => u.capture(input),
+            ModifierKind::ProOptimizer(p) => p.calculate(input),
             _ => {}
         }
     }
@@ -175,6 +192,9 @@ impl ModifierEntry {
             ModifierKind::Twist(t) => t.apply(mesh),
             ModifierKind::Taper(t) => t.apply(mesh),
             ModifierKind::Push(p) => p.apply(mesh),
+            ModifierKind::EditNormals(e) => e.apply(mesh),
+            ModifierKind::Boolean(b) => b.apply(mesh),
+            ModifierKind::ProOptimizer(p) => p.apply(mesh),
             // shape modifiers pass meshes through untouched
             ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
         }
@@ -220,9 +240,9 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Chamfer", available: true },
     ModifierListItem { name: "Lathe", available: true },
     ModifierListItem { name: "Extrude", available: true },
-    ModifierListItem { name: "Edit Normals", available: false },
-    ModifierListItem { name: "Boolean", available: false },
-    ModifierListItem { name: "ProOptimizer", available: false },
+    ModifierListItem { name: "Edit Normals", available: true },
+    ModifierListItem { name: "Boolean", available: true },
+    ModifierListItem { name: "ProOptimizer", available: true },
 ];
 
 pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
@@ -246,11 +266,16 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Twist" => Some(ModifierEntry::new(ModifierKind::Twist(TwistMod::default()))),
         "Taper" => Some(ModifierEntry::new(ModifierKind::Taper(TaperMod::default()))),
         "Push" => Some(ModifierEntry::new(ModifierKind::Push(PushMod::default()))),
+        "Edit Normals" => Some(ModifierEntry::new(ModifierKind::EditNormals(EditNormalsMod::default()))),
+        "Boolean" => Some(ModifierEntry::new(ModifierKind::Boolean(BooleanMod::default()))),
+        "ProOptimizer" => Some(ModifierEntry::new(ModifierKind::ProOptimizer(ProOptimizerMod::default()))),
         _ => None,
     }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_adv;
 #[cfg(test)]
 mod tests_stack;

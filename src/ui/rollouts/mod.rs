@@ -1,5 +1,6 @@
 //! Edit Poly rollouts for the Modify tab.
 
+pub mod adv_mods;
 pub mod deformers;
 pub mod edit_geometry;
 pub mod edit_sub;

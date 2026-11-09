@@ -94,3 +94,31 @@ fn mirror_dialog_no_clone_and_copy() {
     ed.cancel_mirror();
     assert_eq!(ed.scene.objects.len(), 2);
 }
+
+#[test]
+fn boolean_pick_consumes_operand_and_extract_restores_it() {
+    use crate::modifiers::{ModifierKind, make_modifier};
+    use crate::primitives::PrimitiveKind;
+    let mut ed = Editor::default();
+    ed.create_primitive(PrimitiveKind::Box, Vec3::ZERO);
+    let a = ed.current().unwrap();
+    ed.create_primitive(PrimitiveKind::Sphere, Vec3::new(0.4, 0.0, 0.5));
+    let b = ed.current().unwrap();
+    let b_name = ed.scene.objects[b].name.clone();
+    ed.scene.select_only(Some(a));
+    ed.scene.objects[a].add_modifier(make_modifier("Boolean").unwrap());
+    let polys = ed.scene.objects[a].evaluated_mesh.polygons.len();
+    ed.pick_boolean_operand(b);
+    assert!(!ed.scene.objects.contains_key(b), "operand is consumed");
+    assert_ne!(ed.scene.objects[a].evaluated_mesh.polygons.len(), polys, "union changed the mesh");
+    assert!(ed.scene.objects[a].evaluated_mesh.validate().is_ok());
+    assert!(ed.scene.objects[a].evaluated_mesh.is_closed());
+    let Some(ModifierKind::Boolean(m)) = ed.scene.objects[a].active_modifier() else { panic!() };
+    assert_eq!(m.operands.len(), 1);
+    ed.extract_boolean_operand();
+    assert_eq!(ed.scene.objects.len(), 2);
+    assert!(ed.scene.objects.values().any(|o| o.name == b_name), "extracted operand keeps its name");
+    ed.undo();
+    ed.undo();
+    assert!(ed.scene.objects.contains_key(b) || ed.scene.objects.values().any(|o| o.name == b_name));
+}

@@ -57,6 +57,8 @@ pub enum Tool {
         start: Option<Vec2>,
     },
     Attach,
+    /// Boolean: pick operand objects (stays active until cancelled).
+    PickBoolean,
     NormalAlign,
     /// Pick Material from Object (eyedropper) into the active slot.
     PickMaterial,
@@ -88,6 +90,7 @@ impl Tool {
             Tool::QuickSlice { start: None } => Some("QuickSlice: click the first point"),
             Tool::QuickSlice { .. } => Some("QuickSlice: click the second point"),
             Tool::Attach => Some("Attach: click an object to merge it"),
+            Tool::PickBoolean => Some("Boolean: click objects to add them as operands (Esc to stop)"),
             Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),

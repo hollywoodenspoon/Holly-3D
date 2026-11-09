@@ -1,7 +1,7 @@
 # MiniMax (Holly-3D)
 
 A clean, 3ds Max-style polygon modeler written in Rust (Bevy 0.20 + bevy_egui 0.43).
-See `CLAUDE.md` for the full design spec. **Phases 1 and 2 are implemented.**
+See `CLAUDE.md` for the full design spec. **Phases 1–5 are implemented.**
 
 ## Build & run
 
@@ -15,7 +15,7 @@ Requires Rust ≥ 1.97.1. On Linux you need the usual X11/Vulkan runtime librari
 (`libxkbcommon-x11`, a Vulkan driver). The build disables Bevy's audio and gamepad
 features, so ALSA and udev headers are not needed.
 
-## What's in Phase 1 & 2
+## What's in it
 
 - **5-zone layout**: top toolbar, Scene Explorer (`H`), 2x2 viewports, Command Panel
   (Create / Modify / Pivot), status + transform type-in bar. Slate `#222327` theme with
@@ -41,8 +41,20 @@ features, so ALSA and udev headers are not needed.
 - **Floating caddies** (`[☐]`) with live preview, OK / Apply & Continue / Cancel, and the
   **right-click Quad Menu**.
 
-Materials, rendering, UVs, FFD, splines and the remaining modifiers are later phases;
-their buttons are visible but disabled.
+- **Phase 3**: FFD 2x2x2 / 3x3x3 / 4x4x4 (control points + lattice), UVW Map (with gizmo)
+  and Unwrap UVW (2D UV editor, Smart UV Unwrap).
+- **Phase 4**: Compact Material Editor (`M`) with presets and ink outlines, vertex and
+  texture painting, lights + Default Lights (`Ctrl+L`), Render Setup (`F10`) and the
+  Rendered Frame Window (`F9`).
+- **Phase 5**: splines (Line, Circle, Arc, NGon, Rectangle, Ellipse, Star, Helix) with
+  rendering profiles, Lathe and Extrude, the Array dialog and Mirror, GeoGen
+  (crystals, rocks, cliffs, stalagmites), Greeble, Chamfer, Symmetry, Shell, TurboSmooth,
+  Bend / Twist / Taper / Push, Edit Normals (Break / Unify / Reset / Make Explicit,
+  `E` to rotate), Boolean (`boolmesh`, ProBoolean-style operand list with Pick / Remove /
+  Extract) and ProOptimizer (`meshopt`, keeps material / UV / colour / normal seams).
+
+Not done yet: Align, spline Booleans, and interactive gizmos for the deformers and the
+Symmetry mirror plane (those are edited with spinners).
 
 ## Code layout
 

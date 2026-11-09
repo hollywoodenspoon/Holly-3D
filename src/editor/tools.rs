@@ -39,6 +39,11 @@ impl Editor {
                 }
                 self.tool = Tool::None;
             }
+            Tool::PickBoolean => {
+                if let Some(other) = self.pick_object(view, cursor) {
+                    self.pick_boolean_operand(other);
+                }
+            }
             Tool::Attach => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.attach(other);
