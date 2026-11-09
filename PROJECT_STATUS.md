@@ -1,0 +1,222 @@
+# MiniMax (Holly-3D): Project Status Report
+
+_Status as of 9 November 2026, measured against the spec in `CLAUDE.md`._
+
+## At a glance
+
+| | |
+|---|---|
+| Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
+| Source | 162 `.rs` files, about 25,100 lines; the largest is 347 lines (limit 350) |
+| Tests | 165 headless tests, all passing (`cargo test --lib`) |
+| Lint | `cargo clippy --all-targets` reports no warnings |
+| Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
+
+**Biggest gap:** there is no file input or output. Open, Save, Import OBJ/glTF and Export OBJ/glTF are greyed out, and the `obj` and `gltf` crates are not in `Cargo.toml`. Scenes can't be saved yet. The only file output is saving rendered images from the Rendered Frame Window.
+
+Legend: ✅ done · 🟡 partly done · ❌ not done
+
+---
+
+## 1. Core rules (§1)
+
+| Rule | Status | Notes |
+|---|---|---|
+| 3ds Max conventions only | ✅ | Q/W/E/R, 1–5, M, F9, F10, Shift+Drag clone; no Blender-style modal keys |
+| Clean five-zone UI | ✅ | Slate `#222327` with amber `#E59C24` |
+| No `.rs` file over 350 lines | ✅ | Largest: `src/mesh/ops/chamfer.rs` at 347 lines |
+| No `Rc<RefCell>` / `Arc<Mutex>` in topology | ✅ | `slotmap` arenas |
+| Headless tests for every mesh operation and modifier | ✅ | Counts plus normal and UV validity |
+
+## 2. Tech stack (§2)
+
+| Crate | Status |
+|---|---|
+| bevy 0.20, bevy_egui 0.43.1 | ✅ |
+| transform-gizmo-egui | ✅ |
+| slotmap, glam | ✅ |
+| noise, rand, rand_chacha | ✅ |
+| boolmesh 0.2.2 | ✅ |
+| meshopt (meshoptimizer) | ✅ |
+| uvunwrap 0.2.0 | ✅ |
+| image (PNG, JPEG, EXR, HDR) | ✅ |
+| `obj` / `gltf` | ❌ Not added; no mesh import or export |
+
+## 3. Controls and hotkeys (§3)
+
+| Control | Status | Notes |
+|---|---|---|
+| MMB pan, Alt+MMB orbit, wheel or Ctrl+Alt+MMB zoom | ✅ | Orbits around the selection |
+| `Z` zoom extents selected (`Shift+Z` for all views) | ✅ | Works in sub-object modes |
+| `Alt+W`, `G`, `F3`, `F4`, `Alt+X` | ✅ | |
+| `Alt+Q` isolate | ✅ | |
+| `Q/W/E/R` and the gizmo | ✅ | |
+| `Q` cycles selection-region shapes | ❌ | Rectangle marquee only; no circle, fence or lasso |
+| Shift+Drag clone (Copy / Instance / Reference, number of copies) | ✅ | |
+| Shift+Drag border edges to extrude | ✅ | |
+| `S` snap / `A` angle snap | 🟡 | Snaps to increments only (0.25 units, 5°, 10% scale); no vertex or midpoint snapping |
+| `Ctrl+Z` / `Ctrl+Y` | ✅ | Covers transforms, mesh, modifier, material and paint edits |
+| `Delete` | ✅ | Objects or sub-objects |
+| `M`, `F9`, `F10`, `8`, `Ctrl+L` | ✅ | |
+| `1–5` sub-object modes; pressing the same key again exits | ✅ | |
+| `Alt+R` ring, `Alt+L` loop, double-click for loop | ✅ | |
+| `H` toggles the Scene Explorer | ✅ | |
+
+## 4. Mesh and scene architecture (§4)
+
+| Item | Status |
+|---|---|
+| Face-corner `EditablePoly` (Vertex, FaceCorner, Polygon, Edge) with the spec's fields | ✅ |
+| Base objects: primitives, splines, GeoGen, EditablePoly | ✅ |
+| Modifier stack: enable toggles, cached evaluation, rebuild only when dirty | ✅ |
+| Instances and references (shared base object, Make Unique) | ✅ |
+
+---
+
+## 5. Priority 1 features (§5)
+
+### A. Editable Poly / Edit Poly modifier
+
+| Rollout | Done | Not done |
+|---|---|---|
+| Selection | ✅ Five mode buttons, By Vertex, Ignore Backfacing, Grow/Shrink, Ring/Loop | 🟡 The Ring/Loop spinner doesn't shift the selection yet |
+| Soft Selection | ✅ Falloff, Pinch, Bubble, rainbow heat colours | |
+| Edit Vertices | ✅ Remove, Break, Extrude ☐, Weld ☐, Chamfer ☐, Target Weld, Connect, Remove Isolated Vertices, Remove Unused Map Verts | |
+| Edit Edges / Borders | ✅ Insert Vertex, Remove (Ctrl also removes orphaned vertices), Split, Extrude, Weld, Target Weld, Chamfer ☐ (amount, segments, tension, open), Connect ☐ (segments, pinch, slide), Bridge, Cap | ❌ **Create Shape from Selection** |
+| Edit Polygons / Elements | ✅ Insert Vertex, Extrude ☐, Outline ☐, Bevel ☐, Inset ☐, Bridge, Flip | ❌ **Hinge From Edge**, **Extrude Along Spline** |
+| Edit Geometry | ✅ Repeat Last, Collapse, Attach/Detach, Slice Plane + Slice + Split + Reset Plane, QuickSlice, Cut, MSmooth, Tessellate ☐, Make Planar + X/Y/Z | ❌ **Create** (build a polygon by clicking points) |
+| Material IDs and Smoothing Groups | ✅ Set ID / Select ID, the 4×8 grid of 32 groups, Clear All, Auto Smooth (45°) | |
+| Floating caddies (☐) | ✅ Live preview with OK, Apply & Continue, Cancel | |
+
+### B. FFD modifiers
+✅ FFD 2×2×2, 3×3×3 and 4×4×4 with Control Points and Lattice sub-objects, box selection plus W/E/R, Conform to Shape, Reset, All X/Y/Z.
+
+### C. UVW Map and Unwrap UVW
+- ✅ **UVW Map:**
+  - All seven mapping types, including Cylindrical Cap.
+  - Length, width, height, U/V/W tile and flip settings, and the X/Y/Z alignment.
+  - Fit, Center, Normal Align, View Align and Reset.
+  - A gizmo sub-object.
+- ❌ **Bitmap Fit** is greyed out.
+- ✅ **Unwrap UVW:**
+  - A floating UV editor with vertex, edge and polygon selection.
+  - Move, rotate, scale, Relax and Stitch.
+  - A checker pattern in the viewport.
+  - Smart UV Unwrap (Angle Limit, Island Margin, Correct Aspect).
+
+### D. Materials (`M`)
+✅ All of it:
+- Compact Material Editor with 24 sample slots and the toolbar: Assign, Show in Viewport, Reset, Copy, Eyedropper.
+- Four shading models and all seven presets.
+- The Universal Ink Outline on every material (width, colour, crease lines).
+- The Maps rollout and Import PBR Texture Folder.
+- A Slate node view with Noise, Checker, Gradient Ramp and Color Correction nodes.
+
+### E. Direct 3D painting
+✅ All of it:
+- VertexPaint modifier with the PaintBox floater: size, opacity, falloff, colour, all or selected faces only, Fill Object, Blur, Layer Opacity.
+- Texture projection paint at 2048 or 4096, with Auto-Setup Paint Canvas.
+
+### F. Rendering (`F9` / `F10`)
+- ✅ **Render Setup:**
+  - Resolution presets, aspect lock, transparent background.
+  - Choice of the built-in raytracer (BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the Cycles bridge, which writes a Cycles XML scene and runs the Cycles command-line tool.
+- ✅ **Rendered Frame Window:**
+  - Render, a viewport/camera picker, Region.
+  - Save as PNG, EXR or JPG; Copy to Clipboard; Clone Render Window.
+  - R, G, B, A and Mono channel buttons.
+- 🟡 **Cameras:** the spec's camera selector exists, but the **Target Camera** button in Create is greyed out, so renders use a viewport's camera.
+- 🟡 The Cycles bridge needs a Cycles executable installed; its path is set in F10. It has never been run against a real Cycles install here.
+
+### G. Lighting
+- ✅ The default two-light headlight rig, with `Ctrl+L` and automatic switching to scene lights.
+- ✅ Light types: Omni, Target Spot, Free Spot, Target Directional, Free Directional, Skylight.
+- ✅ Light Parameters: on/off, type, shadows, multiplier, colour plus Kelvin presets, decay/range, Show Attenuation, hotspot and falloff, shadow bias, softness and colour.
+- ✅ Hotspot and falloff cone gizmos.
+- 🟡 Attenuation has a far range only; there is no separate **near** attenuation.
+- ✅ The Environment dialog (`8`): five lighting rig presets, background colour, ambient tint, exponential fog.
+- ❌ **HDRI skybox** (an image as the environment background).
+
+---
+
+## 6. Priority 2 features (§6)
+
+### A. Splines, Lathe and Extrude
+- ✅ **Shapes:**
+  - Line: click for corner points, drag for Bezier handles, right-click to finish, offer to close.
+  - Circle, Arc, NGon, Rectangle, Ellipse, Star, Helix.
+- ✅ **Rendering rollout:** Enable In Renderer and Enable In Viewport, with Radial or Rectangular profiles.
+- ✅ **Vertex level:** Bezier Corner, Bezier, Corner and Smooth types; Fillet, Chamfer, Weld, Make First, Delete.
+- ✅ **Segment level:** Divide, Delete.
+- ✅ **Spline level:** Outline, Mirror (with Copy), Reverse, Close, Delete.
+- ✅ Convert to Editable Spline.
+- 🟡 **Refine / Insert:** the code exists and Divide uses it, but there's no click-to-insert vertex tool.
+- ❌ **Spline Boolean** (Union, Subtract, Intersect at Spline level).
+- ✅ **Lathe:** degrees, segments, Weld Core, Flip Normals, Cap Start/End, X/Y/Z direction, Min/Center/Max alignment, axis sub-object.
+- ✅ **Spline Extrude:** amount, segments, Cap Start/End.
+
+### B. Array dialog
+✅ Incremental and Totals sections for move, rotate and scale, with Re-Orient and Uniform; Copy, Instance or Reference; 1D, 2D and 3D; live Preview. A **Mirror** dialog was also added.
+
+### C. Procedural generators and other modifiers
+
+| Modifier | Status | Notes |
+|---|---|---|
+| GeoGen (crystal, rock, cliff, stalagmite) | ✅ | Works as an object and as a modifier; all spec parameters |
+| Greeble | ✅ | Panels and widgets rollouts, Select Tops, separate material IDs |
+| Chamfer modifier | ✅ | All, Selected, Smoothing-Group or Angle filters |
+| Symmetry | 🟡 | All parameters work. The **Mirror** plane is set with spinners; there's no W/E gizmo for it |
+| Shell | ✅ | Straighten Corners, Override Edge Material ID, select inner/outer/edge faces |
+| TurboSmooth | ✅ | Iterations 0–4, Isoline Display, Separate by Smoothing Groups or Materials |
+| Bend, Twist, Taper, Push | 🟡 | All parameters and limits work. The **Gizmo/Center** sub-objects can't be moved in the viewport |
+| Edit Normals | ✅ | Cyan, blue and green lines; select by Normal, Vertex, Edge or Face; Break, Unify, Reset, Make Explicit. 🟡 The `E` rotation is covered by tests only and hasn't been tried in the app |
+| Boolean (boolmesh) | ✅ | Union, A−B, B−A, Intersect; Pick Operand B; an operand list with Remove, Extract and on/off toggles; Merge Coplanar Faces. Open meshes are skipped with a warning |
+| ProOptimizer (meshopt) | ✅ | Calculate, linked Vertex % and Vertex Count, keeps material, UV, colour and normal boundaries, Protect Borders |
+
+---
+
+## 7. UI and visual design (§7)
+
+| Item | Status | Notes |
+|---|---|---|
+| Theme colours, spacing, corner radius | ✅ | |
+| Right-click resets any spinner (`max_spinner`) | ✅ | |
+| Top toolbar: File, Edit, Tools menus | 🟡 | **File: only New Scene works**; Open, Save, Import and Export are greyed out. **Tools → Align** is greyed out |
+| Toolbar centre: Q/W/E/R, View/World/Local, the three pivot modes, snaps, Mirror, Array, Paint | ✅ | |
+| Toolbar right: Material Editor, Render Setup, Quick Render | ✅ | |
+| Scene Explorer: visibility, freeze, type icons, search filter | ✅ | |
+| Viewports: `[+] [Perspective] [Shading]` labels, gold border on the active view, axis tripod | ✅ | |
+| Command panel: Create, Modify and Pivot tabs | ✅ | |
+| Create tab: geometry, GeoGen, shapes, lights | ✅ | ❌ Target Camera |
+| Modify tab: name and wireframe colour, searchable modifier list, stack with sub-object expanders | ✅ | Every modifier in the list is available |
+| Stack action row | 🟡 | Make Unique, Delete and Collapse work. ❌ **Pin Stack**. Show End Result is greyed out because the end result is always shown |
+| Pivot tab: Affect Pivot Only, Center to Object, Align to World, Bottom-Center, Reset XForm | ✅ | |
+| Status bar: mesh statistics, Abs/Offset X/Y/Z type-in | ✅ | |
+| Quad menu: Tools 1, Transform, Display, Convert To | ✅ | |
+
+---
+
+## 8. Phase history
+
+| Phase | Contents | PR |
+|---|---|---|
+| 1 | Viewports, camera, theme, five-zone layout, gizmos, clone dialog, primitives | #1 ✅ merged |
+| 2 | Editable Poly, the full Edit Poly toolkit, caddies, quad menu | #1 ✅ merged |
+| 3 | FFD, UVW Map, Unwrap UVW, UV editor, Smart UV | #2 ✅ merged |
+| 4 | Materials, painting, lighting, Render Setup, Frame Window, raytracer, Cycles bridge | #3 ✅ merged |
+| 5 | Splines, Lathe, Extrude, Array, Mirror, GeoGen, Greeble, Chamfer, Symmetry, Shell, TurboSmooth, deformers, Edit Normals, Boolean, ProOptimizer | #3 ✅ merged |
+
+---
+
+## 9. Remaining work, by impact
+
+1. **File input and output.** Save and open scenes in a native format; import and export OBJ and glTF. Today nothing survives closing the app.
+2. **Target Camera.** A camera object for the Render Setup and Frame Window camera picker.
+3. **Align tool** (Tools → Align).
+4. **Missing Edit Poly tools:** Create (polygon), Create Shape from Selection, Hinge From Edge, Extrude Along Spline, and shifting the selection with the Ring/Loop spinner.
+5. **Viewport gizmos** for the Bend, Twist and Taper Gizmo/Center sub-objects and the Symmetry Mirror plane.
+6. **Spline Boolean** and a click-to-Refine tool for Editable Spline.
+7. **Snapping to vertices, edges and midpoints** (today `S` snaps to increments only).
+8. **Selection-region shapes** cycled with `Q`: circle, fence, lasso.
+9. **Smaller items:** HDRI environment background, near attenuation on lights, Bitmap Fit in UVW Map, Pin Stack.
+10. **Checks still to do:** try Edit Normals `E` rotation in the app, and run the Cycles bridge against a real Cycles install.
