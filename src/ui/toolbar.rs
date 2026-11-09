@@ -6,7 +6,6 @@ use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::CloneKind;
 use bevy_egui::egui::{self, RichText};
 
-const PHASE4: &str = "Arrives in Phase 4 (Materials & Rendering)";
 const PHASE5: &str = "Arrives in Phase 5 (Splines, Array & Modifiers)";
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
@@ -62,8 +61,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     ed.toggle_paint();
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.add_enabled(false, egui::Button::new("▶ Quick Render (F9)")).on_disabled_hover_text(PHASE4);
-                    ui.add_enabled(false, egui::Button::new("⚙ Render Setup (F10)")).on_disabled_hover_text(PHASE4);
+                    if ui.button("▶ Quick Render (F9)").on_hover_text("Render the active viewport into the Rendered Frame Window").clicked()
+                    {
+                        ed.start_render();
+                    }
+                    if toggle_button(ui, ed.rfw.setup_open, "⚙ Render Setup (F10)").clicked() {
+                        ed.rfw.setup_open = !ed.rfw.setup_open;
+                    }
                     let open = ed.mat_editor.open;
                     if toggle_button(ui, open, "⚪ Material Editor (M)").on_hover_text("Compact Material Editor").clicked() {
                         ed.mat_editor.open = !open;

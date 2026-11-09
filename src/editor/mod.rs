@@ -6,6 +6,7 @@ pub mod lights;
 pub mod materials;
 pub mod modsub;
 pub mod paint;
+pub mod render;
 pub mod select;
 pub mod tools;
 pub mod types;
@@ -79,6 +80,10 @@ pub struct Editor {
     /// Viewport Paint / PaintBox settings.
     pub paint: crate::paint::PaintSettings,
     pub paint_stroke: Option<paint::PaintStroke>,
+    /// Render Setup (F10) parameters.
+    pub render: crate::render::RenderSettings,
+    /// Rendered Frame Window (F9) + running job.
+    pub rfw: render::RenderUi,
 }
 
 impl Default for Editor {
@@ -123,6 +128,8 @@ impl Default for Editor {
             env_open: false,
             paint: Default::default(),
             paint_stroke: None,
+            render: Default::default(),
+            rfw: Default::default(),
         }
     }
 }
