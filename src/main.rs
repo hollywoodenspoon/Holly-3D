@@ -23,10 +23,18 @@ fn main() {
         editor.history = Default::default();
     }
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window { title: "MiniMax — 3ds Max-style Modeler".into(), resolution: (1600, 920).into(), ..default() }),
-        ..default()
-    }))
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "MiniMax — 3ds Max-style Modeler".into(),
+                    resolution: (1600, 920).into(),
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(minimax::viewport::gpu::render_plugin()),
+    )
     .add_plugins(EguiPlugin::default())
     .add_plugins(UiPlugin)
     .insert_resource(editor)

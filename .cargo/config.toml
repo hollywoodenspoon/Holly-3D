@@ -1,0 +1,7 @@
+# Tuned for a Ryzen 7 5700X (Zen 3: AVX2 + FMA + BMI2) with 16 GB RAM.
+[build]
+# 10 parallel rustc jobs keeps peak memory well under 16 GB while Bevy compiles.
+jobs = 10
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=znver3"]

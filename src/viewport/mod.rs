@@ -1,6 +1,7 @@
 //! Viewports: camera math, layout, picking, and Bevy render sync.
 
 pub mod camera;
+pub mod gpu;
 pub mod layout;
 pub mod light_icons;
 pub mod light_sync;
