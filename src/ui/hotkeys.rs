@@ -47,6 +47,9 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
         }
         match key {
             Key::Z if ctrl => ed.undo(),
+            Key::S if ctrl && m.shift => super::file_menu::save_as(ed),
+            Key::S if ctrl => super::file_menu::save(ed),
+            Key::O if ctrl => super::file_menu::open(ed),
             Key::L if ctrl => ed.toggle_default_lights(),
             Key::Y if ctrl => ed.redo(),
             Key::A if ctrl => ed.select_all(true),

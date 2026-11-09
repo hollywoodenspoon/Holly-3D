@@ -1,6 +1,7 @@
 //! MiniMax — a clean 3ds Max-style polygon modeler.
 
 pub mod editor;
+pub mod io;
 pub mod materials;
 pub mod mesh;
 pub mod modifiers;

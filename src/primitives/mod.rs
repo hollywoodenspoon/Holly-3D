@@ -9,7 +9,7 @@ mod tests;
 use crate::mesh::{EditablePoly, VertexId};
 use bevy::math::{Vec2, Vec3};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Primitive {
     Box { length: f32, width: f32, height: f32, length_segs: u32, width_segs: u32, height_segs: u32 },
     Sphere { radius: f32, segments: u32, hemisphere: f32 },
@@ -19,7 +19,7 @@ pub enum Primitive {
     Torus { radius1: f32, radius2: f32, segments: u32, sides: u32 },
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PrimitiveKind {
     Box,
     Sphere,

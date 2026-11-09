@@ -6,6 +6,7 @@ pub mod array;
 mod array_tests;
 pub mod boolean;
 pub mod drag;
+pub mod file;
 pub mod lights;
 pub mod materials;
 pub mod mirror;
@@ -97,6 +98,8 @@ pub struct Editor {
     pub rfw: render::RenderUi,
     /// Editable Spline tool spinners (Fillet, Chamfer, Weld, Divide, Outline…).
     pub spline_ui: SplineUi,
+    /// Current `.mmax` file (Save writes here; `None` = Save As).
+    pub scene_path: Option<std::path::PathBuf>,
 }
 
 impl Default for Editor {
@@ -148,6 +151,7 @@ impl Default for Editor {
             render: Default::default(),
             rfw: Default::default(),
             spline_ui: Default::default(),
+            scene_path: None,
         }
     }
 }

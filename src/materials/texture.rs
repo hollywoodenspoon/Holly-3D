@@ -58,7 +58,7 @@ impl Texture {
 }
 
 /// Shared texture; equality is identity + revision so comparisons stay cheap.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct TexHandle {
     pub tex: Arc<Texture>,
     /// Bumped by every paint stroke so the viewport re-uploads.

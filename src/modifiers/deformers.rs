@@ -7,7 +7,7 @@ use crate::mesh::EditablePoly;
 use bevy::math::Vec3;
 
 /// `[ ] Limit Effect` with Upper / Lower limits along the deform axis.
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Limits {
     pub on: bool,
     pub upper: f32,
@@ -43,7 +43,7 @@ fn deform(m: &mut EditablePoly, axis: usize, center: Vec3, f: impl Fn(f32, f32, 
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct BendMod {
     /// Degrees of bend over the whole extent.
     pub angle: f32,
@@ -84,7 +84,7 @@ impl BendMod {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TwistMod {
     pub angle: f32,
     /// -100..100: pushes the twist towards the ends (+) or the center (-).
@@ -119,7 +119,7 @@ impl TwistMod {
 }
 
 /// Which local axes Taper scales.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum TaperEffect {
     #[default]
     Both,
@@ -127,7 +127,7 @@ pub enum TaperEffect {
     Second,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TaperMod {
     /// -10..10: scale change over the extent.
     pub amount: f32,
@@ -177,7 +177,7 @@ impl TaperMod {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PushMod {
     /// Offset along the averaged vertex normal.
     pub value: f32,

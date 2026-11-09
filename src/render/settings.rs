@@ -1,6 +1,6 @@
 //! Render Setup (F10) parameters shared by both renderer engines.
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum Engine {
     /// Built-in high-quality CPU raytracer (default).
     #[default]
@@ -25,7 +25,7 @@ pub const RESOLUTIONS: [(u32, u32); 5] = [(800, 600), (1280, 720), (1920, 1080),
 /// Anti-aliasing: samples per pixel (stratified n x n grid).
 pub const AA_LEVELS: [(u32, &str); 4] = [(1, "Off (1 sample)"), (2, "2x2 (4 samples)"), (3, "3x3 (9 samples)"), (4, "4x4 (16 samples)")];
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RenderSettings {
     pub width: u32,
     pub height: u32,

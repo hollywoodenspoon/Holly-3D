@@ -4,7 +4,7 @@
 use super::*;
 use bevy::math::Mat4;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ExtrudeMode {
     #[default]
     Group,
@@ -24,13 +24,13 @@ impl ExtrudeMode {
 }
 
 /// A point the Cut tool clicked: an existing vertex or a spot on an edge.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CutPoint {
     Vertex(VertexId),
     Edge(VertexId, VertexId, f32),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum PolyOp {
     ExtrudeVertices { height: f32, width: f32 },
     ExtrudeEdges { height: f32, width: f32 },

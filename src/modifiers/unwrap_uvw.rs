@@ -8,7 +8,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 /// A face corner addressed by (polygon order index, corner index).
 pub type CornerRef = (usize, usize);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum UvSel {
     #[default]
     Vertex,
@@ -16,7 +16,7 @@ pub enum UvSel {
     Face,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct UnwrapMod {
     /// UVs per input polygon (slotmap order), per corner.
     pub uvs: Vec<Vec<Vec2>>,

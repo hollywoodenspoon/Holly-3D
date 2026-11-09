@@ -7,7 +7,7 @@ use crate::mesh::{EditablePoly, FaceCorner, PolyId, Polygon, VertexId, edge_key}
 use bevy::math::{Vec2, Vec3};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct TurboSmoothMod {
     pub iterations: u32,
     /// Wireframe overlay shows only the original cage edges.

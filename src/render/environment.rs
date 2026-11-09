@@ -4,7 +4,7 @@
 use super::lighting::{Light, LightKind, kelvin_to_rgb};
 use bevy::math::Vec3;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum LightingPreset {
     #[default]
     DefaultHeadlight,
@@ -27,7 +27,7 @@ impl LightingPreset {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Environment {
     pub preset: LightingPreset,
     /// Background color (sRGB) — viewports and the F9 render.
@@ -59,7 +59,7 @@ impl Default for Environment {
 }
 
 /// A light a preset wants in the scene.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct PresetLight {
     pub name: &'static str,
     pub light: Light,

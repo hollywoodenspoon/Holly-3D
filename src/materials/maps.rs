@@ -6,7 +6,7 @@ use bevy::math::{Vec2, Vec3, Vec4};
 use noise::{Fbm, NoiseFn, Perlin, Worley};
 use std::sync::OnceLock;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MapChannel {
     BaseColor = 0,
     Metallic,
@@ -42,7 +42,7 @@ impl MapChannel {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct MapSlot {
     pub enabled: bool,
     /// 0..=100 like the 3ds Max Maps rollout amount spinners.
@@ -56,7 +56,7 @@ impl Default for MapSlot {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum NoiseKind {
     #[default]
     Perlin,
@@ -64,7 +64,7 @@ pub enum NoiseKind {
     Cellular,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum MapNode {
     Bitmap { path: String, tex: Option<TexHandle> },
     Noise { kind: NoiseKind, scale: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },

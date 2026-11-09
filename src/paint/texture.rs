@@ -8,7 +8,7 @@ use crate::mesh::EditablePoly;
 use crate::mesh::triangulate::triangulate_polygon;
 use bevy::math::{Mat2, Mat4, Vec2, Vec3};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct PaintTri {
     /// World-space corners.
     pub p: [Vec3; 3],

@@ -26,7 +26,7 @@ pub fn next_version() -> u64 {
     VERSION.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum BaseObject {
     Primitive(Primitive),
     EditablePoly(EditablePoly),
@@ -70,7 +70,7 @@ impl BaseObject {
 }
 
 /// Object-level transform (3ds Max node TM) — Z up.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Xform {
     pub translation: Vec3,
     pub rotation: Quat,
@@ -93,18 +93,21 @@ impl Xform {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct SceneObject {
     pub name: String,
     pub base: BaseObject,
     /// Bottom-to-top modifier stack.
     pub modifiers: Vec<ModifierEntry>,
     /// Cached fold of the whole (enabled) stack.
+    #[serde(skip)]
     pub evaluated_mesh: EditablePoly,
     /// Mesh at the active stack level (what sub-object tools edit and pick).
+    #[serde(skip)]
     pub level_mesh: EditablePoly,
     /// Shape still flowing out of the stack (drawn as splines); `None` once a
     /// Lathe / Extrude turned it into a mesh, and for non-shape objects.
+    #[serde(skip)]
     pub shape: Option<crate::splines::Shape>,
     /// `None` = base object, `Some(i)` = modifier `i`.
     pub active_level: Option<usize>,
@@ -125,7 +128,9 @@ pub struct SceneObject {
     /// Number of bottom modifiers inherited from `reference_parent`.
     pub reference_shared: usize,
     /// Bumped whenever geometry changes; the renderer re-uploads on change.
+    #[serde(skip)]
     pub version: u64,
+    #[serde(skip)]
     pub selection_version: u64,
 }
 
@@ -183,7 +188,7 @@ impl SceneObject {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Scene {
     pub objects: SlotMap<ObjId, SceneObject>,
     /// Material library + the 24 Material Editor sample slots.

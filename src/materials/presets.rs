@@ -3,7 +3,7 @@
 use super::maps::{MapChannel, MapNode, NoiseKind};
 use super::{Material, OutlineParams, ShadingModel, ToonParams};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Preset {
     Clay,
     BrushedSteel,

@@ -15,7 +15,7 @@ pub use sweep::SplineRender;
 use bevy::math::Vec3;
 
 /// 3ds Max vertex (knot) tangent types.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum KnotType {
     #[default]
     Corner,
@@ -37,7 +37,7 @@ impl KnotType {
 }
 
 /// A spline vertex. Handles are absolute positions (used by Bezier types).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Knot {
     pub pos: Vec3,
     pub in_h: Vec3,
@@ -71,7 +71,7 @@ impl Knot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Spline {
     pub knots: Vec<Knot>,
     pub closed: bool,
@@ -79,7 +79,7 @@ pub struct Spline {
 }
 
 /// A shape: one or more splines (3ds Max shapes can hold several).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Shape {
     pub splines: Vec<Spline>,
     /// Interpolation steps per curved segment.
@@ -93,7 +93,7 @@ impl Default for Shape {
 }
 
 /// An interpolated spline: points (closed ones do not repeat the first).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Polyline {
     pub pts: Vec<Vec3>,
     pub closed: bool,
@@ -204,14 +204,14 @@ impl Shape {
 
 /// The base object of a shape: parametric or Editable Spline, plus the
 /// Interpolation and Rendering rollouts.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ShapeObject {
     pub source: ShapeSource,
     pub steps: u32,
     pub render: SplineRender,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum ShapeSource {
     Param(ShapeParams),
     Editable(Shape),

@@ -6,7 +6,7 @@ use crate::mesh::{EditablePoly, VertexId};
 use bevy::math::{Vec3, Vec4};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VertexPaintMod {
     /// Painted color (rgb, sRGB) + coverage (a) per input vertex.
     pub layer: HashMap<VertexId, Vec4>,

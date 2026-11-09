@@ -86,17 +86,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
 
 fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.label(RichText::new("MiniMax").color(theme::AMBER).strong());
-    ui.menu_button("File", |ui| {
-        if ui.button("New Scene").clicked() {
-            ed.checkpoint("New Scene");
-            ed.scene = Default::default();
-            ed.sub = crate::mesh::SubObject::Object;
-            ui.close();
-        }
-        for item in ["Open...", "Save", "Import OBJ / glTF...", "Export OBJ / glTF..."] {
-            ui.add_enabled(false, egui::Button::new(item)).on_disabled_hover_text("File I/O arrives with the import/export phase");
-        }
-    });
+    ui.menu_button("File", |ui| super::file_menu::menu(ui, ed));
     ui.menu_button("Edit", |ui| {
         if ui.add_enabled(ed.history.can_undo(), egui::Button::new("Undo   Ctrl+Z")).clicked() {
             ed.undo();

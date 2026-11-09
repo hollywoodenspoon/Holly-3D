@@ -8,7 +8,7 @@ use bevy::math::{Vec2, Vec3};
 use meshopt::{SimplifyOptions, VertexDataAdapter, typed_to_bytes};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ProOptimizerMod {
     /// Vertex % of the calculated source (1..=100).
     pub percent: f32,
@@ -39,7 +39,7 @@ impl Default for ProOptimizerMod {
 }
 
 /// One split vertex fed to the simplifier.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
 struct RenderVert {
     vid: VertexId,
     uv: Vec2,

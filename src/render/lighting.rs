@@ -5,7 +5,7 @@
 use crate::scene::ObjId;
 use bevy::math::{Mat3, Quat, Vec3};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum LightKind {
     Omni,
     TargetSpot,
@@ -73,7 +73,7 @@ pub fn kelvin_to_rgb(k: f32) -> [f32; 3] {
     c.map(|x| x / m)
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Light {
     pub kind: LightKind,
     pub on: bool,
@@ -166,7 +166,7 @@ pub fn emit_dir(rot: Quat) -> Vec3 {
 }
 
 /// One light of the Default Modeling Lights rig (world space, linear color).
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RigLight {
     /// Direction the light travels (towards the scene).
     pub dir: Vec3,

@@ -5,7 +5,7 @@ use crate::mesh::ops::{slice, weld};
 use crate::mesh::{EditablePoly, PolyId, SubObject};
 use bevy::math::{Mat4, Vec3};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SymmetryMod {
     pub axis: usize,
     /// Keep the negative side instead of the positive one.

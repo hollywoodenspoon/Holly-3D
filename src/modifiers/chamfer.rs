@@ -4,7 +4,7 @@ use crate::mesh::adjacency::Adjacency;
 use crate::mesh::ops::chamfer::chamfer_edges_ex;
 use crate::mesh::{EdgeId, EditablePoly};
 
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ChamferFilter {
     #[default]
     All,
@@ -28,7 +28,7 @@ impl ChamferFilter {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ChamferMod {
     pub amount: f32,
     pub segments: u32,

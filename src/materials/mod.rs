@@ -10,6 +10,7 @@ pub mod preview;
 pub mod shading;
 #[cfg(test)]
 mod tests;
+mod tex_serde;
 pub mod texture;
 
 pub use maps::{MapChannel, MapNode, MapSlot};
@@ -24,7 +25,7 @@ new_key_type! {
 
 pub const SLOT_COUNT: usize = 24;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ShadingModel {
     #[default]
     Physical,
@@ -46,7 +47,7 @@ impl ShadingModel {
 }
 
 /// Cel / Toon ramp parameters.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ToonParams {
     /// Number of light bands (2 = classic anime two-tone).
     pub steps: u32,
@@ -64,7 +65,7 @@ impl Default for ToonParams {
 }
 
 /// Universal ink outline (inverted hull + sharp-edge lines).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct OutlineParams {
     pub enabled: bool,
     /// 0..=10 (scene units x 0.005 in the viewport hull; pixels in renders).
@@ -81,7 +82,7 @@ impl Default for OutlineParams {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Material {
     pub name: String,
     pub model: ShadingModel,
@@ -154,7 +155,7 @@ impl Material {
 }
 
 /// Scene material library + the 24 editor sample slots.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MaterialLib {
     pub mats: SlotMap<MatId, Material>,
     pub slots: Vec<MatId>,

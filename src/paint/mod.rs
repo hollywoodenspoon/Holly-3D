@@ -10,7 +10,7 @@ pub mod vertex;
 pub use texture::{PaintTri, TextureStroke, paint_tris, uv_overlap};
 pub use vertex::VertexStroke;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PaintMode {
     /// VertexPaint modifier layer (no UVs required).
     Vertex,
@@ -18,7 +18,7 @@ pub enum PaintMode {
     Texture,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum BrushTool {
     Paint,
     Blur,
@@ -36,7 +36,7 @@ impl BrushTool {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Brush {
     /// Brush radius in world units (3ds Max PaintBox "Size").
     pub size: f32,
@@ -78,7 +78,7 @@ pub fn falloff_weight(d: f32, r: f32, falloff: f32) -> f32 {
 }
 
 /// PaintBox state (settings persist between paint sessions).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct PaintSettings {
     /// Paint mode is on: viewport left-drags paint instead of selecting.
     pub active: bool,

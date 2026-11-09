@@ -22,6 +22,12 @@ fn main() {
         }
         editor.history = Default::default();
     }
+    // `minimax scene.mmax` / `minimax model.fbx`: open or import on start.
+    if let Some(path) = std::env::args().skip(1).find(|a| !a.starts_with("--")) {
+        let r = editor.open_any(std::path::Path::new(&path));
+        editor.report(r);
+        editor.history = Default::default();
+    }
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins

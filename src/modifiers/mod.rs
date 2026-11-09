@@ -40,7 +40,7 @@ use crate::mesh::{EditablePoly, SelectionSets};
 
 /// The Edit Poly modifier: records every Edit Poly op together with the
 /// selection it acted on, and replays them on its input mesh.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct EditPolyMod {
     pub ops: Vec<(SelectionSets, PolyOp)>,
     /// Current sub-object selection held by the modifier.
@@ -57,7 +57,7 @@ impl EditPolyMod {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum ModifierKind {
     EditPoly(EditPolyMod),
     Ffd(FfdMod),
@@ -82,7 +82,7 @@ pub enum ModifierKind {
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ModSub {
     ControlPoints,
     Lattice,
@@ -160,7 +160,7 @@ impl ModifierKind {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModifierEntry {
     pub enabled_in_viewport: bool,
     pub name: String,

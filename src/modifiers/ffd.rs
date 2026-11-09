@@ -6,7 +6,7 @@ use crate::viewport::camera::Ray;
 use crate::viewport::picking::ray_triangle;
 use bevy::math::{Mat4, Vec3};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct FfdMod {
     /// Control points per axis (2, 3 or 4).
     pub dim: usize,

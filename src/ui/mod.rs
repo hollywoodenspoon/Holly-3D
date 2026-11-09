@@ -6,6 +6,7 @@ pub mod clone_dialog;
 pub mod command;
 pub mod env_dialog;
 pub mod explorer;
+pub mod file_menu;
 pub mod hotkeys;
 pub mod material_editor;
 pub mod mirror_dialog;

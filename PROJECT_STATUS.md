@@ -12,7 +12,7 @@ _Status as of 9 November 2026, measured against the spec in `CLAUDE.md`._
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Biggest gap:** there is no file input or output. Open, Save, Import OBJ/glTF and Export OBJ/glTF are greyed out, and the `obj` and `gltf` crates are not in `Cargo.toml`. Scenes can't be saved yet. The only file output is saving rendered images from the Rendered Frame Window.
+**Phase 6 in progress:** closing the §9 gaps one by one (✅ marks below). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -40,7 +40,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | meshopt (meshoptimizer) | ✅ |
 | uvunwrap 0.2.0 | ✅ |
 | image (PNG, JPEG, EXR, HDR) | ✅ |
-| `obj` / `gltf` | ❌ Not added; no mesh import or export |
+| `gltf`, `ufbx`, OBJ (own reader/writer) | ✅ Import and export of OBJ+MTL, glTF/GLB and FBX |
+| `serde`, `ron`, `rfd` | ✅ `.mmax` scene files and native file dialogs |
 
 ## 3. Controls and hotkeys (§3)
 
@@ -181,7 +182,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 |---|---|---|
 | Theme colours, spacing, corner radius | ✅ | |
 | Right-click resets any spinner (`max_spinner`) | ✅ | |
-| Top toolbar: File, Edit, Tools menus | 🟡 | **File: only New Scene works**; Open, Save, Import and Export are greyed out. **Tools → Align** is greyed out |
+| Top toolbar: File, Edit, Tools menus | 🟡 | File: New, Open (`Ctrl+O`), Save (`Ctrl+S`), Save As (`Ctrl+Shift+S`), Import, Export All / Selected all work. **Tools → Align** is greyed out |
 | Toolbar centre: Q/W/E/R, View/World/Local, the three pivot modes, snaps, Mirror, Array, Paint | ✅ | |
 | Toolbar right: Material Editor, Render Setup, Quick Render | ✅ | |
 | Scene Explorer: visibility, freeze, type icons, search filter | ✅ | |
@@ -210,7 +211,11 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 
 ## 9. Remaining work, by impact
 
-1. **File input and output.** Save and open scenes in a native format; import and export OBJ and glTF. Today nothing survives closing the app.
+1. ✅ **File input and output.** `src/io/` + `src/editor/file.rs` + `src/ui/file_menu.rs`.
+   - Native `.mmax` scene (RON): objects with their base objects and full modifier stacks, transforms and pivots, lights, materials including painted textures (embedded PNG), environment and name counters. Caches are rebuilt on load.
+   - Import / Export (All or Selected): OBJ + MTL, glTF / GLB and ASCII FBX 7.4 (FBX import reads binary and ASCII through `ufbx`). Quads and n-gons, smoothing groups 1..32 (FBX masks read straight from the file), UVs, vertex colours and material IDs survive round trips.
+   - A scene or mesh path given on the command line is opened at start-up.
+   - Tests: round trips for every format, editor export-selected → import, save → open.
 2. **Target Camera.** A camera object for the Render Setup and Frame Window camera picker.
 3. **Align tool** (Tools → Align).
 4. **Missing Edit Poly tools:** Create (polygon), Create Shape from Selection, Hinge From Edge, Extrude Along Spline, and shifting the selection with the Ring/Loop spinner.

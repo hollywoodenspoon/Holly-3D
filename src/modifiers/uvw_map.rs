@@ -5,7 +5,7 @@ use crate::mesh::{EditablePoly, PolyId};
 use bevy::math::{Mat4, Quat, Vec2, Vec3};
 use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum MapType {
     #[default]
     Planar,
@@ -33,7 +33,7 @@ impl MapType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct UvwMapMod {
     pub kind: MapType,
     pub cap: bool,
