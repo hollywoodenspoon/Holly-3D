@@ -35,6 +35,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
         }
         match key {
             Key::Z if ctrl => ed.undo(),
+            Key::L if ctrl => ed.toggle_default_lights(),
             Key::Y if ctrl => ed.redo(),
             Key::A if ctrl => ed.select_all(true),
             Key::D if ctrl => ed.select_all(false),
@@ -96,8 +97,9 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
                 }
             }
             Key::M => ed.mat_editor.open = !ed.mat_editor.open,
-            Key::F9 | Key::F10 | Key::Num8 => {
-                ed.status = "Render Setup (F10), Quick Render (F9) and Environment (8) arrive later in Phase 4".into();
+            Key::Num8 => ed.env_open = !ed.env_open,
+            Key::F9 | Key::F10 => {
+                ed.status = "Render Setup (F10) and Quick Render (F9) arrive later in Phase 4".into();
             }
             _ => {}
         }

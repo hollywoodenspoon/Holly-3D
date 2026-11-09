@@ -58,6 +58,11 @@ pub enum Tool {
     NormalAlign,
     /// Pick Material from Object (eyedropper) into the active slot.
     PickMaterial,
+    /// Create a light; target lights take a second click for the target.
+    CreateLight {
+        kind: crate::render::LightKind,
+        first: Option<bevy::math::Vec3>,
+    },
 }
 
 impl Tool {
@@ -74,6 +79,9 @@ impl Tool {
             Tool::Attach => Some("Attach: click an object to merge it"),
             Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
+            Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
+            Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),
+            Tool::CreateLight { .. } => Some("Click in a viewport to place the light"),
         }
     }
 }

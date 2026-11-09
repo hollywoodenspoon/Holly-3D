@@ -1,6 +1,6 @@
 //! Modify tab: name + wire color, Modifier List, stack and context rollouts.
 
-use super::{CONTENT_W, params, stack};
+use super::{CONTENT_W, light_params, params, stack};
 use crate::editor::Editor;
 use crate::mesh::SubObject;
 use crate::modifiers::ModifierKind;
@@ -20,6 +20,17 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         ui.add(egui::TextEdit::singleline(&mut o.name).desired_width(CONTENT_W - 40.0));
         ui.color_edit_button_rgb(&mut o.wire_color).on_hover_text("Wireframe color");
     });
+    // Lights and targets have no modifier stack.
+    if ed.scene.objects[id].light().is_some() {
+        ui.add_space(6.0);
+        return light_params::show(ui, ed);
+    }
+    if ed.scene.objects[id].is_helper() {
+        let owner = ed.scene.objects.values().find(|o| o.light().is_some_and(|l| l.target == Some(id))).map(|o| o.name.clone());
+        ui.add_space(6.0);
+        ui.label(dim(&format!("Target of {} — move it with W to aim the light.", owner.unwrap_or_default())));
+        return;
+    }
     stack::modifier_list(ui, ed, st);
     stack::stack_box(ui, ed);
     stack::stack_actions(ui, ed);

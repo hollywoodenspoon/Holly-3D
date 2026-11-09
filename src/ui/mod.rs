@@ -3,6 +3,7 @@
 pub mod caddy;
 pub mod clone_dialog;
 pub mod command;
+pub mod env_dialog;
 pub mod explorer;
 pub mod hotkeys;
 pub mod material_editor;
@@ -65,6 +66,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     quad_menu::show(&ctx, ed);
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
+    env_dialog::show(&ctx, ed);
     ed.update_caddy_preview();
     Ok(())
 }

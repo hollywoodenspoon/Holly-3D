@@ -1,4 +1,4 @@
-//! Bevy side: viewport cameras, lights, and GPU mesh sync from the scene.
+//! Bevy side: viewport cameras and GPU mesh sync from the scene.
 
 use super::camera::ORTHO_DEPTH;
 use super::layout::Shading;
@@ -62,15 +62,6 @@ pub fn setup_scene(mut commands: Commands, mut egui_settings: ResMut<EguiGlobalS
         RenderLayers::none(),
         Camera { order: 10, clear_color: ClearColorConfig::None, ..default() },
     ));
-    commands.spawn((
-        DirectionalLight { illuminance: 9_000.0, shadow_maps_enabled: false, ..default() },
-        Transform::from_xyz(-3.0, -5.0, 8.0).looking_at(Vec3::ZERO, Vec3::Z),
-    ));
-    commands.spawn((
-        DirectionalLight { illuminance: 3_500.0, shadow_maps_enabled: false, ..default() },
-        Transform::from_xyz(4.0, 6.0, 2.0).looking_at(Vec3::ZERO, Vec3::Z),
-    ));
-    commands.insert_resource(GlobalAmbientLight { color: Color::WHITE, brightness: 450.0, affects_lightmapped_meshes: true });
 }
 
 /// Mirrors the editor's viewport cameras onto Bevy cameras.
@@ -82,6 +73,8 @@ pub fn sync_cameras(
     let sf = window.scale_factor();
     let win = UVec2::new(window.physical_width(), window.physical_height());
     let first_visible = editor.viewports.views.iter().position(|v| v.visible).unwrap_or(0);
+    let [r, g, b] = editor.scene.environment.background;
+    let bg = Color::srgb(r, g, b);
     for (vc, mut cam, mut tf, mut proj, mut layers) in &mut q {
         let v = &editor.viewports.views[vc.0];
         let pos = (v.rect.min * sf).max(Vec2::ZERO).as_uvec2().min(win.saturating_sub(UVec2::ONE));
@@ -91,11 +84,14 @@ pub fn sync_cameras(
             cam.is_active = active;
         }
         cam.viewport = Some(Viewport { physical_position: pos, physical_size: size, ..default() });
-        let clear = if vc.0 == first_visible { ClearColorConfig::Custom(VIEWPORT_BG) } else { ClearColorConfig::None };
-        if !matches!(
-            (&cam.clear_color, &clear),
-            (ClearColorConfig::None, ClearColorConfig::None) | (ClearColorConfig::Custom(_), ClearColorConfig::Custom(_))
-        ) {
+        // Environment background (8) clears the frame once, under every view.
+        let clear = if vc.0 == first_visible { ClearColorConfig::Custom(bg) } else { ClearColorConfig::None };
+        let same = match (&cam.clear_color, &clear) {
+            (ClearColorConfig::None, ClearColorConfig::None) => true,
+            (ClearColorConfig::Custom(a), ClearColorConfig::Custom(b)) => a == b,
+            _ => false,
+        };
+        if !same {
             cam.clear_color = clear;
         }
         *tf = Transform::from_matrix(v.camera.world_from_view());
@@ -233,7 +229,8 @@ pub fn sync_meshes(
         cull_mode: None,
         ..default()
     });
-    for (id, o) in &scene.objects {
+    // Lights and targets have no geometry (see light_icons / light_sync).
+    for (id, o) in scene.objects.iter().filter(|(_, o)| !o.is_helper()) {
         let r = map.objs.entry(id).or_insert_with(|| {
             let mesh = meshes.add(build_mesh(&o.evaluated_mesh.to_tri_mesh()));
             let material = materials.add(StandardMaterial::default());

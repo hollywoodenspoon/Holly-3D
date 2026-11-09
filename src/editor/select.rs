@@ -14,6 +14,8 @@ pub enum SelectOp {
 
 pub const VERTEX_PICK_PX: f32 = 9.0;
 pub const EDGE_PICK_PX: f32 = 7.0;
+/// Click radius around a light / target icon.
+pub const HELPER_PICK_PX: f32 = 12.0;
 
 impl Editor {
     fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
@@ -22,6 +24,16 @@ impl Editor {
 
     pub fn pick_object(&self, view: usize, cursor: Vec2) -> Option<ObjId> {
         let v = &self.viewports.views[view];
+        // Light and target icons win over geometry behind them.
+        let helper = self
+            .selectable()
+            .filter(|(_, o)| o.is_helper())
+            .filter_map(|(k, o)| v.to_screen(o.transform.translation).map(|s| (k, s.distance(cursor))))
+            .filter(|(_, d)| *d <= HELPER_PICK_PX)
+            .min_by(|a, b| a.1.total_cmp(&b.1));
+        if let Some((k, _)) = helper {
+            return Some(k);
+        }
         let ray = v.ray(cursor);
         let hit = self
             .selectable()
@@ -140,6 +152,9 @@ impl Editor {
             let inside: Vec<ObjId> = self
                 .selectable()
                 .filter(|(_, o)| {
+                    if o.is_helper() {
+                        return v.to_screen(o.transform.translation).is_some_and(|s| in_rect(s, min, max));
+                    }
                     let w = o.world_matrix();
                     o.evaluated_mesh
                         .vertices

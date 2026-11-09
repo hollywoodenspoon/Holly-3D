@@ -5,7 +5,7 @@ use bevy_egui::EguiPlugin;
 use minimax::editor::Editor;
 use minimax::primitives::PrimitiveKind;
 use minimax::ui::UiPlugin;
-use minimax::viewport::{lines, mat_sync, outline, render_sync};
+use minimax::viewport::{light_icons, light_sync, lines, mat_sync, outline, render_sync};
 
 fn main() {
     let mut editor = Editor::default();
@@ -36,9 +36,16 @@ fn main() {
     .add_systems(Startup, render_sync::setup_scene)
     .add_systems(
         Update,
-        (render_sync::sync_cameras, (mat_sync::sync_material_cache, render_sync::sync_meshes).chain(), outline::sync_outlines),
+        (
+            render_sync::sync_cameras,
+            (mat_sync::sync_material_cache, render_sync::sync_meshes).chain(),
+            outline::sync_outlines,
+            light_sync::sync_lights,
+            light_icons::draw_light_icons,
+        ),
     );
     lines::register(&mut app);
     outline::register(&mut app);
+    light_sync::register(&mut app);
     app.run();
 }

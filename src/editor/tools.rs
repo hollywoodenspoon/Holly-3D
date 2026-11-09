@@ -19,6 +19,7 @@ impl Editor {
                 self.tool = Tool::Create(kind);
             }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
+            Tool::CreateLight { kind, first } => self.create_light_click(view, cursor, kind, first),
             Tool::PickMaterial => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.pick_material_from(other);

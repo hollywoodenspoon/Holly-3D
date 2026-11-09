@@ -95,3 +95,18 @@ pub fn dim(text: &str) -> RichText {
 pub fn color32(c: [f32; 3]) -> Color32 {
     Color32::from_rgb((c[0] * 255.0) as u8, (c[1] * 255.0) as u8, (c[2] * 255.0) as u8)
 }
+
+/// Labeled spinner grid row (right-click resets to `default`).
+pub fn num_row(ui: &mut Ui, t: &mut Track, label: &str, v: &mut f32, range: std::ops::RangeInclusive<f32>, default: f32) {
+    ui.label(label);
+    let speed = ((range.end() - range.start()) / 200.0) as f64;
+    t.r(max_spinner_range(ui, v, speed, default, range));
+    ui.end_row();
+}
+
+/// Labeled color swatch grid row.
+pub fn color_row(ui: &mut Ui, t: &mut Track, label: &str, c: &mut [f32; 3]) {
+    ui.label(label);
+    t.r(ui.color_edit_button_rgb(c));
+    ui.end_row();
+}

@@ -4,22 +4,8 @@ use super::edit;
 use crate::editor::Editor;
 use crate::materials::{Material, ShadingModel};
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
+pub(super) use crate::ui::widgets::{color_row as color, num_row as num};
 use bevy_egui::egui;
-
-/// Labeled spinner row (`speed`, right-click resets to `default`).
-pub(super) fn num(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut f32, range: std::ops::RangeInclusive<f32>, default: f32) {
-    ui.label(label);
-    let speed = ((range.end() - range.start()) / 200.0) as f64;
-    t.r(max_spinner_range(ui, v, speed, default, range));
-    ui.end_row();
-}
-
-/// Labeled color swatch row.
-pub(super) fn color(ui: &mut egui::Ui, t: &mut Track, label: &str, c: &mut [f32; 3]) {
-    ui.label(label);
-    t.r(ui.color_edit_button_rgb(c));
-    ui.end_row();
-}
 
 fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
     egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width(110.0).show(ui, body);

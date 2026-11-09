@@ -5,6 +5,7 @@ pub mod materials;
 pub mod mesh;
 pub mod modifiers;
 pub mod primitives;
+pub mod render;
 pub mod scene;
 pub mod ui;
 pub mod viewport;

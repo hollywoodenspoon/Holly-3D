@@ -2,6 +2,7 @@
 
 pub mod actions;
 pub mod drag;
+pub mod lights;
 pub mod materials;
 pub mod modsub;
 pub mod select;
@@ -70,6 +71,10 @@ pub struct Editor {
     pub mod_sub: Option<crate::modifiers::ModSub>,
     pub uv_editor_open: bool,
     pub mat_editor: MatEditor,
+    /// Ctrl+L: force the Default Modeling Lights rig even with scene lights.
+    pub default_lights: bool,
+    /// Environment & Effects dialog (`8`).
+    pub env_open: bool,
 }
 
 impl Default for Editor {
@@ -110,6 +115,8 @@ impl Default for Editor {
             mod_sub: None,
             uv_editor_open: false,
             mat_editor: MatEditor::default(),
+            default_lights: false,
+            env_open: false,
         }
     }
 }
@@ -214,6 +221,10 @@ impl Editor {
         let objs: Vec<&SceneObject> = if sel.is_empty() { self.scene.objects.values().filter(|o| !o.hidden).collect() } else { sel };
         let mut pts = vec![];
         for o in objs {
+            if o.is_helper() {
+                pts.push(o.transform.translation);
+                continue;
+            }
             let w = o.world_matrix();
             pts.extend(o.evaluated_mesh.vertices.values().map(|v| w.transform_point3(v.position)));
         }

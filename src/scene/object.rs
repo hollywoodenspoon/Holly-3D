@@ -45,7 +45,7 @@ impl SceneObject {
         match self.active_level {
             None => match &mut self.base {
                 BaseObject::EditablePoly(base) => *base = m,
-                BaseObject::Primitive(_) => return false,
+                BaseObject::Primitive(_) | BaseObject::Light(_) | BaseObject::LightTarget => return false,
             },
             Some(i) => match self.modifiers.get_mut(i).map(|md| &mut md.kind) {
                 Some(ModifierKind::EditPoly(ep)) => {
