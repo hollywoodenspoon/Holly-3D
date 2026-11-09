@@ -96,7 +96,7 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, i: usize) {
             Color::srgb(r * 0.35, gg * 0.35, b * 0.35)
         };
         let m = &o.evaluated_mesh;
-        for e in m.edges.values() {
+        for e in m.edges.values().filter(|e| !e.hidden) {
             g.line(w.transform_point3(m.pos(e.v0)), w.transform_point3(m.pos(e.v1)), color);
         }
     }

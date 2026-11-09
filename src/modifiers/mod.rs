@@ -1,18 +1,30 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
+pub mod chamfer;
+pub mod deformers;
 pub mod ffd;
 pub mod geogen;
+pub mod greeble;
 pub mod lathe;
+pub mod shell;
 pub mod smart_uv;
 pub mod spline_extrude;
+pub mod symmetry;
+pub mod turbosmooth;
 pub mod unwrap_uvw;
 pub mod uvw_map;
 pub mod vertex_paint;
 
+pub use chamfer::{ChamferFilter, ChamferMod};
+pub use deformers::{BendMod, Limits, PushMod, TaperEffect, TaperMod, TwistMod};
 pub use ffd::FfdMod;
 pub use geogen::{GeoGenMod, GeoGenParams, GeoMode};
+pub use greeble::GreebleMod;
 pub use lathe::{LatheAlign, LatheMod};
+pub use shell::ShellMod;
 pub use spline_extrude::ExtrudeMod;
+pub use symmetry::SymmetryMod;
+pub use turbosmooth::TurboSmoothMod;
 pub use unwrap_uvw::UnwrapMod;
 pub use uvw_map::{MapType, UvwMapMod};
 pub use vertex_paint::VertexPaintMod;
@@ -49,6 +61,15 @@ pub enum ModifierKind {
     Lathe(LatheMod),
     Extrude(ExtrudeMod),
     GeoGen(GeoGenMod),
+    Greeble(GreebleMod),
+    Chamfer(ChamferMod),
+    Symmetry(SymmetryMod),
+    Shell(ShellMod),
+    TurboSmooth(TurboSmoothMod),
+    Bend(BendMod),
+    Twist(TwistMod),
+    Taper(TaperMod),
+    Push(PushMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -83,6 +104,15 @@ impl ModifierKind {
             ModifierKind::Lathe(_) => "Lathe",
             ModifierKind::Extrude(_) => "Extrude",
             ModifierKind::GeoGen(_) => "GeoGen",
+            ModifierKind::Greeble(_) => "Greeble",
+            ModifierKind::Chamfer(_) => "Chamfer",
+            ModifierKind::Symmetry(_) => "Symmetry",
+            ModifierKind::Shell(_) => "Shell",
+            ModifierKind::TurboSmooth(_) => "TurboSmooth",
+            ModifierKind::Bend(_) => "Bend",
+            ModifierKind::Twist(_) => "Twist",
+            ModifierKind::Taper(_) => "Taper",
+            ModifierKind::Push(_) => "Push",
         }
     }
 
@@ -108,11 +138,7 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.fit(input),
             ModifierKind::UvwMap(u) => u.fit(input),
             ModifierKind::Unwrap(u) => u.capture(input),
-            ModifierKind::EditPoly(_)
-            | ModifierKind::VertexPaint(_)
-            | ModifierKind::Lathe(_)
-            | ModifierKind::Extrude(_)
-            | ModifierKind::GeoGen(_) => {}
+            _ => {}
         }
     }
 }
@@ -140,6 +166,15 @@ impl ModifierEntry {
             ModifierKind::Unwrap(u) => u.apply(mesh),
             ModifierKind::VertexPaint(v) => v.apply(mesh),
             ModifierKind::GeoGen(g) => g.apply(mesh),
+            ModifierKind::Greeble(g) => g.apply(mesh),
+            ModifierKind::Chamfer(c) => c.apply(mesh),
+            ModifierKind::Symmetry(s) => s.apply(mesh),
+            ModifierKind::Shell(s) => s.apply(mesh),
+            ModifierKind::TurboSmooth(t) => t.apply(mesh),
+            ModifierKind::Bend(b) => b.apply(mesh),
+            ModifierKind::Twist(t) => t.apply(mesh),
+            ModifierKind::Taper(t) => t.apply(mesh),
+            ModifierKind::Push(p) => p.apply(mesh),
             // shape modifiers pass meshes through untouched
             ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
         }
@@ -174,14 +209,15 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Unwrap UVW", available: true },
     ModifierListItem { name: "VertexPaint", available: true },
     ModifierListItem { name: "GeoGen", available: true },
-    ModifierListItem { name: "TurboSmooth", available: false },
-    ModifierListItem { name: "Symmetry", available: false },
-    ModifierListItem { name: "Shell", available: false },
-    ModifierListItem { name: "Bend", available: false },
-    ModifierListItem { name: "Twist", available: false },
-    ModifierListItem { name: "Taper", available: false },
-    ModifierListItem { name: "Push", available: false },
-    ModifierListItem { name: "Chamfer", available: false },
+    ModifierListItem { name: "Greeble", available: true },
+    ModifierListItem { name: "TurboSmooth", available: true },
+    ModifierListItem { name: "Symmetry", available: true },
+    ModifierListItem { name: "Shell", available: true },
+    ModifierListItem { name: "Bend", available: true },
+    ModifierListItem { name: "Twist", available: true },
+    ModifierListItem { name: "Taper", available: true },
+    ModifierListItem { name: "Push", available: true },
+    ModifierListItem { name: "Chamfer", available: true },
     ModifierListItem { name: "Lathe", available: true },
     ModifierListItem { name: "Extrude", available: true },
     ModifierListItem { name: "Edit Normals", available: false },
@@ -201,9 +237,20 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Lathe" => Some(ModifierEntry::new(ModifierKind::Lathe(LatheMod::default()))),
         "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
         "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
+        "Greeble" => Some(ModifierEntry::new(ModifierKind::Greeble(GreebleMod::default()))),
+        "Chamfer" => Some(ModifierEntry::new(ModifierKind::Chamfer(ChamferMod::default()))),
+        "Symmetry" => Some(ModifierEntry::new(ModifierKind::Symmetry(SymmetryMod::default()))),
+        "Shell" => Some(ModifierEntry::new(ModifierKind::Shell(ShellMod::default()))),
+        "TurboSmooth" => Some(ModifierEntry::new(ModifierKind::TurboSmooth(TurboSmoothMod::default()))),
+        "Bend" => Some(ModifierEntry::new(ModifierKind::Bend(BendMod::default()))),
+        "Twist" => Some(ModifierEntry::new(ModifierKind::Twist(TwistMod::default()))),
+        "Taper" => Some(ModifierEntry::new(ModifierKind::Taper(TaperMod::default()))),
+        "Push" => Some(ModifierEntry::new(ModifierKind::Push(PushMod::default()))),
         _ => None,
     }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_stack;

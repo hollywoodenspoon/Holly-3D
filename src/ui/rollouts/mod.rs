@@ -1,5 +1,6 @@
 //! Edit Poly rollouts for the Modify tab.
 
+pub mod deformers;
 pub mod edit_geometry;
 pub mod edit_sub;
 pub mod geogen;
@@ -7,6 +8,7 @@ pub mod modifiers;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;
+pub mod stack_mods;
 
 use crate::editor::Editor;
 use crate::mesh::ops::PolyOp;

@@ -62,6 +62,15 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::Lathe(_)) => return rollouts::spline::lathe(ui, ed),
         Some(ModifierKind::Extrude(_)) => return rollouts::spline::extrude(ui, ed),
         Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),
+        Some(ModifierKind::Greeble(_)) => return rollouts::stack_mods::greeble(ui, ed),
+        Some(ModifierKind::Chamfer(_)) => return rollouts::stack_mods::chamfer(ui, ed),
+        Some(ModifierKind::Symmetry(_)) => return rollouts::stack_mods::symmetry(ui, ed),
+        Some(ModifierKind::Shell(_)) => return rollouts::stack_mods::shell(ui, ed),
+        Some(ModifierKind::TurboSmooth(_)) => return rollouts::stack_mods::turbosmooth(ui, ed),
+        Some(ModifierKind::Bend(_)) => return rollouts::deformers::bend(ui, ed),
+        Some(ModifierKind::Twist(_)) => return rollouts::deformers::twist(ui, ed),
+        Some(ModifierKind::Taper(_)) => return rollouts::deformers::taper(ui, ed),
+        Some(ModifierKind::Push(_)) => return rollouts::deformers::push(ui, ed),
         _ => {}
     }
     if !o.sub_object_editable() {

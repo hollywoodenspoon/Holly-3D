@@ -68,7 +68,7 @@ impl EditablePoly {
                 if a == b || self.edge_map.contains_key(&k) {
                     continue;
                 }
-                let id = self.edges.insert(Edge { v0: k.0, v1: k.1, creasing: 0.0, selected: false });
+                let id = self.edges.insert(Edge { v0: k.0, v1: k.1, creasing: 0.0, selected: false, hidden: false });
                 self.edge_map.insert(k, id);
             }
         }
