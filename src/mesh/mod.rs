@@ -6,6 +6,7 @@
 
 pub mod adjacency;
 pub mod build;
+pub mod merge;
 pub mod normals;
 pub mod ops;
 pub mod selection;
@@ -86,6 +87,8 @@ pub struct Edge {
     pub v1: VertexId,
     pub creasing: f32,
     pub selected: bool,
+    /// Invisible in wireframe (TurboSmooth isoline display).
+    pub hidden: bool,
 }
 
 impl Edge {

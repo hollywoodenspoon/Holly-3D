@@ -18,7 +18,32 @@ impl Editor {
                 self.create_primitive(kind, p);
                 self.tool = Tool::Create(kind);
             }
+            Tool::CreateGeoGen(mode) => {
+                let p = v.construction_point(cursor);
+                let p = if self.snap { (p * 4.0).round() / 4.0 } else { p };
+                self.create_geogen(mode, p);
+                self.tool = Tool::CreateGeoGen(mode);
+            }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
+            Tool::CreateShape(kind) => {
+                let p = self.snapped_point_pub(view, cursor);
+                self.create_shape(kind, view, p);
+                self.tool = Tool::CreateShape(kind);
+            }
+            // handled on press / drag / release by the viewport
+            Tool::Line { .. } => {}
+            Tool::CreateLight { kind, first } => self.create_light_click(view, cursor, kind, first),
+            Tool::PickMaterial => {
+                if let Some(other) = self.pick_object(view, cursor) {
+                    self.pick_material_from(other);
+                }
+                self.tool = Tool::None;
+            }
+            Tool::PickBoolean => {
+                if let Some(other) = self.pick_object(view, cursor) {
+                    self.pick_boolean_operand(other);
+                }
+            }
             Tool::Attach => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.attach(other);
@@ -87,8 +112,15 @@ impl Editor {
 
     /// Right-click / Esc ends the current tool.
     pub fn cancel_tool(&mut self) -> bool {
+        if self.paint.active {
+            self.toggle_paint();
+            return true;
+        }
         if self.tool == Tool::None {
             return false;
+        }
+        if matches!(self.tool, Tool::Line { .. }) && self.finish_line(false) {
+            return true;
         }
         self.tool = Tool::None;
         true

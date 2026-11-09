@@ -1,13 +1,39 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
+pub mod boolean;
+pub mod chamfer;
+pub mod deformers;
+pub mod edit_normals;
 pub mod ffd;
+pub mod geogen;
+pub mod greeble;
+pub mod lathe;
+pub mod pro_optimizer;
+pub mod shell;
 pub mod smart_uv;
+pub mod spline_extrude;
+pub mod symmetry;
+pub mod turbosmooth;
 pub mod unwrap_uvw;
 pub mod uvw_map;
+pub mod vertex_paint;
 
+pub use boolean::{BoolOp, BooleanMod};
+pub use chamfer::{ChamferFilter, ChamferMod};
+pub use deformers::{BendMod, Limits, PushMod, TaperEffect, TaperMod, TwistMod};
+pub use edit_normals::{EditNormalsMod, NormalKind, NormalSelBy};
 pub use ffd::FfdMod;
+pub use geogen::{GeoGenMod, GeoGenParams, GeoMode};
+pub use greeble::GreebleMod;
+pub use lathe::{LatheAlign, LatheMod};
+pub use pro_optimizer::ProOptimizerMod;
+pub use shell::ShellMod;
+pub use spline_extrude::ExtrudeMod;
+pub use symmetry::SymmetryMod;
+pub use turbosmooth::TurboSmoothMod;
 pub use unwrap_uvw::UnwrapMod;
 pub use uvw_map::{MapType, UvwMapMod};
+pub use vertex_paint::VertexPaintMod;
 
 use crate::mesh::ops::PolyOp;
 use crate::mesh::{EditablePoly, SelectionSets};
@@ -37,6 +63,22 @@ pub enum ModifierKind {
     Ffd(FfdMod),
     UvwMap(UvwMapMod),
     Unwrap(UnwrapMod),
+    VertexPaint(VertexPaintMod),
+    Lathe(LatheMod),
+    Extrude(ExtrudeMod),
+    GeoGen(GeoGenMod),
+    Greeble(GreebleMod),
+    Chamfer(ChamferMod),
+    Symmetry(SymmetryMod),
+    Shell(ShellMod),
+    TurboSmooth(TurboSmoothMod),
+    Bend(BendMod),
+    Twist(TwistMod),
+    Taper(TaperMod),
+    Push(PushMod),
+    EditNormals(EditNormalsMod),
+    Boolean(BooleanMod),
+    ProOptimizer(ProOptimizerMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -45,6 +87,10 @@ pub enum ModSub {
     ControlPoints,
     Lattice,
     Gizmo,
+    /// Lathe revolution axis.
+    Axis,
+    /// Edit Normals face-corner normals.
+    Normal,
 }
 
 impl ModSub {
@@ -53,6 +99,8 @@ impl ModSub {
             ModSub::ControlPoints => "Control Points",
             ModSub::Lattice => "Lattice",
             ModSub::Gizmo => "Gizmo",
+            ModSub::Axis => "Axis",
+            ModSub::Normal => "Normal",
         }
     }
 }
@@ -64,6 +112,22 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.name(),
             ModifierKind::UvwMap(_) => "UVW Map",
             ModifierKind::Unwrap(_) => "Unwrap UVW",
+            ModifierKind::VertexPaint(_) => "VertexPaint",
+            ModifierKind::Lathe(_) => "Lathe",
+            ModifierKind::Extrude(_) => "Extrude",
+            ModifierKind::GeoGen(_) => "GeoGen",
+            ModifierKind::Greeble(_) => "Greeble",
+            ModifierKind::Chamfer(_) => "Chamfer",
+            ModifierKind::Symmetry(_) => "Symmetry",
+            ModifierKind::Shell(_) => "Shell",
+            ModifierKind::TurboSmooth(_) => "TurboSmooth",
+            ModifierKind::Bend(_) => "Bend",
+            ModifierKind::Twist(_) => "Twist",
+            ModifierKind::Taper(_) => "Taper",
+            ModifierKind::Push(_) => "Push",
+            ModifierKind::EditNormals(_) => "Edit Normals",
+            ModifierKind::Boolean(_) => "Boolean",
+            ModifierKind::ProOptimizer(_) => "ProOptimizer",
         }
     }
 
@@ -77,6 +141,8 @@ impl ModifierKind {
         match self {
             ModifierKind::Ffd(_) => &[ModSub::ControlPoints, ModSub::Lattice],
             ModifierKind::UvwMap(_) => &[ModSub::Gizmo],
+            ModifierKind::Lathe(_) => &[ModSub::Axis],
+            ModifierKind::EditNormals(_) => &[ModSub::Normal],
             _ => &[],
         }
     }
@@ -88,7 +154,8 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.fit(input),
             ModifierKind::UvwMap(u) => u.fit(input),
             ModifierKind::Unwrap(u) => u.capture(input),
-            ModifierKind::EditPoly(_) => {}
+            ModifierKind::ProOptimizer(p) => p.calculate(input),
+            _ => {}
         }
     }
 }
@@ -114,6 +181,35 @@ impl ModifierEntry {
             ModifierKind::Ffd(f) => f.apply(mesh),
             ModifierKind::UvwMap(u) => u.apply(mesh),
             ModifierKind::Unwrap(u) => u.apply(mesh),
+            ModifierKind::VertexPaint(v) => v.apply(mesh),
+            ModifierKind::GeoGen(g) => g.apply(mesh),
+            ModifierKind::Greeble(g) => g.apply(mesh),
+            ModifierKind::Chamfer(c) => c.apply(mesh),
+            ModifierKind::Symmetry(s) => s.apply(mesh),
+            ModifierKind::Shell(s) => s.apply(mesh),
+            ModifierKind::TurboSmooth(t) => t.apply(mesh),
+            ModifierKind::Bend(b) => b.apply(mesh),
+            ModifierKind::Twist(t) => t.apply(mesh),
+            ModifierKind::Taper(t) => t.apply(mesh),
+            ModifierKind::Push(p) => p.apply(mesh),
+            ModifierKind::EditNormals(e) => e.apply(mesh),
+            ModifierKind::Boolean(b) => b.apply(mesh),
+            ModifierKind::ProOptimizer(p) => p.apply(mesh),
+            // shape modifiers pass meshes through untouched
+            ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
+        }
+    }
+
+    /// Shape -> mesh modifiers (Lathe, Extrude) consume a shape flowing up the stack.
+    pub fn consumes_shape(&self) -> bool {
+        matches!(self.kind, ModifierKind::Lathe(_) | ModifierKind::Extrude(_))
+    }
+
+    pub fn build_from_shape(&self, shape: &crate::splines::Shape) -> EditablePoly {
+        match &self.kind {
+            ModifierKind::Lathe(l) => l.build(shape),
+            ModifierKind::Extrude(e) => e.build(shape),
+            _ => EditablePoly::new(),
         }
     }
 }
@@ -131,20 +227,22 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "FFD 4x4x4", available: true },
     ModifierListItem { name: "UVW Map", available: true },
     ModifierListItem { name: "Unwrap UVW", available: true },
-    ModifierListItem { name: "TurboSmooth", available: false },
-    ModifierListItem { name: "Symmetry", available: false },
-    ModifierListItem { name: "Shell", available: false },
-    ModifierListItem { name: "Bend", available: false },
-    ModifierListItem { name: "Twist", available: false },
-    ModifierListItem { name: "Taper", available: false },
-    ModifierListItem { name: "Push", available: false },
-    ModifierListItem { name: "Chamfer", available: false },
-    ModifierListItem { name: "Lathe", available: false },
-    ModifierListItem { name: "Extrude", available: false },
-    ModifierListItem { name: "Edit Normals", available: false },
-    ModifierListItem { name: "Boolean", available: false },
-    ModifierListItem { name: "ProOptimizer", available: false },
-    ModifierListItem { name: "VertexPaint", available: false },
+    ModifierListItem { name: "VertexPaint", available: true },
+    ModifierListItem { name: "GeoGen", available: true },
+    ModifierListItem { name: "Greeble", available: true },
+    ModifierListItem { name: "TurboSmooth", available: true },
+    ModifierListItem { name: "Symmetry", available: true },
+    ModifierListItem { name: "Shell", available: true },
+    ModifierListItem { name: "Bend", available: true },
+    ModifierListItem { name: "Twist", available: true },
+    ModifierListItem { name: "Taper", available: true },
+    ModifierListItem { name: "Push", available: true },
+    ModifierListItem { name: "Chamfer", available: true },
+    ModifierListItem { name: "Lathe", available: true },
+    ModifierListItem { name: "Extrude", available: true },
+    ModifierListItem { name: "Edit Normals", available: true },
+    ModifierListItem { name: "Boolean", available: true },
+    ModifierListItem { name: "ProOptimizer", available: true },
 ];
 
 pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
@@ -155,9 +253,29 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "FFD 4x4x4" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(4)))),
         "UVW Map" => Some(ModifierEntry::new(ModifierKind::UvwMap(UvwMapMod::default()))),
         "Unwrap UVW" => Some(ModifierEntry::new(ModifierKind::Unwrap(UnwrapMod::default()))),
+        "VertexPaint" => Some(ModifierEntry::new(ModifierKind::VertexPaint(VertexPaintMod::default()))),
+        "Lathe" => Some(ModifierEntry::new(ModifierKind::Lathe(LatheMod::default()))),
+        "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
+        "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
+        "Greeble" => Some(ModifierEntry::new(ModifierKind::Greeble(GreebleMod::default()))),
+        "Chamfer" => Some(ModifierEntry::new(ModifierKind::Chamfer(ChamferMod::default()))),
+        "Symmetry" => Some(ModifierEntry::new(ModifierKind::Symmetry(SymmetryMod::default()))),
+        "Shell" => Some(ModifierEntry::new(ModifierKind::Shell(ShellMod::default()))),
+        "TurboSmooth" => Some(ModifierEntry::new(ModifierKind::TurboSmooth(TurboSmoothMod::default()))),
+        "Bend" => Some(ModifierEntry::new(ModifierKind::Bend(BendMod::default()))),
+        "Twist" => Some(ModifierEntry::new(ModifierKind::Twist(TwistMod::default()))),
+        "Taper" => Some(ModifierEntry::new(ModifierKind::Taper(TaperMod::default()))),
+        "Push" => Some(ModifierEntry::new(ModifierKind::Push(PushMod::default()))),
+        "Edit Normals" => Some(ModifierEntry::new(ModifierKind::EditNormals(EditNormalsMod::default()))),
+        "Boolean" => Some(ModifierEntry::new(ModifierKind::Boolean(BooleanMod::default()))),
+        "ProOptimizer" => Some(ModifierEntry::new(ModifierKind::ProOptimizer(ProOptimizerMod::default()))),
         _ => None,
     }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_adv;
+#[cfg(test)]
+mod tests_stack;

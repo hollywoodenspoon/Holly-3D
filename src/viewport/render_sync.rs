@@ -1,4 +1,4 @@
-//! Bevy side: viewport cameras, lights, and GPU mesh sync from the scene.
+//! Bevy side: viewport cameras and GPU mesh sync from the scene.
 
 use super::camera::ORTHO_DEPTH;
 use super::layout::Shading;
@@ -33,7 +33,7 @@ struct ObjRender {
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
     version: u64,
-    look: (u32, bool, bool),
+    look: (u32, bool, bool, Option<u64>),
     overlay: Entity,
     overlay_mesh: Handle<Mesh>,
     sel_version: (u64, SubObject, bool),
@@ -62,15 +62,6 @@ pub fn setup_scene(mut commands: Commands, mut egui_settings: ResMut<EguiGlobalS
         RenderLayers::none(),
         Camera { order: 10, clear_color: ClearColorConfig::None, ..default() },
     ));
-    commands.spawn((
-        DirectionalLight { illuminance: 9_000.0, shadow_maps_enabled: false, ..default() },
-        Transform::from_xyz(-3.0, -5.0, 8.0).looking_at(Vec3::ZERO, Vec3::Z),
-    ));
-    commands.spawn((
-        DirectionalLight { illuminance: 3_500.0, shadow_maps_enabled: false, ..default() },
-        Transform::from_xyz(4.0, 6.0, 2.0).looking_at(Vec3::ZERO, Vec3::Z),
-    ));
-    commands.insert_resource(GlobalAmbientLight { color: Color::WHITE, brightness: 450.0, affects_lightmapped_meshes: true });
 }
 
 /// Mirrors the editor's viewport cameras onto Bevy cameras.
@@ -82,6 +73,8 @@ pub fn sync_cameras(
     let sf = window.scale_factor();
     let win = UVec2::new(window.physical_width(), window.physical_height());
     let first_visible = editor.viewports.views.iter().position(|v| v.visible).unwrap_or(0);
+    let [r, g, b] = editor.scene.environment.background;
+    let bg = Color::srgb(r, g, b);
     for (vc, mut cam, mut tf, mut proj, mut layers) in &mut q {
         let v = &editor.viewports.views[vc.0];
         let pos = (v.rect.min * sf).max(Vec2::ZERO).as_uvec2().min(win.saturating_sub(UVec2::ONE));
@@ -91,11 +84,14 @@ pub fn sync_cameras(
             cam.is_active = active;
         }
         cam.viewport = Some(Viewport { physical_position: pos, physical_size: size, ..default() });
-        let clear = if vc.0 == first_visible { ClearColorConfig::Custom(VIEWPORT_BG) } else { ClearColorConfig::None };
-        if !matches!(
-            (&cam.clear_color, &clear),
-            (ClearColorConfig::None, ClearColorConfig::None) | (ClearColorConfig::Custom(_), ClearColorConfig::Custom(_))
-        ) {
+        // Environment background (8) clears the frame once, under every view.
+        let clear = if vc.0 == first_visible { ClearColorConfig::Custom(bg) } else { ClearColorConfig::None };
+        let same = match (&cam.clear_color, &clear) {
+            (ClearColorConfig::None, ClearColorConfig::None) => true,
+            (ClearColorConfig::Custom(a), ClearColorConfig::Custom(b)) => a == b,
+            _ => false,
+        };
+        if !same {
             cam.clear_color = clear;
         }
         *tf = Transform::from_matrix(v.camera.world_from_view());
@@ -127,7 +123,10 @@ fn build_mesh(t: &crate::mesh::triangulate::TriMesh) -> Mesh {
     m.insert_attribute(Mesh::ATTRIBUTE_POSITION, t.positions.clone());
     m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, t.normals.clone());
     m.insert_attribute(Mesh::ATTRIBUTE_UV_0, t.uvs.clone());
-    m.insert_attribute(Mesh::ATTRIBUTE_COLOR, t.colors.clone());
+    // Vertex colors are authored in sRGB; Bevy expects linear.
+    let lin = crate::materials::shading::srgb_to_linear;
+    let colors: Vec<[f32; 4]> = t.colors.iter().map(|c| [lin(c[0]), lin(c[1]), lin(c[2]), c[3]]).collect();
+    m.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
     m.insert_indices(Indices::U32(t.indices.clone()));
     m
 }
@@ -185,6 +184,24 @@ fn color_key(c: [f32; 3]) -> u32 {
     q(c[0]) << 16 | q(c[1]) << 8 | q(c[2])
 }
 
+/// Default look: wire color (or the UV checker), like 3ds Max without a material.
+fn wire_material(o: &crate::scene::SceneObject, checker_tex: &Handle<Image>) -> StandardMaterial {
+    let [cr, cg, cb] = o.wire_color;
+    let alpha = if o.see_through { 0.35 } else { 1.0 };
+    let base =
+        if o.checker { Color::srgba(1.0, 1.0, 1.0, alpha) } else { Color::srgba(cr * 0.85 + 0.1, cg * 0.85 + 0.1, cb * 0.85 + 0.1, alpha) };
+    StandardMaterial {
+        base_color: base,
+        base_color_texture: o.checker.then(|| checker_tex.clone()),
+        perceptual_roughness: 0.62,
+        reflectance: 0.35,
+        double_sided: true,
+        cull_mode: None,
+        alpha_mode: if o.see_through { AlphaMode::Blend } else { AlphaMode::Opaque },
+        ..default()
+    }
+}
+
 /// Uploads changed meshes, transforms and selection overlays.
 #[allow(clippy::too_many_arguments)]
 pub fn sync_meshes(
@@ -195,6 +212,7 @@ pub fn sync_meshes(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut images: ResMut<Assets<Image>>,
     mut checker: Local<Option<Handle<Image>>>,
+    cache: Res<super::mat_sync::MatCache>,
     mut tfs: Query<(&mut Transform, &mut Visibility), Without<ViewportCam>>,
 ) {
     let scene = &editor.scene;
@@ -214,7 +232,8 @@ pub fn sync_meshes(
         cull_mode: None,
         ..default()
     });
-    for (id, o) in &scene.objects {
+    // Lights and targets have no geometry (see light_icons / light_sync).
+    for (id, o) in scene.objects.iter().filter(|(_, o)| !o.is_helper()) {
         let r = map.objs.entry(id).or_insert_with(|| {
             let mesh = meshes.add(build_mesh(&o.evaluated_mesh.to_tri_mesh()));
             let material = materials.add(StandardMaterial::default());
@@ -236,7 +255,7 @@ pub fn sync_meshes(
                 mesh,
                 material,
                 version: o.version,
-                look: (u32::MAX, false, false),
+                look: (u32::MAX, false, false, None),
                 overlay,
                 overlay_mesh,
                 sel_version: (u64::MAX, SubObject::Object, false),
@@ -248,26 +267,16 @@ pub fn sync_meshes(
                 *m = build_mesh(&o.evaluated_mesh.to_tri_mesh());
             }
         }
-        let look = (color_key(o.wire_color), o.see_through, o.checker);
+        // Assigned material (when "Show Shaded Material in Viewport" is on);
+        // the UV checker overrides it while unwrapping.
+        let shown = o.material.and_then(|m| cache.get(m)).filter(|(_, m, _)| m.show_in_viewport && !o.checker);
+        let look = (color_key(o.wire_color), o.see_through, o.checker, shown.map(|(rev, _, _)| rev));
         if r.look != look {
             r.look = look;
             if let Some(mut mat) = materials.get_mut(&r.material) {
-                let [cr, cg, cb] = o.wire_color;
-                let alpha = if o.see_through { 0.35 } else { 1.0 };
-                let base = if o.checker {
-                    Color::srgba(1.0, 1.0, 1.0, alpha)
-                } else {
-                    Color::srgba(cr * 0.85 + 0.1, cg * 0.85 + 0.1, cb * 0.85 + 0.1, alpha)
-                };
-                *mat = StandardMaterial {
-                    base_color: base,
-                    base_color_texture: o.checker.then(|| checker_tex.clone()),
-                    perceptual_roughness: 0.62,
-                    reflectance: 0.35,
-                    double_sided: true,
-                    cull_mode: None,
-                    alpha_mode: if o.see_through { AlphaMode::Blend } else { AlphaMode::Opaque },
-                    ..default()
+                *mat = match shown {
+                    Some((_, m, tex)) => super::mat_sync::standard(m, tex, o.see_through),
+                    None => wire_material(o, &checker_tex),
                 };
             }
         }

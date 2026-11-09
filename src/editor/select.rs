@@ -14,6 +14,8 @@ pub enum SelectOp {
 
 pub const VERTEX_PICK_PX: f32 = 9.0;
 pub const EDGE_PICK_PX: f32 = 7.0;
+/// Click radius around a light / target icon.
+pub const HELPER_PICK_PX: f32 = 12.0;
 
 impl Editor {
     fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
@@ -22,13 +24,29 @@ impl Editor {
 
     pub fn pick_object(&self, view: usize, cursor: Vec2) -> Option<ObjId> {
         let v = &self.viewports.views[view];
+        // Light and target icons win over geometry behind them.
+        let helper = self
+            .selectable()
+            .filter(|(_, o)| o.is_helper())
+            .filter_map(|(k, o)| v.to_screen(o.transform.translation).map(|s| (k, s.distance(cursor))))
+            .filter(|(_, d)| *d <= HELPER_PICK_PX)
+            .min_by(|a, b| a.1.total_cmp(&b.1));
+        if let Some((k, _)) = helper {
+            return Some(k);
+        }
+        // Live splines (shapes not yet lathed / extruded) pick by screen distance.
+        let spline = self
+            .selectable()
+            .filter_map(|(k, o)| self.shape_screen_distance(view, o, cursor).map(|d| (k, d)))
+            .filter(|(_, d)| *d <= EDGE_PICK_PX)
+            .min_by(|a, b| a.1.total_cmp(&b.1));
         let ray = v.ray(cursor);
         let hit = self
             .selectable()
             .filter_map(|(k, o)| pick_polygon(&o.evaluated_mesh, o.world_matrix(), &ray, false).map(|h| (k, h.distance)))
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|x| x.0);
-        hit.or_else(|| {
+        hit.or(spline.map(|x| x.0)).or_else(|| {
             // wireframe-friendly fallback: nearest edge on screen
             let project = |p: Vec3| v.to_screen(p);
             self.selectable()
@@ -55,7 +73,7 @@ impl Editor {
     }
 
     pub fn click_select(&mut self, view: usize, cursor: Vec2, op: SelectOp) {
-        if self.mod_click_select(view, cursor, op) {
+        if self.mod_click_select(view, cursor, op) || self.spline_click_select(view, cursor, op) {
             return;
         }
         if !self.in_sub_object() {
@@ -131,7 +149,7 @@ impl Editor {
     }
 
     pub fn marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) {
-        if self.mod_marquee_select(view, a, b, op) {
+        if self.mod_marquee_select(view, a, b, op) || self.spline_marquee_select(view, a, b, op) {
             return;
         }
         let (min, max) = (a.min(b), a.max(b));
@@ -140,11 +158,17 @@ impl Editor {
             let inside: Vec<ObjId> = self
                 .selectable()
                 .filter(|(_, o)| {
+                    if o.is_helper() {
+                        return v.to_screen(o.transform.translation).is_some_and(|s| in_rect(s, min, max));
+                    }
                     let w = o.world_matrix();
+                    let shape_pts = o.shape.iter().flat_map(|s| s.polylines()).flat_map(|pl| pl.pts);
                     o.evaluated_mesh
                         .vertices
                         .values()
-                        .any(|p| v.to_screen(w.transform_point3(p.position)).is_some_and(|s| in_rect(s, min, max)))
+                        .map(|p| p.position)
+                        .chain(shape_pts)
+                        .any(|p| v.to_screen(w.transform_point3(p)).is_some_and(|s| in_rect(s, min, max)))
                 })
                 .map(|x| x.0)
                 .collect();

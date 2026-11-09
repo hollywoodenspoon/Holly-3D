@@ -23,6 +23,21 @@ pub fn max_spinner_range<T: Numeric>(ui: &mut Ui, value: &mut T, speed: f64, def
     r.on_hover_text("Drag or type • Right-click resets")
 }
 
+/// Tracks spinner/checkbox interaction so undo is recorded once per gesture.
+#[derive(Default)]
+pub struct Track {
+    pub started: bool,
+    pub changed: bool,
+}
+
+impl Track {
+    pub fn r(&mut self, r: Response) -> Response {
+        self.changed |= r.changed();
+        self.started |= r.drag_started() || r.gained_focus() || r.secondary_clicked() || r.clicked();
+        r
+    }
+}
+
 /// Labeled spinner row inside a two-column grid.
 pub fn spin_row<T: Numeric>(ui: &mut Ui, label: &str, value: &mut T, speed: f64, default: T) -> bool {
     ui.label(label);
@@ -79,4 +94,19 @@ pub fn dim(text: &str) -> RichText {
 
 pub fn color32(c: [f32; 3]) -> Color32 {
     Color32::from_rgb((c[0] * 255.0) as u8, (c[1] * 255.0) as u8, (c[2] * 255.0) as u8)
+}
+
+/// Labeled spinner grid row (right-click resets to `default`).
+pub fn num_row(ui: &mut Ui, t: &mut Track, label: &str, v: &mut f32, range: std::ops::RangeInclusive<f32>, default: f32) {
+    ui.label(label);
+    let speed = ((range.end() - range.start()) / 200.0) as f64;
+    t.r(max_spinner_range(ui, v, speed, default, range));
+    ui.end_row();
+}
+
+/// Labeled color swatch grid row.
+pub fn color_row(ui: &mut Ui, t: &mut Track, label: &str, c: &mut [f32; 3]) {
+    ui.label(label);
+    t.r(ui.color_edit_button_rgb(c));
+    ui.end_row();
 }

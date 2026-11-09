@@ -10,6 +10,18 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
     if ctx.egui_wants_keyboard_input() {
         return;
     }
+    // Array / Mirror dialogs own the keyboard: Esc cancels, Enter confirms.
+    if ed.array_dialog.is_some() || ed.mirror_dialog.is_some() {
+        let (esc, enter) = ctx.input(|i| (i.key_pressed(Key::Escape), i.key_pressed(Key::Enter)));
+        match (esc, enter, ed.array_dialog.is_some()) {
+            (true, _, true) => ed.cancel_array(),
+            (true, _, false) => ed.cancel_mirror(),
+            (_, true, true) => ed.confirm_array(),
+            (_, true, false) => ed.confirm_mirror(),
+            _ => {}
+        }
+        return;
+    }
     let (held, keys): (egui::Modifiers, Vec<(Key, egui::Modifiers)>) = ctx.input(|i| {
         let keys = i
             .events
@@ -35,6 +47,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
         }
         match key {
             Key::Z if ctrl => ed.undo(),
+            Key::L if ctrl => ed.toggle_default_lights(),
             Key::Y if ctrl => ed.redo(),
             Key::A if ctrl => ed.select_all(true),
             Key::D if ctrl => ed.select_all(false),
@@ -95,9 +108,10 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
                     ed.quad_menu = None;
                 }
             }
-            Key::M | Key::F9 | Key::F10 | Key::Num8 => {
-                ed.status = "Materials (M), Render Setup (F10), Quick Render (F9) and Environment (8) arrive in Phase 4".into();
-            }
+            Key::M => ed.mat_editor.open = !ed.mat_editor.open,
+            Key::Num8 => ed.env_open = !ed.env_open,
+            Key::F9 => ed.start_render(),
+            Key::F10 => ed.rfw.setup_open = !ed.rfw.setup_open,
             _ => {}
         }
     }

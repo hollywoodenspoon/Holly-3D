@@ -43,6 +43,14 @@ fn targets(ed: &Editor) -> Option<Targets> {
     if ed.active_mod_sub().is_some() {
         return ed.mod_sub_frame().map(Targets::Frame);
     }
+    if ed.spline_level().is_some() {
+        let center = ed.selection_center()?;
+        let rot = match ed.coord {
+            CoordSystem::Local => ed.current_obj().map(|o| o.transform.rotation).unwrap_or(Quat::IDENTITY),
+            _ => Quat::IDENTITY,
+        };
+        return Some(Targets::Frame(Xform { translation: center, rotation: rot, scale: Vec3::ONE }));
+    }
     if ed.in_sub_object() {
         if let Some(sp) = &ed.slice_plane {
             return Some(Targets::Frame(sp.xform));

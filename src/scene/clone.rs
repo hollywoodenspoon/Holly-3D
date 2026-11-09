@@ -26,6 +26,11 @@ impl Scene {
     /// instance group; references track their parent's base + lower stack.
     pub fn clone_object(&mut self, id: ObjId, kind: CloneKind, transform: Xform) -> Option<ObjId> {
         let src = self.objects.get(id)?.clone();
+        if matches!(src.base, BaseObject::LightTarget) {
+            return None; // targets are cloned with their light
+        }
+        // Lights are always independent copies (each owns its own target).
+        let kind = if src.is_helper() { CloneKind::Copy } else { kind };
         let mut o = src.clone();
         o.name = self.unique_name(&src.name);
         o.transform = transform;
@@ -51,6 +56,17 @@ impl Scene {
                 o.instance_group = None;
                 o.reference_parent = Some(id);
                 o.reference_shared = src.modifiers.len();
+            }
+        }
+        let shift = transform.translation - src.transform.translation;
+        if let Some(t) = o.light().and_then(|l| l.target).and_then(|t| self.objects.get(t)).cloned() {
+            let mut t = t;
+            t.name = format!("{}.Target", o.name);
+            t.transform.translation += shift;
+            t.selected = false;
+            let tid = self.objects.insert(t);
+            if let Some(l) = o.light_mut() {
+                l.target = Some(tid);
             }
         }
         Some(self.objects.insert(o))

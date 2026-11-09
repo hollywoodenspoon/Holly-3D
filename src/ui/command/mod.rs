@@ -1,6 +1,7 @@
 //! Right Command Panel (310px): Create | Modify | Pivot.
 
 mod create;
+mod light_params;
 mod modify;
 mod params;
 mod pivot;

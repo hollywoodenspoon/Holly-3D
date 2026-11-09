@@ -17,6 +17,8 @@ pub struct ViewportUiState {
     marquee: Option<(usize, Vec2)>,
     gizmo_dragging: bool,
     nav: Option<usize>,
+    /// Viewport holding the current paint stroke.
+    painting: Option<usize>,
 }
 
 fn v2(p: egui::Pos2) -> Vec2 {
@@ -58,6 +60,49 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
         }
         if resp.hovered() && scroll.abs() > 0.0 {
             ed.viewports.views[vi].camera.zoom(scroll / 60.0);
+        }
+        // ---- Viewport Paint: left button paints, right-click exits
+        if ed.paint.active {
+            let (pressed, down) = ui.input(|i| (i.pointer.primary_pressed(), i.pointer.primary_down()));
+            if pressed && resp.hovered() && !mods.alt {
+                if let Some(p) = pointer {
+                    ed.paint_begin(vi, v2(p));
+                    st.painting = Some(vi);
+                }
+            } else if down && st.painting == Some(vi) {
+                let moved = delta.length_sq() > 0.0 || ed.paint.brush.tool == crate::paint::BrushTool::Blur;
+                if let (Some(p), true) = (pointer, moved) {
+                    ed.paint_drag(vi, v2(p));
+                }
+            }
+            if !down && st.painting == Some(vi) {
+                ed.paint_end();
+                st.painting = None;
+            }
+            if resp.clicked_by(PointerButton::Secondary) {
+                ed.cancel_tool();
+            }
+            overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
+            continue;
+        }
+        // ---- Line tool: press = knot, drag = Bezier handles, right-click ends
+        if matches!(ed.tool, crate::editor::Tool::Line { .. }) {
+            let (pressed, down) = ui.input(|i| (i.pointer.primary_pressed(), i.pointer.primary_down()));
+            if let Some(p) = pointer {
+                if pressed && resp.hovered() && !mods.alt {
+                    ed.line_press(vi, v2(p));
+                } else if down && resp.dragged() {
+                    ed.line_drag(vi, v2(p));
+                }
+            }
+            if !down {
+                ed.line_release();
+            }
+            if resp.clicked_by(PointerButton::Secondary) {
+                ed.cancel_tool();
+            }
+            overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
+            continue;
         }
         // ---- gizmo (active viewport only)
         let mut gizmo_hot = false;

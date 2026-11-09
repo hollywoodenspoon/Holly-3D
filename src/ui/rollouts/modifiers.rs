@@ -5,22 +5,8 @@ use crate::editor::{Editor, Tool};
 use crate::modifiers::{MapType, ModSub, ModifierKind};
 use crate::ui::command::CONTENT_W;
 use crate::ui::theme;
-use crate::ui::widgets::{action, dim, max_spinner_range, rollout};
+use crate::ui::widgets::{Track, action, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
-
-/// Tracks spinner/checkbox interaction so undo is recorded once per gesture.
-#[derive(Default)]
-struct Track {
-    started: bool,
-    changed: bool,
-}
-
-impl Track {
-    fn r(&mut self, r: egui::Response) {
-        self.changed |= r.changed();
-        self.started |= r.drag_started() || r.gained_focus() || r.secondary_clicked() || r.clicked();
-    }
-}
 
 /// Shows a parameter block on a clone of the active modifier and writes it back on change.
 fn params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&mut egui::Ui, &mut ModifierKind, &mut Track)) {

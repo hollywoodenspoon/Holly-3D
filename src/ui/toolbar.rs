@@ -6,8 +6,7 @@ use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::CloneKind;
 use bevy_egui::egui::{self, RichText};
 
-const PHASE4: &str = "Arrives in Phase 4 (Materials & Rendering)";
-const PHASE5: &str = "Arrives in Phase 5 (Splines, Array & Modifiers)";
+const PHASE5: &str = "Not available yet";
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::top("main_toolbar")
@@ -53,13 +52,31 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     ed.angle_snap = !ed.angle_snap;
                 }
                 ui.separator();
-                ui.add_enabled(false, egui::Button::new("Mirror")).on_disabled_hover_text(PHASE5);
-                ui.add_enabled(false, egui::Button::new("Array...")).on_disabled_hover_text(PHASE5);
-                ui.add_enabled(false, egui::Button::new("🎨 Paint")).on_disabled_hover_text(PHASE4);
+                let any = !ed.scene.selected().is_empty();
+                if ui.add_enabled(any, egui::Button::new("Mirror")).on_hover_text("Mirror the selection (live preview)").clicked() {
+                    ed.open_mirror();
+                }
+                if ui.add_enabled(any, egui::Button::new("Array...")).on_hover_text("3ds Max Array dialog").clicked() {
+                    ed.open_array();
+                }
+                if toggle_button(ui, ed.paint.active, "🖌 Paint")
+                    .on_hover_text("Viewport Paint: VertexPaint / texture projection (PaintBox)")
+                    .clicked()
+                {
+                    ed.toggle_paint();
+                }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.add_enabled(false, egui::Button::new("▶ Quick Render (F9)")).on_disabled_hover_text(PHASE4);
-                    ui.add_enabled(false, egui::Button::new("⚙ Render Setup (F10)")).on_disabled_hover_text(PHASE4);
-                    ui.add_enabled(false, egui::Button::new("⚪ Material Editor (M)")).on_disabled_hover_text(PHASE4);
+                    if ui.button("▶ Quick Render (F9)").on_hover_text("Render the active viewport into the Rendered Frame Window").clicked()
+                    {
+                        ed.start_render();
+                    }
+                    if toggle_button(ui, ed.rfw.setup_open, "⚙ Render Setup (F10)").clicked() {
+                        ed.rfw.setup_open = !ed.rfw.setup_open;
+                    }
+                    let open = ed.mat_editor.open;
+                    if toggle_button(ui, open, "⚪ Material Editor (M)").on_hover_text("Compact Material Editor").clicked() {
+                        ed.mat_editor.open = !open;
+                    }
                 });
             });
         })
@@ -113,9 +130,15 @@ fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
         }
     });
     ui.menu_button("Tools", |ui| {
-        for item in ["Array...", "Mirror...", "Align..."] {
-            ui.add_enabled(false, egui::Button::new(item)).on_disabled_hover_text(PHASE5);
+        if ui.button("Array...").clicked() {
+            ed.open_array();
+            ui.close();
         }
+        if ui.button("Mirror...").clicked() {
+            ed.open_mirror();
+            ui.close();
+        }
+        ui.add_enabled(false, egui::Button::new("Align...")).on_disabled_hover_text(PHASE5);
         if ui.button("Isolate Selection   Alt+Q").clicked() {
             ed.toggle_isolate();
             ui.close();

@@ -116,6 +116,41 @@ fn control_points(painter: &egui::Painter, ed: &Editor, vi: usize) {
     }
 }
 
+/// Edit Normals lines: cyan unspecified, blue unified, green explicit, red selected.
+fn normal_lines(painter: &egui::Painter, ed: &Editor, vi: usize) {
+    use crate::modifiers::NormalKind;
+    let v = &ed.viewports.views[vi];
+    for l in ed.normal_lines() {
+        let (Some(a), Some(b)) = (v.to_screen(l.base), v.to_screen(l.tip)) else { continue };
+        let color = match (l.selected, l.kind) {
+            (true, _) => theme::VERTEX_SEL,
+            (_, NormalKind::Explicit) => Color32::from_rgb(70, 220, 90),
+            (_, NormalKind::Unified) => Color32::from_rgb(60, 110, 255),
+            (_, NormalKind::Unspecified) => Color32::from_rgb(40, 220, 230),
+        };
+        painter.line_segment([p(a), p(b)], Stroke::new(if l.selected { 2.0 } else { 1.0 }, color));
+    }
+}
+
+/// Brush ring at the surface point under the cursor (world-sized).
+fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
+    let v = &ed.viewports.views[vi];
+    let Some(hit) = ed.paint_hit(vi, ptr) else {
+        painter.circle_stroke(p(ptr), 4.0, Stroke::new(1.0, theme::TEXT_DIM));
+        return;
+    };
+    let Some(c) = v.to_screen(hit) else { return };
+    let r = ed.paint.brush.size / v.camera.units_per_pixel(hit, v.rect.size().y.max(1.0));
+    let inner = r * (1.0 - ed.paint.brush.falloff.clamp(0.0, 1.0));
+    let col = crate::ui::widgets::color32(ed.paint.brush.color);
+    painter.circle_stroke(p(c), r, Stroke::new(2.5, Color32::from_black_alpha(160)));
+    painter.circle_stroke(p(c), r, Stroke::new(1.5, col));
+    if inner > 2.0 {
+        painter.circle_stroke(p(c), inner, Stroke::new(1.0, col.gamma_multiply(0.6)));
+    }
+    painter.circle_filled(p(c), 1.5, Color32::WHITE);
+}
+
 pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee: Option<Vec2>, pointer: Option<Vec2>) {
     let painter = ui.painter().with_clip_rect(rect);
     let active = vi == ed.viewports.active;
@@ -127,6 +162,12 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
         vertex_dots(&painter, ed, vi);
     }
     control_points(&painter, ed, vi);
+    normal_lines(&painter, ed, vi);
+    if ed.paint.active
+        && let Some(ptr) = pointer.filter(|q| rect.contains(p(*q)))
+    {
+        brush_cursor(&painter, ed, vi, ptr);
+    }
     if let (Some(a), Some(b)) = (marquee, pointer) {
         let r = egui::Rect::from_two_pos(p(a), p(b));
         painter.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(229, 156, 36, 18));
@@ -147,7 +188,8 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
             let color = if matches!(ed.tool, Tool::QuickSlice { .. }) { Color32::from_rgb(255, 220, 30) } else { theme::AMBER };
             painter.add(egui::Shape::dashed_line(&[p(a), p(b)], Stroke::new(1.5, color), 6.0, 4.0));
         }
-        if let Some(hint) = ed.tool.label() {
+        let paint_hint = ed.paint.active.then_some("Viewport Paint — drag to paint · right-click exits");
+        if let Some(hint) = paint_hint.or(ed.tool.label()) {
             painter.text(
                 rect.center_bottom() - egui::vec2(0.0, 14.0),
                 egui::Align2::CENTER_BOTTOM,

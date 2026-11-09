@@ -1,10 +1,22 @@
 //! Editor state: scene, modes, tools, dialogs and undo history.
 
 pub mod actions;
+pub mod array;
+#[cfg(test)]
+mod array_tests;
+pub mod boolean;
 pub mod drag;
+pub mod lights;
+pub mod materials;
+pub mod mirror;
 pub mod modsub;
+pub mod normals;
+pub mod paint;
+pub mod render;
 pub mod select;
+pub mod splines;
 pub mod tools;
+pub mod types;
 pub mod undo;
 
 use crate::mesh::SubObject;
@@ -14,110 +26,8 @@ use crate::scene::{CloneKind, ObjId, Scene, SceneObject, Xform};
 use crate::viewport::layout::Viewports;
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::Resource;
+pub use types::*;
 use undo::History;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum TransformMode {
-    #[default]
-    Select,
-    Move,
-    Rotate,
-    Scale,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum CoordSystem {
-    View,
-    #[default]
-    World,
-    Local,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum PivotMode {
-    PivotPoint,
-    #[default]
-    SelectionCenter,
-    TransformCenter,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum CommandTab {
-    #[default]
-    Create,
-    Modify,
-    Pivot,
-}
-
-/// Interactive viewport tools (modal, like 3ds Max pick modes).
-#[derive(Clone, Debug, PartialEq, Default)]
-pub enum Tool {
-    #[default]
-    None,
-    Create(PrimitiveKind),
-    TargetWeld {
-        first: Option<crate::mesh::VertexId>,
-    },
-    InsertVertex,
-    Cut {
-        last: Option<crate::mesh::VertexId>,
-    },
-    QuickSlice {
-        start: Option<Vec2>,
-    },
-    Attach,
-    NormalAlign,
-}
-
-impl Tool {
-    pub fn label(&self) -> Option<&'static str> {
-        match self {
-            Tool::None => None,
-            Tool::Create(_) => Some("Click in a viewport to place the object"),
-            Tool::TargetWeld { first: None } => Some("Target Weld: click the vertex to weld"),
-            Tool::TargetWeld { .. } => Some("Target Weld: click the target vertex"),
-            Tool::InsertVertex => Some("Insert Vertex: click on an edge or polygon"),
-            Tool::Cut { .. } => Some("Cut: click vertices/edges in sequence, right-click to finish"),
-            Tool::QuickSlice { start: None } => Some("QuickSlice: click the first point"),
-            Tool::QuickSlice { .. } => Some("QuickSlice: click the second point"),
-            Tool::Attach => Some("Attach: click an object to merge it"),
-            Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
-        }
-    }
-}
-
-/// Floating `[□]` caddy with a live-previewed op.
-#[derive(Clone, Debug)]
-pub struct Caddy {
-    pub op: PolyOp,
-    pub object: ObjId,
-    pub before: SceneObject,
-    /// Last op actually applied in preview (to avoid redundant re-evaluation).
-    pub previewed: Option<String>,
-}
-
-#[derive(Clone, Debug)]
-pub struct CloneDialog {
-    pub sources: Vec<(ObjId, Xform)>,
-    /// World-space delta of the shift-drag (applied once per copy).
-    pub delta: bevy::math::Mat4,
-    pub kind: CloneKind,
-    pub copies: u32,
-}
-
-#[derive(Clone, Debug)]
-pub struct SlicePlane {
-    pub xform: Xform,
-    pub split: bool,
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct SoftSelection {
-    pub enabled: bool,
-    pub falloff: f32,
-    pub pinch: f32,
-    pub bubble: f32,
-}
 
 #[derive(Clone, Debug)]
 pub struct Snapshot {
@@ -147,6 +57,10 @@ pub struct Editor {
     pub caddy: Option<Caddy>,
     pub quad_menu: Option<Vec2>,
     pub clone_dialog: Option<CloneDialog>,
+    pub array_settings: array::ArraySettings,
+    pub array_dialog: Option<array::ArrayDialog>,
+    pub mirror_settings: mirror::MirrorSettings,
+    pub mirror_dialog: Option<mirror::MirrorDialog>,
     pub last_op: Option<PolyOp>,
     pub slice_plane: Option<SlicePlane>,
     pub ignore_backfacing: bool,
@@ -169,6 +83,20 @@ pub struct Editor {
     /// FFD Control Points / Lattice or UVW Map Gizmo sub-object mode.
     pub mod_sub: Option<crate::modifiers::ModSub>,
     pub uv_editor_open: bool,
+    pub mat_editor: MatEditor,
+    /// Ctrl+L: force the Default Modeling Lights rig even with scene lights.
+    pub default_lights: bool,
+    /// Environment & Effects dialog (`8`).
+    pub env_open: bool,
+    /// Viewport Paint / PaintBox settings.
+    pub paint: crate::paint::PaintSettings,
+    pub paint_stroke: Option<paint::PaintStroke>,
+    /// Render Setup (F10) parameters.
+    pub render: crate::render::RenderSettings,
+    /// Rendered Frame Window (F9) + running job.
+    pub rfw: render::RenderUi,
+    /// Editable Spline tool spinners (Fillet, Chamfer, Weld, Divide, Outline…).
+    pub spline_ui: SplineUi,
 }
 
 impl Default for Editor {
@@ -188,6 +116,10 @@ impl Default for Editor {
             caddy: None,
             quad_menu: None,
             clone_dialog: None,
+            array_settings: Default::default(),
+            array_dialog: None,
+            mirror_settings: Default::default(),
+            mirror_dialog: None,
             last_op: None,
             slice_plane: None,
             ignore_backfacing: false,
@@ -208,6 +140,14 @@ impl Default for Editor {
             op_memory: Default::default(),
             mod_sub: None,
             uv_editor_open: false,
+            mat_editor: MatEditor::default(),
+            default_lights: false,
+            env_open: false,
+            paint: Default::default(),
+            paint_stroke: None,
+            render: Default::default(),
+            rfw: Default::default(),
+            spline_ui: Default::default(),
         }
     }
 }
@@ -281,6 +221,10 @@ impl Editor {
 
     /// World-space center of the current selection (objects or sub-objects).
     pub fn selection_center(&self) -> Option<Vec3> {
+        if self.spline_level().is_some() {
+            let pts = self.spline_selection_world();
+            return (!pts.is_empty()).then(|| pts.iter().sum::<Vec3>() / pts.len() as f32);
+        }
         if self.in_sub_object() {
             let o = self.current_obj()?;
             let vs = o.level_mesh.selection_vertices(self.sub);
@@ -312,8 +256,15 @@ impl Editor {
         let objs: Vec<&SceneObject> = if sel.is_empty() { self.scene.objects.values().filter(|o| !o.hidden).collect() } else { sel };
         let mut pts = vec![];
         for o in objs {
+            if o.is_helper() {
+                pts.push(o.transform.translation);
+                continue;
+            }
             let w = o.world_matrix();
             pts.extend(o.evaluated_mesh.vertices.values().map(|v| w.transform_point3(v.position)));
+            if let Some(sh) = &o.shape {
+                pts.extend(sh.polylines().into_iter().flat_map(|pl| pl.pts).map(|p| w.transform_point3(p)));
+            }
         }
         crate::mesh::Aabb::from_points(pts)
     }

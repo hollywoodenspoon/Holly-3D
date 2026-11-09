@@ -16,6 +16,15 @@ impl Editor {
         self.status = format!("Created {}", self.scene.objects[id].name);
     }
 
+    pub fn create_geogen(&mut self, mode: crate::modifiers::GeoMode, at: Vec3) {
+        self.checkpoint("Create GeoGen");
+        let id = self.scene.add(BaseObject::GeoGen(crate::modifiers::GeoGenParams::default_of(mode)), at);
+        self.scene.select_only(Some(id));
+        self.sub = SubObject::Object;
+        self.tab = CommandTab::Modify;
+        self.status = format!("Created {}", self.scene.objects[id].name);
+    }
+
     pub fn convert_to_editable_poly(&mut self) {
         let ids = self.scene.selected();
         if ids.is_empty() {
@@ -65,6 +74,10 @@ impl Editor {
     pub fn delete_selection(&mut self) {
         if self.in_sub_object() {
             self.apply_op(PolyOp::Delete { level: self.sub });
+            return;
+        }
+        if let Some(level) = self.spline_level() {
+            self.edit_shape("Delete", |s| s.delete_selected(level));
             return;
         }
         let ids = self.scene.selected();
@@ -121,6 +134,13 @@ impl Editor {
             return;
         }
         self.mod_sub = None;
+        if self.editable_spline_selected() && matches!(s, SubObject::Vertex | SubObject::Edge | SubObject::Border | SubObject::Object) {
+            // Editable Spline: 1 Vertex, 2 Segment, 3 Spline
+            self.sub = if self.sub == s { SubObject::Object } else { s };
+            self.tool = Tool::None;
+            self.tab = CommandTab::Modify;
+            return;
+        }
         if !self.current_obj().is_some_and(|o| o.sub_object_editable()) {
             self.sub = SubObject::Object;
             if s != SubObject::Object {

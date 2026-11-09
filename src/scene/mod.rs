@@ -30,6 +30,14 @@ pub fn next_version() -> u64 {
 pub enum BaseObject {
     Primitive(Primitive),
     EditablePoly(EditablePoly),
+    /// Light object (no geometry; drawn as a viewport icon).
+    Light(crate::render::Light),
+    /// Target helper of a Target Spot / Target Direct light.
+    LightTarget,
+    /// Spline shape (parametric or Editable Spline).
+    Shape(crate::splines::ShapeObject),
+    /// GeoGen procedural rock / crystal / cliff / stalagmite.
+    GeoGen(crate::modifiers::GeoGenParams),
 }
 
 impl BaseObject {
@@ -37,12 +45,26 @@ impl BaseObject {
         match self {
             BaseObject::Primitive(p) => p.to_editable_poly(),
             BaseObject::EditablePoly(m) => m.clone(),
+            BaseObject::Light(_) | BaseObject::LightTarget => EditablePoly::new(),
+            BaseObject::Shape(s) => s.viewport_mesh(),
+            BaseObject::GeoGen(g) => g.build(),
+        }
+    }
+    /// The shape flowing into the stack (shapes only).
+    pub fn to_shape(&self) -> Option<crate::splines::Shape> {
+        match self {
+            BaseObject::Shape(s) => Some(s.to_shape()),
+            _ => None,
         }
     }
     pub fn label(&self) -> &'static str {
         match self {
             BaseObject::Primitive(p) => p.name(),
             BaseObject::EditablePoly(_) => "Editable Poly",
+            BaseObject::Light(l) => l.kind.label(),
+            BaseObject::LightTarget => "Target",
+            BaseObject::Shape(s) => s.label(),
+            BaseObject::GeoGen(g) => g.mode.short(),
         }
     }
 }
@@ -81,6 +103,9 @@ pub struct SceneObject {
     pub evaluated_mesh: EditablePoly,
     /// Mesh at the active stack level (what sub-object tools edit and pick).
     pub level_mesh: EditablePoly,
+    /// Shape still flowing out of the stack (drawn as splines); `None` once a
+    /// Lathe / Extrude turned it into a mesh, and for non-shape objects.
+    pub shape: Option<crate::splines::Shape>,
     /// `None` = base object, `Some(i)` = modifier `i`.
     pub active_level: Option<usize>,
     pub transform: Xform,
@@ -92,6 +117,8 @@ pub struct SceneObject {
     pub see_through: bool,
     /// Show the UV checker texture in shaded viewports.
     pub checker: bool,
+    /// Assigned material (instances share the id, like 3ds Max).
+    pub material: Option<crate::materials::MatId>,
     pub selected: bool,
     pub instance_group: Option<u32>,
     pub reference_parent: Option<ObjId>,
@@ -110,6 +137,7 @@ impl SceneObject {
             modifiers: vec![],
             evaluated_mesh: EditablePoly::new(),
             level_mesh: EditablePoly::new(),
+            shape: None,
             active_level: None,
             transform: Xform::default(),
             offset: Mat4::IDENTITY,
@@ -118,6 +146,7 @@ impl SceneObject {
             frozen: false,
             see_through: false,
             checker: false,
+            material: None,
             selected: false,
             instance_group: None,
             reference_parent: None,
@@ -129,6 +158,25 @@ impl SceneObject {
         o
     }
 
+    pub fn light(&self) -> Option<&crate::render::Light> {
+        match &self.base {
+            BaseObject::Light(l) => Some(l),
+            _ => None,
+        }
+    }
+
+    pub fn light_mut(&mut self) -> Option<&mut crate::render::Light> {
+        match &mut self.base {
+            BaseObject::Light(l) => Some(l),
+            _ => None,
+        }
+    }
+
+    /// Lights and targets: no geometry, picked and framed by their pivot.
+    pub fn is_helper(&self) -> bool {
+        matches!(self.base, BaseObject::Light(_) | BaseObject::LightTarget)
+    }
+
     /// World matrix applied to the evaluated mesh.
     pub fn world_matrix(&self) -> Mat4 {
         self.transform.matrix() * self.offset
@@ -138,6 +186,10 @@ impl SceneObject {
 #[derive(Clone, Debug, Default)]
 pub struct Scene {
     pub objects: SlotMap<ObjId, SceneObject>,
+    /// Material library + the 24 Material Editor sample slots.
+    pub materials: crate::materials::MaterialLib,
+    /// Environment & Effects (`8`): background, ambient, fog, lighting preset.
+    pub environment: crate::render::Environment,
     name_counters: HashMap<String, u32>,
     next_instance_group: u32,
 }
@@ -162,6 +214,15 @@ impl Scene {
         format!("{base}{:03}", *c)
     }
 
+    /// Name counters, saved by live-preview dialogs so rebuilt previews
+    /// reuse the same names (Box002, Box003...) instead of skipping ahead.
+    pub fn name_state(&self) -> HashMap<String, u32> {
+        self.name_counters.clone()
+    }
+    pub fn restore_names(&mut self, state: HashMap<String, u32>) {
+        self.name_counters = state;
+    }
+
     pub fn add(&mut self, base: BaseObject, at: Vec3) -> ObjId {
         let name = self.unique_name(base.label());
         let mut o = SceneObject::new(name, base);
@@ -181,13 +242,74 @@ impl Scene {
     }
 
     pub fn delete(&mut self, id: ObjId) {
-        self.objects.remove(id);
+        let Some(o) = self.objects.remove(id) else { return };
+        // A light takes its target along; a deleted target frees its light.
+        if let Some(t) = o.light().and_then(|l| l.target) {
+            self.objects.remove(t);
+        }
         for o in self.objects.values_mut() {
             if o.reference_parent == Some(id) {
                 o.reference_parent = None;
                 o.reference_shared = 0;
             }
+            if let Some(l) = o.light_mut()
+                && l.target == Some(id)
+            {
+                l.target = None;
+                l.kind = match l.kind {
+                    crate::render::LightKind::TargetSpot => crate::render::LightKind::FreeSpot,
+                    _ => crate::render::LightKind::FreeDirect,
+                };
+            }
         }
+    }
+
+    /// Adds a light (plus its target helper for target lights) aimed at `aim`.
+    pub fn add_light(&mut self, mut light: crate::render::Light, name: Option<&str>, at: Vec3, aim: Vec3) -> ObjId {
+        let has_target = light.kind.has_target();
+        light.target = None;
+        let wire = [0.98, 0.85, 0.3];
+        let name = match name {
+            Some(n) => self.unique_name(n),
+            None => self.unique_name(light.kind.label()),
+        };
+        let mut o = SceneObject::new(name.clone(), BaseObject::Light(light));
+        o.transform.translation = at;
+        o.transform.rotation = crate::render::lighting::aim(at, aim);
+        o.wire_color = wire;
+        let id = self.objects.insert(o);
+        if has_target {
+            let mut t = SceneObject::new(format!("{name}.Target"), BaseObject::LightTarget);
+            t.transform.translation = aim;
+            t.wire_color = wire;
+            let tid = self.objects.insert(t);
+            if let Some(l) = self.objects[id].light_mut() {
+                l.target = Some(tid);
+            }
+        }
+        id
+    }
+
+    /// Points every target light at its target. Returns true if any moved.
+    pub fn aim_target_lights(&mut self) -> bool {
+        let aims: Vec<(ObjId, Quat)> = self
+            .objects
+            .iter()
+            .filter_map(|(k, o)| {
+                let t = self.objects.get(o.light()?.target?)?;
+                let q = crate::render::lighting::aim(o.transform.translation, t.transform.translation);
+                (q.dot(o.transform.rotation).abs() < 1.0 - 1e-7).then_some((k, q))
+            })
+            .collect();
+        for (k, q) in &aims {
+            self.objects[*k].transform.rotation = *q;
+        }
+        !aims.is_empty()
+    }
+
+    /// Lights that are switched on (what decides Scene vs Default lighting).
+    pub fn active_lights(&self) -> impl Iterator<Item = (ObjId, &SceneObject, &crate::render::Light)> {
+        self.objects.iter().filter_map(|(k, o)| o.light().filter(|l| l.on && !o.hidden).map(|l| (k, o, l)))
     }
 
     pub fn new_instance_group(&mut self) -> u32 {

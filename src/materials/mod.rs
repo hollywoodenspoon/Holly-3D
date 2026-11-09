@@ -1,0 +1,218 @@
+//! Materials: 3ds Max-style material library (24 Compact Material Editor
+//! slots), shading models, procedural / bitmap maps and the universal ink
+//! outline settings shared by every material.
+
+pub mod bake;
+pub mod import;
+pub mod maps;
+pub mod presets;
+pub mod preview;
+pub mod shading;
+#[cfg(test)]
+mod tests;
+pub mod texture;
+
+pub use maps::{MapChannel, MapNode, MapSlot};
+pub use presets::Preset;
+pub use texture::{TexHandle, Texture};
+
+use slotmap::{SlotMap, new_key_type};
+
+new_key_type! {
+    pub struct MatId;
+}
+
+pub const SLOT_COUNT: usize = 24;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum ShadingModel {
+    #[default]
+    Physical,
+    Toon,
+    Crystal,
+    Unlit,
+}
+
+impl ShadingModel {
+    pub const ALL: [ShadingModel; 4] = [ShadingModel::Physical, ShadingModel::Toon, ShadingModel::Crystal, ShadingModel::Unlit];
+    pub fn label(self) -> &'static str {
+        match self {
+            ShadingModel::Physical => "Standard / Physical PBR",
+            ShadingModel::Toon => "Cel / Toon Ramp",
+            ShadingModel::Crystal => "Refractive Crystal / Glass",
+            ShadingModel::Unlit => "Unlit / Emissive",
+        }
+    }
+}
+
+/// Cel / Toon ramp parameters.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ToonParams {
+    /// Number of light bands (2 = classic anime two-tone).
+    pub steps: u32,
+    /// Color multiplied into the base color on the shadow band (sRGB).
+    pub shadow_tint: [f32; 3],
+    pub rim: f32,
+    pub rim_color: [f32; 3],
+    pub specular: f32,
+}
+
+impl Default for ToonParams {
+    fn default() -> Self {
+        Self { steps: 2, shadow_tint: [0.55, 0.5, 0.72], rim: 0.0, rim_color: [1.0, 1.0, 1.0], specular: 0.0 }
+    }
+}
+
+/// Universal ink outline (inverted hull + sharp-edge lines).
+#[derive(Clone, Debug, PartialEq)]
+pub struct OutlineParams {
+    pub enabled: bool,
+    /// 0..=10 (scene units x 0.005 in the viewport hull; pixels in renders).
+    pub width: f32,
+    pub color: [f32; 3],
+    pub crease_lines: bool,
+    /// Dihedral angle (degrees) above which an edge draws as an ink line.
+    pub crease_angle: f32,
+}
+
+impl Default for OutlineParams {
+    fn default() -> Self {
+        Self { enabled: false, width: 2.0, color: [0.05, 0.05, 0.07], crease_lines: false, crease_angle: 40.0 }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Material {
+    pub name: String,
+    pub model: ShadingModel,
+    /// Diffuse / base color (sRGB 0..1).
+    pub base_color: [f32; 3],
+    pub opacity: f32,
+    pub metallic: f32,
+    pub roughness: f32,
+    /// Specular transmission (glass / crystal).
+    pub transmission: f32,
+    pub ior: f32,
+    /// Thickness used for absorption (scene units).
+    pub thickness: f32,
+    /// Subsurface / absorption color (sRGB) light picks up inside the volume.
+    pub attenuation_color: [f32; 3],
+    pub emissive: [f32; 3],
+    pub emissive_strength: f32,
+    pub toon: ToonParams,
+    pub outline: OutlineParams,
+    /// Maps rollout: one slot per [`MapChannel`].
+    pub maps: [MapSlot; 6],
+    /// Free (unwired) nodes on the Slate canvas.
+    pub slate_nodes: Vec<MapNode>,
+    /// "Show Shaded Material in Viewport".
+    pub show_in_viewport: bool,
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Self {
+            name: "Default".into(),
+            model: ShadingModel::Physical,
+            base_color: [0.6, 0.6, 0.6],
+            opacity: 1.0,
+            metallic: 0.0,
+            roughness: 0.6,
+            transmission: 0.0,
+            ior: 1.5,
+            thickness: 0.2,
+            attenuation_color: [1.0, 1.0, 1.0],
+            emissive: [1.0, 1.0, 1.0],
+            emissive_strength: 0.0,
+            toon: ToonParams::default(),
+            outline: OutlineParams::default(),
+            maps: Default::default(),
+            slate_nodes: vec![],
+            show_in_viewport: true,
+        }
+    }
+}
+
+impl Material {
+    pub fn named(name: impl Into<String>) -> Self {
+        Self { name: name.into(), ..Self::default() }
+    }
+
+    pub fn map(&self, ch: MapChannel) -> &MapSlot {
+        &self.maps[ch as usize]
+    }
+
+    pub fn map_mut(&mut self, ch: MapChannel) -> &mut MapSlot {
+        &mut self.maps[ch as usize]
+    }
+
+    /// Slot whose map is active (enabled with a node).
+    pub fn active_map(&self, ch: MapChannel) -> Option<(&MapNode, f32)> {
+        let s = self.map(ch);
+        s.node.as_ref().filter(|_| s.enabled && s.amount > 0.0).map(|n| (n, s.amount / 100.0))
+    }
+}
+
+/// Scene material library + the 24 editor sample slots.
+#[derive(Clone, Debug)]
+pub struct MaterialLib {
+    pub mats: SlotMap<MatId, Material>,
+    pub slots: Vec<MatId>,
+}
+
+impl Default for MaterialLib {
+    fn default() -> Self {
+        let mut mats = SlotMap::with_key();
+        let slots = (0..SLOT_COUNT)
+            .map(|i| {
+                let m = match Preset::ALL.get(i) {
+                    Some(p) => p.material(),
+                    None => Material::named("Default"),
+                };
+                mats.insert(Self::numbered(i, m))
+            })
+            .collect();
+        Self { mats, slots }
+    }
+}
+
+impl MaterialLib {
+    /// "01 - Name" (3ds Max slot naming).
+    fn numbered(i: usize, mut m: Material) -> Material {
+        m.name = format!("{:02} - {}", i + 1, m.name);
+        m
+    }
+
+    pub fn slot(&self, i: usize) -> MatId {
+        self.slots[i.min(SLOT_COUNT - 1)]
+    }
+
+    /// Reset Material Slot: a fresh default in the slot (scene objects keep theirs).
+    pub fn reset_slot(&mut self, i: usize) -> MatId {
+        let id = self.mats.insert(Self::numbered(i, Material::named("Default")));
+        self.slots[i] = id;
+        id
+    }
+
+    /// Make Material Copy: the slot gets an independent ("cool") copy.
+    pub fn copy_slot(&mut self, i: usize) -> MatId {
+        let mut m = self.mats[self.slot(i)].clone();
+        if !m.name.ends_with(" Copy") {
+            m.name.push_str(" Copy");
+        }
+        let id = self.mats.insert(m);
+        self.slots[i] = id;
+        id
+    }
+
+    /// Puts an existing material into slot `i` (Pick Material from Object).
+    pub fn put_in_slot(&mut self, i: usize, id: MatId) {
+        if self.mats.contains_key(id) {
+            self.slots[i] = id;
+        }
+    }
+
+    pub fn slot_of(&self, id: MatId) -> Option<usize> {
+        self.slots.iter().position(|&s| s == id)
+    }
+}

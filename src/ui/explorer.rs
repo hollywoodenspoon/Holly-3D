@@ -38,6 +38,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     let icon = match o.base {
                         BaseObject::Primitive(_) => "◼",
                         BaseObject::EditablePoly(_) => "⬜",
+                        BaseObject::Light(_) => "💡",
+                        BaseObject::LightTarget => "◎",
+                        BaseObject::Shape(_) => "〰",
+                        BaseObject::GeoGen(_) => "◆",
                     };
                     (k, o.name.clone(), o.selected, o.hidden, o.frozen, o.wire_color, icon)
                 })
