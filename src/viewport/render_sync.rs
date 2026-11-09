@@ -33,7 +33,7 @@ struct ObjRender {
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
     version: u64,
-    look: (u32, bool),
+    look: (u32, bool, bool),
     overlay: Entity,
     overlay_mesh: Handle<Mesh>,
     sel_version: (u64, SubObject, bool),
@@ -149,18 +149,52 @@ fn selected_faces_mesh(mesh: &crate::mesh::EditablePoly) -> Mesh {
     m
 }
 
+/// 8x8 UV checker (tiles with the mesh's UVs; Repeat sampler so tiling > 1 works).
+fn checker_image() -> Image {
+    use bevy::image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor};
+    use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+    const N: u32 = 8;
+    const PX: u32 = 16;
+    let size = N * PX;
+    let mut data = Vec::with_capacity((size * size * 4) as usize);
+    for y in 0..size {
+        for x in 0..size {
+            let dark = ((x / PX) + (y / PX)).is_multiple_of(2);
+            let c: [u8; 4] = if dark { [70, 72, 80, 255] } else { [225, 225, 230, 255] };
+            data.extend_from_slice(&c);
+        }
+    }
+    let mut img = Image::new(
+        Extent3d { width: size, height: size, depth_or_array_layers: 1 },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    );
+    img.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        address_mode_u: ImageAddressMode::Repeat,
+        address_mode_v: ImageAddressMode::Repeat,
+        mag_filter: ImageFilterMode::Nearest,
+        ..default()
+    });
+    img
+}
+
 fn color_key(c: [f32; 3]) -> u32 {
     let q = |x: f32| (x.clamp(0.0, 1.0) * 255.0) as u32;
     q(c[0]) << 16 | q(c[1]) << 8 | q(c[2])
 }
 
 /// Uploads changed meshes, transforms and selection overlays.
+#[allow(clippy::too_many_arguments)]
 pub fn sync_meshes(
     mut commands: Commands,
     editor: Res<Editor>,
     mut map: ResMut<RenderMap>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut images: ResMut<Assets<Image>>,
+    mut checker: Local<Option<Handle<Image>>>,
     mut tfs: Query<(&mut Transform, &mut Visibility), Without<ViewportCam>>,
 ) {
     let scene = &editor.scene;
@@ -172,6 +206,7 @@ pub fn sync_meshes(
         }
     }
     let current = editor.current();
+    let checker_tex = checker.get_or_insert_with(|| images.add(checker_image())).clone();
     let overlay_mat = materials.add(StandardMaterial {
         base_color: Color::srgba(0.95, 0.15, 0.12, 0.38),
         unlit: true,
@@ -201,7 +236,7 @@ pub fn sync_meshes(
                 mesh,
                 material,
                 version: o.version,
-                look: (u32::MAX, false),
+                look: (u32::MAX, false, false),
                 overlay,
                 overlay_mesh,
                 sel_version: (u64::MAX, SubObject::Object, false),
@@ -213,14 +248,20 @@ pub fn sync_meshes(
                 *m = build_mesh(&o.evaluated_mesh.to_tri_mesh());
             }
         }
-        let look = (color_key(o.wire_color), o.see_through);
+        let look = (color_key(o.wire_color), o.see_through, o.checker);
         if r.look != look {
             r.look = look;
             if let Some(mut mat) = materials.get_mut(&r.material) {
                 let [cr, cg, cb] = o.wire_color;
                 let alpha = if o.see_through { 0.35 } else { 1.0 };
+                let base = if o.checker {
+                    Color::srgba(1.0, 1.0, 1.0, alpha)
+                } else {
+                    Color::srgba(cr * 0.85 + 0.1, cg * 0.85 + 0.1, cb * 0.85 + 0.1, alpha)
+                };
                 *mat = StandardMaterial {
-                    base_color: Color::srgba(cr * 0.85 + 0.1, cg * 0.85 + 0.1, cb * 0.85 + 0.1, alpha),
+                    base_color: base,
+                    base_color_texture: o.checker.then(|| checker_tex.clone()),
                     perceptual_roughness: 0.62,
                     reflectance: 0.35,
                     double_sided: true,

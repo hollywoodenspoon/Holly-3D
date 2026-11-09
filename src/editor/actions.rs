@@ -39,6 +39,8 @@ impl Editor {
         self.checkpoint("Add Modifier");
         self.scene.objects[id].add_modifier(md);
         self.scene.propagate_from(id);
+        self.mod_sub = None;
+        self.sub = SubObject::Object;
         self.status = format!("Added {name}");
     }
 
@@ -51,6 +53,7 @@ impl Editor {
         self.scene.objects[id].delete_active_modifier();
         self.scene.propagate_from(id);
         self.sub = SubObject::Object;
+        self.mod_sub = None;
     }
 
     pub fn collapse_stack(&mut self) {
@@ -107,6 +110,17 @@ impl Editor {
 
     /// Number keys 1–5; pressing the active one again returns to Object level.
     pub fn set_sub_object(&mut self, s: SubObject) {
+        let gizmo_subs = self.current_obj().and_then(|o| o.active_modifier()).map(|k| k.gizmo_subs()).unwrap_or(&[]);
+        if !gizmo_subs.is_empty() {
+            // FFD: 1 = Control Points, 2 = Lattice; UVW Map: 1 = Gizmo
+            match (s.number() as usize).checked_sub(1).and_then(|i| gizmo_subs.get(i)) {
+                Some(&m) => self.set_mod_sub(Some(m)),
+                None if s == SubObject::Object => self.mod_sub = None,
+                None => {}
+            }
+            return;
+        }
+        self.mod_sub = None;
         if !self.current_obj().is_some_and(|o| o.sub_object_editable()) {
             self.sub = SubObject::Object;
             if s != SubObject::Object {

@@ -3,6 +3,7 @@
 use super::{CONTENT_W, params, stack};
 use crate::editor::Editor;
 use crate::mesh::SubObject;
+use crate::modifiers::ModifierKind;
 use crate::ui::UiState;
 use crate::ui::rollouts;
 use crate::ui::widgets::{action, dim};
@@ -31,6 +32,12 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
             ed.convert_to_editable_poly();
         }
         return;
+    }
+    match o.active_modifier() {
+        Some(ModifierKind::Ffd(_)) => return rollouts::modifiers::ffd(ui, ed),
+        Some(ModifierKind::UvwMap(_)) => return rollouts::modifiers::uvw_map(ui, ed),
+        Some(ModifierKind::Unwrap(_)) => return rollouts::modifiers::unwrap(ui, ed),
+        _ => {}
     }
     if !o.sub_object_editable() {
         return;

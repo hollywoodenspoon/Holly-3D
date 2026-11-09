@@ -10,6 +10,7 @@ pub mod rollouts;
 pub mod status_bar;
 pub mod theme;
 pub mod toolbar;
+pub mod uv_editor;
 pub mod viewport_ui;
 pub mod widgets;
 
@@ -32,6 +33,7 @@ pub struct UiState {
     themed: bool,
     pub viewport: viewport_ui::ViewportUiState,
     pub modifier_list_open: bool,
+    pub uv: uv_editor::UvEditorState,
 }
 
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
@@ -59,6 +61,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     caddy::show(&ctx, ed);
     clone_dialog::show(&ctx, ed);
     quad_menu::show(&ctx, ed);
+    uv_editor::show(&ctx, ed, &mut st.uv);
     ed.update_caddy_preview();
     Ok(())
 }
