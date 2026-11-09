@@ -2,6 +2,7 @@
 
 pub mod edit_geometry;
 pub mod edit_sub;
+pub mod geogen;
 pub mod modifiers;
 pub mod selection;
 pub mod smoothing;

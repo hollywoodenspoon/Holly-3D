@@ -18,6 +18,12 @@ impl Editor {
                 self.create_primitive(kind, p);
                 self.tool = Tool::Create(kind);
             }
+            Tool::CreateGeoGen(mode) => {
+                let p = v.construction_point(cursor);
+                let p = if self.snap { (p * 4.0).round() / 4.0 } else { p };
+                self.create_geogen(mode, p);
+                self.tool = Tool::CreateGeoGen(mode);
+            }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
             Tool::CreateShape(kind) => {
                 let p = self.snapped_point_pub(view, cursor);

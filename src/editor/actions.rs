@@ -16,6 +16,15 @@ impl Editor {
         self.status = format!("Created {}", self.scene.objects[id].name);
     }
 
+    pub fn create_geogen(&mut self, mode: crate::modifiers::GeoMode, at: Vec3) {
+        self.checkpoint("Create GeoGen");
+        let id = self.scene.add(BaseObject::GeoGen(crate::modifiers::GeoGenParams::default_of(mode)), at);
+        self.scene.select_only(Some(id));
+        self.sub = SubObject::Object;
+        self.tab = CommandTab::Modify;
+        self.status = format!("Created {}", self.scene.objects[id].name);
+    }
+
     pub fn convert_to_editable_poly(&mut self) {
         let ids = self.scene.selected();
         if ids.is_empty() {

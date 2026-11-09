@@ -39,6 +39,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     if o.active_level.is_none() && o.shape_object().is_some() {
         return rollouts::spline::shape_base(ui, ed);
     }
+    if o.active_level.is_none() && matches!(o.base, crate::scene::BaseObject::GeoGen(_)) {
+        rollouts::geogen::base(ui, ed);
+        if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
+            ed.convert_to_editable_poly();
+        }
+        return;
+    }
     if o.active_level.is_none() && o.primitive_mut_ref().is_some() {
         params::show(ui, ed);
         ui.label(dim("Convert to Editable Poly (right-click quad menu) or add an Edit Poly modifier to model."));
@@ -54,6 +61,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::VertexPaint(_)) => return crate::ui::paint_box::modifier_rollout(ui, ed),
         Some(ModifierKind::Lathe(_)) => return rollouts::spline::lathe(ui, ed),
         Some(ModifierKind::Extrude(_)) => return rollouts::spline::extrude(ui, ed),
+        Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),
         _ => {}
     }
     if !o.sub_object_editable() {

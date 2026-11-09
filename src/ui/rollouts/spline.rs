@@ -12,19 +12,19 @@ use crate::ui::theme;
 use crate::ui::widgets::{Track, action, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
 
-fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
+pub(crate) fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
     egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).show(ui, body);
 }
 
 /// Spinner row; angles (ranges past ±100) step faster than distances.
-fn num_row(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut f32, range: std::ops::RangeInclusive<f32>, default: f32) {
+pub(crate) fn num_row(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut f32, range: std::ops::RangeInclusive<f32>, default: f32) {
     ui.label(label);
     let speed = if *range.end() >= 180.0 && *range.end() <= 360.0 { 0.5 } else { 0.01 };
     t.r(max_spinner_range(ui, v, speed, default, range));
     ui.end_row();
 }
 
-fn u_row(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut u32, default: u32, range: std::ops::RangeInclusive<u32>) {
+pub(crate) fn u_row(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut u32, default: u32, range: std::ops::RangeInclusive<u32>) {
     ui.label(label);
     t.r(max_spinner_range(ui, v, 0.1, default, range));
     ui.end_row();
@@ -259,7 +259,7 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
 }
 
 /// Edits the active modifier (Lathe / Extrude) with undo once per gesture.
-fn mod_params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&mut egui::Ui, &mut ModifierKind, &mut Track)) {
+pub(crate) fn mod_params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&mut egui::Ui, &mut ModifierKind, &mut Track)) {
     let Some(id) = ed.current() else { return };
     let Some(level) = ed.scene.objects[id].active_level else { return };
     let mut kind = ed.scene.objects[id].modifiers[level].kind.clone();

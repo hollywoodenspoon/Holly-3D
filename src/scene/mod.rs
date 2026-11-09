@@ -36,6 +36,8 @@ pub enum BaseObject {
     LightTarget,
     /// Spline shape (parametric or Editable Spline).
     Shape(crate::splines::ShapeObject),
+    /// GeoGen procedural rock / crystal / cliff / stalagmite.
+    GeoGen(crate::modifiers::GeoGenParams),
 }
 
 impl BaseObject {
@@ -45,6 +47,7 @@ impl BaseObject {
             BaseObject::EditablePoly(m) => m.clone(),
             BaseObject::Light(_) | BaseObject::LightTarget => EditablePoly::new(),
             BaseObject::Shape(s) => s.viewport_mesh(),
+            BaseObject::GeoGen(g) => g.build(),
         }
     }
     /// The shape flowing into the stack (shapes only).
@@ -61,6 +64,7 @@ impl BaseObject {
             BaseObject::Light(l) => l.kind.label(),
             BaseObject::LightTarget => "Target",
             BaseObject::Shape(s) => s.label(),
+            BaseObject::GeoGen(g) => g.mode.short(),
         }
     }
 }

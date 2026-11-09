@@ -44,6 +44,8 @@ pub enum Tool {
     #[default]
     None,
     Create(PrimitiveKind),
+    /// Click-placed GeoGen procedural object.
+    CreateGeoGen(crate::modifiers::GeoMode),
     TargetWeld {
         first: Option<crate::mesh::VertexId>,
     },
@@ -78,6 +80,7 @@ impl Tool {
         match self {
             Tool::None => None,
             Tool::Create(_) => Some("Click in a viewport to place the object"),
+            Tool::CreateGeoGen(_) => Some("Click in a viewport to place the GeoGen object"),
             Tool::TargetWeld { first: None } => Some("Target Weld: click the vertex to weld"),
             Tool::TargetWeld { .. } => Some("Target Weld: click the target vertex"),
             Tool::InsertVertex => Some("Insert Vertex: click on an edge or polygon"),

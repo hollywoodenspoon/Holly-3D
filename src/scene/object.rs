@@ -207,6 +207,13 @@ impl SceneObject {
         }
     }
 
+    pub fn geogen_mut(&mut self) -> Option<&mut crate::modifiers::GeoGenParams> {
+        match &mut self.base {
+            BaseObject::GeoGen(g) => Some(g),
+            _ => None,
+        }
+    }
+
     // ---- Pivot tab ---------------------------------------------------------
 
     fn set_pivot(&mut self, new_node: Mat4) {

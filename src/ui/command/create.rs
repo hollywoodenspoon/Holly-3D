@@ -2,6 +2,7 @@
 
 use super::CONTENT_W;
 use crate::editor::{Editor, Tool};
+use crate::modifiers::GeoMode;
 use crate::primitives::PrimitiveKind;
 use crate::render::LightKind;
 use crate::splines::ShapeKind;
@@ -25,13 +26,27 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                     ui.end_row();
                 }
             }
-            ui.add_enabled_ui(false, |ui| {
-                ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new("GeoGen Rock/Crystal"))
-                    .on_disabled_hover_text("Arrives in Phase 5");
-            });
-            ui.end_row();
         });
         ui.label(dim("Click a type, then click in a viewport to place it. Right-click a type to create at the origin."));
+    });
+    rollout(ui, "Geometry — GeoGen", true, |ui| {
+        egui::Grid::new("geogen").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
+            for (i, mode) in GeoMode::ALL.iter().enumerate() {
+                let active = ed.tool == Tool::CreateGeoGen(*mode);
+                let r = ui
+                    .add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(mode.short()).selected(active))
+                    .on_hover_text(mode.label());
+                if r.clicked() {
+                    ed.tool = if active { Tool::None } else { Tool::CreateGeoGen(*mode) };
+                }
+                if r.secondary_clicked() {
+                    ed.create_geogen(*mode, Vec3::ZERO);
+                }
+                if i % 2 == 1 {
+                    ui.end_row();
+                }
+            }
+        });
     });
     rollout(ui, "Shapes / Splines", true, |ui| {
         egui::Grid::new("shapes").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {

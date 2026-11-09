@@ -1,6 +1,7 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
 pub mod ffd;
+pub mod geogen;
 pub mod lathe;
 pub mod smart_uv;
 pub mod spline_extrude;
@@ -9,6 +10,7 @@ pub mod uvw_map;
 pub mod vertex_paint;
 
 pub use ffd::FfdMod;
+pub use geogen::{GeoGenMod, GeoGenParams, GeoMode};
 pub use lathe::{LatheAlign, LatheMod};
 pub use spline_extrude::ExtrudeMod;
 pub use unwrap_uvw::UnwrapMod;
@@ -46,6 +48,7 @@ pub enum ModifierKind {
     VertexPaint(VertexPaintMod),
     Lathe(LatheMod),
     Extrude(ExtrudeMod),
+    GeoGen(GeoGenMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -79,6 +82,7 @@ impl ModifierKind {
             ModifierKind::VertexPaint(_) => "VertexPaint",
             ModifierKind::Lathe(_) => "Lathe",
             ModifierKind::Extrude(_) => "Extrude",
+            ModifierKind::GeoGen(_) => "GeoGen",
         }
     }
 
@@ -104,7 +108,11 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.fit(input),
             ModifierKind::UvwMap(u) => u.fit(input),
             ModifierKind::Unwrap(u) => u.capture(input),
-            ModifierKind::EditPoly(_) | ModifierKind::VertexPaint(_) | ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
+            ModifierKind::EditPoly(_)
+            | ModifierKind::VertexPaint(_)
+            | ModifierKind::Lathe(_)
+            | ModifierKind::Extrude(_)
+            | ModifierKind::GeoGen(_) => {}
         }
     }
 }
@@ -131,6 +139,7 @@ impl ModifierEntry {
             ModifierKind::UvwMap(u) => u.apply(mesh),
             ModifierKind::Unwrap(u) => u.apply(mesh),
             ModifierKind::VertexPaint(v) => v.apply(mesh),
+            ModifierKind::GeoGen(g) => g.apply(mesh),
             // shape modifiers pass meshes through untouched
             ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
         }
@@ -164,6 +173,7 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "UVW Map", available: true },
     ModifierListItem { name: "Unwrap UVW", available: true },
     ModifierListItem { name: "VertexPaint", available: true },
+    ModifierListItem { name: "GeoGen", available: true },
     ModifierListItem { name: "TurboSmooth", available: false },
     ModifierListItem { name: "Symmetry", available: false },
     ModifierListItem { name: "Shell", available: false },
@@ -190,6 +200,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "VertexPaint" => Some(ModifierEntry::new(ModifierKind::VertexPaint(VertexPaintMod::default()))),
         "Lathe" => Some(ModifierEntry::new(ModifierKind::Lathe(LatheMod::default()))),
         "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
+        "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
         _ => None,
     }
 }
