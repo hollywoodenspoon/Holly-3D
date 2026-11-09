@@ -12,6 +12,7 @@ pub enum DragTarget {
     Pivot { object: ObjId, before: Box<SceneObject> },
     SlicePlane { start: Xform },
     ModSub { object: ObjId, before: Box<SceneObject>, sub: crate::modifiers::ModSub },
+    Spline { object: ObjId, before: Box<SceneObject>, level: crate::splines::edit::SplineLevel },
 }
 
 #[derive(Clone, Debug)]
@@ -29,6 +30,12 @@ impl Editor {
             self.checkpoint(sub.label());
             let before = Box::new(self.scene.objects[id].clone());
             self.drag = Some(Drag { target: DragTarget::ModSub { object: id, before, sub }, start: frame, last_total: Mat4::IDENTITY });
+            return;
+        }
+        if let (Some(level), Some(id)) = (self.spline_level(), self.current()) {
+            self.checkpoint("Transform");
+            let before = Box::new(self.scene.objects[id].clone());
+            self.drag = Some(Drag { target: DragTarget::Spline { object: id, before, level }, start: frame, last_total: Mat4::IDENTITY });
             return;
         }
         if let (Some(sp), true) = (&self.slice_plane, self.in_sub_object()) {
@@ -125,6 +132,18 @@ impl Editor {
                 }
             }
             DragTarget::ModSub { object, before, sub } => self.drag_mod_sub(object, &before, sub, total),
+            DragTarget::Spline { object, before, level } => {
+                let w = before.world_matrix();
+                let local = w.inverse() * total * w;
+                if let Some(o) = self.scene.objects.get_mut(object) {
+                    *o = (*before).clone();
+                    if let Some(sh) = o.shape_object_mut().and_then(|so| so.editable_mut()) {
+                        sh.transform_selected(level, local);
+                    }
+                    o.evaluate();
+                }
+                self.scene.propagate_from(object);
+            }
             DragTarget::Objects { .. } => {}
         }
     }

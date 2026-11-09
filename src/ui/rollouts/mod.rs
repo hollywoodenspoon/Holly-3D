@@ -5,6 +5,7 @@ pub mod edit_sub;
 pub mod modifiers;
 pub mod selection;
 pub mod smoothing;
+pub mod spline;
 
 use crate::editor::Editor;
 use crate::mesh::ops::PolyOp;

@@ -1,12 +1,16 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
 pub mod ffd;
+pub mod lathe;
 pub mod smart_uv;
+pub mod spline_extrude;
 pub mod unwrap_uvw;
 pub mod uvw_map;
 pub mod vertex_paint;
 
 pub use ffd::FfdMod;
+pub use lathe::{LatheAlign, LatheMod};
+pub use spline_extrude::ExtrudeMod;
 pub use unwrap_uvw::UnwrapMod;
 pub use uvw_map::{MapType, UvwMapMod};
 pub use vertex_paint::VertexPaintMod;
@@ -40,6 +44,8 @@ pub enum ModifierKind {
     UvwMap(UvwMapMod),
     Unwrap(UnwrapMod),
     VertexPaint(VertexPaintMod),
+    Lathe(LatheMod),
+    Extrude(ExtrudeMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -48,6 +54,8 @@ pub enum ModSub {
     ControlPoints,
     Lattice,
     Gizmo,
+    /// Lathe revolution axis.
+    Axis,
 }
 
 impl ModSub {
@@ -56,6 +64,7 @@ impl ModSub {
             ModSub::ControlPoints => "Control Points",
             ModSub::Lattice => "Lattice",
             ModSub::Gizmo => "Gizmo",
+            ModSub::Axis => "Axis",
         }
     }
 }
@@ -68,6 +77,8 @@ impl ModifierKind {
             ModifierKind::UvwMap(_) => "UVW Map",
             ModifierKind::Unwrap(_) => "Unwrap UVW",
             ModifierKind::VertexPaint(_) => "VertexPaint",
+            ModifierKind::Lathe(_) => "Lathe",
+            ModifierKind::Extrude(_) => "Extrude",
         }
     }
 
@@ -81,6 +92,7 @@ impl ModifierKind {
         match self {
             ModifierKind::Ffd(_) => &[ModSub::ControlPoints, ModSub::Lattice],
             ModifierKind::UvwMap(_) => &[ModSub::Gizmo],
+            ModifierKind::Lathe(_) => &[ModSub::Axis],
             _ => &[],
         }
     }
@@ -92,7 +104,7 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.fit(input),
             ModifierKind::UvwMap(u) => u.fit(input),
             ModifierKind::Unwrap(u) => u.capture(input),
-            ModifierKind::EditPoly(_) | ModifierKind::VertexPaint(_) => {}
+            ModifierKind::EditPoly(_) | ModifierKind::VertexPaint(_) | ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
         }
     }
 }
@@ -119,6 +131,21 @@ impl ModifierEntry {
             ModifierKind::UvwMap(u) => u.apply(mesh),
             ModifierKind::Unwrap(u) => u.apply(mesh),
             ModifierKind::VertexPaint(v) => v.apply(mesh),
+            // shape modifiers pass meshes through untouched
+            ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
+        }
+    }
+
+    /// Shape -> mesh modifiers (Lathe, Extrude) consume a shape flowing up the stack.
+    pub fn consumes_shape(&self) -> bool {
+        matches!(self.kind, ModifierKind::Lathe(_) | ModifierKind::Extrude(_))
+    }
+
+    pub fn build_from_shape(&self, shape: &crate::splines::Shape) -> EditablePoly {
+        match &self.kind {
+            ModifierKind::Lathe(l) => l.build(shape),
+            ModifierKind::Extrude(e) => e.build(shape),
+            _ => EditablePoly::new(),
         }
     }
 }
@@ -145,8 +172,8 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Taper", available: false },
     ModifierListItem { name: "Push", available: false },
     ModifierListItem { name: "Chamfer", available: false },
-    ModifierListItem { name: "Lathe", available: false },
-    ModifierListItem { name: "Extrude", available: false },
+    ModifierListItem { name: "Lathe", available: true },
+    ModifierListItem { name: "Extrude", available: true },
     ModifierListItem { name: "Edit Normals", available: false },
     ModifierListItem { name: "Boolean", available: false },
     ModifierListItem { name: "ProOptimizer", available: false },
@@ -161,6 +188,8 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "UVW Map" => Some(ModifierEntry::new(ModifierKind::UvwMap(UvwMapMod::default()))),
         "Unwrap UVW" => Some(ModifierEntry::new(ModifierKind::Unwrap(UnwrapMod::default()))),
         "VertexPaint" => Some(ModifierEntry::new(ModifierKind::VertexPaint(VertexPaintMod::default()))),
+        "Lathe" => Some(ModifierEntry::new(ModifierKind::Lathe(LatheMod::default()))),
+        "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
         _ => None,
     }
 }

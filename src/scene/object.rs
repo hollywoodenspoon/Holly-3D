@@ -7,17 +7,13 @@ use crate::modifiers::{ModifierEntry, ModifierKind};
 impl SceneObject {
     /// Folds base + modifiers (bottom to top); also refreshes `level_mesh`.
     pub fn evaluate(&mut self) {
-        let mut m = self.base.to_editable_poly();
-        if self.active_level.is_none() {
-            self.level_mesh = m.clone();
-        }
-        for (i, md) in self.modifiers.iter().enumerate() {
-            md.apply(&mut m);
-            if self.active_level == Some(i) {
-                self.level_mesh = m.clone();
-            }
-        }
+        let (m, shape, level) = self.fold(self.modifiers.len(), self.active_level);
+        self.level_mesh = match self.active_level {
+            None => self.base.to_editable_poly(),
+            Some(_) => level.unwrap_or_else(|| m.clone()),
+        };
         self.evaluated_mesh = m;
+        self.shape = shape;
         self.version = next_version();
         self.selection_version = next_version();
     }
@@ -45,7 +41,7 @@ impl SceneObject {
         match self.active_level {
             None => match &mut self.base {
                 BaseObject::EditablePoly(base) => *base = m,
-                BaseObject::Primitive(_) | BaseObject::Light(_) | BaseObject::LightTarget => return false,
+                _ => return false,
             },
             Some(i) => match self.modifiers.get_mut(i).map(|md| &mut md.kind) {
                 Some(ModifierKind::EditPoly(ep)) => {
@@ -99,11 +95,76 @@ impl SceneObject {
 
     /// Mesh flowing into modifier `i` (base + enabled modifiers below it).
     pub fn input_of(&self, i: usize) -> crate::mesh::EditablePoly {
+        self.fold(i, None).0
+    }
+
+    /// Shape flowing into modifier `i` (if no Lathe / Extrude consumed it below).
+    pub fn shape_input_of(&self, i: usize) -> Option<crate::splines::Shape> {
+        self.fold(i, None).1
+    }
+
+    /// Folds the base through the first `n` modifiers. A shape travels up the
+    /// stack until a shape modifier (Lathe / Extrude) turns it into a mesh.
+    /// Also returns the mesh right after modifier `level` (if asked).
+    fn fold(
+        &self,
+        n: usize,
+        level: Option<usize>,
+    ) -> (crate::mesh::EditablePoly, Option<crate::splines::Shape>, Option<crate::mesh::EditablePoly>) {
         let mut m = self.base.to_editable_poly();
-        for md in self.modifiers.iter().take(i) {
-            md.apply(&mut m);
+        let mut shape = self.base.to_shape();
+        let mut at_level = None;
+        for (i, md) in self.modifiers.iter().enumerate().take(n) {
+            match &shape {
+                Some(sh) if md.consumes_shape() => {
+                    if md.enabled_in_viewport {
+                        m = md.build_from_shape(sh);
+                        shape = None;
+                    }
+                }
+                _ => md.apply(&mut m),
+            }
+            if level == Some(i) {
+                at_level = Some(m.clone());
+            }
         }
-        m
+        (m, shape, at_level)
+    }
+
+    /// Local-space bounds of everything drawn (mesh and live splines).
+    pub fn bounds(&self) -> Option<crate::mesh::Aabb> {
+        let mesh = self.evaluated_mesh.bounds();
+        let shape = self.shape.as_ref().and_then(|s| s.bounds());
+        match (mesh, shape) {
+            (Some(a), Some(b)) => Some(a.union(&b)),
+            (a, b) => a.or(b),
+        }
+    }
+
+    pub fn shape_object(&self) -> Option<&crate::splines::ShapeObject> {
+        match &self.base {
+            BaseObject::Shape(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn shape_object_mut(&mut self) -> Option<&mut crate::splines::ShapeObject> {
+        match &mut self.base {
+            BaseObject::Shape(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Mesh the renderer uses: Enable In Renderer sweeps a spline that is
+    /// not shown as a mesh in the viewport.
+    pub fn render_mesh(&self) -> std::borrow::Cow<'_, crate::mesh::EditablePoly> {
+        if let (Some(so), Some(sh)) = (self.shape_object(), &self.shape)
+            && so.render.renderer
+            && !so.render.viewport
+        {
+            return std::borrow::Cow::Owned(so.render.sweep(sh));
+        }
+        std::borrow::Cow::Borrowed(&self.evaluated_mesh)
     }
 
     /// The active modifier, if the stack highlight is on one.

@@ -34,13 +34,19 @@ impl Editor {
         if let Some((k, _)) = helper {
             return Some(k);
         }
+        // Live splines (shapes not yet lathed / extruded) pick by screen distance.
+        let spline = self
+            .selectable()
+            .filter_map(|(k, o)| self.shape_screen_distance(view, o, cursor).map(|d| (k, d)))
+            .filter(|(_, d)| *d <= EDGE_PICK_PX)
+            .min_by(|a, b| a.1.total_cmp(&b.1));
         let ray = v.ray(cursor);
         let hit = self
             .selectable()
             .filter_map(|(k, o)| pick_polygon(&o.evaluated_mesh, o.world_matrix(), &ray, false).map(|h| (k, h.distance)))
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|x| x.0);
-        hit.or_else(|| {
+        hit.or(spline.map(|x| x.0)).or_else(|| {
             // wireframe-friendly fallback: nearest edge on screen
             let project = |p: Vec3| v.to_screen(p);
             self.selectable()
@@ -67,7 +73,7 @@ impl Editor {
     }
 
     pub fn click_select(&mut self, view: usize, cursor: Vec2, op: SelectOp) {
-        if self.mod_click_select(view, cursor, op) {
+        if self.mod_click_select(view, cursor, op) || self.spline_click_select(view, cursor, op) {
             return;
         }
         if !self.in_sub_object() {
@@ -143,7 +149,7 @@ impl Editor {
     }
 
     pub fn marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) {
-        if self.mod_marquee_select(view, a, b, op) {
+        if self.mod_marquee_select(view, a, b, op) || self.spline_marquee_select(view, a, b, op) {
             return;
         }
         let (min, max) = (a.min(b), a.max(b));
@@ -156,10 +162,13 @@ impl Editor {
                         return v.to_screen(o.transform.translation).is_some_and(|s| in_rect(s, min, max));
                     }
                     let w = o.world_matrix();
+                    let shape_pts = o.shape.iter().flat_map(|s| s.polylines()).flat_map(|pl| pl.pts);
                     o.evaluated_mesh
                         .vertices
                         .values()
-                        .any(|p| v.to_screen(w.transform_point3(p.position)).is_some_and(|s| in_rect(s, min, max)))
+                        .map(|p| p.position)
+                        .chain(shape_pts)
+                        .any(|p| v.to_screen(w.transform_point3(p)).is_some_and(|s| in_rect(s, min, max)))
                 })
                 .map(|x| x.0)
                 .collect();

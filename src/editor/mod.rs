@@ -8,6 +8,7 @@ pub mod modsub;
 pub mod paint;
 pub mod render;
 pub mod select;
+pub mod splines;
 pub mod tools;
 pub mod types;
 pub mod undo;
@@ -84,6 +85,8 @@ pub struct Editor {
     pub render: crate::render::RenderSettings,
     /// Rendered Frame Window (F9) + running job.
     pub rfw: render::RenderUi,
+    /// Editable Spline tool spinners (Fillet, Chamfer, Weld, Divide, Outline…).
+    pub spline_ui: SplineUi,
 }
 
 impl Default for Editor {
@@ -130,6 +133,7 @@ impl Default for Editor {
             paint_stroke: None,
             render: Default::default(),
             rfw: Default::default(),
+            spline_ui: Default::default(),
         }
     }
 }
@@ -203,6 +207,10 @@ impl Editor {
 
     /// World-space center of the current selection (objects or sub-objects).
     pub fn selection_center(&self) -> Option<Vec3> {
+        if self.spline_level().is_some() {
+            let pts = self.spline_selection_world();
+            return (!pts.is_empty()).then(|| pts.iter().sum::<Vec3>() / pts.len() as f32);
+        }
         if self.in_sub_object() {
             let o = self.current_obj()?;
             let vs = o.level_mesh.selection_vertices(self.sub);
@@ -240,6 +248,9 @@ impl Editor {
             }
             let w = o.world_matrix();
             pts.extend(o.evaluated_mesh.vertices.values().map(|v| w.transform_point3(v.position)));
+            if let Some(sh) = &o.shape {
+                pts.extend(sh.polylines().into_iter().flat_map(|pl| pl.pts).map(|p| w.transform_point3(p)));
+            }
         }
         crate::mesh::Aabb::from_points(pts)
     }

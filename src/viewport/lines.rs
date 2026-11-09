@@ -26,7 +26,7 @@ pub fn register(app: &mut App) {
         .init_gizmo_group::<Vp3Lines>()
         .init_gizmo_group::<OverlayLines>()
         .add_systems(Startup, configure)
-        .add_systems(Update, draw_lines);
+        .add_systems(Update, (draw_lines, super::spline_lines::draw));
 }
 
 fn configure(mut store: ResMut<GizmoConfigStore>) {
@@ -135,7 +135,7 @@ fn draw_lines(
     for (id, o) in ed.scene.objects.iter().filter(|(_, o)| o.selected && !o.hidden) {
         let w = o.world_matrix();
         if !(ed.in_sub_object() && Some(id) == current)
-            && let Some(b) = o.evaluated_mesh.bounds()
+            && let Some(b) = o.bounds()
         {
             brackets(&mut ov, w, b);
         }

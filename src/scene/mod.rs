@@ -34,6 +34,8 @@ pub enum BaseObject {
     Light(crate::render::Light),
     /// Target helper of a Target Spot / Target Direct light.
     LightTarget,
+    /// Spline shape (parametric or Editable Spline).
+    Shape(crate::splines::ShapeObject),
 }
 
 impl BaseObject {
@@ -42,6 +44,14 @@ impl BaseObject {
             BaseObject::Primitive(p) => p.to_editable_poly(),
             BaseObject::EditablePoly(m) => m.clone(),
             BaseObject::Light(_) | BaseObject::LightTarget => EditablePoly::new(),
+            BaseObject::Shape(s) => s.viewport_mesh(),
+        }
+    }
+    /// The shape flowing into the stack (shapes only).
+    pub fn to_shape(&self) -> Option<crate::splines::Shape> {
+        match self {
+            BaseObject::Shape(s) => Some(s.to_shape()),
+            _ => None,
         }
     }
     pub fn label(&self) -> &'static str {
@@ -50,6 +60,7 @@ impl BaseObject {
             BaseObject::EditablePoly(_) => "Editable Poly",
             BaseObject::Light(l) => l.kind.label(),
             BaseObject::LightTarget => "Target",
+            BaseObject::Shape(s) => s.label(),
         }
     }
 }
@@ -88,6 +99,9 @@ pub struct SceneObject {
     pub evaluated_mesh: EditablePoly,
     /// Mesh at the active stack level (what sub-object tools edit and pick).
     pub level_mesh: EditablePoly,
+    /// Shape still flowing out of the stack (drawn as splines); `None` once a
+    /// Lathe / Extrude turned it into a mesh, and for non-shape objects.
+    pub shape: Option<crate::splines::Shape>,
     /// `None` = base object, `Some(i)` = modifier `i`.
     pub active_level: Option<usize>,
     pub transform: Xform,
@@ -119,6 +133,7 @@ impl SceneObject {
             modifiers: vec![],
             evaluated_mesh: EditablePoly::new(),
             level_mesh: EditablePoly::new(),
+            shape: None,
             active_level: None,
             transform: Xform::default(),
             offset: Mat4::IDENTITY,

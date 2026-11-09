@@ -85,6 +85,25 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
             continue;
         }
+        // ---- Line tool: press = knot, drag = Bezier handles, right-click ends
+        if matches!(ed.tool, crate::editor::Tool::Line { .. }) {
+            let (pressed, down) = ui.input(|i| (i.pointer.primary_pressed(), i.pointer.primary_down()));
+            if let Some(p) = pointer {
+                if pressed && resp.hovered() && !mods.alt {
+                    ed.line_press(vi, v2(p));
+                } else if down && resp.dragged() {
+                    ed.line_drag(vi, v2(p));
+                }
+            }
+            if !down {
+                ed.line_release();
+            }
+            if resp.clicked_by(PointerButton::Secondary) {
+                ed.cancel_tool();
+            }
+            overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
+            continue;
+        }
         // ---- gizmo (active viewport only)
         let mut gizmo_hot = false;
         if vi == ed.viewports.active && ed.tool == crate::editor::Tool::None {

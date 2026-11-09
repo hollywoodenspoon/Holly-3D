@@ -72,7 +72,8 @@ fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
         let mat = materials.len() - 1;
         let w = o.world_matrix();
         let nm = Mat3::from_mat4(w).inverse().transpose();
-        let m = &o.evaluated_mesh;
+        let m = o.render_mesh();
+        let m = m.as_ref();
         let normals = m.corner_normals();
         for (pid, p) in &m.polygons {
             let pts: Vec<Vec3> = p.vertex_ids().map(|v| m.pos(v)).collect();

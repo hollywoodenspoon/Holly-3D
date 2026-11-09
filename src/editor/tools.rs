@@ -19,6 +19,13 @@ impl Editor {
                 self.tool = Tool::Create(kind);
             }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
+            Tool::CreateShape(kind) => {
+                let p = self.snapped_point_pub(view, cursor);
+                self.create_shape(kind, view, p);
+                self.tool = Tool::CreateShape(kind);
+            }
+            // handled on press / drag / release by the viewport
+            Tool::Line { .. } => {}
             Tool::CreateLight { kind, first } => self.create_light_click(view, cursor, kind, first),
             Tool::PickMaterial => {
                 if let Some(other) = self.pick_object(view, cursor) {
@@ -100,6 +107,9 @@ impl Editor {
         }
         if self.tool == Tool::None {
             return false;
+        }
+        if matches!(self.tool, Tool::Line { .. }) && self.finish_line(false) {
+            return true;
         }
         self.tool = Tool::None;
         true

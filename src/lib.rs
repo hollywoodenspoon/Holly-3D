@@ -8,5 +8,6 @@ pub mod paint;
 pub mod primitives;
 pub mod render;
 pub mod scene;
+pub mod splines;
 pub mod ui;
 pub mod viewport;

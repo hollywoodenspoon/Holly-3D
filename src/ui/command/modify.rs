@@ -36,6 +36,9 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     stack::stack_actions(ui, ed);
     ui.add_space(6.0);
     let o = &ed.scene.objects[id];
+    if o.active_level.is_none() && o.shape_object().is_some() {
+        return rollouts::spline::shape_base(ui, ed);
+    }
     if o.active_level.is_none() && o.primitive_mut_ref().is_some() {
         params::show(ui, ed);
         ui.label(dim("Convert to Editable Poly (right-click quad menu) or add an Edit Poly modifier to model."));
@@ -49,6 +52,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::UvwMap(_)) => return rollouts::modifiers::uvw_map(ui, ed),
         Some(ModifierKind::Unwrap(_)) => return rollouts::modifiers::unwrap(ui, ed),
         Some(ModifierKind::VertexPaint(_)) => return crate::ui::paint_box::modifier_rollout(ui, ed),
+        Some(ModifierKind::Lathe(_)) => return rollouts::spline::lathe(ui, ed),
+        Some(ModifierKind::Extrude(_)) => return rollouts::spline::extrude(ui, ed),
         _ => {}
     }
     if !o.sub_object_editable() {

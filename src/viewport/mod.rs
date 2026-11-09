@@ -10,3 +10,4 @@ pub mod mod_gizmos;
 pub mod outline;
 pub mod picking;
 pub mod render_sync;
+pub mod spline_lines;

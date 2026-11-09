@@ -63,6 +63,14 @@ pub enum Tool {
         kind: crate::render::LightKind,
         first: Option<bevy::math::Vec3>,
     },
+    /// Click-placed parametric shape (Circle, Rectangle, Star…).
+    CreateShape(crate::splines::ShapeKind),
+    /// Line: click = Corner knot, click-drag = Bezier knot, right-click ends.
+    Line {
+        view: usize,
+        knots: Vec<crate::splines::Knot>,
+        dragging: bool,
+    },
 }
 
 impl Tool {
@@ -82,6 +90,9 @@ impl Tool {
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
             Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),
             Tool::CreateLight { .. } => Some("Click in a viewport to place the light"),
+            Tool::CreateShape(_) => Some("Click in a viewport to place the shape"),
+            Tool::Line { knots, .. } if knots.is_empty() => Some("Line: click for corners, drag for Bezier handles"),
+            Tool::Line { .. } => Some("Line: right-click to finish, click the first vertex to close"),
         }
     }
 }
@@ -129,4 +140,23 @@ pub struct MatEditor {
     pub slate: bool,
     /// Folder typed for Import PBR Texture Folder.
     pub pbr_folder: String,
+}
+
+/// Spinner values of the Editable Spline Geometry rollout.
+#[derive(Clone, Debug)]
+pub struct SplineUi {
+    pub fillet: f32,
+    pub chamfer: f32,
+    pub weld: f32,
+    pub divide: u32,
+    pub outline: f32,
+    /// 0 = horizontal (X), 1 = vertical (Y), 2 = both.
+    pub mirror_axis: usize,
+    pub mirror_copy: bool,
+}
+
+impl Default for SplineUi {
+    fn default() -> Self {
+        Self { fillet: 0.1, chamfer: 0.1, weld: 0.05, divide: 1, outline: 0.05, mirror_axis: 0, mirror_copy: false }
+    }
 }

@@ -63,6 +63,10 @@ impl Editor {
             }
             (ModSub::Lattice, ModifierKind::Ffd(f)) => (f.lattice.transform_point3(f.bounds.center()), local_rot),
             (ModSub::Gizmo, ModifierKind::UvwMap(u)) => (u.center, rot * u.rotation),
+            (ModSub::Axis, ModifierKind::Lathe(l)) => {
+                let shape = o.shape_input_of(o.active_level?)?;
+                (l.axis_point(&shape), local_rot)
+            }
             _ => return None,
         };
         Some(Xform { translation: w.transform_point3(center), rotation: r, scale: Vec3::ONE })
@@ -89,6 +93,9 @@ impl Editor {
             (ModSub::Gizmo, Some(ModifierKind::UvwMap(u))) => {
                 let m = local * u.gizmo_matrix();
                 u.set_gizmo_matrix(m);
+            }
+            (ModSub::Axis, Some(ModifierKind::Lathe(l))) => {
+                l.axis_offset += local.to_scale_rotation_translation().2;
             }
             _ => return,
         }
