@@ -48,6 +48,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::Ffd(_)) => return rollouts::modifiers::ffd(ui, ed),
         Some(ModifierKind::UvwMap(_)) => return rollouts::modifiers::uvw_map(ui, ed),
         Some(ModifierKind::Unwrap(_)) => return rollouts::modifiers::unwrap(ui, ed),
+        Some(ModifierKind::VertexPaint(_)) => return crate::ui::paint_box::modifier_rollout(ui, ed),
         _ => {}
     }
     if !o.sub_object_editable() {

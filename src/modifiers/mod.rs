@@ -4,10 +4,12 @@ pub mod ffd;
 pub mod smart_uv;
 pub mod unwrap_uvw;
 pub mod uvw_map;
+pub mod vertex_paint;
 
 pub use ffd::FfdMod;
 pub use unwrap_uvw::UnwrapMod;
 pub use uvw_map::{MapType, UvwMapMod};
+pub use vertex_paint::VertexPaintMod;
 
 use crate::mesh::ops::PolyOp;
 use crate::mesh::{EditablePoly, SelectionSets};
@@ -37,6 +39,7 @@ pub enum ModifierKind {
     Ffd(FfdMod),
     UvwMap(UvwMapMod),
     Unwrap(UnwrapMod),
+    VertexPaint(VertexPaintMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -64,6 +67,7 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.name(),
             ModifierKind::UvwMap(_) => "UVW Map",
             ModifierKind::Unwrap(_) => "Unwrap UVW",
+            ModifierKind::VertexPaint(_) => "VertexPaint",
         }
     }
 
@@ -88,7 +92,7 @@ impl ModifierKind {
             ModifierKind::Ffd(f) => f.fit(input),
             ModifierKind::UvwMap(u) => u.fit(input),
             ModifierKind::Unwrap(u) => u.capture(input),
-            ModifierKind::EditPoly(_) => {}
+            ModifierKind::EditPoly(_) | ModifierKind::VertexPaint(_) => {}
         }
     }
 }
@@ -114,6 +118,7 @@ impl ModifierEntry {
             ModifierKind::Ffd(f) => f.apply(mesh),
             ModifierKind::UvwMap(u) => u.apply(mesh),
             ModifierKind::Unwrap(u) => u.apply(mesh),
+            ModifierKind::VertexPaint(v) => v.apply(mesh),
         }
     }
 }
@@ -131,6 +136,7 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "FFD 4x4x4", available: true },
     ModifierListItem { name: "UVW Map", available: true },
     ModifierListItem { name: "Unwrap UVW", available: true },
+    ModifierListItem { name: "VertexPaint", available: true },
     ModifierListItem { name: "TurboSmooth", available: false },
     ModifierListItem { name: "Symmetry", available: false },
     ModifierListItem { name: "Shell", available: false },
@@ -144,7 +150,6 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Edit Normals", available: false },
     ModifierListItem { name: "Boolean", available: false },
     ModifierListItem { name: "ProOptimizer", available: false },
-    ModifierListItem { name: "VertexPaint", available: false },
 ];
 
 pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
@@ -155,6 +160,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "FFD 4x4x4" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(4)))),
         "UVW Map" => Some(ModifierEntry::new(ModifierKind::UvwMap(UvwMapMod::default()))),
         "Unwrap UVW" => Some(ModifierEntry::new(ModifierKind::Unwrap(UnwrapMod::default()))),
+        "VertexPaint" => Some(ModifierEntry::new(ModifierKind::VertexPaint(VertexPaintMod::default()))),
         _ => None,
     }
 }

@@ -55,7 +55,12 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                 ui.separator();
                 ui.add_enabled(false, egui::Button::new("Mirror")).on_disabled_hover_text(PHASE5);
                 ui.add_enabled(false, egui::Button::new("Array...")).on_disabled_hover_text(PHASE5);
-                ui.add_enabled(false, egui::Button::new("🎨 Paint")).on_disabled_hover_text(PHASE4);
+                if toggle_button(ui, ed.paint.active, "🖌 Paint")
+                    .on_hover_text("Viewport Paint: VertexPaint / texture projection (PaintBox)")
+                    .clicked()
+                {
+                    ed.toggle_paint();
+                }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.add_enabled(false, egui::Button::new("▶ Quick Render (F9)")).on_disabled_hover_text(PHASE4);
                     ui.add_enabled(false, egui::Button::new("⚙ Render Setup (F10)")).on_disabled_hover_text(PHASE4);

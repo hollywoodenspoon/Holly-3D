@@ -5,6 +5,7 @@ pub mod drag;
 pub mod lights;
 pub mod materials;
 pub mod modsub;
+pub mod paint;
 pub mod select;
 pub mod tools;
 pub mod types;
@@ -75,6 +76,9 @@ pub struct Editor {
     pub default_lights: bool,
     /// Environment & Effects dialog (`8`).
     pub env_open: bool,
+    /// Viewport Paint / PaintBox settings.
+    pub paint: crate::paint::PaintSettings,
+    pub paint_stroke: Option<paint::PaintStroke>,
 }
 
 impl Default for Editor {
@@ -117,6 +121,8 @@ impl Default for Editor {
             mat_editor: MatEditor::default(),
             default_lights: false,
             env_open: false,
+            paint: Default::default(),
+            paint_stroke: None,
         }
     }
 }

@@ -7,6 +7,7 @@ pub mod env_dialog;
 pub mod explorer;
 pub mod hotkeys;
 pub mod material_editor;
+pub mod paint_box;
 pub mod quad_menu;
 pub mod rollouts;
 pub mod status_bar;
@@ -67,6 +68,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
     env_dialog::show(&ctx, ed);
+    paint_box::show(&ctx, ed);
     ed.update_caddy_preview();
     Ok(())
 }

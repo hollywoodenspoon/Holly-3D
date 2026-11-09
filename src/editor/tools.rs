@@ -94,6 +94,10 @@ impl Editor {
 
     /// Right-click / Esc ends the current tool.
     pub fn cancel_tool(&mut self) -> bool {
+        if self.paint.active {
+            self.toggle_paint();
+            return true;
+        }
         if self.tool == Tool::None {
             return false;
         }
