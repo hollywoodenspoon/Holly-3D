@@ -166,10 +166,10 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | GeoGen (crystal, rock, cliff, stalagmite) | ✅ | Works as an object and as a modifier; all spec parameters |
 | Greeble | ✅ | Panels and widgets rollouts, Select Tops, separate material IDs |
 | Chamfer modifier | ✅ | All, Selected, Smoothing-Group or Angle filters |
-| Symmetry | 🟡 | All parameters work. The **Mirror** plane is set with spinners; there's no W/E gizmo for it |
+| Symmetry | ✅ | All parameters work. The **Mirror** sub-object (`1`) moves and rotates the plane with W / E |
 | Shell | ✅ | Straighten Corners, Override Edge Material ID, select inner/outer/edge faces |
 | TurboSmooth | ✅ | Iterations 0–4, Isoline Display, Separate by Smoothing Groups or Materials |
-| Bend, Twist, Taper, Push | 🟡 | All parameters and limits work. The **Gizmo/Center** sub-objects can't be moved in the viewport |
+| Bend, Twist, Taper, Push | ✅ | All parameters and limits work. **Gizmo** (`1`, W/E/R) and **Center** (`2`, W) sub-objects, Reset Gizmo |
 | Edit Normals | ✅ | Cyan, blue and green lines; select by Normal, Vertex, Edge or Face; Break, Unify, Reset, Make Explicit. 🟡 The `E` rotation is covered by tests only and hasn't been tried in the app |
 | Boolean (boolmesh) | ✅ | Union, A−B, B−A, Intersect; Pick Operand B; an operand list with Remove, Extract and on/off toggles; Merge Coplanar Faces. Open meshes are skipped with a warning |
 | ProOptimizer (meshopt) | ✅ | Calculate, linked Vertex % and Vertex Count, keeps material, UV, colour and normal boundaries, Protect Borders |
@@ -236,7 +236,11 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Extrude Along Spline ☐: pick a shape; Segments, Taper Amount, Twist and Align to Face Normal, with parallel-transported frames along the path.
    - Ring / Loop shift: ◀ ▶ arrows next to Ring and Loop move every selected edge one step along its ring or loop.
    - Tests: hinge counts (1 and 3 segments), straight / bent / tapered sweeps, Create from existing and new points, edge chains (open and closed), ring and loop shift on a cylinder.
-5. **Viewport gizmos** for the Bend, Twist and Taper Gizmo/Center sub-objects and the Symmetry Mirror plane.
+5. ✅ **Modifier gizmos.** `src/modifiers/deformers.rs`, `src/modifiers/symmetry.rs`, `src/editor/modsub.rs`, `src/viewport/mod_gizmos.rs`.
+   - Bend / Twist / Taper: a Gizmo frame (move / rotate / scale with W/E/R) and a Center inside it (move with W). The gizmo box is fitted to the input and travels with the gizmo (orange while active, center cross). Reset Gizmo puts both back on the pivot.
+   - Symmetry: a Mirror sub-object; W moves and E rotates the mirror plane (kept rigid), with slicing and seam welding on any tilt.
+   - Older scenes load unchanged (new fields default to identity).
+   - Tests: moving the gizmo equals moving the center, Twist is unchanged by turning its gizmo about the axis, tilting Bend changes the result, the Mirror move equals Mirror Offset, a rotated Mirror equals another axis, a tilted plane welds closed, and editor drags for Gizmo, Center and Mirror.
 6. **Spline Boolean** and a click-to-Refine tool for Editable Spline.
 7. **Snapping to vertices, edges and midpoints** (today `S` snaps to increments only).
 8. **Selection-region shapes** cycled with `Q`: circle, fence, lasso.

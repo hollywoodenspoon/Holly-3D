@@ -93,6 +93,7 @@ pub fn chamfer(ui: &mut egui::Ui, ed: &mut Editor) {
 
 pub fn symmetry(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Symmetry Parameters", true, |ui| {
+        super::modifiers::sub_buttons(ui, ed, &[crate::modifiers::ModSub::Mirror]);
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Symmetry(s) = k else { return };
             axis_row(ui, t, "Mirror Axis", &mut s.axis);
@@ -104,7 +105,7 @@ pub fn symmetry(ui: &mut egui::Ui, ed: &mut Editor) {
                 t.r(max_spinner_range(ui, &mut s.threshold, 0.001, 0.01, 0.0..=10.0));
             });
             grid(ui, "sym_offset", |ui| num_row(ui, t, "Mirror Offset:", &mut s.offset, -1e4..=1e4, 0.0));
-            ui.label(dim("Mirror Offset moves the mirror plane along the axis (object space)."));
+            ui.label(dim("Mirror Offset moves the plane along its axis; the Mirror sub-object moves and rotates it with W / E."));
         });
     });
 }

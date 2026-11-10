@@ -1,10 +1,11 @@
 //! Classic 3ds Max deformers: Bend, Twist, Taper and Push. Bend, Twist and
-//! Taper work in the object's local space around the gizmo `center`
-//! (the pivot by default), measured along the chosen axis over the extent
-//! of the input mesh, like 3ds Max's gizmo fitted to the bounding box.
+//! Taper work in the space of their Gizmo (`gizmo`, object space, moved /
+//! rotated / scaled with W/E/R) around its `center` (gizmo space, the pivot
+//! by default), measured along the chosen axis over the extent of the input
+//! mesh, like 3ds Max's gizmo fitted to the bounding box.
 
 use crate::mesh::EditablePoly;
-use bevy::math::Vec3;
+use bevy::math::{Mat4, Vec3};
 
 /// `[ ] Limit Effect` with Upper / Lower limits along the deform axis.
 #[derive(Clone, Copy, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
@@ -26,20 +27,28 @@ fn frame(axis: usize) -> [usize; 3] {
     [(w + 1) % 3, (w + 2) % 3, w]
 }
 
-/// Applies `f(u, v, w) -> (u, v, w)` to every vertex in the axis frame
-/// around `center`; `len` is the mesh extent along the axis.
-fn deform(m: &mut EditablePoly, axis: usize, center: Vec3, f: impl Fn(f32, f32, f32, f32) -> (f32, f32, f32)) {
+/// The deformer gizmo box (object space): fitted to the input's bounds,
+/// then carried by the gizmo (W/E/R), as in 3ds Max.
+pub fn gizmo_box(m: &EditablePoly, gizmo: Mat4) -> Option<Mat4> {
+    let b = m.bounds()?;
+    Some(gizmo * Mat4::from_translation(b.center()) * Mat4::from_scale(b.size().max(Vec3::splat(1e-3))))
+}
+
+/// Applies `f(u, v, w) -> (u, v, w)` to every vertex in the axis frame of
+/// the gizmo around `center`; `len` is the fitted gizmo extent along the axis.
+fn deform(m: &mut EditablePoly, axis: usize, gizmo: Mat4, center: Vec3, f: impl Fn(f32, f32, f32, f32) -> (f32, f32, f32)) {
     let [iu, iv, iw] = frame(axis);
     let Some(b) = m.bounds() else { return };
     let len = b.size()[iw].max(1e-4);
+    let inv = gizmo.inverse();
     for v in m.vertices.values_mut() {
-        let p = v.position - center;
+        let p = inv.transform_point3(v.position) - center;
         let (u, vv, w) = f(p[iu], p[iv], p[iw], len);
         let mut q = Vec3::ZERO;
         q[iu] = u;
         q[iv] = vv;
         q[iw] = w;
-        v.position = q + center;
+        v.position = gizmo.transform_point3(q + center);
     }
 }
 
@@ -51,12 +60,23 @@ pub struct BendMod {
     pub direction: f32,
     pub axis: usize,
     pub limits: Limits,
+    /// Gizmo center (gizmo space).
     pub center: Vec3,
+    /// Gizmo frame (object space).
+    #[serde(default)]
+    pub gizmo: Mat4,
 }
 
 impl Default for BendMod {
     fn default() -> Self {
-        Self { angle: 0.0, direction: 0.0, axis: 2, limits: Limits { on: false, upper: 1.0, lower: 0.0 }, center: Vec3::ZERO }
+        Self {
+            angle: 0.0,
+            direction: 0.0,
+            axis: 2,
+            limits: Limits { on: false, upper: 1.0, lower: 0.0 },
+            center: Vec3::ZERO,
+            gizmo: Mat4::IDENTITY,
+        }
     }
 }
 
@@ -68,7 +88,7 @@ impl BendMod {
         }
         let (s, c) = self.direction.to_radians().sin_cos();
         let lim = self.limits;
-        deform(m, self.axis, self.center, |u, v, w, len| {
+        deform(m, self.axis, self.gizmo, self.center, |u, v, w, len| {
             // rotate so the bend happens in the (x, w) plane
             let (x, y) = (u * c + v * s, -u * s + v * c);
             let r = len / theta;
@@ -91,12 +111,23 @@ pub struct TwistMod {
     pub bias: f32,
     pub axis: usize,
     pub limits: Limits,
+    /// Gizmo center (gizmo space).
     pub center: Vec3,
+    /// Gizmo frame (object space).
+    #[serde(default)]
+    pub gizmo: Mat4,
 }
 
 impl Default for TwistMod {
     fn default() -> Self {
-        Self { angle: 0.0, bias: 0.0, axis: 2, limits: Limits { on: false, upper: 1.0, lower: 0.0 }, center: Vec3::ZERO }
+        Self {
+            angle: 0.0,
+            bias: 0.0,
+            axis: 2,
+            limits: Limits { on: false, upper: 1.0, lower: 0.0 },
+            center: Vec3::ZERO,
+            gizmo: Mat4::IDENTITY,
+        }
     }
 }
 
@@ -109,7 +140,7 @@ impl TwistMod {
         let b = (self.bias / 100.0).clamp(-0.99, 0.99);
         let exp = if b >= 0.0 { 1.0 / (1.0 + 3.0 * b) } else { 1.0 - 3.0 * b };
         let lim = self.limits;
-        deform(m, self.axis, self.center, |u, v, w, len| {
+        deform(m, self.axis, self.gizmo, self.center, |u, v, w, len| {
             let t = lim.clamp(w) / len;
             let a = theta * t.signum() * t.abs().powf(exp);
             let (s, c) = a.sin_cos();
@@ -138,7 +169,11 @@ pub struct TaperMod {
     /// Taper both directions away from the center.
     pub symmetry: bool,
     pub limits: Limits,
+    /// Gizmo center (gizmo space).
     pub center: Vec3,
+    /// Gizmo frame (object space).
+    #[serde(default)]
+    pub gizmo: Mat4,
 }
 
 impl Default for TaperMod {
@@ -151,6 +186,7 @@ impl Default for TaperMod {
             symmetry: false,
             limits: Limits { on: false, upper: 1.0, lower: 0.0 },
             center: Vec3::ZERO,
+            gizmo: Mat4::IDENTITY,
         }
     }
 }
@@ -161,7 +197,7 @@ impl TaperMod {
             return;
         }
         let (amt, curve, effect, sym, lim) = (self.amount.clamp(-10.0, 10.0), self.curve, self.effect, self.symmetry, self.limits);
-        deform(m, self.axis, self.center, |u, v, w, len| {
+        deform(m, self.axis, self.gizmo, self.center, |u, v, w, len| {
             let mut t = lim.clamp(w) / len;
             if sym {
                 t = t.abs();
@@ -193,6 +229,27 @@ impl PushMod {
             if let Some(n) = normals.get(&id) {
                 v.position += *n * self.value;
             }
+        }
+    }
+}
+
+impl super::ModifierKind {
+    /// Gizmo frame and center of Bend / Twist / Taper.
+    pub fn deformer_gizmo(&self) -> Option<(Mat4, Vec3)> {
+        match self {
+            Self::Bend(b) => Some((b.gizmo, b.center)),
+            Self::Twist(t) => Some((t.gizmo, t.center)),
+            Self::Taper(t) => Some((t.gizmo, t.center)),
+            _ => None,
+        }
+    }
+
+    pub fn deformer_gizmo_mut(&mut self) -> Option<(&mut Mat4, &mut Vec3)> {
+        match self {
+            Self::Bend(b) => Some((&mut b.gizmo, &mut b.center)),
+            Self::Twist(t) => Some((&mut t.gizmo, &mut t.center)),
+            Self::Taper(t) => Some((&mut t.gizmo, &mut t.center)),
+            _ => None,
         }
     }
 }

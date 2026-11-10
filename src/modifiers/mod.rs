@@ -91,6 +91,10 @@ pub enum ModSub {
     Axis,
     /// Edit Normals face-corner normals.
     Normal,
+    /// Bend / Twist / Taper gizmo center.
+    Center,
+    /// Symmetry mirror plane.
+    Mirror,
 }
 
 impl ModSub {
@@ -101,6 +105,8 @@ impl ModSub {
             ModSub::Gizmo => "Gizmo",
             ModSub::Axis => "Axis",
             ModSub::Normal => "Normal",
+            ModSub::Center => "Center",
+            ModSub::Mirror => "Mirror",
         }
     }
 }
@@ -143,6 +149,8 @@ impl ModifierKind {
             ModifierKind::UvwMap(_) => &[ModSub::Gizmo],
             ModifierKind::Lathe(_) => &[ModSub::Axis],
             ModifierKind::EditNormals(_) => &[ModSub::Normal],
+            ModifierKind::Bend(_) | ModifierKind::Twist(_) | ModifierKind::Taper(_) => &[ModSub::Gizmo, ModSub::Center],
+            ModifierKind::Symmetry(_) => &[ModSub::Mirror],
             _ => &[],
         }
     }
@@ -277,5 +285,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
 mod tests;
 #[cfg(test)]
 mod tests_adv;
+#[cfg(test)]
+mod tests_gizmo;
 #[cfg(test)]
 mod tests_stack;

@@ -1,5 +1,6 @@
 //! Modifier sub-objects that are not mesh components: FFD Control Points /
-//! Lattice and the UVW Map Gizmo (selection, W/E/R frames, drags, align tools).
+//! Lattice, the UVW Map / Bend / Twist / Taper Gizmo and Center, the Symmetry
+//! Mirror and the Lathe Axis (selection, W/E/R frames, drags, align tools).
 
 use super::select::{SelectOp, VERTEX_PICK_PX};
 use super::*;
@@ -72,6 +73,18 @@ impl Editor {
                 let shape = o.shape_input_of(o.active_level?)?;
                 (l.axis_point(&shape), local_rot)
             }
+            (ModSub::Gizmo, k) if k.deformer_gizmo().is_some() => {
+                let (g, c) = k.deformer_gizmo()?;
+                (g.transform_point3(c), rot * Quat::from_mat4(&g).normalize())
+            }
+            (ModSub::Center, k) if k.deformer_gizmo().is_some() => {
+                let (g, c) = k.deformer_gizmo()?;
+                (g.transform_point3(c), local_rot)
+            }
+            (ModSub::Mirror, ModifierKind::Symmetry(s)) => {
+                let (_, r, _) = s.mirror.to_scale_rotation_translation();
+                (s.point(), rot * r)
+            }
             _ => return None,
         };
         Some(Xform { translation: w.transform_point3(center), rotation: r, scale: Vec3::ONE })
@@ -105,6 +118,16 @@ impl Editor {
             (ModSub::Normal, Some(ModifierKind::EditNormals(e))) => {
                 super::normals::rotate_normals(e, &before.level_mesh, local);
             }
+            (ModSub::Mirror, Some(ModifierKind::Symmetry(s))) => {
+                // rigid: the mirror plane has no scale
+                let (_, r, t) = (local * s.mirror).to_scale_rotation_translation();
+                s.mirror = Mat4::from_rotation_translation(r, t);
+            }
+            (sub, Some(k)) => match (sub, k.deformer_gizmo_mut()) {
+                (ModSub::Gizmo, Some((g, _))) => *g = local * *g,
+                (ModSub::Center, Some((g, c))) => *c = g.inverse().transform_point3(local.transform_point3(g.transform_point3(*c))),
+                _ => return,
+            },
             _ => return,
         }
         o.evaluate();

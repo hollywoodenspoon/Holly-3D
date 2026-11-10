@@ -26,7 +26,7 @@ fn params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&mut egui::Ui, &
     }
 }
 
-fn sub_buttons(ui: &mut egui::Ui, ed: &mut Editor, subs: &[ModSub]) {
+pub(crate) fn sub_buttons(ui: &mut egui::Ui, ed: &mut Editor, subs: &[ModSub]) {
     ui.horizontal(|ui| {
         let w = CONTENT_W / subs.len() as f32 - 8.0;
         for (i, &s) in subs.iter().enumerate() {
