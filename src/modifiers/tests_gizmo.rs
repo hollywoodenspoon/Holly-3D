@@ -134,3 +134,44 @@ fn gizmo_center_and_mirror_drags() {
     assert!(s.normal().abs_diff_eq(Vec3::Y, 1e-4), "{}", s.normal());
     assert!((s.mirror.determinant() - 1.0).abs() < 1e-4);
 }
+
+/// Edit Normals with `E`: the gizmo sits on the selected normals and a world
+/// rotation turns them, also on a rotated object (world -> local axis).
+#[test]
+fn edit_normals_rotate_with_the_e_gizmo() {
+    use crate::modifiers::edit_normals::NormalKind;
+    use bevy::math::Quat;
+    let mut ed = Editor::default();
+    let id = ed.scene.add(BaseObject::Primitive(Primitive::default_of(PrimitiveKind::Box)), Vec3::new(1.0, 0.0, 0.0));
+    ed.scene.objects[id].transform.rotation = Quat::from_rotation_z(std::f32::consts::FRAC_PI_2);
+    ed.scene.objects[id].evaluate();
+    ed.scene.select_only(Some(id));
+    ed.add_modifier("Edit Normals");
+    ed.set_mod_sub(Some(ModSub::Normal));
+    assert_eq!(ed.active_mod_sub(), Some(ModSub::Normal));
+    let input = ed.scene.objects[id].level_mesh.clone();
+    let top = input.polygons.keys().find(|&p| input.poly_normal(p).z > 0.9).unwrap();
+    let keys: Vec<_> = (0..input.polygons[top].corners.len()).map(|i| (top, i)).collect();
+    let Some(ModifierKind::EditNormals(e)) = ed.scene.objects[id].active_modifier_mut() else { panic!("Edit Normals on top") };
+    e.selected = keys.iter().copied().collect();
+    // E gizmo frame at the selected normals' base (the top face center).
+    let c = ed.mod_sub_frame().expect("a gizmo for the selected normals").translation;
+    let w = ed.scene.objects[id].world_matrix();
+    assert!(c.abs_diff_eq(w.transform_point3(input.poly_centroid(top)), 1e-4), "{c}");
+    // Rotate 90 degrees about world X around that point: world +Z -> -Y.
+    let before = ed.scene.objects[id].clone();
+    let rot = Mat4::from_translation(c) * Mat4::from_rotation_x(std::f32::consts::FRAC_PI_2) * Mat4::from_translation(-c);
+    ed.drag_mod_sub(id, &before, ModSub::Normal, rot);
+    let o = &ed.scene.objects[id];
+    let Some(ModifierKind::EditNormals(e)) = o.active_modifier() else { panic!() };
+    let cur = e.current(&o.level_mesh);
+    let q = o.transform.rotation;
+    for k in &keys {
+        assert_eq!(cur[k].1, NormalKind::Explicit);
+        assert!((q * cur[k].0).abs_diff_eq(Vec3::NEG_Y, 1e-4), "world normal {}", q * cur[k].0);
+    }
+    // The evaluated mesh carries the rotated normals; geometry is unchanged.
+    let n = o.evaluated_mesh.corner_normals();
+    assert!((q * n[&top][0]).abs_diff_eq(Vec3::NEG_Y, 1e-4));
+    assert_eq!(o.evaluated_mesh.counts(), before.evaluated_mesh.counts());
+}

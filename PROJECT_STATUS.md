@@ -121,13 +121,13 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 ### F. Rendering (`F9` / `F10`)
 - ✅ **Render Setup:**
   - Resolution presets, aspect lock, transparent background.
-  - Choice of the built-in raytracer (BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the Cycles bridge, which writes a Cycles XML scene and runs the Cycles command-line tool.
+  - Choice of the built-in raytracer (BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the Cycles bridge. By default the bridge runs `blender --background -E CYCLES` with a Python loader; it can also write Cycles XML for the standalone `cycles` tool.
 - ✅ **Rendered Frame Window:**
   - Render, a viewport/camera picker, Region.
   - Save as PNG, EXR or JPG; Copy to Clipboard; Clone Render Window.
   - R, G, B, A and Mono channel buttons.
 - ✅ **Cameras:** Target and Free Camera objects; Render Setup and the Frame Window list them next to the viewports.
-- 🟡 The Cycles bridge needs a Cycles executable installed; its path is set in F10. It has never been run against a real Cycles install here.
+- ✅ Cycles bridge, verified against a real Blender 4.0 install. F10 defaults to Blender at `/usr/bin/blender`, the HIP device with HIP-RT, and OpenImageDenoise. A missing GPU device falls back to the CPU, and a Blender build without OIDN renders undenoised.
 
 ### G. Lighting
 - ✅ The default two-light headlight rig, with `Ctrl+L` and automatic switching to scene lights.
@@ -170,7 +170,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Shell | ✅ | Straighten Corners, Override Edge Material ID, select inner/outer/edge faces |
 | TurboSmooth | ✅ | Iterations 0–4, Isoline Display, Separate by Smoothing Groups or Materials |
 | Bend, Twist, Taper, Push | ✅ | All parameters and limits work. **Gizmo** (`1`, W/E/R) and **Center** (`2`, W) sub-objects, Reset Gizmo |
-| Edit Normals | ✅ | Cyan, blue and green lines; select by Normal, Vertex, Edge or Face; Break, Unify, Reset, Make Explicit. 🟡 The `E` rotation is covered by tests only and hasn't been tried in the app |
+| Edit Normals | ✅ | Cyan, blue and green lines; select by Normal, Vertex, Edge or Face; Break, Unify, Reset, Make Explicit; `E` rotates the selected normals (tried in the app, and tested on a rotated object) |
 | Boolean (boolmesh) | ✅ | Union, A−B, B−A, Intersect; Pick Operand B; an operand list with Remove, Extract and on/off toggles; Merge Coplanar Faces. Open meshes are skipped with a warning |
 | ProOptimizer (meshopt) | ✅ | Calculate, linked Vertex % and Vertex Count, keeps material, UV, colour and normal boundaries, Protect Borders |
 
@@ -261,4 +261,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Near attenuation: Use Near / Near Start / Near End on Omni and Spot lights. The raytracer ramps light up from Near Start to Near End and down over the far range. Show Attenuation draws both pairs of spheres.
    - Bitmap Fit in UVW Map; Pin Stack in the stack action row.
    - Tests: equirect sampling, rotation, average and cube faces; HDRI background and image-based ambient in F9; HDRI save / open round trip; near and far attenuation ramps; Bitmap Fit aspect; Pin Stack.
-10. **Checks still to do:** try Edit Normals `E` rotation in the app, and run the Cycles bridge against a real Cycles install.
+10. ✅ **Checks and the Cycles bridge.** `src/render/blender.rs`, `src/render/blender_loader.py`, `src/render/cycles.rs`, `src/ui/render_setup.rs`.
+   - Edit Normals `E` rotation tried in the app: the gizmo sits on the selected normals and the ring drag turns them. A test drives the same drag path on a rotated object (world X rotation, top normals end up at world -Y).
+   - Cycles through Blender (the default): the scene is exported as JSON (one mesh per object and material, with corner normals; Principled materials; point, spot and sun lights; camera; color or HDRI world). A bundled Python loader rebuilds it in `blender --background --factory-startup -E CYCLES` and writes a PNG. A real Blender 4.0 render of a box under a spot light came back into the frame buffer correctly.
+   - F10 Cycles options: Run Through (Blender / Standalone cycles), executable path, Device (HIP, OptiX, CUDA, oneAPI, Metal, CPU; default HIP), HIP-RT (default on), Denoise with OpenImageDenoise (default on), Samples, Max Bounces. The standalone route passes `--device` too.
+   - Tests: defaults, including old scene files without the new fields; the JSON (triangle count, camera axes, spot light, HIP-RT only on HIP); the loader reads every exported key; a round trip with a stand-in `blender` script; readable errors for a missing executable. `real_blender_renders_the_scene` (ignored by default) renders through a real Blender.

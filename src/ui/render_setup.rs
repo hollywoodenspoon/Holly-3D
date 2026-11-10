@@ -111,9 +111,26 @@ fn raytracer(ui: &mut egui::Ui, r: &mut RenderSettings) {
 }
 
 fn cycles(ui: &mut egui::Ui, r: &mut RenderSettings) {
+    use crate::render::{CyclesDevice, CyclesVia};
     grid(ui, "rs_cy", |ui| {
-        ui.label("Cycles Executable");
-        ui.add(egui::TextEdit::singleline(&mut r.cycles_exe).desired_width(150.0));
+        ui.label("Run Through");
+        egui::ComboBox::from_id_salt("rs_cy_via").selected_text(r.cycles_via.label()).show_ui(ui, |ui| {
+            for v in CyclesVia::ALL {
+                ui.selectable_value(&mut r.cycles_via, v, v.label());
+            }
+        });
+        ui.end_row();
+        let blender = r.cycles_via == CyclesVia::Blender;
+        ui.label(if blender { "Blender Executable" } else { "Cycles Executable" });
+        let exe = if blender { &mut r.blender_exe } else { &mut r.cycles_exe };
+        ui.add(egui::TextEdit::singleline(exe).desired_width(150.0));
+        ui.end_row();
+        ui.label("Device");
+        egui::ComboBox::from_id_salt("rs_cy_dev").selected_text(r.cycles_device.label()).show_ui(ui, |ui| {
+            for d in CyclesDevice::ALL {
+                ui.selectable_value(&mut r.cycles_device, d, d.label());
+            }
+        });
         ui.end_row();
         ui.label("Samples");
         max_spinner_range(ui, &mut r.cycles_samples, 1.0, 64, 1..=4096);
@@ -122,7 +139,12 @@ fn cycles(ui: &mut egui::Ui, r: &mut RenderSettings) {
         max_spinner_range(ui, &mut r.max_depth, 0.1, 4, 0..=16);
         ui.end_row();
     });
-    ui.label(dim("Exports the evaluated scene to Cycles XML and runs the standalone `cycles` CLI in the background."));
+    ui.add_enabled(r.cycles_device == CyclesDevice::Hip, egui::Checkbox::new(&mut r.hiprt, "HIP-RT hardware ray tracing"));
+    ui.add_enabled(r.cycles_via == CyclesVia::Blender, egui::Checkbox::new(&mut r.denoise, "Denoise (OpenImageDenoise)"));
+    ui.label(dim(match r.cycles_via {
+        CyclesVia::Blender => "Exports the evaluated scene and renders it with `blender --background -E CYCLES`; falls back to the CPU when the device is missing.",
+        CyclesVia::Standalone => "Exports the evaluated scene to Cycles XML and runs the standalone `cycles` CLI in the background.",
+    }));
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
