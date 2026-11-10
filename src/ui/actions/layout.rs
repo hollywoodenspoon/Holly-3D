@@ -140,7 +140,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(DefaultLights),
         ],
     ),
-    ("Help", &[A(HotkeyList), Sep, A(About)]),
+    ("Help", &[A(Help), A(Tour), A(HotkeyList), Sep, A(About)]),
 ];
 
 /// One slot of the main toolbar.
@@ -208,7 +208,7 @@ pub const TOOLBAR_RIGHT: &[Slot] = &[
     Slot::Sep,
     Slot::A(HotkeyList),
     Slot::A(Preferences),
-    Slot::A(About),
+    Slot::A(Help),
 ];
 
 /// Bottom-right viewport navigation buttons (2 rows, like 3ds Max).

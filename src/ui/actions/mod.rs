@@ -89,6 +89,8 @@ pub enum Action {
     DefaultLights,
     Sky(SkyPreset),
     // Help
+    Help,
+    Tour,
     HotkeyList,
     About,
     Preferences,
@@ -116,7 +118,7 @@ impl Action {
         v.extend(NAVS.map(Nav));
         v.extend([Render, RenderSetup, FrameWindow, MaterialEditor, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
-        v.extend([HotkeyList, About, Preferences]);
+        v.extend([Help, Tour, HotkeyList, About, Preferences]);
         v
     }
 
@@ -193,6 +195,8 @@ impl Action {
             Environment => "Environment and Effects...",
             DefaultLights => "Default Lights",
             Sky(p) => return p.label().to_string(),
+            Help => "Help...",
+            Tour => "Getting Started Tour",
             HotkeyList => "Hotkey List",
             About => "About MiniMax",
             Preferences => "Preferences...",
@@ -232,8 +236,10 @@ impl Action {
             RenderSetup => "⚙ Setup",
             FrameWindow => "🖼",
             Render => "▶ Render",
+            Help => "❓ Help",
+            Tour => "▶ Tour",
             HotkeyList => "⌨",
-            About => "❓",
+            About => "ℹ",
             Preferences => "⚙",
             Nav(NavMode::Zoom) => "🔍",
             Nav(NavMode::ZoomAll) => "🔍⁴",
@@ -275,6 +281,8 @@ impl Action {
             RemoveSubObjects => "Remove the selected vertices or edges",
             RepeatLast => "Repeat the previous Edit Poly operation",
             Cancel => "Leave the current tool, caddy or menu",
+            Help => "How MiniMax works, with screenshots (F1 opens the page for what is under the mouse)",
+            Tour => "A short step-by-step tour of the screen",
             _ => "",
         }
     }

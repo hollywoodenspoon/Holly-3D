@@ -89,6 +89,7 @@ pub fn default_keymap() -> Vec<(Chord, Action)> {
         (Chord::plain(C), CameraView),
         (Chord::plain(Key::F9), Render),
         (Chord::plain(F10), RenderSetup),
+        (Chord::plain(F1), Help),
         (Chord::plain(M), MaterialEditor),
         (Chord::plain(Num8), Environment),
         (Chord::ctrl(L), DefaultLights),

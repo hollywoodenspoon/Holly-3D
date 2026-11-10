@@ -38,6 +38,15 @@ fn main() {
     });
     keymap::set_current(keymap::from_prefs(&prefs.keys));
     editor.use_prefs(prefs);
+    // `--help-shot <id>`: the scene and panels for one Help screenshot (tools/help_shots.sh).
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(id) = args.iter().position(|a| a == "--help-shot").and_then(|i| args.get(i + 1)) {
+        editor = Editor::default();
+        if !minimax::ui::help::shots::setup(&mut editor, id) {
+            eprintln!("unknown help shot {id}; known: {}", minimax::ui::help::shots::IDS.join(", "));
+            std::process::exit(2);
+        }
+    }
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins

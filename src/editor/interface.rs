@@ -91,6 +91,13 @@ pub struct InterfaceState {
     pub hotkeys_open: bool,
     pub hotkeys_filter: String,
     pub about_open: bool,
+    /// Help window (F1), its page, and whether to pick the page from the
+    /// pointer's position on the next frame.
+    pub help_open: bool,
+    pub help_page: usize,
+    pub help_context: bool,
+    /// Getting Started tour step, while it is showing.
+    pub tour: Option<usize>,
     /// Show Buttons: the modifier-set button grid under the stack.
     pub modifier_buttons: bool,
     /// Modifier names on the button grid, in order.

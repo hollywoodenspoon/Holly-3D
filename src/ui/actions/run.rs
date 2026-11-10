@@ -102,6 +102,11 @@ impl Action {
                 ed.apply_sky_preset(p);
                 ed.env_open |= p != SkyPreset::Off;
             }
+            Help => {
+                flip(&mut ed.iface.help_open);
+                ed.iface.help_context = true;
+            }
+            Tour => ed.iface.tour = Some(0),
             HotkeyList => flip(&mut ed.iface.hotkeys_open),
             About => flip(&mut ed.iface.about_open),
             Preferences => flip(&mut ed.iface.prefs_open),
@@ -144,6 +149,8 @@ impl Action {
             Environment => ed.env_open,
             DefaultLights => ed.uses_default_lights(),
             Sky(p) => SkyPreset::matching(&ed.scene.environment.sky) == Some(p),
+            Help => ed.iface.help_open,
+            Tour => ed.iface.tour.is_some(),
             HotkeyList => ed.iface.hotkeys_open,
             About => ed.iface.about_open,
             Preferences => ed.iface.prefs_open,

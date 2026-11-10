@@ -504,3 +504,50 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - that the Front view stands objects upright;
   - that a plain click still places a default object.
 - **Checked in the running app:** dragging a Box in Perspective made a single box of the right size.
+
+## 18. Phase 9 PR 4: Help with screenshots
+
+- **Help window (`F1`, `❓ Help` on the toolbar, Help menu):**
+  - 16 topics, in the order you learn them:
+    1. Getting Started
+    2. Creating objects
+    3. Selecting and transforming
+    4. Editable Poly modelling (plus the ribbon)
+    5. Modifiers
+    6. Splines, Lathe and Extrude
+    7. Materials
+    8. Painting
+    9. Lights, cameras, sky and deep space
+    10. Rendering
+    11. GhostTown, Medieval Architect and destruction
+    12. Mech assembly
+    13. Files
+    14. Preferences and hotkeys
+    - then a Hotkey cheat sheet and Credits.
+  - Pages mix short text, numbered steps, tips and real screenshots. Amber numbered circles on each screenshot point at the parts the legend under it explains.
+  - **"▶ Show me" buttons** open the window or tab the page is about (Material Editor, Render Setup, Environment, Preferences, the Create tab…).
+  - **Search box** filters topics by any word on them.
+  - **Previous / Next** buttons step through the pages.
+  - **The cheat sheet is live:** it lists your current keys, so it follows changes made in Preferences → Hotkeys.
+- **F1 opens the page for what is under the mouse:**
+  - Material Editor → Materials
+  - Render Setup or Frame Window → Rendering
+  - PaintBox → Painting
+  - Environment → Sky
+  - caddy → Edit Poly
+  - Array, Mirror or Align → Transforming
+  - Command Panel → Create, Edit Poly or Modifiers, depending on the tab and selection
+  - anything else → Getting Started
+- **Getting Started tour:**
+  - Eight screens with screenshots, Back / Next / Finish.
+  - Shown at startup until you untick "Show this tour at startup" (also in Preferences → General).
+  - Reopen it from Help → Getting Started Tour or the Help window.
+- **Screenshots:**
+  - 14 JPEGs (1200 px wide, about 1.3 MB in total) in `assets/help/`, built into the program.
+  - They are captured from the real program: `minimax --help-shot <id>` sets up the scene and panels, and `tools/help_shots.sh [id …]` runs it under Xvfb and saves the images. Re-run it after UI changes.
+- **Tests:**
+  - every screenshot id sets up a scene, is built in and decodes;
+  - every page and tour screenshot exists, and every marker lies inside its image;
+  - search finds pages (any case), page ids are unique;
+  - the Help action opens the window.
+- **Checked in the running app:** the tour opens on first start, the Help window shows the topics and screenshots, and F1 over the Material Editor opens the Materials page.

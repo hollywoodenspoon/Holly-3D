@@ -10,6 +10,7 @@ pub mod command;
 pub mod env_dialog;
 pub mod explorer;
 pub mod file_menu;
+pub mod help;
 pub mod hotkeys;
 pub mod material_editor;
 pub mod menubar;
@@ -56,6 +57,7 @@ pub struct UiState {
     pub uv: uv_editor::UvEditorState,
     pub mat: material_editor::MatEditorUi,
     pub rfw: render_window::RfwState,
+    pub help: help::HelpUi,
 }
 
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
@@ -103,6 +105,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     paint_box::show(&ctx, ed);
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);
+    help::show(&ctx, ed, &mut st.help);
     ed.update_caddy_preview();
     ed.scene.solve_assembly();
     ed.scene.update_hoses();
