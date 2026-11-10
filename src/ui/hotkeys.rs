@@ -72,6 +72,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             Key::W => ed.mode = TransformMode::Move,
             Key::E => ed.mode = TransformMode::Rotate,
             Key::R => ed.mode = TransformMode::Scale,
+            Key::C if !ctrl => ed.camera_hotkey(),
             Key::Num1 => ed.set_sub_object(SubObject::Vertex),
             Key::Num2 => ed.set_sub_object(SubObject::Edge),
             Key::Num3 => ed.set_sub_object(SubObject::Border),

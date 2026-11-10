@@ -252,9 +252,10 @@ impl Editor {
             return;
         };
         let active = self.viewports.active;
-        for (i, v) in self.viewports.views.iter_mut().enumerate() {
+        for i in 0..self.viewports.views.len() {
             if all || i == active {
-                v.camera.frame(b.min, b.max);
+                self.viewports.views[i].camera.frame(b.min, b.max);
+                self.push_view_to_camera(i);
             }
         }
     }

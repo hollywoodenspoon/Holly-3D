@@ -126,7 +126,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
   - Render, a viewport/camera picker, Region.
   - Save as PNG, EXR or JPG; Copy to Clipboard; Clone Render Window.
   - R, G, B, A and Mono channel buttons.
-- 🟡 **Cameras:** the spec's camera selector exists, but the **Target Camera** button in Create is greyed out, so renders use a viewport's camera.
+- ✅ **Cameras:** Target and Free Camera objects; Render Setup and the Frame Window list them next to the viewports.
 - 🟡 The Cycles bridge needs a Cycles executable installed; its path is set in F10. It has never been run against a real Cycles install here.
 
 ### G. Lighting
@@ -188,7 +188,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Scene Explorer: visibility, freeze, type icons, search filter | ✅ | |
 | Viewports: `[+] [Perspective] [Shading]` labels, gold border on the active view, axis tripod | ✅ | |
 | Command panel: Create, Modify and Pivot tabs | ✅ | |
-| Create tab: geometry, GeoGen, shapes, lights | ✅ | ❌ Target Camera |
+| Create tab: geometry, GeoGen, shapes, lights, cameras | ✅ | Target and Free Camera |
 | Modify tab: name and wireframe colour, searchable modifier list, stack with sub-object expanders | ✅ | Every modifier in the list is available |
 | Stack action row | 🟡 | Make Unique, Delete and Collapse work. ❌ **Pin Stack**. Show End Result is greyed out because the end result is always shown |
 | Pivot tab: Affect Pivot Only, Center to Object, Align to World, Bottom-Center, Reset XForm | ✅ | |
@@ -216,7 +216,13 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Import / Export (All or Selected): OBJ + MTL, glTF / GLB and ASCII FBX 7.4 (FBX import reads binary and ASCII through `ufbx`). Quads and n-gons, smoothing groups 1..32 (FBX masks read straight from the file), UVs, vertex colours and material IDs survive round trips.
    - A scene or mesh path given on the command line is opened at start-up.
    - Tests: round trips for every format, editor export-selected → import, save → open.
-2. **Target Camera.** A camera object for the Render Setup and Frame Window camera picker.
+2. ✅ **Target Camera and Free Camera.** `src/scene/camera.rs`, `src/editor/cameras.rs`, `src/ui/command/camera_params.rs`, `src/viewport/camera_icons.rs`.
+   - Create -> Cameras: Target Camera takes two clicks (camera, then target); Free Camera takes one and looks the way the viewport looks. Right-click a button to create one at a default spot.
+   - Parameters: Lens (mm) and FOV linked on a 36 mm film back, stock lenses 15–200 mm, Show Cone, Type (Target / Free, adds or removes the target), Target Distance, Clip Manually with Near / Far Clip.
+   - Viewport: camera icon, target line, view cone and clip planes when selected.
+   - `C` looks through the selected camera (or cycles through the cameras); the `[ View ]` label menu has a Cameras list. Navigating a camera view moves the camera, and Alt+MMB orbits around its target.
+   - Render Setup and the Frame Window list the cameras, and F9 renders through them. The raytracer and Cycles honour the lens; near clip applies in the raytracer and viewports. In the viewports, the far clip only culls whole objects, because Bevy's projection is infinite.
+   - Tests: lens/FOV maths, target aiming, deleting the target, looking straight down, look-through, orbit write-back, Target <-> Free, and undoing a lens change.
 3. **Align tool** (Tools → Align).
 4. **Missing Edit Poly tools:** Create (polygon), Create Shape from Selection, Hinge From Edge, Extrude Along Spline, and shifting the selection with the Ring/Loop spinner.
 5. **Viewport gizmos** for the Bend, Twist and Taper Gizmo/Center sub-objects and the Symmetry Mirror plane.

@@ -25,10 +25,14 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         ui.add_space(6.0);
         return light_params::show(ui, ed);
     }
-    if ed.scene.objects[id].is_helper() {
-        let owner = ed.scene.objects.values().find(|o| o.light().is_some_and(|l| l.target == Some(id))).map(|o| o.name.clone());
+    if ed.scene.objects[id].camera().is_some() {
         ui.add_space(6.0);
-        ui.label(dim(&format!("Target of {} — move it with W to aim the light.", owner.unwrap_or_default())));
+        return super::camera_params::show(ui, ed);
+    }
+    if ed.scene.objects[id].is_helper() {
+        let owner = ed.scene.objects.values().find(|o| o.target_id() == Some(id)).map(|o| o.name.clone());
+        ui.add_space(6.0);
+        ui.label(dim(&format!("Target of {} — move it with W to aim it.", owner.unwrap_or_default())));
         return;
     }
     stack::modifier_list(ui, ed, st);

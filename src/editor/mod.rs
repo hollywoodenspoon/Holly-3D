@@ -5,6 +5,7 @@ pub mod array;
 #[cfg(test)]
 mod array_tests;
 pub mod boolean;
+pub mod cameras;
 pub mod drag;
 pub mod file;
 pub mod lights;

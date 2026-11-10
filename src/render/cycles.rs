@@ -26,7 +26,7 @@ fn camera(out: &mut String, rs: &RenderScene, cfg: &RenderSettings) {
     if c.is_ortho() {
         let _ = writeln!(out, "  <camera type=\"orthographic\" />");
     } else {
-        let _ = writeln!(out, "  <camera type=\"perspective\" fov=\"{}\" />", c.fov);
+        let _ = writeln!(out, "  <camera type=\"perspective\" fov=\"{}\" />", c.fov_y(cfg.width as f32 / cfg.height.max(1) as f32));
     }
     let _ = writeln!(out, "</transform>");
 }

@@ -67,6 +67,11 @@ pub enum Tool {
         kind: crate::render::LightKind,
         first: Option<bevy::math::Vec3>,
     },
+    /// Create a camera; Target Cameras take a second click for the target.
+    CreateCamera {
+        kind: crate::scene::camera::CameraKind,
+        first: Option<bevy::math::Vec3>,
+    },
     /// Click-placed parametric shape (Circle, Rectangle, Star…).
     CreateShape(crate::splines::ShapeKind),
     /// Line: click = Corner knot, click-drag = Bezier knot, right-click ends.
@@ -96,6 +101,8 @@ impl Tool {
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
             Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),
             Tool::CreateLight { .. } => Some("Click in a viewport to place the light"),
+            Tool::CreateCamera { first: None, .. } => Some("Click to place the camera"),
+            Tool::CreateCamera { .. } => Some("Click to place the camera's target"),
             Tool::CreateShape(_) => Some("Click in a viewport to place the shape"),
             Tool::Line { knots, .. } if knots.is_empty() => Some("Line: click for corners, drag for Bezier handles"),
             Tool::Line { .. } => Some("Line: right-click to finish, click the first vertex to close"),

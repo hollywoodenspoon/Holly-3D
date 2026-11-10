@@ -1,4 +1,4 @@
-//! Viewport icons for lights and targets (constant pixel size per view),
+//! Viewport icons for lights and targets (cameras: `camera_icons`) (constant pixel size per view),
 //! plus hotspot / falloff cones, beam cylinders, target lines and
 //! attenuation spheres for selected lights.
 
@@ -130,13 +130,16 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, v: &ViewState)
     }
     let h = v.rect.size().y.max(1.0);
     let upp = |p: Vec3| v.camera.units_per_pixel(p, h);
-    for o in ed.scene.objects.values().filter(|o| !o.hidden) {
+    for (id, o) in ed.scene.objects.iter().filter(|(_, o)| !o.hidden) {
         match &o.base {
+            BaseObject::Camera(c) if super::camera_icons::visible_in(v, id) => super::camera_icons::draw(g, ed, o, c, upp),
             BaseObject::Light(l) => draw_light(g, ed, o, l, upp),
-            BaseObject::LightTarget => {
+            BaseObject::Target => {
                 let p = o.transform.translation;
                 let s = ICON_PX * 0.3 * upp(p);
-                let c = if o.selected { Color::WHITE } else { LIGHT_YELLOW };
+                let owner_cam = ed.scene.objects.values().any(|c| c.camera().is_some() && c.target_id() == Some(id));
+                let base = if owner_cam { Color::srgb(0.35, 0.75, 0.95) } else { LIGHT_YELLOW };
+                let c = if o.selected { Color::WHITE } else { base };
                 g.cube(Transform::from_translation(p).with_scale(Vec3::splat(s * 2.0)), c);
             }
             _ => {}

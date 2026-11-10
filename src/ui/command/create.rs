@@ -5,6 +5,7 @@ use crate::editor::{Editor, Tool};
 use crate::modifiers::GeoMode;
 use crate::primitives::PrimitiveKind;
 use crate::render::LightKind;
+use crate::scene::camera::CameraKind;
 use crate::splines::ShapeKind;
 use crate::ui::widgets::{dim, rollout};
 use bevy::math::Vec3;
@@ -95,9 +96,19 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.label(dim("Target lights: click the light, then click its target. Ctrl+L toggles Default Lights; 8 opens Environment."));
     });
-    rollout(ui, "Cameras", false, |ui| {
-        ui.add_enabled_ui(false, |ui| {
-            ui.button("Target Camera").on_disabled_hover_text("Arrives with Render Setup (F10)");
+    rollout(ui, "🎥 Cameras", true, |ui| {
+        ui.horizontal(|ui| {
+            for kind in CameraKind::ALL {
+                let active = matches!(ed.tool, Tool::CreateCamera { kind: k, .. } if k == kind);
+                let r = ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
+                if r.clicked() {
+                    ed.tool = if active { Tool::None } else { Tool::CreateCamera { kind, first: None } };
+                }
+                if r.secondary_clicked() {
+                    ed.create_camera(kind, Vec3::new(6.0, -8.0, 4.0), Vec3::new(0.0, 0.0, 0.5));
+                }
+            }
         });
+        ui.label(dim("Target Camera: click the camera, then its target. Press C to look through the selected camera."));
     });
 }

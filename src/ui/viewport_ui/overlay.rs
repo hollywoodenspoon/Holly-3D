@@ -31,9 +31,10 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                     ui.checkbox(&mut v.views[vi].grid, "Show Grid   G");
                 });
                 let kind = ed.viewports.views[vi].camera.kind;
-                ui.menu_button(small(&format!("[ {} ]", kind.label())), |ui| {
+                ui.menu_button(small(&format!("[ {} ]", ed.view_label(vi))), |ui| {
                     for k in [ViewKind::Perspective, ViewKind::Top, ViewKind::Front, ViewKind::Left] {
                         if ui.selectable_label(kind == k, k.label()).clicked() {
+                            ed.look_through(vi, None);
                             let cam = &mut ed.viewports.views[vi].camera;
                             let keep = (cam.target, cam.distance, cam.ortho_height);
                             *cam = ViewCamera::new(k);
@@ -41,6 +42,19 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                             ui.close();
                         }
                     }
+                    let cams = ed.scene.cameras();
+                    ui.separator();
+                    ui.add_enabled_ui(!cams.is_empty(), |ui| {
+                        ui.menu_button("Cameras   C", |ui| {
+                            for c in cams {
+                                let on = ed.viewports.views[vi].cam_obj == Some(c);
+                                if ui.selectable_label(on, &ed.scene.objects[c].name).clicked() {
+                                    ed.look_through(vi, Some(c));
+                                    ui.close();
+                                }
+                            }
+                        });
+                    });
                 });
                 let label = ed.viewports.views[vi].shading_label();
                 ui.menu_button(small(&format!("[ {label} ]")), |ui| {

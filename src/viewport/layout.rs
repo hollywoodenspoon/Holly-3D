@@ -39,12 +39,22 @@ pub struct ViewState {
     pub grid: bool,
     pub rect: ScreenRect,
     pub visible: bool,
+    /// Camera object this view looks through (`ViewKind::Camera`).
+    pub cam_obj: Option<crate::scene::ObjId>,
 }
 
 impl ViewState {
     pub fn new(kind: ViewKind) -> Self {
         let shading = if kind == ViewKind::Perspective { Shading::Default } else { Shading::Wireframe };
-        Self { camera: ViewCamera::new(kind), shading, edged_faces: false, grid: true, rect: ScreenRect::default(), visible: true }
+        Self {
+            camera: ViewCamera::new(kind),
+            shading,
+            edged_faces: false,
+            grid: true,
+            rect: ScreenRect::default(),
+            visible: true,
+            cam_obj: None,
+        }
     }
 
     pub fn shading_label(&self) -> String {

@@ -12,6 +12,8 @@ pub enum ViewKind {
     Left,
     /// Ortho view that has been orbited (3ds Max "Orthographic").
     User,
+    /// Looking through a Target / Free Camera object.
+    Camera,
 }
 
 impl ViewKind {
@@ -22,6 +24,7 @@ impl ViewKind {
             Self::Front => "Front",
             Self::Left => "Left",
             Self::User => "Orthographic",
+            Self::Camera => "Camera",
         }
     }
 }
@@ -36,6 +39,11 @@ pub struct ViewCamera {
     pub fov: f32,
     /// Visible world height for orthographic views.
     pub ortho_height: f32,
+    /// `fov` is horizontal (camera objects, 3ds Max style) instead of vertical.
+    pub hfov: bool,
+    /// Perspective clipping planes (`far` = infinity: no far clip).
+    pub near: f32,
+    pub far: f32,
 }
 
 pub const ORTHO_DEPTH: f32 = 5000.0;
@@ -69,11 +77,27 @@ impl ViewCamera {
             ViewKind::Left => (0.0, 0.0),
             _ => (135f32.to_radians(), -28f32.to_radians()),
         };
-        Self { kind, target: Vec3::new(0.0, 0.0, 0.4), distance: 7.0, yaw, pitch, fov: 45f32.to_radians(), ortho_height: 6.0 }
+        Self {
+            kind,
+            target: Vec3::new(0.0, 0.0, 0.4),
+            distance: 7.0,
+            yaw,
+            pitch,
+            fov: 45f32.to_radians(),
+            ortho_height: 6.0,
+            hfov: false,
+            near: 0.02,
+            far: f32::INFINITY,
+        }
     }
 
     pub fn is_ortho(&self) -> bool {
-        self.kind != ViewKind::Perspective
+        !matches!(self.kind, ViewKind::Perspective | ViewKind::Camera)
+    }
+
+    /// Vertical field of view for an image of `aspect` (width / height).
+    pub fn fov_y(&self, aspect: f32) -> f32 {
+        if self.hfov { 2.0 * ((self.fov * 0.5).tan() / aspect.max(1e-3)).atan() } else { self.fov }
     }
 
     pub fn forward(&self) -> Vec3 {
@@ -111,7 +135,13 @@ impl ViewCamera {
             let s = self.ortho_size(aspect) * 0.5;
             proj::orthographic(-s.x, s.x, -s.y, s.y, ORTHO_DEPTH, 0.0)
         } else {
-            proj::perspective_infinite_reverse(self.fov, aspect, 0.02)
+            let fy = self.fov_y(aspect);
+            if self.far.is_finite() && self.far > self.near {
+                // Swapped planes give Bevy's reverse-Z depth (near = 1, far = 0).
+                proj::perspective(fy, aspect, self.far, self.near)
+            } else {
+                proj::perspective_infinite_reverse(fy, aspect, self.near)
+            }
         }
     }
 
@@ -185,9 +215,10 @@ impl ViewCamera {
     pub fn frame(&mut self, min: Vec3, max: Vec3) {
         let c = (min + max) * 0.5;
         let r = ((max - min).length() * 0.5).max(0.05);
+        let fov = if self.hfov { self.fov.min(self.fov_y(1.0)) } else { self.fov };
         self.target = c;
         self.ortho_height = r * 2.4;
-        self.distance = r / (self.fov * 0.5).sin() * 1.15;
+        self.distance = r / (fov * 0.5).sin() * 1.15;
     }
 }
 
@@ -233,6 +264,15 @@ mod tests {
         let dist = cam.distance;
         cam.zoom(1.0);
         assert!(cam.distance < dist);
+        // camera views keep their kind and clip planes reach the projection
+        let mut c = ViewCamera::new(ViewKind::Camera);
+        c.orbit(Vec2::new(5.0, 0.0), Vec3::ZERO);
+        assert_eq!(c.kind, ViewKind::Camera);
+        assert!(!c.is_ortho());
+        (c.near, c.far, c.hfov) = (1.0, 20.0, true);
+        let ndc = |d: f32| c.view_proj(1.5).project_point3(c.eye() + c.forward() * d).z;
+        assert!((ndc(1.0) - 1.0).abs() < 1e-3 && ndc(20.0).abs() < 1e-3, "reverse-Z near/far");
+        assert!(c.fov_y(1.5) < c.fov);
         let mut top = ViewCamera::new(ViewKind::Top);
         top.orbit(Vec2::new(10.0, 0.0), Vec3::ZERO);
         assert_eq!(top.kind, ViewKind::User);

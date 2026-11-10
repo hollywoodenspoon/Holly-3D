@@ -27,6 +27,7 @@ fn v2(p: egui::Pos2) -> Vec2 {
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: egui::Rect) {
     ed.viewports.layout(ScreenRect { min: v2(area.min), max: v2(area.max) }, 3.0);
+    ed.sync_camera_views();
     let (mods, scroll, delta, mmb_down, pointer) =
         ui.input(|i| (i.modifiers, i.smooth_scroll_delta.y, i.pointer.delta(), i.pointer.middle_down(), i.pointer.hover_pos()));
     for vi in 0..4 {
@@ -45,7 +46,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             st.nav = Some(vi);
             let d = Vec2::new(delta.x, delta.y);
             let h = r.size().y;
-            let pivot = ed.selection_center().unwrap_or(ed.viewports.views[vi].camera.target);
+            let is_cam = ed.viewports.views[vi].cam_obj.is_some();
+            let target = ed.viewports.views[vi].camera.target;
+            // Camera views orbit around the camera's target (Orbit Camera).
+            let pivot = if is_cam { target } else { ed.selection_center().unwrap_or(target) };
             let cam = &mut ed.viewports.views[vi].camera;
             if mods.alt && (mods.ctrl || mods.command) {
                 cam.zoom(-d.y * 0.02);
@@ -54,12 +58,14 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             } else {
                 cam.pan(d, h);
             }
+            ed.push_view_to_camera(vi);
         }
         if !mmb_down && st.nav == Some(vi) {
             st.nav = None;
         }
         if resp.hovered() && scroll.abs() > 0.0 {
             ed.viewports.views[vi].camera.zoom(scroll / 60.0);
+            ed.push_view_to_camera(vi);
         }
         // ---- Viewport Paint: left button paints, right-click exits
         if ed.paint.active {

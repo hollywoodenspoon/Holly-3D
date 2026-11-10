@@ -39,7 +39,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                         BaseObject::Primitive(_) => "◼",
                         BaseObject::EditablePoly(_) => "⬜",
                         BaseObject::Light(_) => "💡",
-                        BaseObject::LightTarget => "◎",
+                        BaseObject::Target => "◎",
+                        BaseObject::Camera(_) => "🎥",
                         BaseObject::Shape(_) => "〰",
                         BaseObject::GeoGen(_) => "◆",
                     };

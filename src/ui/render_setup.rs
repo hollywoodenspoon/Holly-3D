@@ -18,17 +18,29 @@ fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
     egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width(130.0).show(ui, body);
 }
 
-/// "Active Viewport" or a named viewport, shared with the RFW dropdown.
+/// "Active Viewport", a numbered viewport or a camera object; shared with the RFW dropdown.
 pub fn view_combo(ui: &mut egui::Ui, ed: &mut Editor, id: &str, width: f32) {
     let label = |ed: &Editor, v: Option<usize>| match v {
-        None => format!("Active ({})", ed.viewports.active_view().camera.kind.label()),
-        Some(i) => format!("{}: {}", i + 1, ed.viewports.views[i].camera.kind.label()),
+        None => format!("Active ({})", ed.view_label(ed.viewports.active)),
+        Some(i) => format!("{}: {}", i + 1, ed.view_label(i)),
     };
-    let cur = label(ed, ed.render.view);
+    let cur = if ed.render.camera.is_some() { ed.render_label() } else { label(ed, ed.render.view) };
     egui::ComboBox::from_id_salt(id).width(width).selected_text(cur).show_ui(ui, |ui| {
         for v in std::iter::once(None).chain((0..ed.viewports.views.len()).map(Some)) {
             let text = label(ed, v);
-            ui.selectable_value(&mut ed.render.view, v, text);
+            if ui.selectable_label(ed.render.camera.is_none() && ed.render.view == v, text).clicked() {
+                (ed.render.view, ed.render.camera) = (v, None);
+            }
+        }
+        let cams = ed.scene.cameras();
+        if !cams.is_empty() {
+            ui.separator();
+        }
+        for c in cams {
+            let text = format!("🎥 {}", ed.scene.objects[c].name);
+            if ui.selectable_label(ed.render.camera == Some(c), text).clicked() {
+                ed.render.camera = Some(c);
+            }
         }
     });
 }

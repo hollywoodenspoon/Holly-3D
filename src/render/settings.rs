@@ -34,6 +34,9 @@ pub struct RenderSettings {
     pub transparent: bool,
     /// Viewport whose camera is rendered (`None` = the active viewport).
     pub view: Option<usize>,
+    /// Camera object rendered instead of a viewport (Render Setup's View list).
+    #[serde(default)]
+    pub camera: Option<crate::scene::ObjId>,
     pub engine: Engine,
     /// AA grid size (n x n samples per pixel).
     pub aa: u32,
@@ -58,6 +61,7 @@ impl Default for RenderSettings {
             lock_aspect: false,
             transparent: false,
             view: None,
+            camera: None,
             engine: Engine::Raytracer,
             aa: 2,
             shadows: true,

@@ -33,6 +33,7 @@ impl Editor {
             // handled on press / drag / release by the viewport
             Tool::Line { .. } => {}
             Tool::CreateLight { kind, first } => self.create_light_click(view, cursor, kind, first),
+            Tool::CreateCamera { kind, first } => self.create_camera_click(view, cursor, kind, first),
             Tool::PickMaterial => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.pick_material_from(other);
