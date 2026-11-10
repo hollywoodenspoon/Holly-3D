@@ -41,7 +41,7 @@ pub fn surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
     let mut base = Vec3::from_array(m.base_color);
     let mut alpha = m.opacity;
     let (mut metallic, mut roughness) = (m.metallic, m.roughness);
-    let mut emissive = Vec3::from_array(m.emissive) * m.emissive_strength;
+    let mut emissive = lin3(m.emissive) * m.emissive_strength;
     if let Some((n, a)) = m.active_map(MapChannel::BaseColor) {
         let s = n.sample(uv, p);
         base = base.lerp(s.truncate(), a);
@@ -66,7 +66,7 @@ pub fn surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
         roughness: roughness.clamp(0.02, 1.0),
         transmission: if m.model == ShadingModel::Crystal { m.transmission.clamp(0.0, 1.0) } else { 0.0 },
         ior: m.ior.max(1.0),
-        emissive: lin(emissive.min(Vec3::splat(1.0))) * emissive.max_element().max(1.0),
+        emissive,
     }
 }
 

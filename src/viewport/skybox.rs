@@ -1,6 +1,7 @@
 //! HDRI skybox behind Perspective / camera viewports (Environment `8` ->
 //! Show in Perspective Viewports). The equirect image is resampled to a
-//! cubemap on the CPU once per image / rotation change.
+//! cubemap on the CPU once per image / rotation change. A procedural sky
+//! (Earth / Deep Space) replaces the HDRI and is re-baked when it changes.
 
 use super::render_sync::ViewportCam;
 use crate::editor::Editor;
@@ -17,7 +18,7 @@ pub const SKY_NITS: f32 = 1_000.0;
 /// The uploaded cubemap and the image / rotation it was built from.
 #[derive(Resource, Default)]
 pub struct SkyboxCache {
-    key: Option<(usize, u32)>,
+    key: Option<u64>,
     handle: Option<Handle<Image>>,
 }
 
@@ -42,17 +43,24 @@ pub fn sync_skybox(
     mut images: ResMut<Assets<Image>>,
     q: Query<(Entity, &ViewportCam, Option<&Skybox>)>,
 ) {
-    let hdri = editor.scene.environment.hdri.as_ref().filter(|h| h.show_in_viewport);
-    let key = hdri.and_then(|h| h.key());
+    let env = &editor.scene.environment;
+    let sky = (env.sky.mode != crate::render::sky::SkyMode::Off).then_some(&env.sky);
+    let hdri = env.hdri.as_ref().filter(|h| sky.is_none() && h.show_in_viewport);
+    let key = match sky {
+        Some(s) => s.show_in_viewport.then(|| s.key()),
+        None => hdri.and_then(|h| h.key()).map(|(p, r)| ((p as u64) << 32) ^ r as u64),
+    };
     if key != cache.key {
         if let Some(old) = cache.handle.take() {
             images.remove(&old);
         }
-        cache.handle =
-            hdri.and_then(|h| h.image.as_ref()).map(|i| images.add(cubemap(i.cube_faces(FACE, hdri.map_or(0.0, |h| h.rotation)))));
+        cache.handle = match sky {
+            Some(s) => key.map(|_| images.add(cubemap(s.bake(512, 256).cube_faces(FACE, 0.0)))),
+            None => hdri.and_then(|h| h.image.as_ref()).map(|i| images.add(cubemap(i.cube_faces(FACE, hdri.map_or(0.0, |h| h.rotation))))),
+        };
         cache.key = key;
     }
-    let brightness = hdri.map_or(0.0, |h| h.strength * SKY_NITS);
+    let brightness = if sky.is_some() { SKY_NITS } else { hdri.map_or(0.0, |h| h.strength * SKY_NITS) };
     for (e, vc, sky) in &q {
         let persp = !editor.viewports.views[vc.0].camera.is_ortho();
         match (cache.handle.as_ref().filter(|_| persp), sky) {

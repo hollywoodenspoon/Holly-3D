@@ -58,10 +58,15 @@ pub struct RenderScene {
     pub background: Vec3,
     /// HDRI seen by camera misses and reflections (strength applied).
     pub hdri: Option<crate::render::hdri::Hdri>,
+    /// Procedural sky evaluated per ray (crisp stars / sun); `hdri` then
+    /// holds its bake for ambient and the Cycles world.
+    pub procedural: Option<super::sky::SkySettings>,
     pub fog: Option<(Vec3, f32)>,
     pub camera: ViewCamera,
     /// Scene bounding radius (AO ray length, epsilons).
     pub radius: f32,
+    /// Emissive polygons sampled as area lights.
+    pub emitters: super::emitters::Emitters,
 }
 
 fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
@@ -72,8 +77,14 @@ fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
             roughness: 0.65,
             ..Material::named("Wire Color")
         });
-        materials.push(mat);
-        let mat = materials.len() - 1;
+        // A Multi/Sub-Object material adds one table entry per material ID used.
+        let mut by_id: std::collections::HashMap<u16, usize> = Default::default();
+        let mut mat_for = |id: u16| {
+            *by_id.entry(if mat.is_multi() { id } else { 0 }).or_insert_with(|| {
+                materials.push(mat.for_id(id).clone());
+                materials.len() - 1
+            })
+        };
         let w = o.world_matrix();
         let nm = Mat3::from_mat4(w).inverse().transpose();
         let m = o.render_mesh();
@@ -82,6 +93,7 @@ fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
         for (pid, p) in &m.polygons {
             let pts: Vec<Vec3> = p.vertex_ids().map(|v| m.pos(v)).collect();
             let ns = &normals[&pid];
+            let mat = mat_for(p.material_id);
             for [a, b, c] in triangulate_polygon(&pts) {
                 let ix = [a, b, c];
                 tris.push(Tri {
@@ -150,7 +162,8 @@ impl RenderScene {
         if use_rig {
             ambient = ambient.max(Vec3::splat(0.25));
         }
-        let hdri = env.hdri.clone().filter(|h| h.image.is_some());
+        let procedural = (env.sky.mode != super::sky::SkyMode::Off).then(|| env.sky.clone());
+        let hdri = super::sky::procedural_hdri(&env.sky, 1024).or_else(|| env.hdri.clone()).filter(|h| h.image.is_some());
         if let Some(h) = hdri.as_ref().filter(|h| h.lighting) {
             ambient += h.image.as_ref().map_or(Vec3::ZERO, |i| i.average()) * h.strength / K_AMBIENT;
         }
@@ -159,6 +172,7 @@ impl RenderScene {
             (lo.min(t.p[0]).min(t.p[1]).min(t.p[2]), hi.max(t.p[0]).max(t.p[1]).max(t.p[2]))
         });
         let radius = if bvh.tris.is_empty() { 1.0 } else { ((hi - lo).length() * 0.5).max(0.1) };
+        let emitters = super::emitters::Emitters::build(&bvh, &materials);
         Self {
             bvh,
             materials,
@@ -167,9 +181,11 @@ impl RenderScene {
             sky,
             background: lin3(env.background),
             hdri,
+            procedural,
             fog: env.fog.then(|| (lin3(env.fog_color), env.fog_density)),
             camera,
             radius,
+            emitters,
         }
     }
 }

@@ -68,6 +68,8 @@ pub enum Tool {
     NormalAlign,
     /// Pick Material from Object (eyedropper) into the active slot.
     PickMaterial,
+    /// Render Setup Post-FX: `[ Pick Focus Object ]` for depth of field.
+    PickFocus,
     /// Edit Poly Create: points clicked so far.
     CreatePoly {
         points: Vec<crate::mesh::ops::sweep::CreatePoint>,
@@ -134,6 +136,7 @@ impl Tool {
             Tool::RefineSpline => Some("Refine: click on a segment to add a vertex (Esc to stop)"),
             Tool::PickSplineBoolean => Some("Boolean: click the other closed spline"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
+            Tool::PickFocus => Some("Depth of Field: click the object to keep in focus"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
             Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),
             Tool::CreateLight { .. } => Some("Click in a viewport to place the light"),
@@ -189,6 +192,8 @@ pub struct MatEditor {
     pub slate: bool,
     /// Folder typed for Import PBR Texture Folder.
     pub pbr_folder: String,
+    /// Sub-material the rollouts edit when the slot is a Multi/Sub-Object.
+    pub sub: usize,
 }
 
 /// Spinner values of the Editable Spline Geometry rollout.

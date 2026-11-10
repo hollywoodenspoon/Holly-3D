@@ -49,6 +49,13 @@ impl Editor {
                 }
                 self.tool = Tool::None;
             }
+            Tool::PickFocus => {
+                if let Some(o) = self.pick_object(view, cursor) {
+                    self.render.post.focus_object = Some(o);
+                    self.status = format!("Focus object: {}", self.scene.objects[o].name);
+                }
+                self.tool = Tool::None;
+            }
             Tool::CreatePoly { points } => self.create_poly_click(view, cursor, points),
             Tool::PickHinge => self.pick_hinge_click(view, cursor),
             Tool::PickSpline => self.pick_spline_click(view, cursor),

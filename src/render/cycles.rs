@@ -141,6 +141,9 @@ pub fn run(rs: &RenderScene, cfg: &RenderSettings, cancel: &AtomicBool) -> Resul
     if cfg.cycles_via == CyclesVia::Blender {
         return super::blender::run(rs, cfg, cancel);
     }
+    if let Some(h) = &rs.hdri {
+        h.ensure_file()?;
+    }
     let dir = work_dir()?;
     let (xml, png) = (dir.join("scene.xml"), dir.join("render.png"));
     std::fs::write(&xml, scene_xml(rs, cfg)).map_err(|e| e.to_string())?;

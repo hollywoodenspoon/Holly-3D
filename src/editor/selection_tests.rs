@@ -135,3 +135,23 @@ fn undo_checkpoints_share_untouched_meshes() {
     let za = poly(&ed, a).vertices.values().map(|v| v.position.z).fold(f32::MIN, f32::max);
     assert_eq!(za, old_a.vertices.values().map(|v| v.position.z).fold(f32::MIN, f32::max), "undo restored A");
 }
+
+#[test]
+fn show_end_result_off_shows_the_highlighted_stack_level() {
+    let (mut ed, [left, right]) = editor();
+    ed.scene.select_only(Some(left));
+    let o = &mut ed.scene.objects[left];
+    o.add_modifier(crate::modifiers::make_modifier("TurboSmooth").unwrap());
+    o.set_active_level(None);
+    let (base, smooth) = (o.level_mesh.polygons.len(), o.evaluated_mesh.polygons.len());
+    assert_eq!((base, smooth), (6, 24));
+    assert_eq!(ed.display_mesh(left).polygons.len(), 24, "end result shown by default");
+    ed.show_end_result = false;
+    assert_eq!(ed.display_mesh(left).polygons.len(), 6, "base level shown");
+    ed.scene.objects[left].set_active_level(Some(0));
+    assert_eq!(ed.display_mesh(left).polygons.len(), 24, "TurboSmooth level shown");
+    // Objects other than the current one always show their end result.
+    ed.scene.objects[right].add_modifier(crate::modifiers::make_modifier("TurboSmooth").unwrap());
+    ed.scene.objects[right].set_active_level(None);
+    assert_eq!(ed.display_mesh(right).polygons.len(), 24);
+}

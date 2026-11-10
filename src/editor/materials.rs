@@ -15,8 +15,20 @@ impl Editor {
         self.scene.objects.values().any(|o| o.material == Some(id))
     }
 
-    /// Applies `f` to the active slot's material, recording undo when `label` is set.
+    /// The material the parameter rollouts edit: the active slot's material,
+    /// or its current sub-material when it is a Multi/Sub-Object.
+    pub fn editing_material(&self) -> &Material {
+        self.scene.materials.mats[self.active_material()].target(self.mat_editor.sub)
+    }
+
+    /// Applies `f` to the edited (sub-)material, recording undo when `label` is set.
     pub fn edit_material(&mut self, label: Option<&str>, f: impl FnOnce(&mut Material)) {
+        let sub = self.mat_editor.sub;
+        self.edit_material_root(label, |m| f(m.target_mut(sub)));
+    }
+
+    /// Applies `f` to the active slot's material itself (name, type, sub list).
+    pub fn edit_material_root(&mut self, label: Option<&str>, f: impl FnOnce(&mut Material)) {
         if let Some(l) = label {
             self.checkpoint(l);
         }
@@ -24,6 +36,20 @@ impl Editor {
         if let Some(m) = self.scene.materials.mats.get_mut(id) {
             f(m);
         }
+    }
+
+    /// Standard <-> Multi/Sub-Object for the active slot.
+    pub fn set_material_multi(&mut self, multi: bool) {
+        let keep = self.mat_editor.sub;
+        self.edit_material_root(Some("Material Type"), |m| if multi { m.make_multi() } else { m.make_standard(keep) });
+        self.mat_editor.sub = 0;
+    }
+
+    /// Multi/Sub-Object pack preset on the active slot.
+    pub fn apply_multi_preset(&mut self, p: crate::materials::MultiPreset) {
+        self.edit_material_root(Some("Multi/Sub Preset"), |m| p.apply(m));
+        self.mat_editor.sub = 0;
+        self.status = format!("Preset: {}", p.label());
     }
 
     /// `[ Assign Material to Selection ]`.
@@ -90,7 +116,7 @@ impl Editor {
     /// Import PBR Texture Folder into the active material.
     pub fn import_pbr_folder(&mut self) {
         let dir = std::path::PathBuf::from(self.mat_editor.pbr_folder.trim());
-        let mut m = self.scene.materials.mats[self.active_material()].clone();
+        let mut m = self.editing_material().clone();
         match crate::materials::import::import_folder(&mut m, &dir) {
             Ok(chs) => {
                 self.edit_material(Some("Import PBR Folder"), |dst| *dst = m);

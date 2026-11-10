@@ -84,6 +84,13 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.separator();
         channel_buttons(ui, &mut ed.rfw.channels);
     });
+    // Live tonemapping: re-composes the stored layers, no re-render.
+    let live = ed.rfw.fb.as_ref().is_some_and(|f| f.can_retone());
+    ui.add_enabled_ui(live, |ui| {
+        if crate::ui::render_fx::tone_row(ui, &mut ed.render.post.tone) {
+            ed.retone_render();
+        }
+    });
 }
 
 fn status(ui: &mut egui::Ui, ed: &Editor) {

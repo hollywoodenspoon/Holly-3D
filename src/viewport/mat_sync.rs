@@ -22,6 +22,8 @@ struct Entry {
     mat: Material,
     rev: u64,
     tex: MatTextures,
+    /// Multi/Sub-Object: textures of each sub-material (list order).
+    subs: Vec<MatTextures>,
 }
 
 /// Per-material bake cache, refreshed when a material's value changes.
@@ -34,6 +36,11 @@ impl MatCache {
     /// (revision, material, textures) of a cached material.
     pub fn get(&self, id: MatId) -> Option<(u64, &Material, &MatTextures)> {
         self.entries.get(&id).map(|e| (e.rev, &e.mat, &e.tex))
+    }
+
+    /// Textures of sub-material `i` of a cached Multi/Sub-Object material.
+    pub fn sub_textures(&self, id: MatId, i: usize) -> Option<&MatTextures> {
+        self.entries.get(&id).and_then(|e| e.subs.get(i))
     }
 }
 
@@ -79,7 +86,8 @@ pub fn sync_material_cache(editor: Res<crate::editor::Editor>, mut cache: ResMut
             continue;
         }
         let tex = bake_all(m, &mut images);
-        cache.entries.insert(id, Entry { mat: m.clone(), rev: crate::scene::next_version(), tex });
+        let subs = m.multi.as_ref().map_or(vec![], |ms| ms.subs.iter().map(|s| bake_all(&s.mat, &mut images)).collect());
+        cache.entries.insert(id, Entry { mat: m.clone(), rev: crate::scene::next_version(), tex, subs });
     }
 }
 

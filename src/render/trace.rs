@@ -6,7 +6,7 @@ use super::bvh::Hit;
 use super::scene_build::{RShape, RenderScene};
 use super::settings::RenderSettings;
 use crate::materials::ShadingModel;
-use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface, tonemap};
+use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface};
 use bevy::math::{Vec2, Vec3, Vec4};
 
 /// Small deterministic xorshift RNG (one per pixel).
@@ -34,7 +34,7 @@ impl Rng {
 }
 
 /// Cosine-weighted direction around `n`.
-fn cosine_dir(n: Vec3, rng: &mut Rng) -> Vec3 {
+pub(super) fn cosine_dir(n: Vec3, rng: &mut Rng) -> Vec3 {
     let (a, b) = n.any_orthonormal_pair();
     let (r, phi) = (rng.f().sqrt(), rng.f() * std::f32::consts::TAU);
     (a * r * phi.cos() + b * r * phi.sin() + n * (1.0 - r * r).max(0.0).sqrt()).normalize()
@@ -59,29 +59,25 @@ impl GSample {
     pub const EMPTY: GSample = GSample { obj: u32::MAX, mat: u32::MAX, depth: f32::INFINITY, normal: Vec3::ZERO };
 }
 
-/// One rendered pixel: display sRGB + alpha, linear HDR and G-buffer.
-#[derive(Clone, Copy, Debug)]
-pub struct Pixel {
-    pub display: Vec4,
-    pub hdr: Vec4,
-    pub g: GSample,
-}
+pub use super::sample::Pixel;
 
 pub struct Tracer<'a> {
     pub rs: &'a RenderScene,
     pub cfg: &'a RenderSettings,
-    eps: f32,
+    pub(super) eps: f32,
 }
 
-struct Shading {
-    p: Vec3,
+pub(super) struct Shading {
+    pub(super) p: Vec3,
     /// Shading normal facing the incoming ray.
-    n: Vec3,
+    pub(super) n: Vec3,
     /// Geometric normal facing the incoming ray.
-    ng: Vec3,
+    pub(super) ng: Vec3,
     /// True when the ray enters the surface (hits its front face).
-    entering: bool,
-    s: Surface,
+    pub(super) entering: bool,
+    pub(super) s: Surface,
+    /// Triangle hit (NEE skips sampling the emitter being shaded).
+    pub(super) tri: usize,
 }
 
 impl<'a> Tracer<'a> {
@@ -89,7 +85,7 @@ impl<'a> Tracer<'a> {
         Self { rs, cfg, eps: (rs.radius * 2e-4).max(1e-4) }
     }
 
-    fn interp(&self, h: &Hit, o: Vec3, d: Vec3) -> Shading {
+    pub(super) fn interp(&self, h: &Hit, o: Vec3, d: Vec3) -> Shading {
         let t = &self.rs.bvh.tris[h.tri];
         let w = Vec3::new(1.0 - h.u - h.v, h.u, h.v);
         let bary3 = |a: [Vec3; 3]| a[0] * w.x + a[1] * w.y + a[2] * w.z;
@@ -104,7 +100,7 @@ impl<'a> Tracer<'a> {
         let uv: Vec2 = t.uv[0] * w.x + t.uv[1] * w.y + t.uv[2] * w.z;
         let col: Vec4 = t.col[0] * w.x + t.col[1] * w.y + t.col[2] * w.z;
         let s = surface(&self.rs.materials[t.mat], uv, p, col);
-        Shading { p, n, ng, entering, s }
+        Shading { p, n, ng, entering, s, tri: h.tri }
     }
 
     /// Fraction of the light reaching `p` (0..1), with soft jitter.
@@ -128,7 +124,7 @@ impl<'a> Tracer<'a> {
         lit as f32 / n as f32
     }
 
-    fn direct(&self, sh: &Shading, rng: &mut Rng) -> Vec<LightIn> {
+    pub(super) fn direct(&self, sh: &Shading, rng: &mut Rng) -> Vec<LightIn> {
         let o = sh.p + sh.ng * self.eps;
         let mut out = Vec::with_capacity(self.rs.lights.len());
         for l in &self.rs.lights {
@@ -156,6 +152,7 @@ impl<'a> Tracer<'a> {
             }
             out.push(LightIn { dir, radiance });
         }
+        self.emitter_lights(sh, rng, &mut out);
         out
     }
 
@@ -204,15 +201,19 @@ impl<'a> Tracer<'a> {
     /// plus a soft studio dome (brighter overhead). Camera rays that miss
     /// return zero coverage and show the plain background.
     fn environment(&self, d: Vec3) -> Vec3 {
-        if let Some(c) = self.rs.hdri.as_ref().and_then(|h| h.radiance(d)) {
+        if let Some(c) = self.rs.procedural.as_ref().map(|s| s.radiance(d)).or_else(|| self.rs.hdri.as_ref().and_then(|h| h.radiance(d))) {
             return c + self.rs.sky;
         }
         let up = (0.5 + 0.5 * d.z).clamp(0.0, 1.0);
-        self.rs.background + self.rs.sky + self.rs.ambient * (1.0 + 5.0 * up * up)
+        let dome = if self.cfg.gi.softbox { super::gi::softbox(d) } else { Vec3::ZERO };
+        self.rs.background + self.rs.sky + self.rs.ambient * (1.0 + 5.0 * up * up) + dome
     }
 
-    /// What a camera ray that misses shows: the HDRI, else the plain color.
-    fn backdrop(&self, d: Vec3) -> Vec3 {
+    /// What a camera ray that misses shows: the sky / HDRI, else the plain color.
+    pub(super) fn backdrop(&self, d: Vec3) -> Vec3 {
+        if let Some(s) = &self.rs.procedural {
+            return s.radiance(d);
+        }
         self.rs.hdri.as_ref().and_then(|h| h.radiance(d)).unwrap_or(self.rs.background)
     }
 
@@ -232,8 +233,12 @@ impl<'a> Tracer<'a> {
             return s.base + s.emissive;
         }
         let lights = self.direct(sh, rng);
-        let ambient = self.rs.ambient + self.sky(sh, rng);
+        let ao = if depth == 0 { self.ao(sh, rng) } else { 1.0 };
+        let ambient = (self.rs.ambient + self.sky(sh, rng)) * ao;
         let mut c = shade(m, s, sh.n, v, &lights, ambient);
+        if depth == 0 && m.model != ShadingModel::Toon {
+            c += self.indirect(sh, rng) * s.base * (1.0 - s.metallic) * (1.0 - s.transmission);
+        }
         if m.model == ShadingModel::Toon {
             return c;
         }
@@ -270,50 +275,4 @@ impl<'a> Tracer<'a> {
         }
         c
     }
-
-    /// Renders pixel (x, y) of a `w` x `h` image.
-    pub fn pixel(&self, x: u32, y: u32, w: u32, h: u32) -> Pixel {
-        let n = self.cfg.aa.max(1);
-        let aspect = w as f32 / h as f32;
-        let mut rng = Rng::new(((y as u64) << 32) ^ x as u64 ^ 0xA5A5_5A5A);
-        let (mut display, mut hdr) = (Vec4::ZERO, Vec4::ZERO);
-        let mut g = GSample::EMPTY;
-        let bg = tonemap_bg(self.rs.background);
-        for sy in 0..n {
-            for sx in 0..n {
-                let jx = (sx as f32 + if n > 1 { rng.f() } else { 0.5 }) / n as f32;
-                let jy = (sy as f32 + if n > 1 { rng.f() } else { 0.5 }) / n as f32;
-                let ndc = Vec2::new((x as f32 + jx) / w as f32 * 2.0 - 1.0, 1.0 - (y as f32 + jy) / h as f32 * 2.0);
-                let ray = self.rs.camera.ray(ndc, aspect);
-                let (c, a, gs) = self.trace(ray.origin, ray.dir, 0, &mut rng);
-                let back = self.backdrop(ray.dir);
-                let bg = if self.rs.hdri.is_some() { tonemap(back) } else { bg };
-                if sx == n / 2 && sy == n / 2 {
-                    g = gs.unwrap_or(GSample::EMPTY);
-                }
-                // `c` is premultiplied by the coverage `a`.
-                let shaded = if a > 0.0 { tonemap(c / a) * a } else { Vec3::ZERO };
-                if self.cfg.transparent {
-                    display += shaded.extend(a);
-                    hdr += c.extend(a);
-                } else {
-                    display += (shaded + bg * (1.0 - a)).extend(1.0);
-                    hdr += (c + back * (1.0 - a)).extend(1.0);
-                }
-            }
-        }
-        let k = 1.0 / (n * n) as f32;
-        let mut display = display * k;
-        if self.cfg.transparent && display.w > 1e-4 {
-            // Straight (un-premultiplied) alpha for PNG/EXR output.
-            display = (display.truncate() / display.w).extend(display.w);
-        }
-        Pixel { display, hdr: hdr * k, g }
-    }
-}
-
-/// The background shows exactly the chosen Environment color.
-fn tonemap_bg(c: Vec3) -> Vec3 {
-    use crate::materials::shading::linear_to_srgb;
-    Vec3::new(linear_to_srgb(c.x), linear_to_srgb(c.y), linear_to_srgb(c.z))
 }

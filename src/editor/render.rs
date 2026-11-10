@@ -68,7 +68,16 @@ impl Editor {
         if !fb_ok {
             self.rfw.fb = Some(FrameBuffer::new(w, h));
         }
-        let cfg = self.render.clone();
+        if let Some(fb) = self.rfw.fb.as_mut() {
+            (fb.plain_bg, fb.transparent) = (rs.hdri.is_none(), self.render.transparent);
+            if self.render.engine == Engine::Cycles {
+                fb.layers.clear();
+            }
+        }
+        let mut cfg = self.render.clone();
+        if let Some(d) = self.focus_object_distance() {
+            cfg.post.focus_distance = d;
+        }
         self.rfw.job = Some(match cfg.engine {
             Engine::Raytracer => RenderJob::raytrace(rs, cfg, region),
             Engine::Cycles => RenderJob::cycles(rs, cfg),
@@ -76,6 +85,24 @@ impl Editor {
         self.rfw.rfw_open = true;
         self.rfw.message = format!("Rendering {} ({w}x{h})…", self.render_label());
         self.status = self.rfw.message.clone();
+    }
+
+    /// `[ Pick Focus Object ]`: distance from the render camera to the
+    /// focus object's center (overrides Focus Distance while set).
+    pub fn focus_object_distance(&self) -> Option<f32> {
+        let id = self.render.post.focus_object?;
+        let o = self.scene.objects.get(id)?;
+        let b = o.bounds()?;
+        let c = o.world_matrix().transform_point3((b.min + b.max) * 0.5);
+        Some(self.render_camera().eye().distance(c).max(1e-3))
+    }
+
+    /// F9 tone controls changed: re-tonemap the image without re-rendering.
+    pub fn retone_render(&mut self) {
+        let tone = self.render.post.tone;
+        if let Some(fb) = self.rfw.fb.as_mut() {
+            fb.retone(&tone);
+        }
     }
 
     pub fn cancel_render(&mut self) {

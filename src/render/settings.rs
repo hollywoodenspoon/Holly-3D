@@ -117,6 +117,10 @@ pub struct RenderSettings {
     pub hiprt: bool,
     /// OpenImageDenoise on the final image.
     pub denoise: bool,
+    /// GI & AO rollout (built-in raytracer).
+    pub gi: super::post::GiSettings,
+    /// Post-FX rollout (bloom, depth of field, tonemapping).
+    pub post: super::post::PostFx,
 }
 
 impl Default for RenderSettings {
@@ -142,6 +146,8 @@ impl Default for RenderSettings {
             cycles_device: CyclesDevice::Hip,
             hiprt: true,
             denoise: true,
+            gi: Default::default(),
+            post: Default::default(),
         }
     }
 }

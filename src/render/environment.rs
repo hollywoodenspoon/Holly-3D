@@ -44,6 +44,9 @@ pub struct Environment {
     /// HDRI background / image-based ambient (`.hdr` / `.exr`).
     #[serde(default)]
     pub hdri: Option<super::hdri::Hdri>,
+    /// Procedural time-of-day sky / deep space (replaces the HDRI when on).
+    #[serde(default)]
+    pub sky: super::sky::SkySettings,
 }
 
 impl Default for Environment {
@@ -58,6 +61,7 @@ impl Default for Environment {
             fog_color: [0.6, 0.65, 0.72],
             fog_density: 0.05,
             hdri: None,
+            sky: Default::default(),
         }
     }
 }

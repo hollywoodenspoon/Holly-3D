@@ -11,9 +11,10 @@ fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
     egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width(110.0).show(ui, body);
 }
 
+/// Luminance / Emission: above 0 the surface lights the scene in F9 and Cycles.
 fn emission(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
-    color(ui, t, "Emission Color", &mut m.emissive);
-    num(ui, t, "Emission Strength", &mut m.emissive_strength, 0.0..=20.0, 0.0);
+    color(ui, t, "Luminance / Emission", &mut m.emissive);
+    num(ui, t, "Emission Multiplier", &mut m.emissive_strength, 0.0..=100.0, 0.0);
 }
 
 fn physical(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
@@ -55,7 +56,7 @@ fn unlit(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
 }
 
 pub fn basic(ui: &mut egui::Ui, ed: &mut Editor) {
-    let model = ed.scene.materials.mats[ed.active_material()].model;
+    let model = ed.editing_material().model;
     let title = match model {
         ShadingModel::Physical => "Physical Basic Parameters",
         ShadingModel::Toon => "Cel / Toon Ramp Parameters",
