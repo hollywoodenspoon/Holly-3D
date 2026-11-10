@@ -164,7 +164,12 @@ pub fn stack_actions(ui: &mut egui::Ui, ed: &mut Editor) {
         {
             ed.pinned = if pinned { None } else { Some(id) };
         }
-        ui.add_enabled(false, egui::Button::new("Show End Result")).on_disabled_hover_text("End result is always shown");
+        if toggle_button(ui, ed.show_end_result, "Show End Result")
+            .on_hover_text("Off: the viewport shows this object as it is at the highlighted stack level")
+            .clicked()
+        {
+            ed.show_end_result = !ed.show_end_result;
+        }
         if ui.add_enabled(shared, egui::Button::new("Make Unique")).clicked() {
             ed.checkpoint("Make Unique");
             ed.scene.make_unique(id);

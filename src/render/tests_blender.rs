@@ -53,6 +53,14 @@ fn blender_scene_json_describes_the_scene() {
         assert!(blender::LOADER.contains(key), "loader reads {key}");
     }
     assert!(blender::LOADER.contains("use_hiprt") && blender::LOADER.contains("OPENIMAGEDENOISE"));
+    // Post-FX: depth of field + tonemapper / exposure reach Blender.
+    let mut fx = cpu.clone();
+    (fx.post.dof, fx.post.focus_distance, fx.post.f_stop) = (true, 3.5, 4.0);
+    (fx.post.tone.op, fx.post.tone.exposure) = (crate::render::post::Tonemap::AgX, 1.25);
+    let j = blender::scene_json(&rs, &fx, std::path::Path::new("x.png"));
+    assert_eq!((j["camera"]["dof"]["focus"].as_f64(), j["camera"]["dof"]["fstop"].as_f64()), (Some(3.5), Some(4.0)));
+    assert_eq!((j["view"]["transform"].as_str(), j["view"]["exposure"].as_f64()), (Some("AgX"), Some(1.25)));
+    assert!(!j["camera"]["dof"].is_null() && blender::LOADER.contains("aperture_fstop") && blender::LOADER.contains("vs.exposure"));
 }
 
 #[cfg(unix)]

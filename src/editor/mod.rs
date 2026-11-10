@@ -24,6 +24,7 @@ pub mod render;
 pub mod select;
 #[cfg(test)]
 mod selection_tests;
+pub mod sky;
 pub mod snap;
 pub mod spline_tools;
 pub mod splines;
@@ -99,6 +100,9 @@ pub struct Editor {
     pub isolate: Option<Vec<ObjId>>,
     /// Pin Stack: the Modify panel stays on this object whatever is selected.
     pub pinned: Option<ObjId>,
+    /// Show End Result: off shows the current object as it is at the
+    /// highlighted stack level.
+    pub show_end_result: bool,
     /// Last-used parameters per op kind (main buttons reuse them).
     pub op_memory: std::collections::HashMap<String, PolyOp>,
     /// FFD Control Points / Lattice or UVW Map Gizmo sub-object mode.
@@ -167,6 +171,7 @@ impl Default for Editor {
             drag: None,
             isolate: None,
             pinned: None,
+            show_end_result: true,
             op_memory: Default::default(),
             mod_sub: None,
             uv_editor_open: false,
@@ -196,6 +201,13 @@ impl Editor {
         self.pinned
             .filter(|&k| self.scene.objects.contains_key(k))
             .or_else(|| self.scene.objects.iter().find(|(_, o)| o.selected).map(|(k, _)| k))
+    }
+
+    /// Mesh the viewport draws for `id`: the end result, or the mesh at the
+    /// highlighted level while Show End Result is off.
+    pub fn display_mesh(&self, id: ObjId) -> &crate::mesh::EditablePoly {
+        let o = &self.scene.objects[id];
+        if !self.show_end_result && Some(id) == self.current() && !o.modifiers.is_empty() { &o.level_mesh } else { &o.evaluated_mesh }
     }
 
     pub fn current_obj(&self) -> Option<&SceneObject> {

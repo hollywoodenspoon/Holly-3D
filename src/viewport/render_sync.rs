@@ -32,7 +32,7 @@ struct ObjRender {
     entity: Entity,
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
-    version: u64,
+    version: (u64, bool),
     look: (u32, bool, bool, Option<u64>),
     overlay: Entity,
     overlay_mesh: Handle<Mesh>,
@@ -119,7 +119,7 @@ pub fn sync_cameras(
     }
 }
 
-fn build_mesh(t: &crate::mesh::triangulate::TriMesh) -> Mesh {
+pub(super) fn build_mesh(t: &crate::mesh::triangulate::TriMesh) -> Mesh {
     let mut m = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
     m.insert_attribute(Mesh::ATTRIBUTE_POSITION, t.positions.clone());
     m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, t.normals.clone());
@@ -236,7 +236,7 @@ pub fn sync_meshes(
     // Lights and targets have no geometry (see light_icons / light_sync).
     for (id, o) in scene.objects.iter().filter(|(_, o)| !o.is_helper()) {
         let r = map.objs.entry(id).or_insert_with(|| {
-            let mesh = meshes.add(build_mesh(&o.evaluated_mesh.to_tri_mesh()));
+            let mesh = meshes.add(build_mesh(&editor.display_mesh(id).to_tri_mesh()));
             let material = materials.add(StandardMaterial::default());
             let overlay_mesh = meshes.add(selected_faces_mesh(&crate::mesh::EditablePoly::new()));
             let entity = commands
@@ -255,17 +255,19 @@ pub fn sync_meshes(
                 entity,
                 mesh,
                 material,
-                version: o.version,
+                version: (o.version, true),
                 look: (u32::MAX, false, false, None),
                 overlay,
                 overlay_mesh,
                 sel_version: (u64::MAX, SubObject::Object, false),
             }
         });
-        if r.version != o.version {
-            r.version = o.version;
+        let shown_mesh = editor.display_mesh(id);
+        let version = (o.version, std::ptr::eq(shown_mesh, &*o.evaluated_mesh));
+        if r.version != version {
+            r.version = version;
             if let Some(mut m) = meshes.get_mut(&r.mesh) {
-                *m = build_mesh(&o.evaluated_mesh.to_tri_mesh());
+                *m = build_mesh(&shown_mesh.to_tri_mesh());
             }
         }
         // Assigned material (when "Show Shaded Material in Viewport" is on);
@@ -291,7 +293,9 @@ pub fn sync_meshes(
         }
         let world = Transform::from_matrix(o.world_matrix());
         let vis = if o.hidden { Visibility::Hidden } else { Visibility::Inherited };
-        for e in [r.entity, r.overlay] {
+        // Multi/Sub-Object: per-ID parts (multi_sync) draw the surface instead.
+        let multi = shown.is_some_and(|(_, m, _)| m.is_multi());
+        for (e, vis) in [(r.entity, if multi { Visibility::Hidden } else { vis }), (r.overlay, vis)] {
             if let Ok((mut tf, mut v)) = tfs.get_mut(e) {
                 if *tf != world {
                     *tf = world;

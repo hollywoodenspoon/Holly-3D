@@ -85,7 +85,7 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, i: usize) {
     if !(wire || v.edged_faces) {
         return;
     }
-    for o in ed.scene.objects.values().filter(|o| !o.hidden) {
+    for (id, o) in ed.scene.objects.iter().filter(|(_, o)| !o.hidden) {
         let w = o.world_matrix();
         let [r, gg, b] = o.wire_color;
         let color = if wire && o.selected {
@@ -95,7 +95,7 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, i: usize) {
         } else {
             Color::srgb(r * 0.35, gg * 0.35, b * 0.35)
         };
-        let m = &o.evaluated_mesh;
+        let m = ed.display_mesh(id);
         for e in m.edges.values().filter(|e| !e.hidden) {
             g.line(w.transform_point3(m.pos(e.v0)), w.transform_point3(m.pos(e.v1)), color);
         }

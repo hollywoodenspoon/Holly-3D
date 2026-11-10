@@ -105,6 +105,10 @@ else:
     cd.sensor_fit = "VERTICAL"
     cd.angle_y = c["fov_y"]
 cd.clip_start, cd.clip_end = c["clip"]
+if c.get("dof"):
+    cd.dof.use_dof = True
+    cd.dof.focus_distance = c["dof"]["focus"]
+    cd.dof.aperture_fstop = c["dof"]["fstop"]
 cam = bpy.data.objects.new("camera", cd)
 cam.matrix_world = Matrix(c["matrix"])
 scene.collection.objects.link(cam)
@@ -135,7 +139,19 @@ r.film_transparent = cfg["transparent"]
 r.image_settings.file_format = "PNG"
 r.image_settings.color_mode = "RGBA"
 r.filepath = cfg["output"]
-scene.view_settings.view_transform = "Standard"
+vs = scene.view_settings
+view = cfg.get("view") or {"transform": "Standard", "exposure": 0.0, "look": "None"}
+try:
+    vs.view_transform = view["transform"]
+except TypeError:
+    vs.view_transform = "Standard"
+vs.exposure = view["exposure"]
+for look in (view["transform"] + " - " + view["look"], view["look"]):
+    try:
+        vs.look = look
+        break
+    except TypeError:
+        pass
 cy = scene.cycles
 cy.samples = cfg["samples"]
 cy.max_bounces = cfg["max_bounces"]

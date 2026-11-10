@@ -4,10 +4,10 @@
 
 use super::cycles;
 use super::framebuffer::FrameBuffer;
-use super::outline;
+use super::post::PixelLayers;
 use super::scene_build::RenderScene;
 use super::settings::RenderSettings;
-use super::trace::{GSample, Pixel, Tracer};
+use super::trace::{Pixel, Tracer};
 use bevy::math::Vec4;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
@@ -25,6 +25,7 @@ pub enum Msg {
         w: u32,
         display: Vec<Vec4>,
         hdr: Vec<Vec4>,
+        layers: Vec<PixelLayers>,
     },
     /// Cycles: a whole new image.
     Image(FrameBuffer),
@@ -88,7 +89,7 @@ pub fn raytrace_region(
     let next = AtomicUsize::new(0);
     let (tx, rx) = channel::<Tile>();
     let workers = std::thread::available_parallelism().map_or(4, |n| n.get()).clamp(1, todo.len().max(1));
-    let mut out = vec![Pixel { display: Vec4::ZERO, hdr: Vec4::ZERO, g: GSample::EMPTY }; rw * rh];
+    let mut out = vec![Pixel::EMPTY; rw * rh];
     std::thread::scope(|s| {
         for _ in 0..workers {
             let (tx, tracer, next, todo) = (tx.clone(), &tracer, &next, &todo);
@@ -120,19 +121,15 @@ pub fn raytrace_region(
             }
         }
     });
-    if cfg.outlines && !cancel.load(Ordering::Relaxed) {
-        let g: Vec<GSample> = out.iter().map(|p| p.g).collect();
-        let (mut d, mut h): (Vec<Vec4>, Vec<Vec4>) = out.iter().map(|p| (p.display, p.hdr)).unzip();
-        outline::apply(&g, rw, rh, &rs.materials, &mut d, &mut h);
-        for (p, (d, h)) in out.iter_mut().zip(d.into_iter().zip(h)) {
-            (p.display, p.hdr) = (d, h);
-        }
+    if !cancel.load(Ordering::Relaxed) {
+        super::postfx::run(&mut out, rw, rh, rs, cfg);
     }
     out
 }
 
-fn split(px: &[Pixel]) -> (Vec<Vec4>, Vec<Vec4>) {
-    px.iter().map(|p| (p.display, p.hdr)).unzip()
+fn block(x0: u32, y0: u32, w: u32, px: &[Pixel]) -> Msg {
+    let (display, hdr) = px.iter().map(|p| (p.display, p.hdr)).unzip();
+    Msg::Block { x0, y0, w, display, hdr, layers: px.iter().map(|p| p.layers).collect() }
 }
 
 impl RenderJob {
@@ -150,15 +147,13 @@ impl RenderJob {
             let t0 = Instant::now();
             let w = region[2] - region[0];
             let px = raytrace_region(&rs, &cfg, region, &cancel, |[x0, y0, tw, _], tile| {
-                let (display, hdr) = split(tile);
-                let _ = tx.send(Msg::Block { x0, y0, w: tw, display, hdr });
+                let _ = tx.send(block(x0, y0, tw, tile));
             });
             if cancel.load(Ordering::Relaxed) {
                 let _ = tx.send(Msg::Done(Err("Render cancelled".into())));
                 return;
             }
-            let (display, hdr) = split(&px);
-            let _ = tx.send(Msg::Block { x0: region[0], y0: region[1], w, display, hdr });
+            let _ = tx.send(block(region[0], region[1], w, &px));
             let _ = tx.send(Msg::Done(Ok(format!("Rendered {}x{} in {:.1}s", cfg.width, cfg.height, t0.elapsed().as_secs_f32()))));
         });
         job
@@ -187,9 +182,10 @@ impl RenderJob {
         let mut done = None;
         while let Ok(m) = rx.try_recv() {
             match m {
-                Msg::Block { x0, y0, w, display, hdr } => {
+                Msg::Block { x0, y0, w, display, hdr, layers } => {
                     self.px_done += display.len() as u64;
                     fb.put_block(x0, y0, w, &display, &hdr);
+                    fb.put_layers(x0, y0, w, &layers);
                 }
                 Msg::Image(img) => {
                     let rev = fb.rev + 1;

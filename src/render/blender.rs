@@ -34,6 +34,7 @@ fn camera(rs: &RenderScene, cfg: &RenderSettings) -> Value {
         "ortho_scale": size.x.max(size.y),
         "fov_y": c.fov_y(cfg.aspect()),
         "clip": [c.near.max(1e-3), if c.far.is_finite() { c.far } else { 1e5 }],
+        "dof": (cfg.post.dof && !c.is_ortho()).then(|| json!({ "focus": cfg.post.focus_distance, "fstop": cfg.post.f_stop })),
     })
 }
 
@@ -100,6 +101,27 @@ fn lights(rs: &RenderScene) -> Value {
         .collect()
 }
 
+/// Color management: Blender view transform for the tonemapper, Exposure
+/// (EV) and a contrast look.
+fn view(cfg: &RenderSettings) -> Value {
+    use super::post::Tonemap;
+    let t = &cfg.post.tone;
+    let transform = match t.op {
+        Tonemap::AgX => "AgX",
+        Tonemap::AcesFilmic => "Filmic",
+        Tonemap::Reinhard => "Khronos PBR Neutral",
+        Tonemap::StandardSrgb => "Standard",
+    };
+    let look = if t.contrast > 1.15 {
+        "High Contrast"
+    } else if t.contrast < 0.85 {
+        "Low Contrast"
+    } else {
+        "None"
+    };
+    json!({ "transform": transform, "exposure": t.exposure, "look": look })
+}
+
 /// The whole scene description the loader reads.
 pub fn scene_json(rs: &RenderScene, cfg: &RenderSettings, out_png: &Path) -> Value {
     let hdri = rs.hdri.as_ref().map(|h| json!({ "path": h.path, "strength": h.strength, "rotation": h.rotation }));
@@ -115,6 +137,7 @@ pub fn scene_json(rs: &RenderScene, cfg: &RenderSettings, out_png: &Path) -> Val
         "denoise": cfg.denoise,
         "output": out_png,
         "camera": camera(rs, cfg),
+        "view": view(cfg),
         "world": { "color": v(rs.background + rs.ambient + rs.sky), "hdri": hdri },
         "materials": materials(rs),
         "meshes": meshes(rs),
@@ -124,6 +147,9 @@ pub fn scene_json(rs: &RenderScene, cfg: &RenderSettings, out_png: &Path) -> Val
 
 /// Exports, runs Blender and loads the rendered PNG.
 pub fn run(rs: &RenderScene, cfg: &RenderSettings, cancel: &AtomicBool) -> Result<FrameBuffer, String> {
+    if let Some(h) = &rs.hdri {
+        h.ensure_file()?;
+    }
     let dir = work_dir()?;
     let (scene, loader, png) = (dir.join("scene.json"), dir.join("loader.py"), dir.join("render.png"));
     let text = serde_json::to_string(&scene_json(rs, cfg, &png)).map_err(|e| e.to_string())?;

@@ -5,15 +5,19 @@
 pub mod bake;
 pub mod import;
 pub mod maps;
+pub mod multi;
 pub mod presets;
 pub mod preview;
 pub mod shading;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_multi;
 mod tex_serde;
 pub mod texture;
 
 pub use maps::{MapChannel, MapNode, MapSlot};
+pub use multi::{MultiPreset, MultiSub, SubMaterial};
 pub use presets::Preset;
 pub use texture::{TexHandle, Texture};
 
@@ -98,7 +102,9 @@ pub struct Material {
     pub thickness: f32,
     /// Subsurface / absorption color (sRGB) light picks up inside the volume.
     pub attenuation_color: [f32; 3],
+    /// Luminance / Emission color (sRGB).
     pub emissive: [f32; 3],
+    /// Emission Multiplier (0..100); above 0 the surface is an area light in F9 / Cycles.
     pub emissive_strength: f32,
     pub toon: ToonParams,
     pub outline: OutlineParams,
@@ -108,6 +114,9 @@ pub struct Material {
     pub slate_nodes: Vec<MapNode>,
     /// "Show Shaded Material in Viewport".
     pub show_in_viewport: bool,
+    /// Multi/Sub-Object: sub-materials by polygon material ID.
+    #[serde(default)]
+    pub multi: Option<MultiSub>,
 }
 
 impl Default for Material {
@@ -130,6 +139,7 @@ impl Default for Material {
             maps: Default::default(),
             slate_nodes: vec![],
             show_in_viewport: true,
+            multi: None,
         }
     }
 }

@@ -2,11 +2,12 @@
 //! preset / shading-model pickers and the Compact or Slate parameter views.
 
 mod maps;
+mod multi;
 mod params;
 mod slate;
 
 use crate::editor::{Editor, Tool};
-use crate::materials::{MatId, Material, Preset, SLOT_COUNT, ShadingModel, preview};
+use crate::materials::{MatId, Material, MultiPreset, Preset, SLOT_COUNT, ShadingModel, preview};
 use crate::ui::theme;
 use crate::ui::widgets::{Track, dim, toggle_button};
 use bevy_egui::egui::{self, Color32, RichText};
@@ -31,7 +32,8 @@ impl MatEditorUi {
         {
             return tex.id();
         }
-        let px = preview::render_preview(m, PREVIEW_PX);
+        // A Multi/Sub-Object slot previews its ID 1 sub-material.
+        let px = preview::render_preview(m.for_id(1), PREVIEW_PX);
         let bytes: Vec<u8> = px.iter().flatten().copied().collect();
         let img = egui::ColorImage::from_rgba_unmultiplied([PREVIEW_PX as usize; 2], &bytes);
         let tex = ctx.load_texture(format!("mat_slot_{id:?}"), img, egui::TextureOptions::LINEAR);
@@ -41,9 +43,15 @@ impl MatEditorUi {
     }
 }
 
-/// Edits a clone of the active material and writes it back on change
+/// Edits a clone of the edited (sub-)material and writes it back on change
 /// (one undo step per gesture).
 pub(super) fn edit(ed: &mut Editor, body: impl FnOnce(&mut Material, &mut Track) -> Option<String>) {
+    let sub = ed.mat_editor.sub;
+    edit_root(ed, |m, t| body(m.target_mut(sub), t));
+}
+
+/// Like [`edit`] on the slot's material itself (name, type, sub list).
+pub(super) fn edit_root(ed: &mut Editor, body: impl FnOnce(&mut Material, &mut Track) -> Option<String>) {
     let id = ed.active_material();
     let mut m = ed.scene.materials.mats[id].clone();
     let mut t = Track::default();
@@ -88,8 +96,8 @@ fn slot_grid(ui: &mut egui::Ui, ed: &mut Editor, st: &mut MatEditorUi) {
                 let active = ed.mat_editor.slot == i;
                 let stroke = if active { egui::Stroke::new(2.0, theme::AMBER) } else { egui::Stroke::new(1.0, theme::BORDER) };
                 p.rect_stroke(rect, 2.0, stroke, egui::StrokeKind::Inside);
-                if resp.clicked() {
-                    ed.mat_editor.slot = i;
+                if resp.clicked() && ed.mat_editor.slot != i {
+                    (ed.mat_editor.slot, ed.mat_editor.sub) = (i, 0);
                 }
                 resp.on_hover_text(&ed.scene.materials.mats[id].name);
             }
@@ -129,12 +137,50 @@ fn material_toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
 }
 
 fn header(ui: &mut egui::Ui, ed: &mut Editor) {
-    let mut preset = None;
-    edit(ed, |m, t| {
+    let is_multi = ed.scene.materials.mats[ed.active_material()].is_multi();
+    let (mut kind, mut pack) = (None, None);
+    edit_root(ed, |m, t| {
         egui::Grid::new("mat_header").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
             ui.label("Name");
             t.r(ui.add(egui::TextEdit::singleline(&mut m.name).desired_width(f32::INFINITY)));
             ui.end_row();
+            ui.label("Type");
+            let label = if is_multi { "Multi/Sub-Object" } else { "Standard Material" };
+            egui::ComboBox::from_id_salt("mat_type").width(ui.available_width()).selected_text(label).show_ui(ui, |ui| {
+                for (multi, text) in [(false, "Standard Material"), (true, "Multi/Sub-Object")] {
+                    if ui.selectable_label(multi == is_multi, text).clicked() && multi != is_multi {
+                        kind = Some(multi);
+                    }
+                }
+            });
+            ui.end_row();
+            if is_multi {
+                ui.label("Pack Preset");
+                egui::ComboBox::from_id_salt("multi_preset").width(ui.available_width()).selected_text("Load Pack…").show_ui(ui, |ui| {
+                    for p in MultiPreset::ALL {
+                        if ui.selectable_label(false, p.label()).clicked() {
+                            pack = Some(p);
+                        }
+                    }
+                });
+                ui.end_row();
+            }
+        });
+        None
+    });
+    if let Some(multi) = kind {
+        ed.set_material_multi(multi);
+    }
+    if let Some(p) = pack {
+        ed.apply_multi_preset(p);
+    }
+}
+
+/// Quick Preset + Shading model of the edited (sub-)material.
+fn look(ui: &mut egui::Ui, ed: &mut Editor) {
+    let mut preset = None;
+    edit(ed, |m, t| {
+        egui::Grid::new("mat_look").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
             ui.label("Quick Preset");
             egui::ComboBox::from_id_salt("mat_preset").width(ui.available_width()).selected_text("1-Click Setup…").show_ui(ui, |ui| {
                 for p in Preset::ALL {
@@ -179,6 +225,8 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
             ui.separator();
             header(ui, ed);
             ui.separator();
+            multi::rollout_ui(ui, ed);
+            look(ui, ed);
             if ed.mat_editor.slate {
                 slate::show(ui, ed, &mut st.slate);
             } else {

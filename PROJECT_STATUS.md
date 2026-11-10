@@ -6,13 +6,13 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **7 of 7 done**: Phases 1–5 from `CLAUDE.md` plus Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly), all merged to `main` (PRs #1–#4) |
-| Source | 228 `.rs` files, about 34,900 lines; the largest is 347 lines (limit 350) |
-| Tests | 242 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Build phases | **8 done**: Phases 1–5 from `CLAUDE.md`, Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) merged to `main` (PRs #1–#5); **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky) is on the working branch |
+| Source | 243 `.rs` files, about 37,400 lines; the largest is 347 lines (limit 350) |
+| Tests | 268 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
+**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -190,7 +190,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Command panel: Create, Modify and Pivot tabs | ✅ | |
 | Create tab: geometry, GeoGen, shapes, lights, cameras | ✅ | Target and Free Camera |
 | Modify tab: name and wireframe colour, searchable modifier list, stack with sub-object expanders | ✅ | Every modifier in the list is available |
-| Stack action row | 🟡 | Make Unique, Delete and Collapse work. ✅ **Pin Stack** keeps the Modify panel on the pinned object whatever is selected. Show End Result is greyed out because the end result is always shown |
+| Stack action row | ✅ | Make Unique, Delete and Collapse work. **Pin Stack** keeps the Modify panel on the pinned object whatever is selected. **Show End Result** toggles between the whole stack and the result up to the current modifier |
 | Pivot tab: Affect Pivot Only, Center to Object, Align to World, Bottom-Center, Reset XForm | ✅ | |
 | Status bar: mesh statistics, Abs/Offset X/Y/Z type-in | ✅ | |
 | Quad menu: Tools 1, Transform, Display, Convert To | ✅ | |
@@ -208,6 +208,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 5 | Splines, Lathe, Extrude, Array, Mirror, GeoGen, Greeble, Chamfer, Symmetry, Shell, TurboSmooth, deformers, Edit Normals, Boolean, ProOptimizer | #3 ✅ merged |
 | 6 | File I/O (`.mmax`, OBJ, glTF/GLB, FBX), cameras, Align, Edit Poly gap tools, modifier gizmos, Spline Boolean / Refine, 3D Snaps, selection regions, HDRI, Cycles through Blender, copy-on-write undo, tiled renderer, SIMD BVH (§9) | #4 ✅ merged |
 | 7 | Bone-free mech assembly: joints and the J tool, FK / IK drag, Mirror Mech Limb, Contact Sets, Motion Links, Gear / Piston / Hose primitives, Panel Groove (§10) | #4 ✅ merged |
+| 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | branch, not yet in a PR |
 
 ---
 
@@ -304,3 +305,23 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - `Panel Groove` modifier with the same parameters plus the Chamfer modifier's Selection Filter (Selected Edges by default, so an Edit Poly below picks the seams; or All Edges, Smoothing Group Boundaries, By Angle).
    - The edges are chamfered into a strip `width + 2 × lip` wide, a 45° bevel lip steps down and in, then the channel floor sinks to the full depth along mitered normals, so the depth stays exact across hard edges and box corners. Walls and floor take the inner material ID and are faceted; the surface around keeps its material; the incoming polygon selection flows up the stack.
    - Tests: a groove line across a plane (counts, depth, floor width, material IDs); a loop around a box stays watertight with the floor at height − depth; all 12 cube edges through the modifier (counts, closed, Euler 2, material and smoothing); no-op cases (nothing selected, zero width).
+
+## 11. Phase 8A: Multi/Sub-Object materials, renderer overhaul, dynamic sky
+
+0. ✅ **Show End Result.** The Modify panel's toggle shows the stack evaluated only up to the current modifier (viewport and sub-object display), like 3ds Max.
+1. ✅ **Multi/Sub-Object materials and emissive area lights.** `src/materials/multi.rs`, `src/ui/material_editor/multi.rs`, `src/render/emitters.rs`, `src/viewport/multi_sync.rs`.
+   - Any of the 24 slots switches between Standard and **Multi/Sub-Object**. A scrollable list of IDs 1..N with `[Set Number]`, ID #, name, colour swatch and `[On/Off]`; click a row to edit that sub-material with the full parameter rollouts (PBR, Toon, Crystal, Unlit, Ink Outline per ID).
+   - Polygons render with the sub-material their `material_id` picks (3ds Max wrap-around; switched-off IDs use the default grey) in the viewport, the F9 raytracer and both Cycles paths.
+   - Presets: *Medieval Castle Pack*, *Modern City Pack*, *Alpine Terrain Pack*.
+   - Every material has **Luminance / Emission Colour** and **Emission Multiplier (0..100)**. Polygons with a multiplier above 0 are area-light emitters: F9 samples them with next-event estimation; Cycles and Blender get real emission shaders.
+2. ✅ **Built-in renderer upgrades.** `src/render/gi.rs`, `postfx.rs`, `post.rs`, `sample.rs`, `src/ui/render_fx.rs`.
+   - F10 **GI & Post-FX** tab. *GI & AO:* Ambient Occlusion (Samples 4..64, Radius, Strength); 1-bounce indirect GI (cosine-weighted bounce rays with next-event estimation on scene lights and emitters); Emitter Samples; an edge-preserving bilateral denoiser (normal, depth and object aware); a procedural **Studio Softbox** reflection dome when no HDRI is loaded.
+   - *Post-FX:* Bloom / Glare (Threshold, Intensity, Radius), Depth of Field (Focus Distance, `[Pick Focus Object]`, f-stop), tonemapping (AgX, ACES Filmic, Reinhard, Standard sRGB) with Exposure (EV) and Contrast.
+   - The F9 window keeps the render's layers, so the tone operator, EV and contrast in its toolbar update the image live without re-rendering. The Blender bridge maps DOF and the view transform / exposure / look.
+3. ✅ **Dynamic time-of-day sky, clouds and deep space** (`8` dialog). `src/render/sky.rs`, `src/editor/sky.rs`, `src/ui/sky_dialog.rs`.
+   - Sky Mode: Off, **Dynamic Earth Sky**, **Deep Space**. Earth: Time of Day slider (00:00..24:00) moves the sun and moon; the analytic Rayleigh / Mie look gives a blue noon, golden-hour sunsets and an indigo starlit night. Sun path azimuth and sky intensity.
+   - `[✓] Link Main Directional Sun to Sky Time` aims the first directional light (creating a "Sun" if needed) along the sun, with warm golden-hour colour, and switches to cool moonlight at night.
+   - **Procedural Clouds** rollout: Coverage, Density, Altitude, Wind Drift Speed (clouds drift with the time of day), tinted by sunset and moonlight.
+   - **Deep Space:** high-contrast starfield (density, brightness), two-colour nebula bands with density, and one bright star (azimuth, elevation, colour) that lights the scene.
+   - The sky is baked to an equirect image and used like an HDRI: F9 background, reflections and ambient; a skybox in perspective viewports; written to a temporary `.hdr` for Cycles / Blender.
+   - Tests: noon blue zenith, sunset glow on the sun's side, dark night with stars and moonlight, cloud coverage and wind drift, deep-space stars / nebula / star, bake layout and cache key, `.hdr` round trip, an F9 render using the sky, the linked sun following the time, and the HH:MM clock label.

@@ -145,7 +145,7 @@ fn draw_node(p: &egui::Painter, rect: Rect, title: &str, sub: &str, selected: bo
 }
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
-    let m = ed.scene.materials.mats[ed.active_material()].clone();
+    let m = ed.editing_material().clone();
     let (canvas, bg) = ui.allocate_exact_size(vec2(ui.available_width(), CANVAS_H), egui::Sense::click());
     let p = ui.painter_at(canvas);
     p.rect_filled(canvas, 4.0, theme::INPUT);

@@ -1,6 +1,7 @@
 //! Rendered Frame Window image: display sRGB (straight alpha) + linear HDR,
 //! channel views (R/G/B/A/Mono) and PNG / JPG / EXR export.
 
+use super::post::{PixelLayers, Tone, compose};
 use bevy::math::{Vec3, Vec4};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -13,6 +14,12 @@ pub struct FrameBuffer {
     pub hdr: Vec<Vec4>,
     /// Bumped on every write so the UI re-uploads its texture.
     pub rev: u64,
+    /// Built-in raytracer layers, kept so the F9 tone controls (operator,
+    /// Exposure, Contrast) re-tonemap without re-rendering. Empty for Cycles.
+    pub layers: Vec<PixelLayers>,
+    /// The background is the plain Environment color.
+    pub plain_bg: bool,
+    pub transparent: bool,
 }
 
 /// RFW channel toggles.
@@ -35,7 +42,16 @@ impl Default for ChannelView {
 impl FrameBuffer {
     pub fn new(width: u32, height: u32) -> Self {
         let n = (width * height) as usize;
-        Self { width, height, display: vec![Vec4::ZERO; n], hdr: vec![Vec4::ZERO; n], rev: 0 }
+        Self {
+            width,
+            height,
+            display: vec![Vec4::ZERO; n],
+            hdr: vec![Vec4::ZERO; n],
+            rev: 0,
+            layers: vec![],
+            plain_bg: true,
+            transparent: false,
+        }
     }
 
     /// Writes a block of rows `y0..` covering columns `x0..x0+w`.
@@ -52,6 +68,39 @@ impl FrameBuffer {
             let n = drow.len().min((self.width - x0) as usize);
             self.display[start..start + n].copy_from_slice(&drow[..n]);
             self.hdr[start..start + n].copy_from_slice(&hrow[..n]);
+        }
+        self.rev += 1;
+    }
+
+    /// Stores layers for a block (same layout as [`Self::put_block`]).
+    pub fn put_layers(&mut self, x0: u32, y0: u32, w: u32, layers: &[PixelLayers]) {
+        let n = (self.width * self.height) as usize;
+        if self.layers.len() != n {
+            self.layers = vec![PixelLayers::ZERO; n];
+        }
+        for (r, row) in layers.chunks(w.max(1) as usize).enumerate() {
+            let y = y0 + r as u32;
+            if y >= self.height {
+                break;
+            }
+            let start = (y * self.width + x0) as usize;
+            let k = row.len().min((self.width - x0) as usize);
+            self.layers[start..start + k].copy_from_slice(&row[..k]);
+        }
+    }
+
+    /// True when the image can be re-tonemapped live.
+    pub fn can_retone(&self) -> bool {
+        self.layers.len() == self.display.len() && !self.layers.is_empty()
+    }
+
+    /// Re-runs the compositor with new tone controls (no re-render).
+    pub fn retone(&mut self, tone: &Tone) {
+        if !self.can_retone() {
+            return;
+        }
+        for (d, l) in self.display.iter_mut().zip(&self.layers) {
+            *d = compose(l, tone, self.plain_bg, self.transparent);
         }
         self.rev += 1;
     }

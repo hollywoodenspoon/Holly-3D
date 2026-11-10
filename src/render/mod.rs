@@ -5,14 +5,20 @@ pub mod blender;
 pub mod bvh;
 mod bvh_wide;
 pub mod cycles;
+pub mod emitters;
 pub mod environment;
 pub mod framebuffer;
+pub mod gi;
 pub mod hdri;
 pub mod job;
 pub mod lighting;
 pub mod outline;
+pub mod post;
+pub mod postfx;
+pub mod sample;
 pub mod scene_build;
 pub mod settings;
+pub mod sky;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -20,7 +26,11 @@ mod tests_blender;
 #[cfg(test)]
 mod tests_bvh;
 #[cfg(test)]
+mod tests_gi;
+#[cfg(test)]
 mod tests_render;
+#[cfg(test)]
+mod tests_sky;
 pub mod trace;
 
 pub use environment::{Environment, LightingPreset};

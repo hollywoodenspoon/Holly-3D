@@ -1,5 +1,6 @@
 //! Render Setup (F10): Common tab (output size, aspect lock, alpha, view)
-//! and Renderer tab (engine selector + per-engine quality settings).
+//! and Renderer tab (engine selector + per-engine quality settings) and the
+//! GI & Post-FX tab (see `render_fx`).
 
 use crate::editor::Editor;
 use crate::render::settings::{AA_LEVELS, RESOLUTIONS};
@@ -12,6 +13,8 @@ pub enum SetupTab {
     #[default]
     Common,
     Renderer,
+    /// GI & AO + Post-FX rollouts (built-in raytracer).
+    Effects,
 }
 
 fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
@@ -170,7 +173,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
             });
             ui.separator();
             ui.horizontal(|ui| {
-                for (t, label) in [(SetupTab::Common, "Common"), (SetupTab::Renderer, "Renderer")] {
+                for (t, label) in [(SetupTab::Common, "Common"), (SetupTab::Renderer, "Renderer"), (SetupTab::Effects, "GI & Post-FX")] {
                     if crate::ui::widgets::toggle_button(ui, *tab == t, label).clicked() {
                         *tab = t;
                     }
@@ -183,6 +186,9 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
                     Engine::Raytracer => raytracer(ui, &mut ed.render),
                     Engine::Cycles => cycles(ui, &mut ed.render),
                 },
+                SetupTab::Effects => {
+                    egui::ScrollArea::vertical().max_height(520.0).show(ui, |ui| crate::ui::render_fx::tab(ui, ed));
+                }
             }
             ui.separator();
             ui.horizontal(|ui| {

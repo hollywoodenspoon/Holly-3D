@@ -4,7 +4,6 @@
 
 use super::trace::GSample;
 use crate::materials::Material;
-use crate::materials::shading::srgb_to_linear;
 use bevy::math::{Vec2, Vec3, Vec4};
 
 /// True when `a` and `b` lie on different surfaces (silhouette edge).
@@ -66,17 +65,14 @@ pub fn ink(g: &[GSample], w: usize, h: usize, mats: &[Material]) -> Vec<(f32, [f
     cov
 }
 
-/// Inks `display` (straight sRGB + alpha) and `hdr` (linear) in place.
-pub fn apply(g: &[GSample], w: usize, h: usize, mats: &[Material], display: &mut [Vec4], hdr: &mut [Vec4]) {
+/// Writes the ink layer (sRGB color + coverage) per pixel.
+pub fn apply(g: &[GSample], w: usize, h: usize, mats: &[Material], ink_out: &mut [Vec4]) {
     if w == 0 || h == 0 || !mats.iter().any(|m| m.outline.enabled) {
         return;
     }
     for (i, (c, col)) in ink(g, w, h, mats).into_iter().enumerate() {
-        if c <= 0.0 {
-            continue;
+        if c > 0.0 {
+            ink_out[i] = Vec3::from_array(col).extend(c);
         }
-        let (s, l) = (Vec3::from_array(col), Vec3::from_array(col.map(srgb_to_linear)));
-        display[i] = display[i].truncate().lerp(s, c).extend(display[i].w.max(c));
-        hdr[i] = hdr[i].truncate().lerp(l, c).extend(hdr[i].w.max(c));
     }
 }

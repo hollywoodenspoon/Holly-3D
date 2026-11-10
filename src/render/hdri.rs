@@ -143,6 +143,17 @@ impl Hdri {
         self.image.as_ref().map(|i| i.sample(d, self.rotation) * self.strength)
     }
 
+    /// Makes sure `path` holds the image (a baked procedural sky is written
+    /// as Radiance `.hdr` the first time Cycles / Blender needs it).
+    pub fn ensure_file(&self) -> Result<(), String> {
+        let Some(img) = self.image.as_ref().filter(|_| !self.path.exists()) else { return Ok(()) };
+        let px: Vec<image::Rgb<f32>> = img.px.iter().map(|c| image::Rgb(c.to_array())).collect();
+        let f = std::fs::File::create(&self.path).map_err(|e| e.to_string())?;
+        image::codecs::hdr::HdrEncoder::new(std::io::BufWriter::new(f))
+            .encode(&px, img.w as usize, img.h as usize)
+            .map_err(|e| e.to_string())
+    }
+
     /// Stable key for caching GPU uploads.
     pub fn key(&self) -> Option<(usize, u32)> {
         self.image.as_ref().map(|i| (Arc::as_ptr(i) as usize, self.rotation.to_bits()))
