@@ -2,12 +2,15 @@
 //! knots with Corner / Smooth / Bezier / Bezier Corner tangents, polyline
 //! interpolation, the Rendering rollout sweep and spline edit operations.
 
+pub mod boolean;
 pub mod edit;
 pub mod shapes;
 mod spline_ops;
 pub mod sweep;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_bool;
 
 pub use shapes::{ShapeKind, ShapeParams};
 pub use sweep::SplineRender;

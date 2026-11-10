@@ -151,8 +151,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 - ✅ **Segment level:** Divide, Delete.
 - ✅ **Spline level:** Outline, Mirror (with Copy), Reverse, Close, Delete.
 - ✅ Convert to Editable Spline.
-- 🟡 **Refine / Insert:** the code exists and Divide uses it, but there's no click-to-insert vertex tool.
-- ❌ **Spline Boolean** (Union, Subtract, Intersect at Spline level).
+- ✅ **Refine:** click on a segment at Vertex level to insert a knot there (the curve is kept).
+- ✅ **Spline Boolean:** Union, Subtraction and Intersection at Spline level; select one closed spline, then click the other.
 - ✅ **Lathe:** degrees, segments, Weld Core, Flip Normals, Cap Start/End, X/Y/Z direction, Min/Center/Max alignment, axis sub-object.
 - ✅ **Spline Extrude:** amount, segments, Cap Start/End.
 
@@ -241,7 +241,10 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Symmetry: a Mirror sub-object; W moves and E rotates the mirror plane (kept rigid), with slicing and seam welding on any tilt.
    - Older scenes load unchanged (new fields default to identity).
    - Tests: moving the gizmo equals moving the center, Twist is unchanged by turning its gizmo about the axis, tilting Bend changes the result, the Mirror move equals Mirror Offset, a rotated Mirror equals another axis, a tilted plane welds closed, and editor drags for Gizmo, Center and Mirror.
-6. **Spline Boolean** and a click-to-Refine tool for Editable Spline.
+6. ✅ **Spline Boolean and Refine.** `src/splines/boolean.rs`, `src/editor/spline_tools.rs`, `src/ui/rollouts/spline_tools.rs`.
+   - Refine (Vertex level): click a segment to insert a knot at that point; the Bezier shape is kept (de Casteljau split). Undoable.
+   - Boolean (Spline level): pick Union / Subtraction / Intersection, select a closed spline, then click the other. Both are cut at their crossings without losing curvature, each segment is kept or dropped by side, and the kept pieces are joined into closed splines (holes come out as separate splines). Open splines are refused unchanged.
+   - Tests: square union / subtraction / intersection areas and knot counts (either operand order, either winding), a circle lens within 2% of the exact area, disjoint and nested shapes, open splines refused, and the editor click flow with undo.
 7. **Snapping to vertices, edges and midpoints** (today `S` snaps to increments only).
 8. **Selection-region shapes** cycled with `Q`: circle, fence, lasso.
 9. **Smaller items:** HDRI environment background, near attenuation on lights, Bitmap Fit in UVW Map, Pin Stack.

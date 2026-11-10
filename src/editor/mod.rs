@@ -18,6 +18,7 @@ pub mod paint;
 pub mod poly_tools;
 pub mod render;
 pub mod select;
+pub mod spline_tools;
 pub mod splines;
 pub mod tools;
 pub mod types;

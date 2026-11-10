@@ -152,7 +152,7 @@ fn level_buttons(ui: &mut egui::Ui, ed: &mut Editor) {
     });
 }
 
-fn spin_action(ui: &mut egui::Ui, label: &str, v: &mut f32, default: f32) -> bool {
+pub(crate) fn spin_action(ui: &mut egui::Ui, label: &str, v: &mut f32, default: f32) -> bool {
     let mut go = false;
     ui.horizontal(|ui| {
         go = action(ui, label, true, HALF);
@@ -214,6 +214,7 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
                     ed.delete_selection();
                 }
             });
+            super::spline_tools::refine_button(ui, ed);
         }
         SplineLevel::Segment => {
             ui.horizontal(|ui| {
@@ -227,33 +228,7 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
                 ed.delete_selection();
             }
         }
-        SplineLevel::Spline => {
-            if spin_action(ui, "Outline", &mut ui_st.outline, 0.05) {
-                ed.edit_shape("Outline", |s| s.outline_selected(ui_st.outline));
-            }
-            ui.horizontal(|ui| {
-                for (i, l) in ["↔", "↕", "✣"].iter().enumerate() {
-                    ui.radio_value(&mut ui_st.mirror_axis, i, *l);
-                }
-                ui.checkbox(&mut ui_st.mirror_copy, "Copy");
-                if action(ui, "Mirror", true, 80.0) {
-                    ed.edit_shape("Mirror", |s| s.mirror_selected(ui_st.mirror_axis, ui_st.mirror_copy));
-                }
-            });
-            ui.horizontal(|ui| {
-                if action(ui, "Reverse", true, HALF) {
-                    ed.edit_shape("Reverse", |s| s.splines.iter_mut().filter(|s| s.selected).for_each(|s| s.reverse()));
-                }
-                if action(ui, "Close", true, HALF) {
-                    ed.edit_shape("Close", |s| {
-                        s.splines.iter_mut().filter(|s| s.selected && s.knots.len() > 2).for_each(|s| s.closed = true)
-                    });
-                }
-            });
-            if action(ui, "Delete", true, CONTENT_W) {
-                ed.delete_selection();
-            }
-        }
+        SplineLevel::Spline => super::spline_tools::spline_level(ui, ed, &mut ui_st),
     });
     ed.spline_ui = ui_st;
 }

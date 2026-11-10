@@ -9,6 +9,7 @@ pub mod modifiers;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;
+pub mod spline_tools;
 pub mod stack_mods;
 
 use crate::editor::Editor;

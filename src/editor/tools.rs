@@ -43,6 +43,8 @@ impl Editor {
             Tool::CreatePoly { points } => self.create_poly_click(view, cursor, points),
             Tool::PickHinge => self.pick_hinge_click(view, cursor),
             Tool::PickSpline => self.pick_spline_click(view, cursor),
+            Tool::RefineSpline => self.refine_click(view, cursor),
+            Tool::PickSplineBoolean => self.spline_boolean_click(view, cursor),
             Tool::PickAlign => {
                 if let Some(t) = self.pick_object(view, cursor) {
                     self.open_align(t);

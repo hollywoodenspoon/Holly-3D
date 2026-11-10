@@ -72,6 +72,10 @@ pub enum Tool {
     PickSpline,
     /// Tools -> Align: pick the target object.
     PickAlign,
+    /// Editable Spline Refine: click on segments to add vertices.
+    RefineSpline,
+    /// Editable Spline Boolean: click the second spline.
+    PickSplineBoolean,
     /// Create a light; target lights take a second click for the target.
     CreateLight {
         kind: crate::render::LightKind,
@@ -112,6 +116,8 @@ impl Tool {
             Tool::PickHinge => Some("Hinge From Edge: click the hinge edge"),
             Tool::PickSpline => Some("Extrude Along Spline: click a shape"),
             Tool::PickAlign => Some("Align: click the target object (Esc to cancel)"),
+            Tool::RefineSpline => Some("Refine: click on a segment to add a vertex (Esc to stop)"),
+            Tool::PickSplineBoolean => Some("Boolean: click the other closed spline"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
             Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),
@@ -181,10 +187,20 @@ pub struct SplineUi {
     /// 0 = horizontal (X), 1 = vertical (Y), 2 = both.
     pub mirror_axis: usize,
     pub mirror_copy: bool,
+    pub bool_op: crate::splines::boolean::SplineBoolOp,
 }
 
 impl Default for SplineUi {
     fn default() -> Self {
-        Self { fillet: 0.1, chamfer: 0.1, weld: 0.05, divide: 1, outline: 0.05, mirror_axis: 0, mirror_copy: false }
+        Self {
+            fillet: 0.1,
+            chamfer: 0.1,
+            weld: 0.05,
+            divide: 1,
+            outline: 0.05,
+            mirror_axis: 0,
+            mirror_copy: false,
+            bool_op: Default::default(),
+        }
     }
 }
