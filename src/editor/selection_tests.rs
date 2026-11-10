@@ -102,3 +102,36 @@ fn hdri_survives_save_and_open() {
     assert_eq!(h.strength, 1.5);
     assert!(h.radiance(bevy::math::Vec3::new(1.0, 0.0, 0.2)).unwrap().x > 10.0, "the sun sits just above +X");
 }
+
+#[test]
+fn undo_checkpoints_share_untouched_meshes() {
+    let (mut ed, [a, b]) = editor();
+    for id in [a, b] {
+        ed.scene.objects[id].collapse_to_editable_poly();
+        ed.scene.objects[id].evaluate();
+    }
+    let poly = |ed: &Editor, id| match &ed.scene.objects[id].base {
+        crate::scene::BaseObject::EditablePoly(m) => m.clone(),
+        _ => unreachable!(),
+    };
+    let snap = ed.snapshot();
+    let (sa, sb) = (&snap.scene.objects[a], &snap.scene.objects[b]);
+    // A checkpoint copies no mesh data: every mesh is the same allocation.
+    assert!(crate::scene::Shared::ptr_eq(&sa.evaluated_mesh, &ed.scene.objects[a].evaluated_mesh));
+    assert!(crate::scene::Shared::ptr_eq(&sb.level_mesh, &ed.scene.objects[b].level_mesh));
+    // Editing A copies only A's base; B stays shared with the snapshot.
+    ed.checkpoint("Move vertex");
+    if let crate::scene::BaseObject::EditablePoly(m) = &mut ed.scene.objects[a].base {
+        let v = m.vertices.keys().next().unwrap();
+        m.vertices[v].position.z += 1.0;
+    }
+    let (pa, pb) = (poly(&ed, a), poly(&ed, b));
+    let (old_a, old_b) = match (&sa.base, &sb.base) {
+        (crate::scene::BaseObject::EditablePoly(x), crate::scene::BaseObject::EditablePoly(y)) => (x, y),
+        _ => unreachable!(),
+    };
+    assert!(!crate::scene::Shared::ptr_eq(&pa, old_a) && crate::scene::Shared::ptr_eq(&pb, old_b));
+    ed.undo();
+    let za = poly(&ed, a).vertices.values().map(|v| v.position.z).fold(f32::MIN, f32::max);
+    assert_eq!(za, old_a.vertices.values().map(|v| v.position.z).fold(f32::MIN, f32::max), "undo restored A");
+}

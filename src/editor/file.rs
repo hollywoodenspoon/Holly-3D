@@ -69,7 +69,7 @@ impl Editor {
         }
         let mut ids = vec![];
         for item in items {
-            let id = self.scene.add(BaseObject::EditablePoly(item.mesh), Vec3::ZERO);
+            let id = self.scene.add(BaseObject::EditablePoly(item.mesh.into()), Vec3::ZERO);
             let taken = self.scene.objects.values().any(|o| o.name == item.name);
             let name = if item.name.trim().is_empty() || taken { self.scene.unique_name("Mesh") } else { item.name };
             let mat = item.materials.first().map(|m| self.scene.materials.mats.insert(m.to_material()));
@@ -92,7 +92,7 @@ impl Editor {
             .values()
             .filter(|o| !o.is_helper() && !o.hidden && (!selected_only || o.selected) && !o.evaluated_mesh.polygons.is_empty())
             .map(|o| {
-                let mut mesh = o.evaluated_mesh.clone();
+                let mut mesh = (*o.evaluated_mesh).clone();
                 mesh.transform(o.offset);
                 let materials = o.material.and_then(|m| self.scene.materials.mats.get(m)).map(MatInfo::from_material).into_iter().collect();
                 MeshItem { name: o.name.clone(), mesh, transform: o.transform.matrix(), materials }

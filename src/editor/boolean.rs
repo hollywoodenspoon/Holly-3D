@@ -22,7 +22,7 @@ impl Editor {
             return;
         }
         let rel = self.scene.objects[id].world_to_mesh() * src.world_matrix();
-        let mut mesh = src.evaluated_mesh.clone();
+        let mut mesh = (*src.evaluated_mesh).clone();
         mesh.clear_selection();
         mesh.transform(rel);
         let name = src.name.clone();
@@ -54,7 +54,7 @@ impl Editor {
             return;
         };
         let (xf, off) = (self.scene.objects[id].transform, self.scene.objects[id].offset);
-        let nid = self.scene.add(BaseObject::EditablePoly(op.mesh), Vec3::ZERO);
+        let nid = self.scene.add(BaseObject::EditablePoly(op.mesh.into()), Vec3::ZERO);
         // keep the operand's original name when it is free (Sphere001 comes back as Sphere001)
         let taken = self.scene.objects.values().any(|o| o.name == op.name);
         let name = if taken { self.scene.unique_name(&op.name) } else { op.name.clone() };

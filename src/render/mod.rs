@@ -3,6 +3,7 @@
 
 pub mod blender;
 pub mod bvh;
+mod bvh_wide;
 pub mod cycles;
 pub mod environment;
 pub mod framebuffer;
@@ -16,6 +17,8 @@ pub mod settings;
 mod tests;
 #[cfg(test)]
 mod tests_blender;
+#[cfg(test)]
+mod tests_bvh;
 #[cfg(test)]
 mod tests_render;
 pub mod trace;

@@ -8,9 +8,11 @@ impl SceneObject {
     /// Folds base + modifiers (bottom to top); also refreshes `level_mesh`.
     pub fn evaluate(&mut self) {
         let (m, shape, level) = self.fold(self.modifiers.len(), self.active_level);
-        self.level_mesh = match self.active_level {
-            None => self.base.to_editable_poly(),
-            Some(_) => level.unwrap_or_else(|| m.clone()),
+        let m = Shared::new(m);
+        self.level_mesh = match (&self.base, self.active_level) {
+            (BaseObject::EditablePoly(b), None) => b.clone(),
+            (_, None) => self.base.to_editable_poly().into(),
+            (_, Some(_)) => level.map_or_else(|| m.clone(), Shared::new),
         };
         self.evaluated_mesh = m;
         self.shape = shape;
@@ -33,14 +35,14 @@ impl SceneObject {
     /// Runs an Edit Poly op on the active level. On an Editable Poly base it
     /// edits the mesh directly; on an Edit Poly modifier it is recorded.
     pub fn apply_op(&mut self, op: PolyOp) -> bool {
-        let mut m = self.level_mesh.clone();
+        let mut m = (*self.level_mesh).clone();
         let sel = m.selection_sets();
         if !op.apply(&mut m) {
             return false;
         }
         match self.active_level {
             None => match &mut self.base {
-                BaseObject::EditablePoly(base) => *base = m,
+                BaseObject::EditablePoly(base) => *base = m.into(),
                 _ => return false,
             },
             Some(i) => match self.modifiers.get_mut(i).map(|md| &mut md.kind) {
@@ -75,8 +77,8 @@ impl SceneObject {
 
     /// Convert to Editable Poly / Collapse To: bakes the whole stack.
     pub fn collapse_to_editable_poly(&mut self) {
-        let m = self.evaluated_mesh.clone();
-        self.base = BaseObject::EditablePoly(m);
+        let m = (*self.evaluated_mesh).clone();
+        self.base = BaseObject::EditablePoly(m.into());
         self.modifiers.clear();
         self.active_level = None;
         self.reference_shared = 0;

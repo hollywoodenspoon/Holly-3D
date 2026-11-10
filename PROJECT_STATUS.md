@@ -1,18 +1,18 @@
 # MiniMax (Holly-3D): Project Status Report
 
-_Status as of 9 November 2026, measured against the spec in `CLAUDE.md`._
+_Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 ## At a glance
 
 | | |
 |---|---|
 | Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
-| Source | 162 `.rs` files, about 25,100 lines; the largest is 347 lines (limit 350) |
-| Tests | 165 headless tests, all passing (`cargo test --lib`) |
+| Source | 202 `.rs` files, about 31,500 lines; the largest is 347 lines (limit 350) |
+| Tests | 213 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phase 6 in progress:** closing the §9 gaps one by one (✅ marks below). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
+**Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 next:** the mech assembly system. File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -121,7 +121,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 ### F. Rendering (`F9` / `F10`)
 - ✅ **Render Setup:**
   - Resolution presets, aspect lock, transparent background.
-  - Choice of the built-in raytracer (BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the Cycles bridge. By default the bridge runs `blender --background -E CYCLES` with a Python loader; it can also write Cycles XML for the standalone `cycles` tool.
+  - Choice of the built-in raytracer (32x32 parallel tiles, 4-wide SIMD BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the Cycles bridge. By default the bridge runs `blender --background -E CYCLES` with a Python loader; it can also write Cycles XML for the standalone `cycles` tool.
 - ✅ **Rendered Frame Window:**
   - Render, a viewport/camera picker, Region.
   - Save as PNG, EXR or JPG; Copy to Clipboard; Clone Render Window.
@@ -266,3 +266,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Cycles through Blender (the default): the scene is exported as JSON (one mesh per object and material, with corner normals; Principled materials; point, spot and sun lights; camera; color or HDRI world). A bundled Python loader rebuilds it in `blender --background --factory-startup -E CYCLES` and writes a PNG. A real Blender 4.0 render of a box under a spot light came back into the frame buffer correctly.
    - F10 Cycles options: Run Through (Blender / Standalone cycles), executable path, Device (HIP, OptiX, CUDA, oneAPI, Metal, CPU; default HIP), HIP-RT (default on), Denoise with OpenImageDenoise (default on), Samples, Max Bounces. The standalone route passes `--device` too.
    - Tests: defaults, including old scene files without the new fields; the JSON (triangle count, camera axes, spot light, HIP-RT only on HIP); the loader reads every exported key; a round trip with a stand-in `blender` script; readable errors for a missing executable. `real_blender_renders_the_scene` (ignored by default) renders through a real Blender.
+11. ✅ **Hardware optimisation.** `src/scene/shared.rs`, `src/render/job.rs`, `src/render/bvh_wide.rs`.
+   - Copy-on-write undo: Editable Poly base meshes and the cached evaluated / level meshes are held in `Shared<T>` (an `Arc` that copies on the first write). An undo checkpoint clones pointers, not meshes; an edit copies only the mesh it changes, and every untouched object stays shared with the snapshots.
+   - F9 raytracer: worker threads (one per core) pull 32x32 tiles from an atomic counter and stream each finished tile to the Frame Window. Progress is counted in pixels.
+   - 4-wide SIMD BVH: the median-split binary BVH is collapsed into nodes with four child boxes stored as SoA `Vec4`s, so one step tests four slabs at once (SSE / NEON through glam). The nearest children are visited first, and shadow rays stop at the first hit.
+   - Tests: snapshots share every mesh and an edit copies only the edited one (undo still restores it); random triangle soups (1 to 2000 triangles, including axis-aligned rays) give the same hits through the wide BVH, the binary BVH and brute force; tiles cover any region exactly once.

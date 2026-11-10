@@ -74,7 +74,7 @@ impl Editor {
 
     fn normals_input(&self) -> Option<(EditablePoly, Mat4, NormalSelBy)> {
         let (o, e) = self.edit_normals()?;
-        Some((o.level_mesh.clone(), o.world_matrix(), e.select_by))
+        Some((EditablePoly::clone(&o.level_mesh), o.world_matrix(), e.select_by))
     }
 
     pub(crate) fn normals_click(&mut self, view: usize, cursor: Vec2, op: SelectOp) {

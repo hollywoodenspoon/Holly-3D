@@ -3,6 +3,8 @@
 pub mod camera;
 mod clone;
 mod object;
+pub mod shared;
+pub use shared::Shared;
 #[cfg(test)]
 mod tests;
 
@@ -30,7 +32,7 @@ pub fn next_version() -> u64 {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum BaseObject {
     Primitive(Primitive),
-    EditablePoly(EditablePoly),
+    EditablePoly(Shared<EditablePoly>),
     /// Light object (no geometry; drawn as a viewport icon).
     Light(crate::render::Light),
     /// Target helper of a target light or Target Camera.
@@ -47,7 +49,7 @@ impl BaseObject {
     pub fn to_editable_poly(&self) -> EditablePoly {
         match self {
             BaseObject::Primitive(p) => p.to_editable_poly(),
-            BaseObject::EditablePoly(m) => m.clone(),
+            BaseObject::EditablePoly(m) => EditablePoly::clone(m),
             BaseObject::Light(_) | BaseObject::Target | BaseObject::Camera(_) => EditablePoly::new(),
             BaseObject::Shape(s) => s.viewport_mesh(),
             BaseObject::GeoGen(g) => g.build(),
@@ -105,10 +107,10 @@ pub struct SceneObject {
     pub modifiers: Vec<ModifierEntry>,
     /// Cached fold of the whole (enabled) stack.
     #[serde(skip)]
-    pub evaluated_mesh: EditablePoly,
+    pub evaluated_mesh: Shared<EditablePoly>,
     /// Mesh at the active stack level (what sub-object tools edit and pick).
     #[serde(skip)]
-    pub level_mesh: EditablePoly,
+    pub level_mesh: Shared<EditablePoly>,
     /// Shape still flowing out of the stack (drawn as splines); `None` once a
     /// Lathe / Extrude turned it into a mesh, and for non-shape objects.
     #[serde(skip)]
@@ -144,8 +146,8 @@ impl SceneObject {
             name,
             base,
             modifiers: vec![],
-            evaluated_mesh: EditablePoly::new(),
-            level_mesh: EditablePoly::new(),
+            evaluated_mesh: Default::default(),
+            level_mesh: Default::default(),
             shape: None,
             active_level: None,
             transform: Xform::default(),

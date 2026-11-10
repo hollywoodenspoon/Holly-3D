@@ -122,7 +122,7 @@ fn scene_file_round_trip_restores_stack_and_materials() {
     let md: ModifierEntry = make_modifier("TurboSmooth").unwrap();
     scene.objects[a].add_modifier(md);
     scene.objects[a].material = Some(scene.materials.slot(2));
-    let b = scene.add(BaseObject::EditablePoly(sample_box()), Vec3::ZERO);
+    let b = scene.add(BaseObject::EditablePoly(sample_box().into()), Vec3::ZERO);
     let light = crate::render::Light::new(crate::render::LightKind::Omni);
     let l = scene.add_light(light, None, Vec3::new(5.0, 5.0, 5.0), Vec3::ZERO);
     let text = scene_file::to_string(&scene).unwrap();

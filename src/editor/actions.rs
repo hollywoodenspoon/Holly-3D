@@ -191,14 +191,14 @@ impl Editor {
             return;
         }
         self.checkpoint("Detach");
-        let mut lvl = self.scene.objects[id].level_mesh.clone();
+        let mut lvl = (*self.scene.objects[id].level_mesh).clone();
         let part = crate::mesh::ops::geometry::detach(&mut lvl, true);
         if !as_clone {
             self.scene.objects[id].apply_op(PolyOp::Delete { level: SubObject::Polygon });
         }
         let src = &self.scene.objects[id];
         let (xf, off) = (src.transform, src.offset);
-        let nid = self.scene.add(BaseObject::EditablePoly(part), Vec3::ZERO);
+        let nid = self.scene.add(BaseObject::EditablePoly(part.into()), Vec3::ZERO);
         let o = &mut self.scene.objects[nid];
         o.transform = xf;
         o.offset = off;
@@ -213,7 +213,7 @@ impl Editor {
             return;
         }
         let rel = self.scene.objects[id].world_to_mesh() * self.scene.objects[other].world_matrix();
-        let mut mesh = self.scene.objects[other].evaluated_mesh.clone();
+        let mut mesh = (*self.scene.objects[other].evaluated_mesh).clone();
         mesh.clear_selection();
         mesh.transform(rel);
         self.checkpoint("Attach");
