@@ -52,7 +52,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | `Alt+W`, `G`, `F3`, `F4`, `Alt+X` | ✅ | |
 | `Alt+Q` isolate | ✅ | |
 | `Q/W/E/R` and the gizmo | ✅ | |
-| `Q` cycles selection-region shapes | ❌ | Rectangle marquee only; no circle, fence or lasso |
+| `Q` cycles selection-region shapes | ✅ | Rectangle, Circle, Fence, Lasso; the Q button shows the current shape (right-click to pick one) |
 | Shift+Drag clone (Copy / Instance / Reference, number of copies) | ✅ | |
 | Shift+Drag border edges to extrude | ✅ | |
 | `S` snap / `A` angle snap | ✅ | 3D Snaps: Grid Points, Pivot, Vertex, Edge/Segment, Midpoint, Face Center; right-click `S` for settings; cyan crosshair at the snap point. Angle snap 5° |
@@ -251,6 +251,10 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - A cyan crosshair with the snap type follows the cursor while `S` is on.
    - Used by every creation click (primitives, shapes, Line, lights, cameras, Create polygon) and by the Move gizmo, which drops the pivot or sub-object center onto the snap point. The selection being moved is ignored, so it never snaps to itself.
    - Tests: vertex, midpoint, edge, face-center, pivot and grid hits on a box in perspective; nothing with `S` off; a selected object is skipped while moving but snapped to by creation tools.
-8. **Selection-region shapes** cycled with `Q`: circle, fence, lasso.
+8. ✅ **Selection-region shapes.** `src/viewport/region.rs`, `src/ui/viewport_ui/region.rs`, `src/ui/toolbar.rs`.
+   - `Q` switches to Select Object; pressed again in Select mode it cycles Rectangular → Circular → Fence → Lasso. The Q button draws the current shape and a right-click menu picks one.
+   - Rectangle drags corner to corner, Circle drags from the center, Lasso drags a free-hand outline. Fence drags its first side, then each click adds a corner; click the first corner, double-click or right-click to close it.
+   - Every window selection uses the region: objects, Edit Poly sub-objects, spline vertices / segments / splines, FFD control points and Edit Normals.
+   - Tests: shape cycling, containment for each shape (an L-shaped lasso excludes its notch, degenerate regions are refused), and Circle / Fence / Lasso selecting the right boxes in a Top view.
 9. **Smaller items:** HDRI environment background, near attenuation on lights, Bitmap Fit in UVW Map, Pin Stack.
 10. **Checks still to do:** try Edit Normals `E` rotation in the app, and run the Cycles bridge against a real Cycles install.

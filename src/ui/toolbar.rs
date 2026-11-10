@@ -4,7 +4,8 @@ use super::theme;
 use super::widgets::toggle_button;
 use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::CloneKind;
-use bevy_egui::egui::{self, RichText};
+use crate::viewport::region::RegionShape;
+use bevy_egui::egui::{self, RichText, Stroke};
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::top("main_toolbar")
@@ -16,8 +17,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
             ui.horizontal_centered(|ui| {
                 menus(ui, ed);
                 ui.separator();
+                region_button(ui, ed);
                 for (mode, key, tip) in [
-                    (TransformMode::Select, "Q", "Select Object"),
                     (TransformMode::Move, "W", "Select and Move"),
                     (TransformMode::Rotate, "E", "Select and Rotate"),
                     (TransformMode::Scale, "R", "Select and Scale"),
@@ -135,6 +136,63 @@ fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
         if ui.button("Isolate Selection   Alt+Q").clicked() {
             ed.toggle_isolate();
             ui.close();
+        }
+    });
+}
+
+/// Small icon of a selection region shape inside `r`.
+pub fn region_icon(painter: &egui::Painter, r: egui::Rect, shape: RegionShape, color: egui::Color32) {
+    let st = Stroke::new(1.3, color);
+    let c = r.center();
+    match shape {
+        RegionShape::Rectangle => {
+            painter.rect_stroke(r.shrink(1.0), 0.0, st, egui::StrokeKind::Inside);
+        }
+        RegionShape::Circle => {
+            painter.circle_stroke(c, r.width().min(r.height()) * 0.5 - 1.0, st);
+        }
+        RegionShape::Fence => {
+            let pts = [(0.0, 0.2), (0.6, 0.0), (1.0, 0.55), (0.45, 1.0), (0.1, 0.7), (0.0, 0.2)];
+            let line = pts.iter().map(|&(x, y)| r.lerp_inside(egui::vec2(x, y))).collect();
+            painter.add(egui::Shape::line(line, st));
+        }
+        RegionShape::Lasso => {
+            let line = (0..=16)
+                .map(|i| {
+                    let a = i as f32 / 16.0 * std::f32::consts::TAU;
+                    let k = 1.0 + 0.18 * (3.0 * a).sin();
+                    c + egui::vec2(a.cos(), a.sin()) * r.width().min(r.height()) * 0.45 * k
+                })
+                .collect();
+            painter.add(egui::Shape::line(line, st));
+        }
+    }
+}
+
+/// `Q` Select Object, with the current region shape drawn on the button
+/// (`Q` again cycles it; right-click picks one).
+fn region_button(ui: &mut egui::Ui, ed: &mut Editor) {
+    let on = ed.mode == TransformMode::Select;
+    let resp = toggle_button(ui, on, "Q     ")
+        .on_hover_text(format!("Select Object (Q) — {}; Q again cycles, right-click to pick", ed.region_shape.label()));
+    let r = resp.rect;
+    let icon = egui::Rect::from_center_size(egui::pos2(r.right() - 13.0, r.center().y), egui::vec2(12.0, 11.0));
+    let color = if on { theme::INPUT } else { theme::TEXT };
+    region_icon(ui.painter(), icon, ed.region_shape, color);
+    if resp.clicked() {
+        ed.mode = TransformMode::Select;
+    }
+    resp.context_menu(|ui| {
+        for shape in RegionShape::ALL {
+            ui.horizontal(|ui| {
+                let (rect, _) = ui.allocate_exact_size(egui::vec2(14.0, 12.0), egui::Sense::hover());
+                region_icon(ui.painter(), rect, shape, theme::TEXT);
+                if ui.selectable_label(ed.region_shape == shape, shape.label()).clicked() {
+                    ed.region_shape = shape;
+                    ed.mode = TransformMode::Select;
+                    ui.close();
+                }
+            });
         }
     });
 }

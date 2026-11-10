@@ -165,7 +165,7 @@ fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
     painter.circle_filled(p(c), 1.5, Color32::WHITE);
 }
 
-pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee: Option<Vec2>, pointer: Option<Vec2>) {
+pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region: Option<&[Vec2]>, pointer: Option<Vec2>) {
     let painter = ui.painter().with_clip_rect(rect);
     let active = vi == ed.viewports.active;
     let border = if active { Stroke::new(2.0, theme::AMBER) } else { Stroke::new(1.0, theme::BORDER) };
@@ -188,10 +188,8 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
     {
         crate::ui::snaps::crosshair(&painter, ed, vi, ptr);
     }
-    if let (Some(a), Some(b)) = (marquee, pointer) {
-        let r = egui::Rect::from_two_pos(p(a), p(b));
-        painter.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(229, 156, 36, 18));
-        painter.rect_stroke(r, 0.0, Stroke::new(1.0, theme::AMBER), egui::StrokeKind::Inside);
+    if let (Some(pts), Some(b)) = (region, pointer) {
+        super::region::draw(&painter, ed.region_shape, pts, b);
     }
     if active {
         let world_of = |ed: &Editor, v: crate::mesh::VertexId| {

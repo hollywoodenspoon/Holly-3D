@@ -16,6 +16,8 @@ pub mod modsub;
 pub mod normals;
 pub mod paint;
 pub mod poly_tools;
+#[cfg(test)]
+mod region_tests;
 pub mod render;
 pub mod select;
 pub mod snap;
@@ -56,6 +58,8 @@ pub struct Editor {
     pub coord: CoordSystem,
     pub pivot_mode: PivotMode,
     pub snap: bool,
+    /// Selection region shape (`Q` cycles it in Select mode).
+    pub region_shape: crate::viewport::region::RegionShape,
     /// 3D Snaps settings (right-click `S`).
     pub snap_cfg: snap::SnapSettings,
     pub angle_snap: bool,
@@ -122,6 +126,7 @@ impl Default for Editor {
             coord: CoordSystem::World,
             pivot_mode: PivotMode::SelectionCenter,
             snap: false,
+            region_shape: Default::default(),
             snap_cfg: Default::default(),
             angle_snap: false,
             tab: CommandTab::Create,

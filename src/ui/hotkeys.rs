@@ -79,7 +79,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             Key::Q if m.alt => ed.toggle_isolate(),
             Key::R if m.alt => ed.edit_selection(|mesh, _| mesh.select_ring()),
             Key::L if m.alt => ed.edit_selection(|mesh, _| mesh.select_loop()),
-            Key::Q => ed.mode = TransformMode::Select,
+            Key::Q => ed.select_mode_or_cycle_region(),
             Key::W => ed.mode = TransformMode::Move,
             Key::E => ed.mode = TransformMode::Rotate,
             Key::R => ed.mode = TransformMode::Scale,

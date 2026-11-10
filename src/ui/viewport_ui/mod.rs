@@ -3,6 +3,7 @@
 
 mod gizmo;
 mod overlay;
+mod region;
 
 use crate::editor::Editor;
 use crate::editor::select::SelectOp;
@@ -14,7 +15,10 @@ use transform_gizmo_egui::Gizmo;
 #[derive(Default)]
 pub struct ViewportUiState {
     gizmos: [Gizmo; 4],
-    marquee: Option<(usize, Vec2)>,
+    /// Region being drawn: viewport and its points (drag start, lasso trail, fence corners).
+    region: Option<(usize, Vec<Vec2>)>,
+    /// The fence is waiting for more clicks (its first side is drawn).
+    fence_open: bool,
     gizmo_dragging: bool,
     nav: Option<usize>,
     /// Viewport holding the current paint stroke.
@@ -124,12 +128,17 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
         } else {
             SelectOp::Replace
         };
+        if st.fence_open && st.region.as_ref().is_some_and(|r| r.0 == vi) {
+            region::fence_clicks(ed, st, &resp, vi, op, pointer.map(v2));
+            overlay::draw(ui, ed, vi, rect, st.region.as_ref().map(|r| r.1.as_slice()), pointer.map(v2));
+            continue;
+        }
         if !gizmo_hot && !st.gizmo_dragging {
             if resp.drag_started_by(PointerButton::Primary)
                 && ed.tool == crate::editor::Tool::None
                 && let Some(p) = resp.interact_pointer_pos()
             {
-                st.marquee = Some((vi, v2(p) - Vec2::new(delta.x, delta.y)));
+                st.region = Some((vi, vec![v2(p) - Vec2::new(delta.x, delta.y)]));
             }
             if resp.clicked_by(PointerButton::Primary)
                 && let Some(p) = resp.interact_pointer_pos()
@@ -141,18 +150,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
                 ed.edit_selection(|m, _| m.select_loop());
             }
         }
-        if let Some((mv, start)) = st.marquee
-            && mv == vi
-            && resp.drag_stopped()
-        {
-            if let Some(p) = pointer {
-                ed.marquee_select(vi, start, v2(p), op);
-            }
-            st.marquee = None;
-        }
+        region::drag(ed, st, &resp, vi, op, pointer.map(v2));
         if resp.clicked_by(PointerButton::Secondary) && !ed.cancel_tool() {
             ed.quad_menu = resp.interact_pointer_pos().map(v2);
         }
-        overlay::draw(ui, ed, vi, rect, st.marquee.filter(|m| m.0 == vi).map(|m| m.1), pointer.map(v2));
+        overlay::draw(ui, ed, vi, rect, st.region.as_ref().filter(|r| r.0 == vi).map(|r| r.1.as_slice()), pointer.map(v2));
     }
 }

@@ -6,7 +6,7 @@ use super::select::{SelectOp, VERTEX_PICK_PX};
 use super::*;
 use crate::mesh::EditablePoly;
 use crate::modifiers::{ModSub, ModifierKind};
-use crate::viewport::picking::{in_rect, pick_polygon};
+use crate::viewport::picking::pick_polygon;
 use bevy::math::{Mat4, Quat};
 
 impl Editor {
@@ -178,17 +178,15 @@ impl Editor {
     }
 
     /// Marquee while a modifier sub-object is active. Returns true when handled.
-    pub fn mod_marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) -> bool {
+    pub fn mod_marquee_select(&mut self, view: usize, region: &crate::viewport::region::Region, op: SelectOp) -> bool {
         match self.active_mod_sub() {
             Some(ModSub::ControlPoints) => {
-                let (min, max) = (a.min(b), a.max(b));
-                let hits: Vec<usize> =
-                    self.ffd_screen_points(view).into_iter().filter(|(_, s)| in_rect(*s, min, max)).map(|x| x.0).collect();
+                let hits: Vec<usize> = self.ffd_screen_points(view).into_iter().filter(|(_, s)| region.contains(*s)).map(|x| x.0).collect();
                 self.set_ffd_selection(&hits, op);
                 true
             }
             Some(ModSub::Normal) => {
-                self.normals_marquee(view, a, b, op);
+                self.normals_marquee(view, region, op);
                 true
             }
             Some(_) => true,

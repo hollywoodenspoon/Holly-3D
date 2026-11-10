@@ -6,7 +6,7 @@ use super::*;
 use crate::mesh::EditablePoly;
 use crate::modifiers::edit_normals::{CornerKey, corners, keys_at_edge, keys_at_vertex, keys_of_face};
 use crate::modifiers::{EditNormalsMod, ModifierKind, NormalKind, NormalSelBy};
-use crate::viewport::picking::{in_rect, pick_edge, pick_polygon, pick_vertex, point_segment};
+use crate::viewport::picking::{pick_edge, pick_polygon, pick_vertex, point_segment};
 use bevy::math::{Mat4, Quat};
 
 /// Normals drawn per object at most (huge meshes stay responsive).
@@ -100,18 +100,14 @@ impl Editor {
         self.set_normal_selection(keys, op);
     }
 
-    pub(crate) fn normals_marquee(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) {
+    pub(crate) fn normals_marquee(&mut self, view: usize, region: &crate::viewport::region::Region, op: SelectOp) {
         let Some((input, w, by)) = self.normals_input() else { return };
         let v = self.viewports.views[view].clone();
-        let (min, max) = (a.min(b), a.max(b));
-        let inside = |p: Vec3| v.to_screen(w.transform_point3(p)).is_some_and(|s| in_rect(s, min, max));
+        let inside = |p: Vec3| v.to_screen(w.transform_point3(p)).is_some_and(|s| region.contains(s));
         let keys: Vec<CornerKey> = match by {
-            NormalSelBy::Normal => self
-                .normal_lines()
-                .into_iter()
-                .filter(|l| v.to_screen(l.tip).is_some_and(|s| in_rect(s, min, max)))
-                .map(|l| l.key)
-                .collect(),
+            NormalSelBy::Normal => {
+                self.normal_lines().into_iter().filter(|l| v.to_screen(l.tip).is_some_and(|s| region.contains(s))).map(|l| l.key).collect()
+            }
             NormalSelBy::Vertex => corners(&input).filter(|c| inside(input.pos(c.1))).map(|c| c.0).collect(),
             NormalSelBy::Edge => input
                 .edges
