@@ -11,12 +11,15 @@ pub mod insert;
 pub mod inset;
 pub mod remove;
 pub mod slice;
+pub mod sweep;
 pub mod weld;
 
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod tests_more;
+#[cfg(test)]
+mod tests_sweep;
 
 pub use dispatch::{ExtrudeMode, PolyOp};
 

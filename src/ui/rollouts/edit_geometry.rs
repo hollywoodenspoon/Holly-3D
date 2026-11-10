@@ -1,6 +1,6 @@
 //! Edit Geometry rollout (all sub-object modes).
 
-use super::{HALF, caddy_cell, later, op_cell};
+use super::{HALF, caddy_cell, op_cell};
 use crate::editor::{Editor, Tool};
 use crate::mesh::ops::PolyOp;
 use crate::ui::command::CONTENT_W;
@@ -16,7 +16,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.repeat_last();
         }
         egui::Grid::new("eg").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
-            later(ui, "Create");
+            tool(ui, ed, "Create", Tool::CreatePoly { points: vec![] }, in_sub);
             op_cell(ui, ed, "Collapse", PolyOp::Collapse { level: sub }, in_sub);
             ui.end_row();
             let attaching = ed.tool == Tool::Attach;

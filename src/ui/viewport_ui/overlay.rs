@@ -198,6 +198,16 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
             Tool::QuickSlice { start: Some(s) } => Some(*s),
             _ => None,
         };
+        // Create (polygon): the points so far, rubber-banded to the cursor.
+        let pts: Vec<egui::Pos2> = ed.create_poly_points().into_iter().filter_map(|w| ed.viewports.views[vi].to_screen(w)).map(p).collect();
+        if !pts.is_empty() {
+            let mut line = pts.clone();
+            line.extend(pointer.map(p));
+            painter.add(egui::Shape::line(line, Stroke::new(1.5, theme::AMBER)));
+            for q in &pts {
+                painter.circle_filled(*q, 3.5, theme::AMBER);
+            }
+        }
         if let (Some(a), Some(b)) = (anchor, pointer) {
             let color = if matches!(ed.tool, Tool::QuickSlice { .. }) { Color32::from_rgb(255, 220, 30) } else { theme::AMBER };
             painter.add(egui::Shape::dashed_line(&[p(a), p(b)], Stroke::new(1.5, color), 6.0, 4.0));

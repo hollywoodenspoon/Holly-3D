@@ -80,12 +80,12 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 
 | Rollout | Done | Not done |
 |---|---|---|
-| Selection | ✅ Five mode buttons, By Vertex, Ignore Backfacing, Grow/Shrink, Ring/Loop | 🟡 The Ring/Loop spinner doesn't shift the selection yet |
+| Selection | ✅ Five mode buttons, By Vertex, Ignore Backfacing, Grow/Shrink, Ring/Loop with ◀ ▶ Ring/Loop shift arrows | |
 | Soft Selection | ✅ Falloff, Pinch, Bubble, rainbow heat colours | |
 | Edit Vertices | ✅ Remove, Break, Extrude ☐, Weld ☐, Chamfer ☐, Target Weld, Connect, Remove Isolated Vertices, Remove Unused Map Verts | |
-| Edit Edges / Borders | ✅ Insert Vertex, Remove (Ctrl also removes orphaned vertices), Split, Extrude, Weld, Target Weld, Chamfer ☐ (amount, segments, tension, open), Connect ☐ (segments, pinch, slide), Bridge, Cap | ❌ **Create Shape from Selection** |
-| Edit Polygons / Elements | ✅ Insert Vertex, Extrude ☐, Outline ☐, Bevel ☐, Inset ☐, Bridge, Flip | ❌ **Hinge From Edge**, **Extrude Along Spline** |
-| Edit Geometry | ✅ Repeat Last, Collapse, Attach/Detach, Slice Plane + Slice + Split + Reset Plane, QuickSlice, Cut, MSmooth, Tessellate ☐, Make Planar + X/Y/Z | ❌ **Create** (build a polygon by clicking points) |
+| Edit Edges / Borders | ✅ Insert Vertex, Remove (Ctrl also removes orphaned vertices), Split, Extrude, Weld, Target Weld, Chamfer ☐ (amount, segments, tension, open), Connect ☐ (segments, pinch, slide), Bridge, Cap, Create Shape from Selection (Smooth / Linear) | |
+| Edit Polygons / Elements | ✅ Insert Vertex, Extrude ☐, Outline ☐, Bevel ☐, Inset ☐, Bridge, Flip, Hinge From Edge ☐ (angle, segments), Extrude Along Spline ☐ (segments, taper, twist, align) | |
+| Edit Geometry | ✅ Repeat Last, Collapse, Attach/Detach, Slice Plane + Slice + Split + Reset Plane, QuickSlice, Cut, MSmooth, Tessellate ☐, Make Planar + X/Y/Z, Create (click existing vertices or empty space) | |
 | Material IDs and Smoothing Groups | ✅ Set ID / Select ID, the 4×8 grid of 32 groups, Clear All, Auto Smooth (45°) | |
 | Floating caddies (☐) | ✅ Live preview with OK, Apply & Continue, Cancel | |
 
@@ -182,7 +182,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 |---|---|---|
 | Theme colours, spacing, corner radius | ✅ | |
 | Right-click resets any spinner (`max_spinner`) | ✅ | |
-| Top toolbar: File, Edit, Tools menus | 🟡 | File: New, Open (`Ctrl+O`), Save (`Ctrl+S`), Save As (`Ctrl+Shift+S`), Import, Export All / Selected all work. Tools has Array, Mirror, Align (`Alt+A`) and Isolate |
+| Top toolbar: File, Edit, Tools menus | ✅ | File: New, Open (`Ctrl+O`), Save (`Ctrl+S`), Save As (`Ctrl+Shift+S`), Import, Export All / Selected all work. Tools has Array, Mirror, Align (`Alt+A`) and Isolate |
 | Toolbar centre: Q/W/E/R, View/World/Local, the three pivot modes, snaps, Mirror, Array, Paint | ✅ | |
 | Toolbar right: Material Editor, Render Setup, Quick Render | ✅ | |
 | Scene Explorer: visibility, freeze, type icons, search filter | ✅ | |
@@ -229,7 +229,13 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Align Orientation (Local) X / Y / Z: one axis turns that local axis onto the target's; two or more copy the target's rotation. Match Scale X / Y / Z.
    - Live preview in every viewport. Apply keeps the result and starts a fresh alignment; OK / Enter confirms; Cancel / Esc restores the originals. Each step is one undo step.
    - Tests: Min→Max on X only, Center→Center, undo, orientation, scale, cancel, and picking the selection itself.
-4. **Missing Edit Poly tools:** Create (polygon), Create Shape from Selection, Hinge From Edge, Extrude Along Spline, and shifting the selection with the Ring/Loop spinner.
+4. ✅ **Edit Poly tools.** `src/mesh/ops/sweep.rs`, `src/mesh/selection_shift.rs`, `src/editor/poly_tools.rs`.
+   - Create: click existing vertices or empty space (snapped); click the first point or right-click to build the polygon, wound to face the viewer.
+   - Create Shape from Selection: selected edges are joined into chains and become a new Editable Spline (Smooth or Linear knots).
+   - Hinge From Edge ☐: pick the hinge edge; Angle and Segments. The region always swings out along its normal and the hinge edge stays shared.
+   - Extrude Along Spline ☐: pick a shape; Segments, Taper Amount, Twist and Align to Face Normal, with parallel-transported frames along the path.
+   - Ring / Loop shift: ◀ ▶ arrows next to Ring and Loop move every selected edge one step along its ring or loop.
+   - Tests: hinge counts (1 and 3 segments), straight / bent / tapered sweeps, Create from existing and new points, edge chains (open and closed), ring and loop shift on a cylinder.
 5. **Viewport gizmos** for the Bend, Twist and Taper Gizmo/Center sub-objects and the Symmetry Mirror plane.
 6. **Spline Boolean** and a click-to-Refine tool for Editable Spline.
 7. **Snapping to vertices, edges and midpoints** (today `S` snaps to increments only).

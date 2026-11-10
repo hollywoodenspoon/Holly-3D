@@ -62,6 +62,14 @@ pub enum Tool {
     NormalAlign,
     /// Pick Material from Object (eyedropper) into the active slot.
     PickMaterial,
+    /// Edit Poly Create: points clicked so far.
+    CreatePoly {
+        points: Vec<crate::mesh::ops::sweep::CreatePoint>,
+    },
+    /// Hinge From Edge: pick the hinge edge.
+    PickHinge,
+    /// Extrude Along Spline: pick the path shape.
+    PickSpline,
     /// Tools -> Align: pick the target object.
     PickAlign,
     /// Create a light; target lights take a second click for the target.
@@ -99,6 +107,10 @@ impl Tool {
             Tool::Attach => Some("Attach: click an object to merge it"),
             Tool::PickBoolean => Some("Boolean: click objects to add them as operands (Esc to stop)"),
             Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
+            Tool::CreatePoly { points } if points.len() < 3 => Some("Create: click vertices or empty space"),
+            Tool::CreatePoly { .. } => Some("Create: click the first point or right-click to finish"),
+            Tool::PickHinge => Some("Hinge From Edge: click the hinge edge"),
+            Tool::PickSpline => Some("Extrude Along Spline: click a shape"),
             Tool::PickAlign => Some("Align: click the target object (Esc to cancel)"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),

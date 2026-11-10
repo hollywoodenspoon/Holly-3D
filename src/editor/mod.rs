@@ -15,6 +15,7 @@ pub mod mirror;
 pub mod modsub;
 pub mod normals;
 pub mod paint;
+pub mod poly_tools;
 pub mod render;
 pub mod select;
 pub mod splines;
@@ -66,6 +67,8 @@ pub struct Editor {
     pub mirror_dialog: Option<mirror::MirrorDialog>,
     pub align_settings: align::AlignSettings,
     pub align_dialog: Option<align::AlignDialog>,
+    /// Create Shape from Selection: Smooth (true) or Linear knots.
+    pub shape_smooth: bool,
     pub last_op: Option<PolyOp>,
     pub slice_plane: Option<SlicePlane>,
     pub ignore_backfacing: bool,
@@ -82,7 +85,6 @@ pub struct Editor {
     pub autosmooth_threshold: f32,
     pub drag: Option<drag::Drag>,
     pub isolate: Option<Vec<ObjId>>,
-    pub ring_loop_spin: i32,
     /// Last-used parameters per op kind (main buttons reuse them).
     pub op_memory: std::collections::HashMap<String, PolyOp>,
     /// FFD Control Points / Lattice or UVW Map Gizmo sub-object mode.
@@ -129,6 +131,7 @@ impl Default for Editor {
             mirror_dialog: None,
             align_settings: Default::default(),
             align_dialog: None,
+            shape_smooth: true,
             last_op: None,
             slice_plane: None,
             ignore_backfacing: false,
@@ -145,7 +148,6 @@ impl Default for Editor {
             autosmooth_threshold: 45.0,
             drag: None,
             isolate: None,
-            ring_loop_spin: 1,
             op_memory: Default::default(),
             mod_sub: None,
             uv_editor_open: false,

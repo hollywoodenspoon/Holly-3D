@@ -10,6 +10,7 @@ pub mod merge;
 pub mod normals;
 pub mod ops;
 pub mod selection;
+pub mod selection_shift;
 pub mod triangulate;
 pub mod validate;
 

@@ -1,16 +1,35 @@
 //! Edit Vertices / Edit Edges & Borders / Edit Polygons & Elements rollouts.
 
-use super::{HALF, caddy_cell, later, op_cell};
+use super::{HALF, caddy_cell, op_cell};
+use crate::editor::poly_tools::{along_spline_default, hinge_default};
 use crate::editor::{Editor, Tool};
 use crate::mesh::SubObject;
 use crate::mesh::ops::{ExtrudeMode, PolyOp};
-use crate::ui::widgets::{dim, rollout};
+use crate::ui::widgets::{dim, rollout, split_button};
 use bevy_egui::egui;
 
 fn tool_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tool: Tool) {
     let on = std::mem::discriminant(&ed.tool) == std::mem::discriminant(&tool);
     if ui.add_sized([HALF, 24.0], egui::Button::new(label).selected(on)).clicked() {
         ed.tool = if on { Tool::None } else { tool };
+    }
+}
+
+/// Split cell for pick-based ops: main picks and applies the remembered
+/// settings, `[□]` opens the caddy (without a pick) and starts picking.
+fn pick_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, default: PolyOp, tool: Tool) {
+    let (main, caddy) = split_button(ui, label, true, crate::ui::command::CONTENT_W);
+    if main {
+        ed.tool = tool;
+    } else if caddy {
+        let mut op = ed.remembered(default);
+        match &mut op {
+            PolyOp::Hinge { axis, .. } => *axis = bevy::math::Vec3::ZERO,
+            PolyOp::ExtrudeAlongSpline { path, .. } => path.clear(),
+            _ => {}
+        }
+        ed.open_caddy(op);
+        ed.tool = tool;
     }
 }
 
@@ -70,7 +89,17 @@ pub fn edges(ui: &mut egui::Ui, ed: &mut Editor) {
             caddy_cell(ui, ed, "Bridge", PolyOp::BridgeBorders { segments: 1, taper: 0.0, twist: 0 }, true);
             op_cell(ui, ed, "Cap", PolyOp::Cap, border);
             ui.end_row();
-            later(ui, "Create Shape");
+            if ui
+                .add_sized([HALF, 24.0], egui::Button::new("Create Shape"))
+                .on_hover_text("New Editable Spline from the selected edges")
+                .clicked()
+            {
+                ed.create_shape_from_edges(ed.shape_smooth);
+            }
+            ui.horizontal(|ui| {
+                ui.radio_value(&mut ed.shape_smooth, true, "Smooth");
+                ui.radio_value(&mut ed.shape_smooth, false, "Linear");
+            });
             ui.end_row();
         });
         if !border {
@@ -93,10 +122,9 @@ pub fn polygons(ui: &mut egui::Ui, ed: &mut Editor) {
             caddy_cell(ui, ed, "Bridge", PolyOp::BridgePolygons { segments: 1, taper: 0.0, twist: 0 }, true);
             ui.end_row();
             op_cell(ui, ed, "Flip", PolyOp::Flip, true);
-            later(ui, "Hinge From Edge");
-            ui.end_row();
-            later(ui, "Extrude Along Spline");
             ui.end_row();
         });
+        pick_cell(ui, ed, "Hinge From Edge", hinge_default(), Tool::PickHinge);
+        pick_cell(ui, ed, "Extrude Along Spline", along_spline_default(), Tool::PickSpline);
     });
 }
