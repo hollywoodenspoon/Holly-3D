@@ -5,6 +5,7 @@ pub mod align;
 pub mod array;
 #[cfg(test)]
 mod array_tests;
+pub mod blast_zones;
 pub mod boolean;
 pub mod cameras;
 pub mod drag;

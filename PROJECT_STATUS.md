@@ -6,13 +6,13 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app) and **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, unit-tested, not yet tested by hand) |
-| Source | 258 `.rs` files, about 39,700 lines; the largest is 347 lines (limit 350) |
-| Tests | 292 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app) and **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, unit-tested, not yet tested by hand). **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin) is done on branch `claude/3ds-max-ui-tools-setup-558yf8`, unit-tested, not yet tested by hand |
+| Source | 287 `.rs` files, about 44,100 lines; the largest is 347 lines (limit 350) |
+| Tests | 320 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio.
+**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio. **Phase 8C done** (§13): GhostTown settlements in four eras, the scale-aware Medieval Architect, and period-accurate Battlefield & Ruin destruction with movable Blast Zones.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -174,6 +174,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Boolean (boolmesh) | ✅ | Union, A−B, B−A, Intersect; Pick Operand B; an operand list with Remove, Extract and on/off toggles; Merge Coplanar Faces. Open meshes are skipped with a warning |
 | ProOptimizer (meshopt) | ✅ | Calculate, linked Vertex % and Vertex Count, keeps material, UV, colour and normal boundaries, Protect Borders |
 | Terrain, Ocean (Phase 8B) | ✅ | Objects under `Create -> Geometry -> Worlds` and stack modifiers; see §12. Planet Studio is an object only |
+| GhostTown, Medieval Architect, Battlefield / Ruin (Phase 8C) | ✅ | Settlement objects under `Create -> Geometry -> Settlement` and stack modifiers; see §13 |
 
 ---
 
@@ -211,6 +212,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 7 | Bone-free mech assembly: joints and the J tool, FK / IK drag, Mirror Mech Limb, Contact Sets, Motion Links, Gear / Piston / Hose primitives, Panel Groove (§10) | #4 ✅ merged |
 | 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 ✅ merged |
 | 8B | §11 polish, procedural Terrain (6 biomes, erosion, auto Material IDs), Gerstner Ocean with crest foam, Planet Studio (surface, clouds, atmosphere, rings) (§12) | #7 ✅ merged |
+| 8C | GhostTown settlements (4 eras), Medieval Architect (5 presets, scale-aware), Battlefield & Ruin (3 period-accurate modes, Blast Zones) (§13) | branch, no PR yet |
 
 ---
 
@@ -377,3 +379,26 @@ Merged to `main` in PR #7. Covered by headless tests only so far; a hands-on tes
    - **4. Planetary Rings** (ID 7): Inner and Outer Radius, Tilt Angle, Radial Band Noise (with a Cassini-style gap), Opacity.
    - Each layer has its own toggle. Presets set sensible layers: gas giants get rings, and moons have no air or clouds. A new Planet gets the **Planet Studio Pack**.
    - Tests (`src/generators/tests.rs`, `tests_planet.rs`, `src/editor/worlds.rs`): grid topology `(n+1)²` vertices / `2n(n+1)` edges / `n²` polygons; IDs 1–4 for every biome (mountains have cliffs and snow, savannah has riverbeds, dunes are mostly sand); seed determinism; erosion lowers the steepest step; both modifiers keep topology; ocean foam IDs and white foam colours, with no foam when it is off; the quad sphere is closed (6n² quads, Euler 2, outward, seam-safe UVs, near-even areas); surface IDs 1–4 per preset; layer IDs 5 / 6 / 7 come and go with their toggles; clouds sit at 1.015 R; rings face +Z inside their radii; a custom surface is plain ID 1; each world gets its matching pack; loading a custom texture and going back to procedural.
+
+---
+
+## 13. Phase 8C: GhostTown settlements, Medieval Architect and Battlefield destruction
+
+Done on branch `claude/3ds-max-ui-tools-setup-558yf8`. Covered by headless tests only; a hands-on test in the running app is still to do.
+
+0. ✅ **Building kit** (`src/generators/kit/`): a shared mesh builder (blocks, cuboids, beams, prisms, frustums, tubes, strips, gable / hipped roofs, arched walls and panels, ground grids) with seeded RNG and the GhostTown Material IDs. All three features build on it.
+1. ✅ **GhostTown** (`Create -> Geometry -> Settlement`, and a **GhostTown** stack modifier that fills a flat Plane / Editable Poly or a closed spline's outline). `src/generators/settlement/`.
+   - Presets: **Modern Downtown** (setback towers with lit window bays, rooftop AC units and helipads, streetlamps), **Modern Suburbs** (houses with wings, garages, porches, fenced yards), **Medieval Walled City** (cobbled plaza with a well and lindens, radial and ring lanes, curtain wall with towers and gates, half-timbered townhouses), **Medieval Village** (hilltop church, cottages, crop fields, fences, wells).
+   - Parameters: Seed with `[🎲]`, Area Width / Length (object only), Block Size, Street Width, Sidewalk Width, Building Density, Min / Max Floors, Roof Pitch, Tree / Prop Density, and `[✓] Damaged / Battlefield Mode` with the Battlefield parameters.
+   - New **GhostTown Settlement Pack** (`[ Assign GhostTown Material Pack ]`): 1 Road / Cobblestone, 2 Lot / Dirt, 3 Facade, 4 Timber / Brick Trim, 5 Roof, 6 Glass, 7 Lit Window, 8 Foliage, 9 Charred Wood, 10 Iron, 11 Plaster, 12 Rusted Rebar.
+2. ✅ **Medieval Architect** modifier. `src/modifiers/medieval/`.
+   - Presets: Watchtower, Curtain Wall / Gatehouse, Half-Timbered House, Bridge / Aqueduct, Gothic Cathedral (vaulted nave, flying buttresses, portal and rose window). Plan shape Auto / Round / Square (Auto detects cylinders); a closed spline input builds a curtain wall along it.
+   - Toggles: 3D Stone Bricks, Crenellations, Machicolations, Arrow Slits / Windows, Door / Portcullis, Buttresses, Roof / Spire. Spinners: Master Brick Scale, Floor Height, Wall Thickness, Merlon / Crenel Ratio, Window Spacing, Spline Wall Height, Seed.
+   - **Scale-aware:** bricks, merlons, floors, windows and bridge arches are recounted from the base size, so resizing the base adds detail instead of stretching it.
+3. ✅ **Battlefield / Ruin** modifier, also run by the Damaged toggles. `src/modifiers/battlefield/`, `src/editor/blast_zones.rs`.
+   - **Modern / Mecha Warfare:** tilted shear planes, pancaked slabs, bent rebar (ID 12), shattered glass shards, bomb and mech-footprint craters, buckled roads, bent streetlamps.
+   - **Medieval Siege:** V-breaches, knocked-off merlons, burned roofs with charred rafters (ID 9), impact pits, siege ruts, talus piles, carts, barrels and splintered beams. Never rebar or concrete.
+   - **Ancient Overgrown Ruins:** eroded wall tops, caved roofs, snapped pillars with fallen drums, sinkholes, moss (ID 8 with green vertex colour) and ivy at wall feet.
+   - Spinners: Intensity 0–100 %, Seed, Crater Count, Crater Radius, Crater Depth, Rubble Density, Soot Darkening.
+   - **Blast Zones** sub-object (`1`): `[➕ Add Zone]` / `[🗑 Remove Zone]` and a zone list with radius spinners; zones draw as three yellow great circles (orange when selected), are picked by click or marquee, move with W and scale with R. With no zones, seeded blasts hit the structures.
+4. Tests (`src/generators/kit/tests.rs`, `src/generators/settlement/tests.rs`, `src/modifiers/medieval/tests.rs`, `src/modifiers/battlefield/tests.rs`, `src/modifiers/tests_gizmo.rs`, `src/editor/worlds.rs`): every era is valid, deterministic, seed-dependent, stays in its area and only uses IDs 1–12; era signatures (downtown towers with lit glass, low suburban houses, timber and plaster medieval towns with no concrete); density and floor counts; the modifier on a plane and a closed spline; damaged medieval towns have charred wood and no rebar, damaged modern towns have rebar, all have craters; every Architect preset is valid, deterministic and sits on its base; toggles remove their details; resizing keeps brick size and recounts details; round / square detection; spline curtain walls; each destruction mode's signature (rebar and shards, charred rafters and no rebar, moss and erosion); zero intensity changes nothing; a user zone only damages its area; zone select / move / scale in the editor; assigning the GhostTown pack with undo.

@@ -1,5 +1,6 @@
 //! Non-destructive modifier stack (bottom-to-top fold).
 
+pub mod battlefield;
 pub mod boolean;
 pub mod chamfer;
 pub mod deformers;
@@ -8,6 +9,7 @@ pub mod ffd;
 pub mod geogen;
 pub mod greeble;
 pub mod lathe;
+pub mod medieval;
 pub mod panel_groove;
 pub mod pro_optimizer;
 pub mod shell;
@@ -84,6 +86,9 @@ pub enum ModifierKind {
     ProOptimizer(ProOptimizerMod),
     Terrain(crate::generators::TerrainMod),
     Ocean(crate::generators::OceanMod),
+    Settlement(crate::generators::SettlementMod),
+    Architect(medieval::ArchitectMod),
+    Battlefield(battlefield::BattlefieldMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -100,6 +105,8 @@ pub enum ModSub {
     Center,
     /// Symmetry mirror plane.
     Mirror,
+    /// Battlefield blast-zone spheres.
+    BlastZones,
 }
 
 impl ModSub {
@@ -112,6 +119,7 @@ impl ModSub {
             ModSub::Normal => "Normal",
             ModSub::Center => "Center",
             ModSub::Mirror => "Mirror",
+            ModSub::BlastZones => "Blast Zones",
         }
     }
 }
@@ -142,6 +150,9 @@ impl ModifierKind {
             ModifierKind::EditNormals(_) => "Edit Normals",
             ModifierKind::Boolean(_) => "Boolean",
             ModifierKind::ProOptimizer(_) => "ProOptimizer",
+            ModifierKind::Settlement(_) => "GhostTown",
+            ModifierKind::Architect(_) => "Medieval Architect",
+            ModifierKind::Battlefield(_) => "Battlefield / Ruin",
         }
     }
 
@@ -159,6 +170,7 @@ impl ModifierKind {
             ModifierKind::EditNormals(_) => &[ModSub::Normal],
             ModifierKind::Bend(_) | ModifierKind::Twist(_) | ModifierKind::Taper(_) => &[ModSub::Gizmo, ModSub::Center],
             ModifierKind::Symmetry(_) => &[ModSub::Mirror],
+            ModifierKind::Battlefield(_) => &[ModSub::BlastZones],
             _ => &[],
         }
     }
@@ -214,6 +226,9 @@ impl ModifierEntry {
             ModifierKind::ProOptimizer(p) => p.apply(mesh),
             ModifierKind::Terrain(t) => t.apply(mesh),
             ModifierKind::Ocean(o) => o.apply(mesh),
+            ModifierKind::Settlement(g) => g.apply(mesh),
+            ModifierKind::Architect(a) => a.apply(mesh),
+            ModifierKind::Battlefield(b) => b.apply(mesh),
             // shape modifiers pass meshes through untouched
             ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
         }
@@ -221,13 +236,15 @@ impl ModifierEntry {
 
     /// Shape -> mesh modifiers (Lathe, Extrude) consume a shape flowing up the stack.
     pub fn consumes_shape(&self) -> bool {
-        matches!(self.kind, ModifierKind::Lathe(_) | ModifierKind::Extrude(_))
+        matches!(self.kind, ModifierKind::Lathe(_) | ModifierKind::Extrude(_) | ModifierKind::Settlement(_) | ModifierKind::Architect(_))
     }
 
     pub fn build_from_shape(&self, shape: &crate::splines::Shape) -> EditablePoly {
         match &self.kind {
             ModifierKind::Lathe(l) => l.build(shape),
             ModifierKind::Extrude(e) => e.build(shape),
+            ModifierKind::Settlement(g) => g.build_from_shape(shape),
+            ModifierKind::Architect(a) => a.build_from_shape(shape),
             _ => EditablePoly::new(),
         }
     }
@@ -265,6 +282,9 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Edit Normals", available: true },
     ModifierListItem { name: "Boolean", available: true },
     ModifierListItem { name: "ProOptimizer", available: true },
+    ModifierListItem { name: "GhostTown", available: true },
+    ModifierListItem { name: "Medieval Architect", available: true },
+    ModifierListItem { name: "Battlefield / Ruin", available: true },
 ];
 
 pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
@@ -294,6 +314,9 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Edit Normals" => Some(ModifierEntry::new(ModifierKind::EditNormals(EditNormalsMod::default()))),
         "Boolean" => Some(ModifierEntry::new(ModifierKind::Boolean(BooleanMod::default()))),
         "ProOptimizer" => Some(ModifierEntry::new(ModifierKind::ProOptimizer(ProOptimizerMod::default()))),
+        "GhostTown" => Some(ModifierEntry::new(ModifierKind::Settlement(Default::default()))),
+        "Medieval Architect" => Some(ModifierEntry::new(ModifierKind::Architect(Default::default()))),
+        "Battlefield / Ruin" => Some(ModifierEntry::new(ModifierKind::Battlefield(Default::default()))),
         _ => None,
     }
 }

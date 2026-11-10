@@ -4,11 +4,13 @@
 //! Studio (surface, cloud shell, atmosphere halo, rings). Deterministic per
 //! seed; Z-up like the rest of the scene.
 
+pub mod kit;
 mod erosion;
 mod ocean;
 mod planet;
 mod planet_layers;
 mod planet_surface;
+pub mod settlement;
 mod sphere;
 mod terrain;
 mod terrain_ids;
@@ -22,6 +24,7 @@ pub use ocean::{OceanMod, OceanParams};
 pub use planet::{PlanetParams, PlanetPart};
 pub use planet_layers::{Atmosphere, CloudShell, Rings};
 pub use planet_surface::SurfacePreset;
+pub use settlement::{Era, SettlementMod, SettlementParams};
 pub use sphere::equal_angle_sphere;
 pub use terrain::{Biome, TerrainMod, TerrainParams};
 pub use terrain_ids::TerrainIds;
@@ -35,6 +38,8 @@ pub enum WorldGen {
     Terrain(TerrainParams),
     Ocean(OceanParams),
     Planet(Box<PlanetParams>),
+    /// GhostTown settlement (Create -> Geometry -> Settlement).
+    Settlement(Box<SettlementParams>),
 }
 
 /// Create-tab buttons.
@@ -43,15 +48,19 @@ pub enum WorldKind {
     Terrain,
     Ocean,
     Planet,
+    Settlement(Era),
 }
 
 impl WorldKind {
     pub const ALL: [WorldKind; 3] = [Self::Terrain, Self::Ocean, Self::Planet];
+    /// Create -> Geometry -> Settlement buttons.
+    pub const SETTLEMENTS: [WorldKind; 4] = [Self::Settlement(Era::Downtown), Self::Settlement(Era::Suburbs), Self::Settlement(Era::WalledCity), Self::Settlement(Era::Village)];
     pub fn label(self) -> &'static str {
         match self {
             Self::Terrain => "Terrain",
             Self::Ocean => "Ocean",
             Self::Planet => "Planet",
+            Self::Settlement(e) => e.short(),
         }
     }
     pub fn tip(self) -> &'static str {
@@ -59,6 +68,7 @@ impl WorldKind {
             Self::Terrain => "Biome terrain: hills, mountains, mesas, savannah, dunes",
             Self::Ocean => "Gerstner wave surface with crest foam",
             Self::Planet => "Planet Studio: surface, clouds, atmosphere and rings",
+            Self::Settlement(e) => e.label(),
         }
     }
 }
@@ -69,6 +79,7 @@ impl WorldGen {
             WorldKind::Terrain => Self::Terrain(TerrainParams::default()),
             WorldKind::Ocean => Self::Ocean(OceanParams::default()),
             WorldKind::Planet => Self::Planet(Box::default()),
+            WorldKind::Settlement(e) => Self::Settlement(Box::new(SettlementParams::of(e))),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -76,6 +87,7 @@ impl WorldGen {
             Self::Terrain(_) => WorldKind::Terrain,
             Self::Ocean(_) => WorldKind::Ocean,
             Self::Planet(_) => WorldKind::Planet,
+            Self::Settlement(p) => WorldKind::Settlement(p.era),
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -83,6 +95,7 @@ impl WorldGen {
             Self::Terrain(t) => t.build(),
             Self::Ocean(o) => o.build(),
             Self::Planet(p) => p.build(),
+            Self::Settlement(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
@@ -96,6 +109,7 @@ impl WorldGen {
             Self::Terrain(_) => MultiPreset::AlpineTerrain,
             Self::Ocean(_) => MultiPreset::OceanWater,
             Self::Planet(_) => MultiPreset::PlanetStudio,
+            Self::Settlement(_) => MultiPreset::GhostTown,
         }
     }
 }

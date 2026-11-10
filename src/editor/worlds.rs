@@ -15,13 +15,26 @@ impl Editor {
         let w = WorldGen::default_of(kind);
         let pack = w.material_pack();
         let id = self.scene.add(BaseObject::World(w), at);
-        let mut m = Material::named(pack.label());
-        pack.apply(&mut m);
-        self.scene.objects[id].material = Some(self.scene.materials.mats.insert(m));
+        self.give_pack(id, pack);
         self.scene.select_only(Some(id));
         self.sub = SubObject::Object;
         self.tab = CommandTab::Modify;
         self.status = format!("Created {} with the {}", self.scene.objects[id].name, pack.label());
+    }
+
+    fn give_pack(&mut self, id: ObjId, pack: MultiPreset) {
+        let mut m = Material::named(pack.label());
+        pack.apply(&mut m);
+        self.scene.objects[id].material = Some(self.scene.materials.mats.insert(m));
+    }
+
+    /// `[ Assign GhostTown Material Pack ]` (and the other packs): a fresh
+    /// Multi/Sub-Object copy of `pack` on the current object, one undo step.
+    pub fn assign_pack(&mut self, pack: MultiPreset) {
+        let Some(id) = self.current() else { return };
+        self.checkpoint("Assign Material Pack");
+        self.give_pack(id, pack);
+        self.status = format!("Assigned the {} to {}", pack.label(), self.scene.objects[id].name);
     }
 
     /// Replaces the current world object's parameters (one undo step per
@@ -119,6 +132,23 @@ mod tests {
         }
         ed.undo();
         assert_eq!(ed.scene.objects.len(), 2);
+    }
+
+    #[test]
+    fn ghosttown_pack_assigns_to_any_object() {
+        let mut ed = Editor::default();
+        ed.create_world(WorldKind::Settlement(crate::generators::Era::Village), Vec3::ZERO);
+        let id = ed.current().unwrap();
+        let o = &ed.scene.objects[id];
+        let m = &ed.scene.materials.mats[o.material.unwrap()];
+        assert_eq!(m.multi, Some(MultiPreset::GhostTown.build()));
+        // Assigning the pack again (from the modifier rollouts) makes a fresh slot.
+        let before = o.material;
+        ed.assign_pack(MultiPreset::GhostTown);
+        let after = ed.scene.objects[id].material;
+        assert!(after.is_some() && after != before);
+        ed.undo();
+        assert_eq!(ed.scene.objects[id].material, before);
     }
 
     #[test]
