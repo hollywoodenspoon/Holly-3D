@@ -1,8 +1,10 @@
 //! Pivot tab -> Assembly rollout: the J tool, the joint type it creates and
-//! the parameters of the joint that places the current part.
+//! the parameters of the joint that places the current part, IK Drag,
+//! Grounded parts and Mirror Mech Limb.
 
 use super::CONTENT_W;
 use crate::assembly::{Axis, JointKind, JointType, Limits};
+use crate::editor::mirror::MirrorAxis;
 use crate::editor::{Editor, Tool};
 use crate::ui::widgets::{Track, action, dim, max_spinner, rollout, toggle_button};
 use bevy_egui::egui;
@@ -86,6 +88,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             }
         });
         ui.label(dim("Mounts: vertex, edge loop center or face / cap center."));
+        let mut ik = !ed.scene.assembly.no_ik;
+        if ui.checkbox(&mut ik, "IK Drag (W moves the chain)").on_hover_text("Off: W only moves a part along its own joint").changed() {
+            ed.set_ik_drag(ik);
+        }
         let Some(id) = ed.current() else { return };
         ui.separator();
         let links: Vec<(usize, String)> = ed
@@ -133,6 +139,19 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         if children > 0 {
             ui.label(dim(&format!("Carries {children} part(s).")));
         }
+        let mut g = ed.scene.assembly.grounded.contains(&id);
+        if ui.checkbox(&mut g, "Grounded (IK stops here)").changed() {
+            ed.set_grounded(id, g);
+        }
+        ui.horizontal(|ui| {
+            ui.label("Mirror Mech Limb");
+            for a in [MirrorAxis::X, MirrorAxis::Y, MirrorAxis::Z] {
+                let tip = "Copy this part and everything it carries across the plane through its parent";
+                if ui.add(egui::Button::new(a.label()).min_size(egui::vec2(36.0, 22.0))).on_hover_text(tip).clicked() {
+                    ed.mirror_limb(a);
+                }
+            }
+        });
         if action(ui, "Break Joint", true, CONTENT_W) {
             ed.break_joints();
         }

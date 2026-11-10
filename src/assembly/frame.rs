@@ -56,7 +56,10 @@ impl Frame {
     }
 
     pub fn approx(self, o: Frame, eps: f32) -> bool {
-        self.pos.distance(o.pos) <= eps && self.rot.dot(o.rot).abs() >= 1.0 - eps * eps
+        // q and -q are the same turn; compare components (about half the
+        // angle), which stays above f32 noise unlike `1 - dot`.
+        let q = if self.rot.dot(o.rot) < 0.0 { -o.rot } else { o.rot };
+        self.pos.distance(o.pos) <= eps && (self.rot - q).length() <= eps
     }
 
     /// Frame at `pos` whose Z axis is `normal` (any stable roll).

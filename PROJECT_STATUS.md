@@ -7,8 +7,8 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
-| Source | 211 `.rs` files, about 32,700 lines; the largest is 347 lines (limit 350) |
-| Tests | 224 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 214 `.rs` files, about 33,100 lines; the largest is 347 lines (limit 350) |
+| Tests | 228 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
@@ -282,7 +282,11 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Transforms stay in world space. Each frame the solver poses children from their parents, parents first. A direct move or turn of a child is projected onto the joint's free axes and clamped at its stops, so `W` / `E` on a jointed part only moves it the way the joint allows. Loops are refused, deleting a part drops its joints, and joints are saved with the scene (older scenes still load).
    - The rollout edits the selected part's joint type, axis, angle / travel, limits, cone and twist (one undo step per drag), and offers Select Parent and Break Joint. The viewport draws mounts, the hinge axis with its yellow limit arc and a cyan angle tick, the ball cone, the slider rail and the piston line.
    - Tests: welded child follows its parent; hinge projection and clamping, angle unwrap past 180°; ball cone and twist clamp; slider projection and stops; chain order, loop refusal and cleanup on delete; piston aim; face, cap and edge-loop mounts and the face-to-face mate; RON round trip; two viewport clicks build a joint, undo removes it, and parameter edits re-pose the child.
-2. ❌ FK / IK drag and Mirror Mech Limb.
+2. ✅ **FK, IK drag and Mirror Mech Limb.** `src/assembly/ik.rs`, `src/assembly/mirror.rs`, `src/editor/joints.rs`.
+   - FK on `E`: a turn of a jointed part is kept only about its joint's free axes and clamped at the stops; everything it carries (and pistons) follows.
+   - IK on `W`: when a part is moved further than its own joint allows, cyclic coordinate descent re-poses the hinges, ball sockets and sliders above it so its pivot reaches the dragged point, up to the root part or the first part marked **Grounded**. Stops are kept. `[✓] IK Drag` in the Assembly rollout turns it off.
+   - `Mirror Mech Limb [X] [Y] [Z]`: copies the selected part and every part it carries across the plane through its parent's pivot (mirrored, negative-scale copies), and rebuilds their joints, with the copy hanging off the same parent. Hinge angles and stops come out mirrored, so equal and opposite angles keep the two limbs mirror images.
+   - Tests: a hinge turns to reach a dragged point; a two-link arm bends to reach, stops at a Grounded part (closest reach), and is unchanged with IK off; IK keeps stops; a mirrored limb sits at the mirrored positions with negated angle and swapped stops, already satisfies its joints, stays mirrored under opposite angles, and undoes in one step.
 3. ❌ Contact Sets and Motion Links.
 4. ❌ Involute Gear, Hydraulic Piston assembly and Hose / Mecha Cable primitives.
 5. ❌ Panel Groove (Edit Poly operation and modifier).

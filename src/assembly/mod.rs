@@ -6,13 +6,18 @@
 //! Object transforms stay in world space. Every frame `solve` re-poses each
 //! child from its parent and the joint value; when the user moved or turned
 //! a child directly, the new pose is first projected onto the joint's free
-//! axes and clamped at its stops (forward kinematics).
+//! axes and clamped at its stops (forward kinematics); a `W` move beyond
+//! what the joint allows re-poses the chain above it (IK, see `ik`).
 
 pub mod frame;
+pub mod ik;
+pub mod mirror;
 pub mod mount;
 pub mod solve;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_ik;
 
 use crate::scene::ObjId;
 use bevy::math::{Quat, Vec3};
@@ -158,6 +163,13 @@ pub struct Joint {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Assembly {
     pub joints: Vec<Joint>,
+    /// Grounded parts: IK chains stop here (the part never moves for IK).
+    #[serde(default)]
+    pub grounded: Vec<ObjId>,
+    /// IK Drag off: a `W` move of a jointed part is only projected onto
+    /// its own joint.
+    #[serde(default)]
+    pub no_ik: bool,
 }
 
 impl Assembly {

@@ -93,6 +93,8 @@ impl Scene {
     pub fn solve_assembly(&mut self) -> bool {
         let objs = &self.objects;
         self.assembly.joints.retain(|j| j.child != j.parent && objs.contains_key(j.child) && objs.contains_key(j.parent));
+        self.assembly.grounded.retain(|&g| objs.contains_key(g));
+        self.ik_pass();
         let mut moved = false;
         for i in order(self) {
             let (child, parent) = (self.assembly.joints[i].child, self.assembly.joints[i].parent);
