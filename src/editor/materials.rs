@@ -113,6 +113,26 @@ impl Editor {
         self.status = format!("Preset: {}", p.label());
     }
 
+    /// Loads a Material Library item into the edited (sub-)material (undoable).
+    pub fn apply_library(&mut self, item: crate::materials::library::Item) {
+        self.edit_material(Some("Material Library"), |m| {
+            let show = m.show_in_viewport;
+            *m = item.material();
+            m.name = item.name().into();
+            m.show_in_viewport = show;
+        });
+        self.status = format!("Material Library: {}", item.name());
+    }
+
+    /// Adds or removes a Material Library favourite (Preferences saves it).
+    pub fn toggle_favourite_material(&mut self, name: &str) {
+        let favs = &mut self.prefs.general.favourite_materials;
+        match favs.iter().position(|f| f == name) {
+            Some(i) => _ = favs.remove(i),
+            None => favs.push(name.into()),
+        }
+    }
+
     /// Import PBR Texture Folder into the active material.
     pub fn import_pbr_folder(&mut self) {
         let dir = std::path::PathBuf::from(self.mat_editor.pbr_folder.trim());

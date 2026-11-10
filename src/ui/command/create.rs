@@ -14,6 +14,7 @@ use bevy::math::Vec3;
 use bevy_egui::egui;
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
+    creation_method(ui, ed);
     rollout(ui, "Geometry — Standard Primitives", true, |ui| {
         egui::Grid::new("prims").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
             for (i, kind) in PrimitiveKind::ALL.iter().enumerate() {
@@ -30,7 +31,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             }
         });
-        ui.label(dim("Click a type, then click in a viewport to place it. Right-click a type to create at the origin."));
+        ui.label(dim("Pick a type, then drag in a viewport: the base first, then move and click for the height. A plain click places a default size; right-click cancels. Right-click a type to create at the origin."));
     });
     rollout(ui, "Geometry — GeoGen", true, |ui| {
         egui::Grid::new("geogen").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
@@ -162,5 +163,26 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             }
         });
         ui.label(dim("Target Camera: click the camera, then its target. Press C to look through the selected camera."));
+    });
+}
+
+/// Creation Method (3ds Max): Box / Cube for the Box, Edge / Center for round objects.
+fn creation_method(ui: &mut egui::Ui, ed: &mut Editor) {
+    use crate::editor::create_drag::CreateKind;
+    let Some(kind) = CreateKind::of(&ed.tool) else { return };
+    let m = &mut ed.iface.create_method;
+    rollout(ui, "Creation Method", true, |ui| {
+        ui.horizontal(|ui| {
+            if kind == CreateKind::Prim(PrimitiveKind::Box) {
+                ui.radio_value(&mut m.cube, false, "Box").on_hover_text("Drag the base corner to corner, then move for the height");
+                ui.radio_value(&mut m.cube, true, "Cube").on_hover_text("Drag out from the centre; all sides equal");
+            } else if !kind.is_rect() {
+                ui.radio_value(&mut m.edge, false, "Center").on_hover_text("Press at the centre, drag out the radius");
+                ui.radio_value(&mut m.edge, true, "Edge").on_hover_text("Drag across the diameter, edge to edge");
+            } else {
+                ui.label(dim("Drag the area corner to corner."));
+            }
+        });
+        ui.label(dim(kind.prompt(0)));
     });
 }

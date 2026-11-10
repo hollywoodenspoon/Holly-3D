@@ -1,63 +1,138 @@
-//! "Clean 3ds Max" egui theme: flat slate panels, Max amber for active state.
+//! "Clean 3ds Max" egui theme: flat slate panels, Max amber for active
+//! state. The colours come from Preferences -> Theme and can change while
+//! the program runs, so panels read them through the accessors below.
 
-use bevy_egui::egui::{self, Color32, CornerRadius, Stroke, Vec2};
+use crate::prefs::{Palette, Rgb, ThemePrefs, ViewportPrefs};
+use bevy_egui::egui::{self, Color32, CornerRadius, FontId, Stroke, TextStyle, Vec2};
+use std::sync::RwLock;
 
-pub const PANEL: Color32 = Color32::from_rgb(0x22, 0x23, 0x27);
-pub const CARD: Color32 = Color32::from_rgb(0x2B, 0x2D, 0x31);
-pub const INPUT: Color32 = Color32::from_rgb(0x18, 0x19, 0x1C);
-pub const AMBER: Color32 = Color32::from_rgb(0xE5, 0x9C, 0x24);
-pub const BLUE: Color32 = Color32::from_rgb(0x3A, 0x7A, 0xFE);
-pub const TEXT: Color32 = Color32::from_rgb(0xD6, 0xD8, 0xDD);
-pub const TEXT_DIM: Color32 = Color32::from_rgb(0x8C, 0x90, 0x99);
-pub const BUTTON: Color32 = Color32::from_rgb(0x36, 0x38, 0x3E);
-pub const BUTTON_HOVER: Color32 = Color32::from_rgb(0x40, 0x43, 0x4A);
-pub const BORDER: Color32 = Color32::from_rgb(0x3A, 0x3C, 0x42);
-pub const VERTEX: Color32 = Color32::from_rgb(0x3D, 0x8B, 0xFF);
-pub const VERTEX_SEL: Color32 = Color32::from_rgb(0xFF, 0x2E, 0x1F);
+#[derive(Clone, Copy)]
+struct Live {
+    pal: Palette,
+    vertex: Rgb,
+    vertex_sel: Rgb,
+}
 
-pub fn apply(ctx: &egui::Context) {
+static LIVE: RwLock<Option<Live>> = RwLock::new(None);
+
+fn live() -> Live {
+    let l = *LIVE.read().unwrap_or_else(|e| e.into_inner());
+    l.unwrap_or_else(|| {
+        let v = ViewportPrefs::default();
+        Live { pal: Palette::default(), vertex: v.vertex, vertex_sel: v.vertex_selected }
+    })
+}
+
+fn c(rgb: Rgb) -> Color32 {
+    Color32::from_rgb(rgb[0], rgb[1], rgb[2])
+}
+
+pub fn panel() -> Color32 {
+    c(live().pal.panel)
+}
+pub fn card() -> Color32 {
+    c(live().pal.card)
+}
+pub fn input() -> Color32 {
+    c(live().pal.input)
+}
+/// Active-state accent (3ds Max amber in the default theme).
+pub fn amber() -> Color32 {
+    c(live().pal.accent)
+}
+/// Hover accent.
+pub fn blue() -> Color32 {
+    c(live().pal.hover)
+}
+pub fn text() -> Color32 {
+    c(live().pal.text)
+}
+pub fn text_dim() -> Color32 {
+    c(live().pal.text_dim)
+}
+pub fn button() -> Color32 {
+    c(live().pal.button)
+}
+pub fn button_hover() -> Color32 {
+    c(live().pal.button_hover)
+}
+pub fn border() -> Color32 {
+    c(live().pal.border)
+}
+pub fn vertex() -> Color32 {
+    c(live().vertex)
+}
+pub fn vertex_sel() -> Color32 {
+    c(live().vertex_sel)
+}
+
+/// Text that stays readable on an accent-filled (active) button.
+pub fn on_accent() -> Color32 {
+    let a = live().pal.accent;
+    if crate::prefs::palette::luminance(a) > 0.35 { Color32::from_rgb(0x14, 0x15, 0x18) } else { Color32::WHITE }
+}
+
+/// Applies Preferences -> Theme (colours, UI size, font size) to egui.
+pub fn apply(ctx: &egui::Context, t: &ThemePrefs, vp: &ViewportPrefs) {
+    let pal = t.palette();
+    *LIVE.write().unwrap_or_else(|e| e.into_inner()) = Some(Live { pal, vertex: vp.vertex, vertex_sel: vp.vertex_selected });
+    ctx.set_zoom_factor(t.ui_scale.clamp(0.9, 1.5));
     let mut style = (*ctx.global_style()).clone();
+    let fs = t.font_size.clamp(9.0, 20.0);
+    style.text_styles = [
+        (TextStyle::Small, FontId::proportional(fs * 0.72)),
+        (TextStyle::Body, FontId::proportional(fs)),
+        (TextStyle::Button, FontId::proportional(fs)),
+        (TextStyle::Heading, FontId::proportional(fs * 1.45)),
+        (TextStyle::Monospace, FontId::monospace(fs)),
+    ]
+    .into();
     let r = CornerRadius::same(4);
     style.spacing.item_spacing = Vec2::new(6.0, 6.0);
     style.spacing.button_padding = Vec2::new(8.0, 5.0);
     style.spacing.interact_size = Vec2::new(40.0, 22.0);
     style.spacing.indent = 14.0;
+    let (panel, card, input, accent, hover) = (c(pal.panel), c(pal.card), c(pal.input), c(pal.accent), c(pal.hover));
+    let (text, button, button_hover, border) = (c(pal.text), c(pal.button), c(pal.button_hover), c(pal.border));
     let v = &mut style.visuals;
-    *v = egui::Visuals::dark();
-    v.panel_fill = PANEL;
-    v.window_fill = PANEL;
-    v.faint_bg_color = CARD;
-    v.extreme_bg_color = INPUT;
-    v.code_bg_color = INPUT;
+    *v = if pal.light { egui::Visuals::light() } else { egui::Visuals::dark() };
+    v.panel_fill = panel;
+    v.window_fill = panel;
+    v.faint_bg_color = card;
+    v.extreme_bg_color = input;
+    v.code_bg_color = input;
     v.window_corner_radius = CornerRadius::same(6);
     v.menu_corner_radius = r;
-    v.window_stroke = Stroke::new(1.0, BORDER);
-    v.override_text_color = Some(TEXT);
-    v.hyperlink_color = BLUE;
-    v.selection.bg_fill = AMBER;
-    v.selection.stroke = Stroke::new(1.0, INPUT);
+    v.window_stroke = Stroke::new(1.0, border);
+    // No global text override: selected (accent-filled) buttons use
+    // `selection.stroke`, which picks dark or light text for readability.
+    v.override_text_color = None;
+    v.hyperlink_color = hover;
+    v.selection.bg_fill = accent;
+    v.selection.stroke = Stroke::new(1.0, on_accent());
     v.striped = false;
+    let strong = if pal.light { Color32::BLACK } else { Color32::WHITE };
     let w = &mut v.widgets;
     for wv in [&mut w.noninteractive, &mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
         wv.corner_radius = r;
     }
-    w.noninteractive.bg_fill = PANEL;
-    w.noninteractive.weak_bg_fill = CARD;
-    w.noninteractive.bg_stroke = Stroke::new(1.0, BORDER);
-    w.noninteractive.fg_stroke = Stroke::new(1.0, TEXT);
-    w.inactive.bg_fill = BUTTON;
-    w.inactive.weak_bg_fill = BUTTON;
+    w.noninteractive.bg_fill = panel;
+    w.noninteractive.weak_bg_fill = card;
+    w.noninteractive.bg_stroke = Stroke::new(1.0, border);
+    w.noninteractive.fg_stroke = Stroke::new(1.0, text);
+    w.inactive.bg_fill = button;
+    w.inactive.weak_bg_fill = button;
     w.inactive.bg_stroke = Stroke::NONE;
-    w.inactive.fg_stroke = Stroke::new(1.0, TEXT);
-    w.hovered.bg_fill = BUTTON_HOVER;
-    w.hovered.weak_bg_fill = BUTTON_HOVER;
-    w.hovered.bg_stroke = Stroke::new(1.0, BLUE);
-    w.hovered.fg_stroke = Stroke::new(1.0, Color32::WHITE);
-    w.active.bg_fill = BLUE;
-    w.active.weak_bg_fill = BLUE;
-    w.active.bg_stroke = Stroke::new(1.0, BLUE);
+    w.inactive.fg_stroke = Stroke::new(1.0, text);
+    w.hovered.bg_fill = button_hover;
+    w.hovered.weak_bg_fill = button_hover;
+    w.hovered.bg_stroke = Stroke::new(1.0, hover);
+    w.hovered.fg_stroke = Stroke::new(1.0, strong);
+    w.active.bg_fill = hover;
+    w.active.weak_bg_fill = hover;
+    w.active.bg_stroke = Stroke::new(1.0, hover);
     w.active.fg_stroke = Stroke::new(1.0, Color32::WHITE);
-    w.open.bg_fill = CARD;
-    w.open.weak_bg_fill = CARD;
+    w.open.bg_fill = card;
+    w.open.weak_bg_fill = card;
     ctx.set_global_style(style);
 }

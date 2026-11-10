@@ -70,10 +70,12 @@ pub fn sync_cameras(
     window: Single<&Window, With<PrimaryWindow>>,
     mut q: Query<(&ViewportCam, &mut Camera, &mut Transform, &mut Projection, &mut RenderLayers)>,
 ) {
-    let sf = window.scale_factor();
+    // egui's zoom (Preferences -> UI size) scales the points viewport rects are measured in.
+    let sf = window.scale_factor() * editor.prefs.theme.ui_scale.clamp(0.9, 1.5);
     let win = UVec2::new(window.physical_width(), window.physical_height());
     let first_visible = editor.viewports.views.iter().position(|v| v.visible).unwrap_or(0);
-    let [r, g, b] = editor.scene.environment.background;
+    let vp = &editor.prefs.viewport;
+    let [r, g, b] = if vp.use_env_background { editor.scene.environment.background } else { vp.background };
     let bg = Color::srgb(r, g, b);
     for (vc, mut cam, mut tf, mut proj, mut layers) in &mut q {
         let v = &editor.viewports.views[vc.0];

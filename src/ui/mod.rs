@@ -1,5 +1,7 @@
 //! egui front-end: fixed 5-zone 3ds Max layout + floating windows.
 
+pub mod action_ui;
+pub mod actions;
 pub mod align_dialog;
 pub mod array_dialog;
 pub mod caddy;
@@ -8,19 +10,24 @@ pub mod command;
 pub mod env_dialog;
 pub mod explorer;
 pub mod file_menu;
+pub mod help;
 pub mod hotkeys;
 pub mod material_editor;
+pub mod menubar;
 pub mod mirror_dialog;
 pub mod paint_box;
+pub mod prefs;
 pub mod quad_menu;
 pub mod render_fx;
 pub mod render_setup;
 pub mod render_window;
+pub mod ribbon;
 pub mod rollouts;
 pub mod sky_dialog;
 pub mod snaps;
 pub mod status_bar;
 pub mod theme;
+pub mod tool_windows;
 pub mod toolbar;
 pub mod uv_editor;
 pub mod viewport_ui;
@@ -42,31 +49,40 @@ impl Plugin for UiPlugin {
 /// Transient UI-only state (not part of undo).
 #[derive(Resource, Default)]
 pub struct UiState {
-    themed: bool,
+    /// Theme settings last applied to egui.
+    themed: Option<(crate::prefs::ThemePrefs, crate::prefs::ViewportPrefs)>,
+    pub prefs: prefs::PrefsUi,
     pub viewport: viewport_ui::ViewportUiState,
     pub modifier_list_open: bool,
     pub uv: uv_editor::UvEditorState,
     pub mat: material_editor::MatEditorUi,
     pub rfw: render_window::RfwState,
+    pub help: help::HelpUi,
 }
 
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
     let ctx = contexts.ctx_mut()?.clone();
-    if !st.themed {
-        theme::apply(&ctx);
+    let want = (ed.prefs.theme.clone(), ed.prefs.viewport.clone());
+    if st.themed.as_ref() != Some(&want) {
+        let first = st.themed.is_none();
+        theme::apply(&ctx, &want.0, &want.1);
+        st.themed = Some(want);
         // egui's debug options only exist in debug builds.
         #[cfg(debug_assertions)]
-        if std::env::var("MINIMAX_DEBUG_UI").is_ok() {
+        if first && std::env::var("MINIMAX_DEBUG_UI").is_ok() {
             ctx.global_style_mut(|s| s.debug.show_expand_width = true);
         }
-        st.themed = true;
     }
     let ed = &mut *ed;
     hotkeys::handle(&ctx, ed);
     let mut root =
         Ui::new(ctx.clone(), "minimax_root".into(), UiBuilder::new().layer_id(LayerId::background()).max_rect(ctx.viewport_rect()));
     let screen = ctx.viewport_rect();
-    let top = toolbar::show(&mut root, ed).max.y;
+    menubar::show(&mut root, ed);
+    let mut top = toolbar::show(&mut root, ed).max.y;
+    if ed.iface.ribbon {
+        top = ribbon::show(&mut root, ed).max.y;
+    }
     let bottom = status_bar::show(&mut root, ed).min.y;
     // Side panels are fixed-width (3ds Max layout), so the viewport edges are
     // derived from those widths rather than from content-dependent rects.
@@ -80,12 +96,17 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     mirror_dialog::show(&ctx, ed);
     align_dialog::show(&ctx, ed);
     quad_menu::show(&ctx, ed);
+    tool_windows::show(&ctx, ed);
+    prefs::show(&ctx, ed, &mut st.prefs);
+    ed.autosave_tick(ctx.input(|i| i.time));
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
+    material_editor::library::show(&ctx, ed, &mut st.mat.library);
     env_dialog::show(&ctx, ed);
     paint_box::show(&ctx, ed);
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);
+    help::show(&ctx, ed, &mut st.help);
     ed.update_caddy_preview();
     ed.scene.solve_assembly();
     ed.scene.update_hoses();

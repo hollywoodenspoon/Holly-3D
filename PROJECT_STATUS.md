@@ -6,9 +6,9 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), and **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand) |
-| Source | 287 `.rs` files, about 44,100 lines; the largest is 347 lines (limit 350) |
-| Tests | 320 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
+| Source | 313 `.rs` files, about 48,300 lines; the largest is 350 lines (limit 350) |
+| Tests | 356 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
@@ -25,7 +25,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 |---|---|---|
 | 3ds Max conventions only | ✅ | Q/W/E/R, 1–5, M, F9, F10, Shift+Drag clone; no Blender-style modal keys |
 | Clean five-zone UI | ✅ | Slate `#222327` with amber `#E59C24` |
-| No `.rs` file over 350 lines | ✅ | Largest: `src/mesh/ops/chamfer.rs` at 347 lines |
+| No `.rs` file over 350 lines | ✅ | Largest: `src/editor/mod.rs` at 350 lines |
 | No `Rc<RefCell>` / `Arc<Mutex>` in topology | ✅ | `slotmap` arenas |
 | Headless tests for every mesh operation and modifier | ✅ | Counts plus normal and UV validity |
 
@@ -436,3 +436,158 @@ Everything lives in `packaging/`; the README's *As a pacman package* section has
    - `desktop-file-validate` passes.
    - `update-mime-database` and gio detect `.mmax` files, both by extension and by header, and pick MiniMax as the default app.
    - **Still to do:** a real `pacman -Syu minimax` on CachyOS.
+
+## 15. Phase 9 PR 1: a button for everything
+
+The first of the seven PRs in `docs/PHASE_9_PLAN.md`. New rule in `CLAUDE.md` §1: every feature must be reachable from a visible button, dropdown or menu. Hotkeys are shortcuts only.
+
+| Area | What's new |
+|---|---|
+| Action registry | `src/ui/actions/`: one `Action` enum with label, short glyph, tooltip, run, checked and enabled state. The default keymap is built from it, and toolbar, menus, quad menu and hotkeys all call the same code |
+| Menu bar | File · Edit · Tools · Views · Create · Modifiers · Rendering · Help. Shortcuts show next to each entry and toggles have tick marks. Create lists every object type; Modifiers lists every modifier, grouped |
+| Main Toolbar | Built from `actions::layout`. Adds Undo/Redo, Selection Filter, the region-shape dropdown, Window/Crossing, Lock Selection, Select From Scene, Mirror/Align/Array, a one-click Sky menu (day, sunset, overcast, night, deep space, nebula), Material Editor and Render. Wraps onto a second row on narrow windows instead of hiding buttons |
+| Command Panel | Five tabs as in 3ds Max: Create, Modify, Hierarchy (was Pivot), Display (Hide by Category, Hide/Freeze, Display Properties) and Utilities (Reset XForm, Collapse, Measure and more) |
+| Modifier List | One tall scrolling list of every modifier, grouped under headings with an optional filter. Modifiers that don't fit the selection are dimmed and explain why. Show Buttons gives a grid of favourite modifiers; right-click its header to edit the set |
+| Modeling Ribbon | Toggle with 🛠 Ribbon. Big buttons for every Edit Poly tool, which change with the sub-object level. Caddy tools apply their last settings on click; right-click opens the caddy |
+| Viewport navigation | Eight buttons at the bottom right: Zoom, Zoom All, Field of View, Pan, Orbit, Zoom Extents, Zoom Extents All, Maximize. Drag in a viewport to use one; right-click leaves it |
+| Status bar | Prompt line (current tool and next step), Lock Selection, and `Grid = …` |
+| Tool windows | Select From Scene, Measure, Grid and Snap Settings, Hotkey List, About |
+| Tests | `every_action_has_a_button` enforces the rule. Other tests check that hotkeys are unique, that every action runs, and that every glyph used in the UI source exists in the UI fonts. The glyph test works around egui's `has_glyph`, which wrongly reports emoji-font glyphs as missing |
+
+
+## 16. Phase 9 PR 2: Preferences
+
+Opened with the toolbar ⚙ button or **Edit -> Preferences...**. Changes apply at once and are saved to `~/.config/minimax/preferences.ron` when the mouse button is released. A missing or partial file falls back to the defaults.
+
+| Tab | What it does |
+|---|---|
+| 🎨 Theme | Six presets (Slate & Amber, 3ds Max Classic Gray, Midnight Blue, Light, High Contrast, Custom) with colour strips. Custom has ten colour pickers and warns when text would be hard to read (WCAG contrast check). UI size 90–150 % and font size 9–20 pt |
+| ⌨ Hotkeys | Key set: MiniMax default or 3ds Max (H = Select by Name, Shift+Q = Render, Alt+Z = Zoom). Searchable list of every action: click a key, press a new one. A key that is already used asks Swap / Replace / Cancel. Per-action default and clear buttons, Reset, Export and Import (.ron) |
+| ⊞ Viewports | Background (or the Environment colour), grid and axis colours, vertex and selected-vertex colours, invert zoom, zoom / orbit / pan speed |
+| ⚙ General | Autosave every N minutes (0 = off) to `~/.local/share/minimax/autosave/`, undo steps (1–500), units (m / cm / ft for Measure and the grid readout), show the tour on startup |
+| ▶ Rendering | Default renderer, Blender path, resolution presets, and "Use these now" for Render Setup |
+| 📦 Assets | Download folder and the three CC0 packs (Photo Textures 1K, Low-poly Models, Realistic Models). The download buttons come in PR 5 |
+
+The Hotkey List window has a "⚙ Change hotkeys..." button. Tests cover the RON round trip, partial files, units, zoom, theme readability, keymap edit / swap / import / export, the 3ds Max key set, autosave and the undo limit.
+
+## 17. Phase 9 PR 3: click-and-drag creation
+
+Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on the Create tab or in the Create menu, then:
+
+| Object | Drag | Then move and click |
+|---|---|---|
+| Box | Base, corner to corner | Height (Creation Method *Cube*: one drag from the centre) |
+| Plane, Settlement | Rectangle; releasing finishes it | — |
+| Sphere, Planet, Gear | Radius; releasing finishes it | — |
+| Cylinder, GeoGen (rock, crystal, cliff, stalagmite) | Radius | Height |
+| Cone | Bottom radius | Height, then top radius |
+| Torus | Main radius | Tube thickness |
+| Terrain, Ocean | Area rectangle | Height / wave height |
+
+- **The view sets the plane:** Top and Perspective draw on the ground grid. Front and Left stand objects up on their own plane.
+- **Snaps (`S`) work while dragging.**
+- **Creation Method rollout:**
+  - *Box / Cube* for the Box.
+  - *Center / Edge* for round objects; Edge means the drag spans the diameter.
+- **Cancel and undo:**
+  - Right-click cancels a half-made object.
+  - `Ctrl+Z` removes a finished one in one step.
+- **The tool stays active**, so you can draw several objects in a row.
+- **Default sizes:**
+  - A plain click, with no drag, still places a default-size object.
+  - Right-clicking a Create button places one at the origin.
+  - The Piston and Hose are click-to-place only.
+- **The status bar names the next step.** The Create panel stays open while you draw.
+- **Tests:** seven tests simulate mouse presses and moves with no screen. They check:
+  - each object's final size and position;
+  - that one undo removes the object and that cancelling works;
+  - that the Front view stands objects upright;
+  - that a plain click still places a default object.
+- **Checked in the running app:** dragging a Box in Perspective made a single box of the right size.
+
+## 18. Phase 9 PR 4: Help with screenshots
+
+- **Help window (`F1`, `❓ Help` on the toolbar, Help menu):**
+  - 16 topics, in the order you learn them:
+    1. Getting Started
+    2. Creating objects
+    3. Selecting and transforming
+    4. Editable Poly modelling (plus the ribbon)
+    5. Modifiers
+    6. Splines, Lathe and Extrude
+    7. Materials
+    8. Painting
+    9. Lights, cameras, sky and deep space
+    10. Rendering
+    11. GhostTown, Medieval Architect and destruction
+    12. Mech assembly
+    13. Files
+    14. Preferences and hotkeys
+    - then a Hotkey cheat sheet and Credits.
+  - Pages mix short text, numbered steps, tips and real screenshots. Amber numbered circles on each screenshot point at the parts the legend under it explains.
+  - **"▶ Show me" buttons** open the window or tab the page is about (Material Editor, Render Setup, Environment, Preferences, the Create tab…).
+  - **Search box** filters topics by any word on them.
+  - **Previous / Next** buttons step through the pages.
+  - **The cheat sheet is live:** it lists your current keys, so it follows changes made in Preferences → Hotkeys.
+- **F1 opens the page for what is under the mouse:**
+  - Material Editor → Materials
+  - Render Setup or Frame Window → Rendering
+  - PaintBox → Painting
+  - Environment → Sky
+  - caddy → Edit Poly
+  - Array, Mirror or Align → Transforming
+  - Command Panel → Create, Edit Poly or Modifiers, depending on the tab and selection
+  - anything else → Getting Started
+- **Getting Started tour:**
+  - Eight screens with screenshots, Back / Next / Finish.
+  - Shown at startup until you untick "Show this tour at startup" (also in Preferences → General).
+  - Reopen it from Help → Getting Started Tour or the Help window.
+- **Screenshots:**
+  - 14 JPEGs (1200 px wide, about 1.3 MB in total) in `assets/help/`, built into the program.
+  - They are captured from the real program: `minimax --help-shot <id>` sets up the scene and panels, and `tools/help_shots.sh [id …]` runs it under Xvfb and saves the images. Re-run it after UI changes.
+- **Tests:**
+  - every screenshot id sets up a scene, is built in and decodes;
+  - every page and tour screenshot exists, and every marker lies inside its image;
+  - search finds pages (any case), page ids are unique;
+  - the Help action opens the window.
+- **Checked in the running app:** the tour opens on first start, the Help window shows the topics and screenshots, and F1 over the Material Editor opens the Materials page.
+
+## 19. Phase 9 PR 5a: Material Library and procedural pattern maps
+
+- **Material Library (`📚 Library` on the toolbar, in the Material Editor and in Rendering → Material Library...):**
+  - 281 ready-made materials in 15 categories:
+    - Classic presets (7)
+    - Ground & Terrain (30): grass, mud, sand, snow, ice, moss, lava crust, peat…
+    - Roads & Urban (30): new / worn / cracked / wet asphalt, white and yellow centre lines (solid and dashed), edge lines, crosswalks, sidewalk slabs, curbs, cobbles, pavers, bike and bus lanes…
+    - Walls & Facades (30)
+    - Roofs (15)
+    - Metals (30)
+    - Wood (20)
+    - Stone & Concrete (20)
+    - Glass & Gems (20)
+    - Plastic & Rubber (15)
+    - Fabric & Leather (12)
+    - Nature & Organic (15)
+    - Glow / Emissive (15)
+    - Toon & Stylised (12)
+    - Sci-Fi (10)
+  - The browser has a category list, a search box (name or category), and preview swatches. Swatches are rendered a few per frame and cached, so opening it never stalls.
+  - **Click a swatch** to load it into the active slot (one undo step). The slot takes the material's name.
+  - **☆ / ★ Favourites** are kept in Preferences (`favourite_materials`) and listed on their own shelf.
+  - Buttons: **Assign to Selection** and **Editor**. The Material Editor's Quick Preset list also ends with "📚 More in the Material Library...".
+- **New procedural map nodes** (Maps rollout and Slate). They work in the viewport, the raytracer and the previews alike:
+  - **Bricks / Tiles:** running bond, stack bond, planks or cobbles. Settings: columns, rows, gap, colour variation and seed.
+  - **Stripes:** count, width, dashes and soft edges, along U or V. This is what makes road markings.
+  - **Cracks / Voronoi:** scale, width, variation and seed.
+  - **Grunge / Wear:** dirt, rust, scratches or stains, with amount and seed. Library materials that use grunge also get matching roughness maps, and metallic maps when the material is metal.
+  - Patterned library materials also get a bump map from their pattern.
+- **Help:** the Materials page has a Material Library screenshot and a "Show me" button. F1 over the library opens the Materials page.
+- **Tests (369 in total):**
+  - the library holds at least 270 uniquely named materials, and every category has items;
+  - every material is valid, and every map samples inside 0..1;
+  - specs give the right shading: Ruby is crystal, Neon Pink glows, Toon Red has an outline, bricks get bump, rust gets metal and roughness maps, and the road line is white on asphalt;
+  - pattern unit tests;
+  - the browser filters by shelf, search and favourites;
+  - loading an item is undoable, and favourites toggle.
+- **Checked in the running app:** swatches render for every category, and the shelves, search and click-to-load work.
+- **Next (PR 5b):** World / Triplanar mapping, and the CC0 asset downloader (Poly Haven 1K photo textures, low-poly and realistic model packs) in Preferences → Assets.

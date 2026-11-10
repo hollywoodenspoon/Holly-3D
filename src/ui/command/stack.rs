@@ -1,51 +1,14 @@
-//! Searchable Modifier List + Modifier Stack box + stack action row.
+//! Modifier Stack box + stack action row.
 
 use super::CONTENT_W;
 use crate::editor::Editor;
 use crate::mesh::SubObject;
-use crate::modifiers::{MODIFIER_LIST, ModSub};
-use crate::ui::UiState;
+use crate::modifiers::ModSub;
 use crate::ui::theme;
 use crate::ui::widgets::{dim, toggle_button};
 use bevy_egui::egui::{self, RichText};
 
 const SUBS: [SubObject; 5] = [SubObject::Vertex, SubObject::Edge, SubObject::Border, SubObject::Polygon, SubObject::Element];
-
-pub fn modifier_list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
-    let r =
-        ui.add(egui::TextEdit::singleline(&mut ed.modifier_filter).hint_text("Modifier List…  (type to filter)").desired_width(CONTENT_W));
-    if r.gained_focus() || r.changed() {
-        st.modifier_list_open = true;
-    }
-    if !st.modifier_list_open {
-        return;
-    }
-    let filter = ed.modifier_filter.to_lowercase();
-    let mut chosen = None;
-    egui::Frame::new().fill(theme::INPUT).corner_radius(4).inner_margin(6).show(ui, |ui| {
-        ui.set_width(CONTENT_W - 12.0);
-        egui::ScrollArea::vertical().max_height(160.0).id_salt("modlist").show(ui, |ui| {
-            for item in MODIFIER_LIST.iter().filter(|m| filter.is_empty() || m.name.to_lowercase().contains(&filter)) {
-                let text = if item.available {
-                    RichText::new(item.name)
-                } else {
-                    RichText::new(format!("{}  ·  later phase", item.name)).color(theme::TEXT_DIM)
-                };
-                if ui.add_enabled(item.available, egui::Button::new(text).frame(false)).clicked() {
-                    chosen = Some(item.name);
-                }
-            }
-        });
-        if ui.small_button("Close").clicked() {
-            st.modifier_list_open = false;
-        }
-    });
-    if let Some(name) = chosen {
-        ed.add_modifier(name);
-        ed.modifier_filter.clear();
-        st.modifier_list_open = false;
-    }
-}
 
 pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
     let Some(id) = ed.current() else { return };
@@ -65,7 +28,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
     let mut set_level = None;
     let mut toggle = None;
     let mut set_sub = None;
-    egui::Frame::new().fill(theme::INPUT).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
         ui.set_width(CONTENT_W - 12.0);
         egui::ScrollArea::vertical().max_height(150.0).min_scrolled_height(150.0).id_salt("stack").show(ui, |ui| {
             ui.set_min_height(138.0);
@@ -91,7 +54,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                     } else {
                         ui.add_space(18.0);
                     }
-                    let text = if is_active { RichText::new(&name).color(theme::INPUT).strong() } else { RichText::new(&name) };
+                    let text = if is_active { RichText::new(&name).color(theme::input()).strong() } else { RichText::new(&name) };
                     let w = ui.available_width();
                     if ui.add_sized([w, 20.0], egui::Button::new(text).selected(is_active)).clicked() {
                         set_level = Some(level);
@@ -103,7 +66,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                     ui.horizontal(|ui| {
                         ui.add_space(48.0);
                         let on = is_active && mod_sub == Some(g);
-                        let text = if on { RichText::new(g.label()).color(theme::AMBER).strong() } else { RichText::new(g.label()) };
+                        let text = if on { RichText::new(g.label()).color(theme::amber()).strong() } else { RichText::new(g.label()) };
                         if ui.add(egui::Button::new(text).frame(false)).clicked() {
                             set_level = Some(level);
                             set_mod_sub = Some(g);
@@ -115,7 +78,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                         ui.horizontal(|ui| {
                             ui.add_space(48.0);
                             let on = is_active && ed.sub == s;
-                            let text = if on { RichText::new(s.label()).color(theme::AMBER).strong() } else { RichText::new(s.label()) };
+                            let text = if on { RichText::new(s.label()).color(theme::amber()).strong() } else { RichText::new(s.label()) };
                             if ui.add(egui::Button::new(text).frame(false)).clicked() {
                                 set_level = Some(level);
                                 set_sub = Some(s);

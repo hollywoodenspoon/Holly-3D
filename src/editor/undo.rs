@@ -5,18 +5,40 @@ pub struct History<T> {
     undo: Vec<(String, T)>,
     redo: Vec<(String, T)>,
     limit: usize,
+    /// Checkpoints ever pushed (autosave compares it to spot new edits).
+    pushes: u64,
 }
 
 impl<T> Default for History<T> {
     fn default() -> Self {
-        Self { undo: vec![], redo: vec![], limit: 64 }
+        Self { undo: vec![], redo: vec![], limit: 64, pushes: 0 }
     }
 }
 
 impl<T> History<T> {
+    pub fn with_limit(limit: usize) -> Self {
+        Self { limit: limit.max(1), ..Self::default() }
+    }
+
+    /// Preferences -> General -> Undo steps; drops the oldest steps if needed.
+    pub fn set_limit(&mut self, limit: usize) {
+        self.limit = limit.max(1);
+        let extra = self.undo.len().saturating_sub(self.limit);
+        self.undo.drain(..extra);
+    }
+
+    pub fn limit(&self) -> usize {
+        self.limit
+    }
+
+    pub fn pushes(&self) -> u64 {
+        self.pushes
+    }
+
     /// Records the state *before* an edit.
     pub fn push(&mut self, label: impl Into<String>, before: T) {
         self.undo.push((label.into(), before));
+        self.pushes += 1;
         if self.undo.len() > self.limit {
             self.undo.remove(0);
         }

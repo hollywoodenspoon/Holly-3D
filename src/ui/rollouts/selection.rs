@@ -21,7 +21,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 (SubObject::Element, "5: Elm", "Element (5)"),
             ] {
                 let on = ed.sub == s;
-                let text = if on { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
+                let text = if on { RichText::new(label).color(theme::input()).strong() } else { RichText::new(label) };
                 if ui.add_sized([w, 30.0], egui::Button::new(text).selected(on)).on_hover_text(tip).clicked() {
                     ed.set_sub_object(s);
                 }

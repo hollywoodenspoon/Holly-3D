@@ -64,7 +64,7 @@ fn pos(v: Vec2) -> egui::Pos2 {
 /// Rubber band of the region being drawn.
 pub fn draw(painter: &egui::Painter, shape: RegionShape, pts: &[Vec2], pointer: Vec2) {
     let fill = Color32::from_rgba_unmultiplied(229, 156, 36, 18);
-    let st = Stroke::new(1.0, theme::AMBER);
+    let st = Stroke::new(1.0, theme::amber());
     let Some(&a) = pts.first() else { return };
     match shape {
         RegionShape::Rectangle => {
@@ -74,16 +74,16 @@ pub fn draw(painter: &egui::Painter, shape: RegionShape, pts: &[Vec2], pointer: 
         }
         RegionShape::Circle => {
             painter.circle(pos(a), a.distance(pointer), fill, st);
-            painter.line_segment([pos(a), pos(pointer)], Stroke::new(1.0, theme::TEXT_DIM));
+            painter.line_segment([pos(a), pos(pointer)], Stroke::new(1.0, theme::text_dim()));
         }
         RegionShape::Fence | RegionShape::Lasso => {
             let mut line: Vec<egui::Pos2> = pts.iter().map(|&p| pos(p)).collect();
             line.push(pos(pointer));
             painter.add(egui::Shape::line(line, st));
-            painter.line_segment([pos(pointer), pos(a)], Stroke::new(1.0, theme::TEXT_DIM));
+            painter.line_segment([pos(pointer), pos(a)], Stroke::new(1.0, theme::text_dim()));
             if shape == RegionShape::Fence {
                 for &p in pts {
-                    painter.circle_filled(pos(p), 2.5, theme::AMBER);
+                    painter.circle_filled(pos(p), 2.5, theme::amber());
                 }
             }
         }

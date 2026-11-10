@@ -51,7 +51,7 @@ fn canvas_controls(ui: &mut egui::Ui, ed: &mut Editor) {
     let canvas = ed.current().and_then(|id| ed.canvas_of(id));
     let info = canvas.and_then(|m| crate::materials::bake::direct_base(&ed.scene.materials.mats[m])).map(|h| (h.tex.width, h.tex.height));
     match info {
-        Some((w, h)) => ui.label(RichText::new(format!("Canvas: {w}x{h} Base Color bitmap")).color(crate::ui::theme::AMBER)),
+        Some((w, h)) => ui.label(RichText::new(format!("Canvas: {w}x{h} Base Color bitmap")).color(crate::ui::theme::amber())),
         None => ui.label(dim("No canvas on the selected object yet.")),
     };
     ui.horizontal(|ui| {
@@ -174,7 +174,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
 /// Modify panel rollout when a VertexPaint modifier is highlighted.
 pub fn modifier_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "VertexPaint", true, |ui| {
-        let label = if ed.paint.active { "Close PaintBox" } else { "🖌 Open PaintBox" };
+        let label = if ed.paint.active { "Close PaintBox" } else { "🎨 Open PaintBox" };
         if action(ui, label, true, CONTENT_W) {
             ed.paint.mode = PaintMode::Vertex;
             ed.toggle_paint();

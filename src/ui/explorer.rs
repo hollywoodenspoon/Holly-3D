@@ -16,7 +16,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .resizable(false)
         .show_separator_line(false)
         .exact_size(WIDTH)
-        .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(egui::Margin::same(8)))
+        .frame(egui::Frame::new().fill(theme::panel()).inner_margin(egui::Margin::same(8)))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.label(RichText::new("Scene Explorer").strong());
@@ -42,7 +42,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                         BaseObject::Target => "◎",
                         BaseObject::Camera(_) => "🎥",
                         BaseObject::Shape(_) => "〰",
-                        BaseObject::GeoGen(_) => "◆",
+                        BaseObject::GeoGen(_) => "💎",
                         BaseObject::Mech(_) => "⚙",
                         BaseObject::World(_) => "🌍",
                     };
@@ -63,7 +63,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                             ed.scene.objects[id].frozen = !frozen;
                         }
                         ui.label(RichText::new(icon).color(color32(color)));
-                        let text = if sel { RichText::new(&name).color(theme::AMBER).strong() } else { RichText::new(&name) };
+                        let text = if sel { RichText::new(&name).color(theme::amber()).strong() } else { RichText::new(&name) };
                         let r = ui.add(egui::Button::new(text).frame(false));
                         if r.clicked() {
                             let add = ui.input(|i| i.modifiers.ctrl || i.modifiers.command);

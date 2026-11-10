@@ -1,6 +1,6 @@
 //! Modify tab: name + wire color, Modifier List, stack and context rollouts.
 
-use super::{CONTENT_W, light_params, params, stack};
+use super::{CONTENT_W, light_params, modifier_list, params, stack};
 use crate::editor::Editor;
 use crate::mesh::SubObject;
 use crate::modifiers::ModifierKind;
@@ -35,7 +35,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         ui.label(dim(&format!("Target of {} — move it with W to aim it.", owner.unwrap_or_default())));
         return;
     }
-    stack::modifier_list(ui, ed, st);
+    modifier_list::show(ui, ed, st);
     stack::stack_box(ui, ed);
     stack::stack_actions(ui, ed);
     ui.add_space(6.0);

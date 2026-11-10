@@ -20,7 +20,7 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
                 ui.spacing_mut().button_padding = egui::vec2(4.0, 1.0);
-                let small = |t: &str| egui::RichText::new(t).size(12.0).color(theme::TEXT);
+                let small = |t: &str| egui::RichText::new(t).size(12.0).color(theme::text());
                 ui.menu_button(small("[ + ]"), |ui| {
                     let v = &mut ed.viewports;
                     if ui.button(if v.maximized { "Restore 2x2 Layout   Alt+W" } else { "Maximize Viewport   Alt+W" }).clicked() {
@@ -110,8 +110,8 @@ fn vertex_dots(painter: &egui::Painter, ed: &Editor, vi: usize) {
                 let hue = (1.0 - wt) * 0.66;
                 egui::ecolor::Hsva::new(hue, 0.9, 1.0, 1.0).into()
             }
-            _ if vx.selected => theme::VERTEX_SEL,
-            _ => theme::VERTEX,
+            _ if vx.selected => theme::vertex_sel(),
+            _ => theme::vertex(),
         };
         let r = if vx.selected { 3.5 } else { 2.5 };
         painter.circle_filled(p(s), r, color);
@@ -125,7 +125,7 @@ fn control_points(painter: &egui::Painter, ed: &Editor, vi: usize) {
     let hot = ed.active_mod_sub() == Some(crate::modifiers::ModSub::ControlPoints);
     for (w, s) in pts.iter().zip(sel) {
         let Some(sp) = v.to_screen(*w) else { continue };
-        let (color, r) = if s && hot { (theme::VERTEX_SEL, 4.0) } else { (Color32::from_rgb(255, 140, 30), 3.0) };
+        let (color, r) = if s && hot { (theme::vertex_sel(), 4.0) } else { (Color32::from_rgb(255, 140, 30), 3.0) };
         painter.circle_filled(p(sp), r, color);
     }
 }
@@ -137,7 +137,7 @@ fn normal_lines(painter: &egui::Painter, ed: &Editor, vi: usize) {
     for l in ed.normal_lines() {
         let (Some(a), Some(b)) = (v.to_screen(l.base), v.to_screen(l.tip)) else { continue };
         let color = match (l.selected, l.kind) {
-            (true, _) => theme::VERTEX_SEL,
+            (true, _) => theme::vertex_sel(),
             (_, NormalKind::Explicit) => Color32::from_rgb(70, 220, 90),
             (_, NormalKind::Unified) => Color32::from_rgb(60, 110, 255),
             (_, NormalKind::Unspecified) => Color32::from_rgb(40, 220, 230),
@@ -150,7 +150,7 @@ fn normal_lines(painter: &egui::Painter, ed: &Editor, vi: usize) {
 fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
     let v = &ed.viewports.views[vi];
     let Some(hit) = ed.paint_hit(vi, ptr) else {
-        painter.circle_stroke(p(ptr), 4.0, Stroke::new(1.0, theme::TEXT_DIM));
+        painter.circle_stroke(p(ptr), 4.0, Stroke::new(1.0, theme::text_dim()));
         return;
     };
     let Some(c) = v.to_screen(hit) else { return };
@@ -168,7 +168,7 @@ fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
 pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region: Option<&[Vec2]>, pointer: Option<Vec2>) {
     let painter = ui.painter().with_clip_rect(rect);
     let active = vi == ed.viewports.active;
-    let border = if active { Stroke::new(2.0, theme::AMBER) } else { Stroke::new(1.0, theme::BORDER) };
+    let border = if active { Stroke::new(2.0, theme::amber()) } else { Stroke::new(1.0, theme::border()) };
     painter.rect_stroke(rect.shrink(1.0), 0.0, border, egui::StrokeKind::Inside);
     let cam = ed.viewports.views[vi].camera;
     tripod(&painter, &cam, rect);
@@ -207,13 +207,13 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region:
         if !pts.is_empty() {
             let mut line = pts.clone();
             line.extend(pointer.map(p));
-            painter.add(egui::Shape::line(line, Stroke::new(1.5, theme::AMBER)));
+            painter.add(egui::Shape::line(line, Stroke::new(1.5, theme::amber())));
             for q in &pts {
-                painter.circle_filled(*q, 3.5, theme::AMBER);
+                painter.circle_filled(*q, 3.5, theme::amber());
             }
         }
         if let (Some(a), Some(b)) = (anchor, pointer) {
-            let color = if matches!(ed.tool, Tool::QuickSlice { .. }) { Color32::from_rgb(255, 220, 30) } else { theme::AMBER };
+            let color = if matches!(ed.tool, Tool::QuickSlice { .. }) { Color32::from_rgb(255, 220, 30) } else { theme::amber() };
             painter.add(egui::Shape::dashed_line(&[p(a), p(b)], Stroke::new(1.5, color), 6.0, 4.0));
         }
         let paint_hint = ed.paint.active.then_some("Viewport Paint — drag to paint · right-click exits");
@@ -223,7 +223,7 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region:
                 egui::Align2::CENTER_BOTTOM,
                 hint,
                 FontId::proportional(13.0),
-                theme::AMBER,
+                theme::amber(),
             );
         }
     }

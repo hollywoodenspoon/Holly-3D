@@ -1,13 +1,16 @@
-//! Right Command Panel (310px): Create | Modify | Pivot.
+//! Right Command Panel (310px): Create | Modify | Hierarchy | Display | Utilities.
 
 mod assembly;
 mod camera_params;
 mod create;
+mod display;
 mod light_params;
+mod modifier_list;
 mod modify;
 mod params;
 mod pivot;
 mod stack;
+mod utilities;
 
 use super::UiState;
 use super::theme;
@@ -23,13 +26,22 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) -> egui::Rect 
         .resizable(false)
         .show_separator_line(false)
         .exact_size(PANEL_W)
-        .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(egui::Margin::same(10)))
+        .frame(egui::Frame::new().fill(theme::panel()).inner_margin(egui::Margin::same(10)))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                for (tab, label) in [(CommandTab::Create, "➕ Create"), (CommandTab::Modify, "🌈 Modify"), (CommandTab::Pivot, "⌖ Pivot")]
-                {
-                    let w = (CONTENT_W + 10.0) / 3.0 - 4.0;
-                    let r = ui.add_sized([w, 26.0], egui::Button::new(label).selected(ed.tab == tab));
+                ui.spacing_mut().item_spacing.x = 3.0;
+                let tabs = [
+                    (CommandTab::Create, "✚", "Create"),
+                    (CommandTab::Modify, "🛠", "Modify"),
+                    (CommandTab::Hierarchy, "⌖", "Hierarchy: pivot and assembly"),
+                    (CommandTab::Display, "👁", "Display: hide, freeze and display properties"),
+                    (CommandTab::Utilities, "⚒", "Utilities: Reset XForm, Collapse, Measure"),
+                ];
+                let w = (CONTENT_W + 10.0) / tabs.len() as f32 - 3.0;
+                for (tab, icon, tip) in tabs {
+                    let caption = if ed.tab == tab { format!("{icon} {}", tip.split(':').next().unwrap_or(tip)) } else { icon.to_string() };
+                    let width = if ed.tab == tab { w * 2.0 } else { w * 0.75 };
+                    let r = ui.add_sized([width, 26.0], egui::Button::new(caption).selected(ed.tab == tab)).on_hover_text(tip);
                     if r.clicked() {
                         ed.tab = tab;
                     }
@@ -42,7 +54,9 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) -> egui::Rect 
                 match ed.tab {
                     CommandTab::Create => create::show(ui, ed),
                     CommandTab::Modify => modify::show(ui, ed, st),
-                    CommandTab::Pivot => pivot::show(ui, ed),
+                    CommandTab::Hierarchy => pivot::show(ui, ed),
+                    CommandTab::Display => display::show(ui, ed),
+                    CommandTab::Utilities => utilities::show(ui, ed),
                 }
             });
         })

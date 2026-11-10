@@ -49,7 +49,7 @@ fn rows(ui: &mut egui::Ui, ed: &mut Editor) {
                     t.r(ui.color_edit_button_rgb(&mut s.mat.base_color));
                     t.r(ui.checkbox(&mut s.enabled, ""));
                     let label = format!("{} ({})", s.mat.name, s.mat.model.label().split(" /").next().unwrap_or(""));
-                    let text = if i == current { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
+                    let text = if i == current { RichText::new(label).color(theme::input()).strong() } else { RichText::new(label) };
                     if ui.add(egui::Button::new(text).selected(i == current).truncate().min_size(egui::vec2(SUB_W, 0.0))).on_hover_text("Edit this sub-material").clicked() {
                         pick = Some(i);
                     }
@@ -75,5 +75,5 @@ pub fn rollout_ui(ui: &mut egui::Ui, ed: &mut Editor) {
     let sub = ed.mat_editor.sub.min(count - 1);
     let m = &ed.scene.materials.mats[ed.active_material()];
     let s = &m.multi.as_ref().expect("multi").subs[sub];
-    ui.label(RichText::new(format!("Editing ID {}: {}", s.id, s.name)).strong().color(theme::AMBER));
+    ui.label(RichText::new(format!("Editing ID {}: {}", s.id, s.name)).strong().color(theme::amber()));
 }

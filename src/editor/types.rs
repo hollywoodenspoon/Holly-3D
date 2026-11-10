@@ -35,7 +35,10 @@ pub enum CommandTab {
     #[default]
     Create,
     Modify,
-    Pivot,
+    /// Pivot and assembly (3ds Max's Hierarchy tab).
+    Hierarchy,
+    Display,
+    Utilities,
 }
 
 /// Interactive viewport tools (modal, like 3ds Max pick modes).
@@ -114,9 +117,9 @@ impl Tool {
     pub fn label(&self) -> Option<&'static str> {
         match self {
             Tool::None => None,
-            Tool::Create(_) => Some("Click in a viewport to place the object"),
-            Tool::CreateGeoGen(_) => Some("Click in a viewport to place the GeoGen object"),
-            Tool::CreateWorld(_) => Some("Click in a viewport to place the world object"),
+            Tool::Create(_) => Some("Drag to size the object; click for a default one"),
+            Tool::CreateGeoGen(_) => Some("Drag the base radius, then move for the height"),
+            Tool::CreateWorld(_) => Some("Drag out the area or radius; click for a default one"),
             Tool::CreateMech(_) => Some("Click in a viewport to place the Mech part"),
             Tool::PickHoseEnd { top: true } => Some("Hose: click the Top End Object (Esc to cancel)"),
             Tool::PickHoseEnd { .. } => Some("Hose: click the Bottom End Object (Esc to cancel)"),
@@ -197,6 +200,8 @@ pub struct MatEditor {
     pub pbr_folder: String,
     /// Sub-material the rollouts edit when the slot is a Multi/Sub-Object.
     pub sub: usize,
+    /// Material Library browser window.
+    pub library: bool,
 }
 
 /// Spinner values of the Editable Spline Geometry rollout.

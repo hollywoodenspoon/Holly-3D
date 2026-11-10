@@ -4,7 +4,9 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use minimax::editor::Editor;
 use minimax::primitives::PrimitiveKind;
+use minimax::prefs::Preferences;
 use minimax::ui::UiPlugin;
+use minimax::ui::actions::keymap;
 use minimax::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox};
 
 fn main() {
@@ -27,6 +29,23 @@ fn main() {
         let r = editor.open_any(std::path::Path::new(&path));
         editor.report(r);
         editor.history = Default::default();
+    }
+    // Preferences (theme, hotkeys, undo steps, render defaults) from ~/.config/minimax.
+    let path = Preferences::default_path();
+    let prefs = Preferences::load_from(&path).unwrap_or_else(|e| {
+        editor.status = format!("{e} (using defaults; fix or delete {})", path.display());
+        Preferences::default()
+    });
+    keymap::set_current(keymap::from_prefs(&prefs.keys));
+    editor.use_prefs(prefs);
+    // `--help-shot <id>`: the scene and panels for one Help screenshot (tools/help_shots.sh).
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(id) = args.iter().position(|a| a == "--help-shot").and_then(|i| args.get(i + 1)) {
+        editor = Editor::default();
+        if !minimax::ui::help::shots::setup(&mut editor, id) {
+            eprintln!("unknown help shot {id}; known: {}", minimax::ui::help::shots::IDS.join(", "));
+            std::process::exit(2);
+        }
     }
     let mut app = App::new();
     app.add_plugins(

@@ -41,9 +41,9 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 let partial = !on && any & (1 << bit) != 0;
                 let text = RichText::new(format!("{}", bit + 1)).size(11.0);
                 let text = if on {
-                    text.color(theme::INPUT).strong()
+                    text.color(theme::input()).strong()
                 } else if partial {
-                    text.color(theme::AMBER)
+                    text.color(theme::amber())
                 } else {
                     text
                 };

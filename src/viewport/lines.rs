@@ -45,10 +45,11 @@ fn configure(mut store: ResMut<GizmoConfigStore>) {
     default.render_layers = RenderLayers::layer(LAYER_OVERLAY);
 }
 
-const GRID: Color = Color::srgb(0.32, 0.33, 0.35);
-const GRID_AXIS: Color = Color::srgb(0.12, 0.12, 0.13);
-
-fn draw_grid<G: GizmoConfigGroup>(g: &mut Gizmos<G>, v: &ViewState) {
+fn draw_grid<G: GizmoConfigGroup>(g: &mut Gizmos<G>, v: &ViewState, colours: &crate::prefs::ViewportPrefs) {
+    let [r, gg, b] = colours.grid;
+    let grid = Color::srgb(r, gg, b);
+    let [r, gg, b] = colours.grid_axis;
+    let axis = Color::srgb(r, gg, b);
     let cam = &v.camera;
     let (u, w) = match cam.kind {
         ViewKind::Front => (Vec3::X, Vec3::Z),
@@ -64,8 +65,8 @@ fn draw_grid<G: GizmoConfigGroup>(g: &mut Gizmos<G>, v: &ViewState) {
     for i in -n..=n {
         let a = (cu + i) as f32 * step;
         let b = (cw + i) as f32 * step;
-        let c1 = if cu + i == 0 { GRID_AXIS } else { GRID };
-        let c2 = if cw + i == 0 { GRID_AXIS } else { GRID };
+        let c1 = if cu + i == 0 { axis } else { grid };
+        let c2 = if cw + i == 0 { axis } else { grid };
         let (lo_w, hi_w) = ((cw - n) as f32 * step, (cw + n) as f32 * step);
         let (lo_u, hi_u) = ((cu - n) as f32 * step, (cu + n) as f32 * step);
         g.line(u * a + w * lo_w, u * a + w * hi_w, c1);
@@ -79,7 +80,7 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, i: usize) {
         return;
     }
     if v.grid {
-        draw_grid(g, v);
+        draw_grid(g, v, &ed.prefs.viewport);
     }
     let wire = v.shading == Shading::Wireframe;
     if !(wire || v.edged_faces) {

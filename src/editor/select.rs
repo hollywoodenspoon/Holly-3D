@@ -19,7 +19,8 @@ pub const HELPER_PICK_PX: f32 = 12.0;
 
 impl Editor {
     pub(super) fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
-        self.scene.objects.iter().filter(|(_, o)| !o.hidden && !o.frozen)
+        let f = self.iface.select_filter;
+        self.scene.objects.iter().filter(move |(_, o)| !o.hidden && !o.frozen && f.accepts(o))
     }
 
     pub fn pick_object(&self, view: usize, cursor: Vec2) -> Option<ObjId> {
@@ -73,6 +74,10 @@ impl Editor {
     }
 
     pub fn click_select(&mut self, view: usize, cursor: Vec2, op: SelectOp) {
+        if self.iface.lock_selection {
+            self.status = "Selection is locked (Space)".into();
+            return;
+        }
         if self.mod_click_select(view, cursor, op) || self.spline_click_select(view, cursor, op) {
             return;
         }
@@ -165,6 +170,11 @@ impl Editor {
 
     /// Window selection with any region shape (Rectangle / Circle / Fence / Lasso).
     pub fn region_select(&mut self, view: usize, region: &crate::viewport::region::Region, op: SelectOp) {
+        if self.iface.lock_selection {
+            self.status = "Selection is locked (Space)".into();
+            return;
+        }
+        let window = self.iface.window_select;
         if self.mod_marquee_select(view, region, op) || self.spline_marquee_select(view, region, op) {
             return;
         }
@@ -178,12 +188,10 @@ impl Editor {
                     }
                     let w = o.world_matrix();
                     let shape_pts = o.shape.iter().flat_map(|s| s.polylines()).flat_map(|pl| pl.pts);
-                    o.evaluated_mesh
-                        .vertices
-                        .values()
-                        .map(|p| p.position)
-                        .chain(shape_pts)
-                        .any(|p| v.to_screen(w.transform_point3(p)).is_some_and(|s| region.contains(s)))
+                    let mut pts = o.evaluated_mesh.vertices.values().map(|p| p.position).chain(shape_pts).peekable();
+                    let hit = |p: Vec3| v.to_screen(w.transform_point3(p)).is_some_and(|s| region.contains(s));
+                    // Window: the whole object is inside; Crossing: any part touches.
+                    if window { pts.peek().is_some() && pts.all(hit) } else { pts.any(hit) }
                 })
                 .map(|x| x.0)
                 .collect();
@@ -209,8 +217,18 @@ impl Editor {
         let inside = |k: &crate::mesh::VertexId| screen.get(k).is_some_and(|s| region.contains(*s));
         let m = &o.level_mesh;
         let sel_v: Vec<_> = m.vertices.keys().filter(|k| inside(k)).collect();
-        let sel_e: Vec<_> = m.edges.iter().filter(|(_, e)| inside(&e.v0) && inside(&e.v1)).map(|x| x.0).collect();
-        let sel_p: Vec<_> = m.polygons.iter().filter(|(_, p)| p.vertex_ids().all(|x| inside(&x))).map(|x| x.0).collect();
+        let sel_e: Vec<_> = m
+            .edges
+            .iter()
+            .filter(|(_, e)| if window { inside(&e.v0) && inside(&e.v1) } else { inside(&e.v0) || inside(&e.v1) })
+            .map(|x| x.0)
+            .collect();
+        let sel_p: Vec<_> = m
+            .polygons
+            .iter()
+            .filter(|(_, p)| if window { p.vertex_ids().all(|x| inside(&x)) } else { p.vertex_ids().any(|x| inside(&x)) })
+            .map(|x| x.0)
+            .collect();
         self.edit_selection(|m, sub| {
             let before = m.clone();
             if op == SelectOp::Replace {

@@ -1,6 +1,7 @@
 //! Maps rollout channels and the procedural / bitmap map nodes that feed
 //! them (also the nodes shown in the Slate view).
 
+use super::patterns::{self as pat, BrickKind, GrungeKind};
 use super::texture::TexHandle;
 use bevy::math::{Vec2, Vec3, Vec4};
 use noise::{Fbm, NoiseFn, Perlin, Worley};
@@ -72,10 +73,19 @@ pub enum MapNode {
     Gradient { color_a: [f32; 3], color_b: [f32; 3], color_c: [f32; 3], mid: f32, radial: bool },
     Wood { scale: f32, rings: f32, grain: f32, light: [f32; 3], dark: [f32; 3] },
     ColorCorrect { input: Box<MapNode>, brightness: f32, contrast: f32, saturation: f32, hue: f32, tint: [f32; 3] },
+    /// Bricks, tiles, planks and cobbles (UV space). A = bricks, B = mortar.
+    Bricks { kind: BrickKind, cols: f32, rows: f32, gap: f32, vary: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },
+    /// Road lines and corrugated metal (UV space). A = line, B = ground.
+    Stripes { count: f32, width: f32, dash: f32, soft: bool, along_u: bool, color_a: [f32; 3], color_b: [f32; 3] },
+    /// Voronoi cracks / flagstones (3D). A = surface, B = crack.
+    Cracks { scale: f32, width: f32, vary: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },
+    /// Dirt, rust, scratches and stains (3D). A = clean, B = dirt.
+    Grunge { kind: GrungeKind, scale: f32, amount: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },
 }
 
 impl MapNode {
-    pub const KINDS: [&'static str; 6] = ["Bitmap", "Noise", "Checker", "Gradient Ramp", "Wood", "Color Correction"];
+    pub const KINDS: [&'static str; 10] =
+        ["Bitmap", "Noise", "Checker", "Gradient Ramp", "Wood", "Color Correction", "Bricks / Tiles", "Stripes", "Cracks / Voronoi", "Grunge / Wear"];
 
     pub fn kind_name(&self) -> &'static str {
         match self {
@@ -85,6 +95,10 @@ impl MapNode {
             MapNode::Gradient { .. } => Self::KINDS[3],
             MapNode::Wood { .. } => Self::KINDS[4],
             MapNode::ColorCorrect { .. } => Self::KINDS[5],
+            MapNode::Bricks { .. } => Self::KINDS[6],
+            MapNode::Stripes { .. } => Self::KINDS[7],
+            MapNode::Cracks { .. } => Self::KINDS[8],
+            MapNode::Grunge { .. } => Self::KINDS[9],
         }
     }
 
@@ -97,6 +111,19 @@ impl MapNode {
             2 => MapNode::Checker { tiles: 8.0, color_a: [0.15, 0.15, 0.15], color_b: [0.85, 0.85, 0.85] },
             3 => MapNode::Gradient { color_a: k, color_b: [0.5, 0.5, 0.5], color_c: w, mid: 0.5, radial: false },
             4 => MapNode::Wood { scale: 1.0, rings: 12.0, grain: 0.6, light: [0.78, 0.56, 0.34], dark: [0.45, 0.26, 0.12] },
+            6 => MapNode::Bricks {
+                kind: BrickKind::Running,
+                cols: 4.0,
+                rows: 8.0,
+                gap: 0.1,
+                vary: 0.3,
+                seed: 0,
+                color_a: [0.62, 0.27, 0.18],
+                color_b: [0.78, 0.76, 0.72],
+            },
+            7 => MapNode::Stripes { count: 1.0, width: 0.06, dash: 0.0, soft: false, along_u: false, color_a: w, color_b: [0.12; 3] },
+            8 => MapNode::Cracks { scale: 3.0, width: 0.06, vary: 0.2, seed: 0, color_a: [0.6, 0.48, 0.34], color_b: [0.12, 0.09, 0.07] },
+            9 => MapNode::Grunge { kind: GrungeKind::Dirt, scale: 2.0, amount: 0.4, seed: 0, color_a: w, color_b: [0.3, 0.25, 0.2] },
             _ => MapNode::ColorCorrect {
                 input: Box::new(input.unwrap_or_else(|| MapNode::new_kind(1, None))),
                 brightness: 0.0,
@@ -142,6 +169,18 @@ impl MapNode {
                 let s = input.sample(uv, p);
                 let c = color_correct(s.truncate(), *brightness, *contrast, *saturation, *hue) * rgb(*tint);
                 return c.clamp(Vec3::ZERO, Vec3::ONE).extend(s.w);
+            }
+            MapNode::Bricks { kind, cols, rows, gap, vary, seed, color_a, color_b } => {
+                pat::bricks(*kind, *cols, *rows, *gap, *vary, *seed, rgb(*color_a), rgb(*color_b), uv)
+            }
+            MapNode::Stripes { count, width, dash, soft, along_u, color_a, color_b } => {
+                pat::stripes(*count, *width, *dash, *soft, *along_u, rgb(*color_a), rgb(*color_b), uv)
+            }
+            MapNode::Cracks { scale, width, vary, seed, color_a, color_b } => {
+                pat::cracks(*scale, *width, *vary, *seed, rgb(*color_a), rgb(*color_b), p)
+            }
+            MapNode::Grunge { kind, scale, amount, seed, color_a, color_b } => {
+                pat::grunge(*kind, *scale, *amount, *seed, rgb(*color_a), rgb(*color_b), p)
             }
         };
         out.extend(1.0)

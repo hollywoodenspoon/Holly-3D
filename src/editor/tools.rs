@@ -149,6 +149,9 @@ impl Editor {
             self.toggle_paint();
             return true;
         }
+        if self.cancel_create() {
+            return true;
+        }
         if self.tool == Tool::None {
             return false;
         }
