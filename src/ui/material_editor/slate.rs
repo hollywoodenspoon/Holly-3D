@@ -134,13 +134,13 @@ fn wire_curve(p: &egui::Painter, a: Pos2, b: Pos2, color: Color32) {
 }
 
 fn draw_node(p: &egui::Painter, rect: Rect, title: &str, sub: &str, selected: bool, output: bool) {
-    p.rect_filled(rect, 4.0, theme::CARD);
-    let border = if selected { Stroke::new(2.0, theme::AMBER) } else { Stroke::new(1.0, theme::BORDER) };
+    p.rect_filled(rect, 4.0, theme::card());
+    let border = if selected { Stroke::new(2.0, theme::amber()) } else { Stroke::new(1.0, theme::border()) };
     p.rect_stroke(rect, 4.0, border, egui::StrokeKind::Inside);
-    p.text(rect.left_top() + vec2(8.0, 5.0), egui::Align2::LEFT_TOP, title, egui::FontId::proportional(13.0), theme::TEXT);
-    p.text(rect.left_top() + vec2(8.0, 22.0), egui::Align2::LEFT_TOP, sub, egui::FontId::proportional(11.0), theme::TEXT_DIM);
+    p.text(rect.left_top() + vec2(8.0, 5.0), egui::Align2::LEFT_TOP, title, egui::FontId::proportional(13.0), theme::text());
+    p.text(rect.left_top() + vec2(8.0, 22.0), egui::Align2::LEFT_TOP, sub, egui::FontId::proportional(11.0), theme::text_dim());
     if output {
-        p.circle_filled(pos2(rect.right(), rect.center().y), 5.0, theme::BLUE);
+        p.circle_filled(pos2(rect.right(), rect.center().y), 5.0, theme::blue());
     }
 }
 
@@ -148,23 +148,23 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
     let m = ed.editing_material().clone();
     let (canvas, bg) = ui.allocate_exact_size(vec2(ui.available_width(), CANVAS_H), egui::Sense::click());
     let p = ui.painter_at(canvas);
-    p.rect_filled(canvas, 4.0, theme::INPUT);
+    p.rect_filled(canvas, 4.0, theme::input());
     let lay = layout(&m, canvas, st);
     // Material node with its six channel sockets.
     draw_node(&p, Rect::from_min_size(lay.mat.min, vec2(lay.mat.width(), 28.0)), &m.name, m.model.label(), false, false);
-    p.rect_stroke(lay.mat, 4.0, Stroke::new(1.0, theme::AMBER), egui::StrokeKind::Inside);
+    p.rect_stroke(lay.mat, 4.0, Stroke::new(1.0, theme::amber()), egui::StrokeKind::Inside);
     for ch in MapChannel::ALL {
         let s = lay.socket(ch as usize);
-        p.circle_filled(s, 5.0, theme::AMBER);
-        p.text(s + vec2(10.0, 0.0), egui::Align2::LEFT_CENTER, ch.label(), egui::FontId::proportional(11.5), theme::TEXT);
+        p.circle_filled(s, 5.0, theme::amber());
+        p.text(s + vec2(10.0, 0.0), egui::Align2::LEFT_CENTER, ch.label(), egui::FontId::proportional(11.5), theme::text());
     }
     for &(r, rect) in &lay.nodes {
         let out = pos2(rect.right(), rect.center().y);
         match r {
-            NodeRef::Wired(c) => wire_curve(&p, out, lay.socket(c), theme::AMBER),
+            NodeRef::Wired(c) => wire_curve(&p, out, lay.socket(c), theme::amber()),
             NodeRef::Input(c) => {
                 if let Some(cc) = lay.rect(NodeRef::Wired(c)) {
-                    wire_curve(&p, out, pos2(cc.left(), cc.center().y), theme::BLUE);
+                    wire_curve(&p, out, pos2(cc.left(), cc.center().y), theme::blue());
                 }
             }
             NodeRef::Free(_) => {}
@@ -181,7 +181,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
         };
         draw_node(&p, rect, n.kind_name(), sub, st.selected == Some(r), true);
         if matches!(n, MapNode::ColorCorrect { .. }) {
-            p.circle_filled(pos2(rect.left(), rect.center().y), 5.0, theme::BLUE);
+            p.circle_filled(pos2(rect.left(), rect.center().y), 5.0, theme::blue());
         }
         // One widget per node: a drag that starts on the right-hand output
         // strip pulls a wire, anywhere else moves the node.
@@ -217,7 +217,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
     if let (Some(src), Some(at)) = (st.wiring, ui.input(|i| i.pointer.interact_pos()))
         && let Some(rc) = lay.rect(src)
     {
-        wire_curve(&p, pos2(rc.right(), rc.center().y), at, theme::TEXT_DIM);
+        wire_curve(&p, pos2(rc.right(), rc.center().y), at, theme::text_dim());
     }
     let mut add = None;
     bg.context_menu(|ui| {

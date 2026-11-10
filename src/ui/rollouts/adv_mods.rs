@@ -90,7 +90,7 @@ pub fn boolean(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.label(RichText::new("Operands").strong());
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Boolean(b) = k else { return };
-            egui::Frame::new().fill(theme::INPUT).corner_radius(4).inner_margin(6).show(ui, |ui| {
+            egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
                 ui.set_width(CONTENT_W - 12.0);
                 ui.set_min_height(60.0);
                 if b.operands.is_empty() {

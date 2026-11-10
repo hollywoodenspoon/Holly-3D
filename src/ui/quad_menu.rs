@@ -26,11 +26,11 @@ enum Item {
 const TOOLS: [&str; 8] = ["Extrude", "Chamfer", "Bevel", "Inset", "Connect", "Target Weld", "Cut", "QuickSlice"];
 
 fn quadrant(ui: &mut egui::Ui, title: &str, items: &[(&str, Item)], picked: &mut Option<Item>) {
-    egui::Frame::new().fill(theme::CARD).stroke(egui::Stroke::new(1.0, theme::BORDER)).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::card()).stroke(egui::Stroke::new(1.0, theme::border())).corner_radius(4).inner_margin(6).show(ui, |ui| {
         ui.vertical(|ui| {
             ui.set_width(170.0);
             ui.spacing_mut().item_spacing.y = 2.0;
-            ui.label(RichText::new(title).color(theme::AMBER).small().strong());
+            ui.label(RichText::new(title).color(theme::amber()).small().strong());
             for (label, item) in items {
                 let w = ui.available_width();
                 if ui.add_sized([w, 20.0], egui::Button::new(*label).frame(false)).clicked() {

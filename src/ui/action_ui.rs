@@ -11,7 +11,7 @@ use bevy_egui::egui::{self, Response, RichText};
 
 /// "Ctrl+Z", or empty when the action has no hotkey.
 pub fn hotkey_text(a: Action) -> String {
-    chord_of(keymap(), a).map(|c| c.text()).unwrap_or_default()
+    chord_of(&keymap(), a).map(|c| c.text()).unwrap_or_default()
 }
 
 /// "Select and Move (W) — tip".
@@ -30,7 +30,7 @@ pub fn tooltip(a: Action) -> String {
 /// A toolbar button with `caption`; runs the action when clicked.
 pub fn button_with(ui: &mut egui::Ui, ed: &mut Editor, a: Action, caption: &str) -> Response {
     let on = a.checked(ed).unwrap_or(false);
-    let text = if on { RichText::new(caption).color(theme::INPUT).strong() } else { RichText::new(caption) };
+    let text = if on { RichText::new(caption).color(theme::input()).strong() } else { RichText::new(caption) };
     let r = ui.add_enabled(a.enabled(ed), egui::Button::new(text).selected(on)).on_hover_text(tooltip(a));
     if r.clicked() {
         a.run(ed);
@@ -46,7 +46,7 @@ pub fn button(ui: &mut egui::Ui, ed: &mut Editor, a: Action) -> Response {
 /// A big fixed-size button (ribbon, nav buttons, panels).
 pub fn sized_button(ui: &mut egui::Ui, ed: &mut Editor, a: Action, caption: &str, size: egui::Vec2) -> Response {
     let on = a.checked(ed).unwrap_or(false);
-    let text = if on { RichText::new(caption).color(theme::INPUT).strong() } else { RichText::new(caption) };
+    let text = if on { RichText::new(caption).color(theme::input()).strong() } else { RichText::new(caption) };
     let r = ui.add_enabled_ui(a.enabled(ed), |ui| ui.add_sized(size, egui::Button::new(text).selected(on))).inner.on_hover_text(tooltip(a));
     if r.clicked() {
         a.run(ed);

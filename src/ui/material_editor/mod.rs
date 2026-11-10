@@ -94,7 +94,7 @@ fn slot_grid(ui: &mut egui::Ui, ed: &mut Editor, st: &mut MatEditorUi) {
                     }
                 }
                 let active = ed.mat_editor.slot == i;
-                let stroke = if active { egui::Stroke::new(2.0, theme::AMBER) } else { egui::Stroke::new(1.0, theme::BORDER) };
+                let stroke = if active { egui::Stroke::new(2.0, theme::amber()) } else { egui::Stroke::new(1.0, theme::border()) };
                 p.rect_stroke(rect, 2.0, stroke, egui::StrokeKind::Inside);
                 if resp.clicked() && ed.mat_editor.slot != i {
                     (ed.mat_editor.slot, ed.mat_editor.sub) = (i, 0);

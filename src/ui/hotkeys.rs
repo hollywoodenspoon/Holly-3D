@@ -1,14 +1,14 @@
 //! 3ds Max keyboard shortcuts (never Blender's modal G/R/S). Every hotkey is looked up in the action keymap, so each one also has a
 //! button or menu entry.
 
-use super::actions::Action;
-use super::actions::keys::{Chord, action_of, default_keymap};
+use super::actions::keymap;
+use super::actions::keys::{Chord, action_of};
 use crate::editor::Editor;
 use crate::mesh::ops::PolyOp;
 use bevy_egui::egui::{self, Key};
 
 pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
-    if ctx.egui_wants_keyboard_input() {
+    if ctx.egui_wants_keyboard_input() || ed.iface.capturing_key {
         return;
     }
     // Array / Mirror / Align dialogs own the keyboard: Esc cancels, Enter confirms.
@@ -44,7 +44,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             .collect();
         (i.modifiers, keys)
     });
-    let map = keymap();
+    let map = keymap().clone();
     for (key, ev_mods) in keys {
         // Combine the event's modifiers with the held state (robust to event ordering).
         let m = egui::Modifiers {
@@ -59,14 +59,13 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             ed.apply_op(PolyOp::RemoveEdges { remove_verts: true });
             continue;
         }
-        if let Some(action) = action_of(map, chord).filter(|a| a.enabled(ed)) {
+        if let Some(action) = action_of(&map, chord).filter(|a| a.enabled(ed)) {
             action.run(ed);
         }
     }
 }
 
-/// The active keymap (the Preferences hotkey editor will make this editable).
-pub fn keymap() -> &'static [(Chord, Action)] {
-    static MAP: std::sync::OnceLock<Vec<(Chord, Action)>> = std::sync::OnceLock::new();
-    MAP.get_or_init(default_keymap)
+/// The active keymap (Preferences -> Hotkeys edits it).
+pub fn keymap() -> std::sync::RwLockReadGuard<'static, keymap::Keymap> {
+    keymap::current()
 }

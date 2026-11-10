@@ -95,6 +95,13 @@ pub struct InterfaceState {
     pub modifier_buttons: bool,
     /// Modifier names on the button grid, in order.
     pub modifier_set: Vec<String>,
+    /// Preferences window (⚙).
+    pub prefs_open: bool,
+    /// The Hotkeys tab is waiting for a key press (normal hotkeys pause).
+    pub capturing_key: bool,
+    /// Autosave: edit count and time (seconds) of the last autosave.
+    pub autosave_edits: u64,
+    pub autosave_at: f64,
 }
 
 /// The default Show Buttons set (the most used modifiers).
@@ -118,14 +125,15 @@ impl Editor {
     /// Left-drag in a viewport while a navigation button is on.
     pub fn nav_drag(&mut self, vi: usize, mode: NavMode, d: Vec2, height_px: f32) {
         let pivot = self.selection_center().unwrap_or(self.viewports.views[vi].camera.target);
+        let vp = self.prefs.viewport.clone();
         let views: Vec<usize> = if mode == NavMode::ZoomAll { (0..self.viewports.views.len()).collect() } else { vec![vi] };
         for v in views {
             let cam = &mut self.viewports.views[v].camera;
             match mode {
-                NavMode::Zoom | NavMode::ZoomAll => cam.zoom(-d.y * 0.02),
+                NavMode::Zoom | NavMode::ZoomAll => cam.zoom(vp.zoom_steps(-d.y * 0.02)),
                 NavMode::Fov => cam.fov = (cam.fov + d.y * 0.004).clamp(5f32.to_radians(), 170f32.to_radians()),
-                NavMode::Pan => cam.pan(d, height_px),
-                NavMode::Orbit => cam.orbit(d, pivot),
+                NavMode::Pan => cam.pan(d * vp.pan_speed, height_px),
+                NavMode::Orbit => cam.orbit(d * vp.orbit_speed, pivot),
             }
             self.push_view_to_camera(v);
         }

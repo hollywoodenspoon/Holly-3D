@@ -104,6 +104,7 @@ impl Action {
             }
             HotkeyList => flip(&mut ed.iface.hotkeys_open),
             About => flip(&mut ed.iface.about_open),
+            Preferences => flip(&mut ed.iface.prefs_open),
             Array | Mirror => ed.status = "Select an object first".into(),
         }
     }
@@ -145,6 +146,7 @@ impl Action {
             Sky(p) => SkyPreset::matching(&ed.scene.environment.sky) == Some(p),
             HotkeyList => ed.iface.hotkeys_open,
             About => ed.iface.about_open,
+            Preferences => ed.iface.prefs_open,
             _ => return None,
         })
     }

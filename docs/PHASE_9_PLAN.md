@@ -257,7 +257,7 @@ Each pack has its own ✓ checkbox, **[ Download ]** and **[ Remove ]** buttons,
 | Pack | Contents | Size (estimate) |
 |---|---|---|
 | 📷 Photo Textures (1K) | ~60 ground, road, wall, roof, wood, stone and metal materials from Poly Haven | ~150–250 MB |
-| 🧊 Low-poly Models | Kenney and Quaternius: cars, trees, street furniture, medieval props | ~70–180 MB |
+| 🏠 Low-poly Models | Kenney and Quaternius: cars, trees, street furniture, medieval props | ~70–180 MB |
 | 🗿 Realistic Models | Poly Haven: barrels, crates, furniture, rocks, plants | ~100–300 MB |
 
 - **1K is the default resolution.** A 2K option is in Preferences.

@@ -26,7 +26,7 @@ impl Editor {
         self.caddy = None;
         self.drag = None;
         self.mod_sub = None;
-        self.history = Default::default();
+        self.history = super::undo::History::with_limit(self.prefs.general.undo_steps as usize);
         self.scene_path = Some(path.to_path_buf());
         self.status = match hdri {
             Some(Err(e)) => format!("Opened {} (HDRI missing: {e})", path.display()),

@@ -28,7 +28,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
     let mut set_level = None;
     let mut toggle = None;
     let mut set_sub = None;
-    egui::Frame::new().fill(theme::INPUT).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
         ui.set_width(CONTENT_W - 12.0);
         egui::ScrollArea::vertical().max_height(150.0).min_scrolled_height(150.0).id_salt("stack").show(ui, |ui| {
             ui.set_min_height(138.0);
@@ -54,7 +54,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                     } else {
                         ui.add_space(18.0);
                     }
-                    let text = if is_active { RichText::new(&name).color(theme::INPUT).strong() } else { RichText::new(&name) };
+                    let text = if is_active { RichText::new(&name).color(theme::input()).strong() } else { RichText::new(&name) };
                     let w = ui.available_width();
                     if ui.add_sized([w, 20.0], egui::Button::new(text).selected(is_active)).clicked() {
                         set_level = Some(level);
@@ -66,7 +66,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                     ui.horizontal(|ui| {
                         ui.add_space(48.0);
                         let on = is_active && mod_sub == Some(g);
-                        let text = if on { RichText::new(g.label()).color(theme::AMBER).strong() } else { RichText::new(g.label()) };
+                        let text = if on { RichText::new(g.label()).color(theme::amber()).strong() } else { RichText::new(g.label()) };
                         if ui.add(egui::Button::new(text).frame(false)).clicked() {
                             set_level = Some(level);
                             set_mod_sub = Some(g);
@@ -78,7 +78,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
                         ui.horizontal(|ui| {
                             ui.add_space(48.0);
                             let on = is_active && ed.sub == s;
-                            let text = if on { RichText::new(s.label()).color(theme::AMBER).strong() } else { RichText::new(s.label()) };
+                            let text = if on { RichText::new(s.label()).color(theme::amber()).strong() } else { RichText::new(s.label()) };
                             if ui.add(egui::Button::new(text).frame(false)).clicked() {
                                 set_level = Some(level);
                                 set_sub = Some(s);

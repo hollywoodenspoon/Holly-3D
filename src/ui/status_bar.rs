@@ -23,7 +23,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .resizable(false)
         .show_separator_line(false)
         .exact_size(28.0)
-        .frame(egui::Frame::new().fill(theme::INPUT).inner_margin(egui::Margin::symmetric(10, 3)))
+        .frame(egui::Frame::new().fill(theme::input()).inner_margin(egui::Margin::symmetric(10, 3)))
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
                 let (v, e, f) = match ed.current_obj() {
@@ -37,13 +37,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     let n = ed.scene.selected().len();
                     format!("Selected: {n} Object{}", if n == 1 { "" } else { "s" })
                 };
-                ui.label(RichText::new(sel).color(theme::AMBER));
+                ui.label(RichText::new(sel).color(theme::amber()));
                 ui.label(dim(&format!("Verts: {}  |  Edges: {}  |  Polys: {}", thousands(v), thousands(e), thousands(f))));
                 ui.separator();
                 crate::ui::action_ui::button(ui, ed, crate::ui::actions::Action::LockSelection);
                 ui.label(dim(&prompt(ed)));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(dim(&format!("Grid = {}", ed.snap_cfg.grid_size)))
+                    ui.label(dim(&format!("Grid = {}", ed.prefs.general.units.format(ed.snap_cfg.grid_size))))
                         .on_hover_text("Grid spacing (change it in Grid and Snap Settings)");
                     ui.separator();
                     typein(ui, ed);

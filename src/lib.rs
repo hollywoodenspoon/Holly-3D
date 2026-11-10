@@ -9,6 +9,7 @@ pub mod mech;
 pub mod mesh;
 pub mod modifiers;
 pub mod paint;
+pub mod prefs;
 pub mod primitives;
 pub mod render;
 pub mod scene;

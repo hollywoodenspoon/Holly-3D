@@ -32,7 +32,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
 
 fn list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     let mut added = false;
-    egui::Frame::new().fill(theme::INPUT).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
         ui.set_width(CONTENT_W - 12.0);
         ui.add(egui::TextEdit::singleline(&mut ed.modifier_filter).hint_text("Filter (optional)…").desired_width(f32::INFINITY));
         let filter = ed.modifier_filter.to_lowercase();
@@ -42,7 +42,7 @@ fn list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
                 if shown.is_empty() {
                     continue;
                 }
-                ui.label(RichText::new(group.to_uppercase()).color(theme::AMBER).small().strong());
+                ui.label(RichText::new(group.to_uppercase()).color(theme::amber()).small().strong());
                 for info in shown {
                     ui.horizontal(|ui| {
                         ui.add_space(8.0);
@@ -65,7 +65,7 @@ fn button_set(ui: &mut egui::Ui, ed: &mut Editor) {
     header.context_menu(|ui| {
         egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
             for (group, items) in GROUPS {
-                ui.label(RichText::new(*group).color(theme::AMBER).small());
+                ui.label(RichText::new(*group).color(theme::amber()).small());
                 for info in *items {
                     let mut on = ed.iface.modifier_set.iter().any(|n| n == info.name);
                     if ui.checkbox(&mut on, info.name).changed() {

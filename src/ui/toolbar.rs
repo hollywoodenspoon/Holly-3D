@@ -16,7 +16,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .resizable(false)
         .show_separator_line(false)
         .min_size(36.0)
-        .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(egui::Margin::symmetric(8, 4)))
+        .frame(egui::Frame::new().fill(theme::panel()).inner_margin(egui::Margin::symmetric(8, 4)))
         .show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.set_min_height(28.0);
@@ -62,7 +62,7 @@ fn slot(ui: &mut egui::Ui, ed: &mut Editor, s: Slot) {
                 for shape in RegionShape::ALL {
                     ui.horizontal(|ui| {
                         let (rect, _) = ui.allocate_exact_size(egui::vec2(14.0, 12.0), egui::Sense::hover());
-                        region_icon(ui.painter(), rect, shape, theme::TEXT);
+                        region_icon(ui.painter(), rect, shape, theme::text());
                         if ui.selectable_label(ed.region_shape == shape, shape.label()).clicked() {
                             ed.region_shape = shape;
                             ed.mode = TransformMode::Select;
@@ -158,7 +158,7 @@ fn region_button(ui: &mut egui::Ui, ed: &mut Editor) {
     let resp = action_ui::button_with(ui, ed, Action::SelectObject, "Q     ");
     let r = resp.rect;
     let icon = egui::Rect::from_center_size(egui::pos2(r.right() - 13.0, r.center().y), egui::vec2(12.0, 11.0));
-    region_icon(ui.painter(), icon, ed.region_shape, if on { theme::INPUT } else { theme::TEXT });
+    region_icon(ui.painter(), icon, ed.region_shape, if on { theme::on_accent() } else { theme::text() });
     resp.context_menu(|ui| {
         for shape in RegionShape::ALL {
             if ui.selectable_label(ed.region_shape == shape, shape.label()).clicked() {

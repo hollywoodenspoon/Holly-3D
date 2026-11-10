@@ -131,7 +131,7 @@ fn select(ed: &mut Editor, hits: Vec<CornerRef>, op: Op) {
 }
 
 fn draw(p: &egui::Painter, rect: Rect, v: &View, st: &UvEditorState, scr: &[Vec<Pos2>], sel: &BTreeSet<CornerRef>, mode: UvSel) {
-    p.rect_filled(rect, 0.0, theme::INPUT);
+    p.rect_filled(rect, 0.0, theme::input());
     let page = Rect::from_two_pos(v.to_screen(Vec2::ZERO), v.to_screen(Vec2::ONE));
     if st.show_checker {
         const N: usize = 8;
@@ -144,7 +144,7 @@ fn draw(p: &egui::Painter, rect: Rect, v: &View, st: &UvEditorState, scr: &[Vec<
             }
         }
     } else {
-        p.rect_filled(page, 0.0, theme::CARD);
+        p.rect_filled(page, 0.0, theme::card());
     }
     for k in -3..=4 {
         let g = Stroke::new(1.0, Color32::from_gray(48));
@@ -152,7 +152,7 @@ fn draw(p: &egui::Painter, rect: Rect, v: &View, st: &UvEditorState, scr: &[Vec<
         p.line_segment([v.to_screen(Vec2::new(k, -3.0)), v.to_screen(Vec2::new(k, 4.0))], g);
         p.line_segment([v.to_screen(Vec2::new(-3.0, k)), v.to_screen(Vec2::new(4.0, k))], g);
     }
-    p.rect_stroke(page, 0.0, Stroke::new(1.5, theme::AMBER.gamma_multiply(0.8)), egui::StrokeKind::Middle);
+    p.rect_stroke(page, 0.0, Stroke::new(1.5, theme::amber().gamma_multiply(0.8)), egui::StrokeKind::Middle);
     for (pi, cs) in scr.iter().enumerate() {
         let all = (0..cs.len()).all(|c| sel.contains(&(pi, c)));
         if mode == UvSel::Face && all && cs.len() >= 3 {
@@ -168,7 +168,7 @@ fn draw(p: &egui::Painter, rect: Rect, v: &View, st: &UvEditorState, scr: &[Vec<
         for (pi, cs) in scr.iter().enumerate() {
             for (c, q) in cs.iter().enumerate() {
                 let on = sel.contains(&(pi, c));
-                p.circle_filled(*q, if on { 3.5 } else { 2.2 }, if on { SEL } else { theme::VERTEX });
+                p.circle_filled(*q, if on { 3.5 } else { 2.2 }, if on { SEL } else { theme::vertex() });
             }
         }
     }
@@ -256,8 +256,8 @@ pub(super) fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UvEditorState) {
     draw(&painter, rect, &v, st, &scr_now, &sel_now, mode);
     if let (Some(UvDrag::Marquee { start }), Some(cur)) = (&st.drag, cur) {
         let r = Rect::from_two_pos(*start, cur);
-        painter.rect_filled(r, 0.0, theme::BLUE.gamma_multiply(0.12));
-        painter.rect_stroke(r, 0.0, Stroke::new(1.0, theme::BLUE), egui::StrokeKind::Middle);
+        painter.rect_filled(r, 0.0, theme::blue().gamma_multiply(0.12));
+        painter.rect_stroke(r, 0.0, Stroke::new(1.0, theme::blue()), egui::StrokeKind::Middle);
         if resp.drag_stopped() {
             select(ed, marquee(&scr_now, mode, r), op);
         }

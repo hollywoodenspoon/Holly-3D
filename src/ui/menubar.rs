@@ -23,10 +23,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .resizable(false)
         .show_separator_line(false)
         .exact_size(HEIGHT)
-        .frame(egui::Frame::new().fill(theme::INPUT).inner_margin(egui::Margin::symmetric(8, 2)))
+        .frame(egui::Frame::new().fill(theme::input()).inner_margin(egui::Margin::symmetric(8, 2)))
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
-                ui.label(RichText::new("MiniMax").color(theme::AMBER).strong());
+                ui.label(RichText::new("MiniMax").color(theme::amber()).strong());
                 for (title, entries) in MENUS {
                     if *title == "Rendering" {
                         ui.menu_button("Create", |ui| create_menu(ui, ed));
@@ -117,8 +117,8 @@ pub fn modifier_row(ui: &mut egui::Ui, ed: &mut Editor, name: &str, tip: &str) -
     let fit = catalog::fit(name, ed.current().map(|id| &ed.scene.objects[id]));
     let (text, enabled, hover) = match fit {
         Fit::Yes => (RichText::new(name), true, tip.to_string()),
-        Fit::Dim(why) => (RichText::new(name).color(theme::TEXT_DIM), true, format!("{tip}\n{why}")),
-        Fit::No(why) => (RichText::new(name).color(theme::TEXT_DIM), false, format!("{tip}\n{why}")),
+        Fit::Dim(why) => (RichText::new(name).color(theme::text_dim()), true, format!("{tip}\n{why}")),
+        Fit::No(why) => (RichText::new(name).color(theme::text_dim()), false, format!("{tip}\n{why}")),
     };
     let r = ui.add_enabled(enabled, egui::Button::new(text).frame(false)).on_hover_text(&hover).on_disabled_hover_text(&hover);
     if r.clicked() {

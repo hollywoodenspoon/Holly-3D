@@ -3,6 +3,7 @@
 //! go through this table, and a test checks that every action has a visible
 //! button or menu entry ("a button for everything").
 
+pub mod keymap;
 pub mod keys;
 pub mod layout;
 mod run;
@@ -90,6 +91,7 @@ pub enum Action {
     // Help
     HotkeyList,
     About,
+    Preferences,
 }
 
 const SUBS: [SubObject; 6] =
@@ -114,7 +116,7 @@ impl Action {
         v.extend(NAVS.map(Nav));
         v.extend([Render, RenderSetup, FrameWindow, MaterialEditor, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
-        v.extend([HotkeyList, About]);
+        v.extend([HotkeyList, About, Preferences]);
         v
     }
 
@@ -193,6 +195,7 @@ impl Action {
             Sky(p) => return p.label().to_string(),
             HotkeyList => "Hotkey List",
             About => "About MiniMax",
+            Preferences => "Preferences...",
         };
         s.to_string()
     }
@@ -225,12 +228,13 @@ impl Action {
             Ribbon => "🛠 Ribbon",
             DefaultLights => "💡 Default",
             Environment => "☀ Environment",
-            MaterialEditor => "⚪ Material",
+            MaterialEditor => "🎨 Material",
             RenderSetup => "⚙ Setup",
             FrameWindow => "🖼",
             Render => "▶ Render",
             HotkeyList => "⌨",
             About => "❓",
+            Preferences => "⚙",
             Nav(NavMode::Zoom) => "🔍",
             Nav(NavMode::ZoomAll) => "🔍⁴",
             Nav(NavMode::Fov) => "FOV",
@@ -249,6 +253,7 @@ impl Action {
     pub fn tip(self) -> &'static str {
         use Action::*;
         match self {
+            Preferences => "Theme, hotkeys, viewport colours, autosave, units, render defaults and asset packs",
             SelectByName => "Select From Scene: pick objects from a searchable list",
             LockSelection => "Lock Selection: clicks and marquees no longer change what is selected",
             WindowCrossing => "Window (fully inside) or Crossing (touching) region selection",

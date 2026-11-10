@@ -109,13 +109,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::top("modeling_ribbon")
         .resizable(false)
         .show_separator_line(false)
-        .frame(egui::Frame::new().fill(theme::CARD).inner_margin(egui::Margin::symmetric(8, 4)))
+        .frame(egui::Frame::new().fill(theme::card()).inner_margin(egui::Margin::symmetric(8, 4)))
         .show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 let in_sub = ed.in_sub_object();
                 for (title, cmds) in groups(ed.sub) {
                     ui.vertical(|ui| {
-                        ui.label(RichText::new(title).small().color(theme::AMBER));
+                        ui.label(RichText::new(title).small().color(theme::amber()));
                         ui.horizontal(|ui| {
                             for (label, cmd) in cmds {
                                 cell(ui, ed, label, cmd, in_sub);

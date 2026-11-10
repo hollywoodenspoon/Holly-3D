@@ -103,7 +103,7 @@ fn status(ui: &mut egui::Ui, ed: &Editor) {
         )));
         ui.ctx().request_repaint();
     } else if !ed.rfw.message.is_empty() {
-        ui.label(RichText::new(&ed.rfw.message).color(theme::AMBER));
+        ui.label(RichText::new(&ed.rfw.message).color(theme::amber()));
     }
 }
 
@@ -153,7 +153,7 @@ fn main_window(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
                     rect.min + egui::vec2(reg[0] as f32, reg[1] as f32) * k,
                     rect.min + egui::vec2(reg[2] as f32, reg[3] as f32) * k,
                 );
-                ui.painter().rect_stroke(rr, 0.0, Stroke::new(1.5, theme::AMBER), egui::StrokeKind::Inside);
+                ui.painter().rect_stroke(rr, 0.0, Stroke::new(1.5, theme::amber()), egui::StrokeKind::Inside);
             }
             if let Some(p) = r.hover_pos() {
                 let [x, y] = to_px(rect, fb, p);

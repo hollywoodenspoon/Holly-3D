@@ -39,7 +39,7 @@ fn select_by_name(ctx: &egui::Context, ed: &mut Editor) {
             .collect();
         egui::ScrollArea::vertical().max_height(260.0).show(ui, |ui| {
             for (id, name, selected, locked, kind) in &rows {
-                let text = if *locked { RichText::new(format!("{name}  ({kind}, hidden/frozen)")).color(theme::TEXT_DIM) } else { RichText::new(format!("{name}  ·  {kind}")) };
+                let text = if *locked { RichText::new(format!("{name}  ({kind}, hidden/frozen)")).color(theme::text_dim()) } else { RichText::new(format!("{name}  ·  {kind}")) };
                 let r = ui.add_enabled(!locked, egui::Button::selectable(*selected, text));
                 if r.clicked() {
                     let add = ui.input(|i| i.modifiers.ctrl || i.modifiers.command);
@@ -71,15 +71,16 @@ fn measure(ctx: &egui::Context, ed: &mut Editor) {
         match ed.selection_bounds() {
             Some(b) => {
                 let (size, c) = (b.max - b.min, (b.max + b.min) * 0.5);
+                let u = |v: f32| ed.prefs.general.units.format(v);
                 egui::Grid::new("measure").num_columns(2).show(ui, |ui| {
                     ui.label("Size (X × Y × Z)");
-                    ui.label(format!("{:.3} × {:.3} × {:.3}", size.x, size.y, size.z));
+                    ui.label(format!("{} × {} × {}", u(size.x), u(size.y), u(size.z)));
                     ui.end_row();
                     ui.label("Centre");
-                    ui.label(format!("{:.3}, {:.3}, {:.3}", c.x, c.y, c.z));
+                    ui.label(format!("{}, {}, {}", u(c.x), u(c.y), u(c.z)));
                     ui.end_row();
                     ui.label("Diagonal");
-                    ui.label(format!("{:.3}", size.length()));
+                    ui.label(u(size.length()));
                     ui.end_row();
                 });
             }
@@ -117,12 +118,14 @@ fn hotkey_list(ctx: &egui::Context, ed: &mut Editor) {
                         continue;
                     }
                     ui.label(label).on_hover_text(a.tip());
-                    ui.label(if key.is_empty() { dim("—") } else { RichText::new(key).color(theme::AMBER) });
+                    ui.label(if key.is_empty() { dim("—") } else { RichText::new(key).color(theme::amber()) });
                     ui.end_row();
                 }
             });
         });
-        ui.label(dim("Changing hotkeys arrives with Preferences."));
+        if ui.button("⚙ Change hotkeys...").clicked() {
+            ed.iface.prefs_open = true;
+        }
     });
     ed.iface.hotkeys_open = open;
 }
@@ -130,7 +133,7 @@ fn hotkey_list(ctx: &egui::Context, ed: &mut Editor) {
 fn about(ctx: &egui::Context, ed: &mut Editor) {
     let mut open = ed.iface.about_open;
     egui::Window::new("About MiniMax").open(&mut open).resizable(false).collapsible(false).show(ctx, |ui| {
-        ui.label(RichText::new("MiniMax").color(theme::AMBER).strong().size(20.0));
+        ui.label(RichText::new("MiniMax").color(theme::amber()).strong().size(20.0));
         ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
         ui.label("A clean 3ds Max-style modeler, painter and renderer, written in Rust with Bevy and egui.");
         ui.label(dim("Every command has a button or a menu entry; hotkeys are shortcuts."));

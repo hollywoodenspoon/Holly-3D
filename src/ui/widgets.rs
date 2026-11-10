@@ -49,7 +49,7 @@ pub fn spin_row<T: Numeric>(ui: &mut Ui, label: &str, value: &mut T, speed: f64,
 /// Amber-lit toggle button (active Q/W/E/R, sub-object modes, snaps).
 pub fn toggle_button(ui: &mut Ui, on: bool, text: impl Into<String>) -> Response {
     let text: String = text.into();
-    let rich = if on { RichText::new(text).color(theme::INPUT).strong() } else { RichText::new(text) };
+    let rich = if on { RichText::new(text).color(theme::input()).strong() } else { RichText::new(text) };
     ui.add(egui::Button::new(rich).selected(on))
 }
 
@@ -78,7 +78,7 @@ pub fn action(ui: &mut Ui, label: &str, enabled: bool, width: f32) -> bool {
 
 /// Rollout header (collapsing card) with the Max card fill.
 pub fn rollout(ui: &mut Ui, title: &str, open: bool, body: impl FnOnce(&mut Ui)) {
-    egui::Frame::new().fill(theme::CARD).corner_radius(4).inner_margin(egui::Margin::symmetric(8, 6)).show(ui, |ui| {
+    egui::Frame::new().fill(theme::card()).corner_radius(4).inner_margin(egui::Margin::symmetric(8, 6)).show(ui, |ui| {
         ui.set_width(ui.available_width());
         egui::CollapsingHeader::new(RichText::new(title).strong()).default_open(open).show_unindented(ui, |ui| {
             ui.add_space(2.0);
@@ -89,7 +89,7 @@ pub fn rollout(ui: &mut Ui, title: &str, open: bool, body: impl FnOnce(&mut Ui))
 }
 
 pub fn dim(text: &str) -> RichText {
-    RichText::new(text).color(theme::TEXT_DIM).small()
+    RichText::new(text).color(theme::text_dim()).small()
 }
 
 pub fn color32(c: [f32; 3]) -> Color32 {

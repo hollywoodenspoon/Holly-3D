@@ -68,7 +68,7 @@ fn on_selection_or_all(u: &mut UnwrapMod, f: impl FnOnce(&mut UnwrapMod)) {
 
 fn mode_button<T: PartialEq + Copy>(ui: &mut egui::Ui, cur: &mut T, v: T, label: &str, tip: &str) -> bool {
     let on = *cur == v;
-    let text = if on { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
+    let text = if on { RichText::new(label).color(theme::input()).strong() } else { RichText::new(label) };
     let clicked = ui.add(egui::Button::new(text).selected(on).min_size(egui::vec2(28.0, 24.0))).on_hover_text(tip).clicked();
     if clicked {
         *cur = v;
@@ -164,7 +164,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut UvEditorState) {
                     st.drag = None;
                 }
                 Some(false) => {
-                    ui.label(RichText::new("Topology below changed — press Reset UVWs in the Unwrap UVW rollout.").color(theme::AMBER));
+                    ui.label(RichText::new("Topology below changed — press Reset UVWs in the Unwrap UVW rollout.").color(theme::amber()));
                     st.drag = None;
                 }
                 Some(true) => {

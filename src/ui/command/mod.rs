@@ -26,7 +26,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) -> egui::Rect 
         .resizable(false)
         .show_separator_line(false)
         .exact_size(PANEL_W)
-        .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(egui::Margin::same(10)))
+        .frame(egui::Frame::new().fill(theme::panel()).inner_margin(egui::Margin::same(10)))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 3.0;

@@ -83,6 +83,8 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             Entry::Sub("Transform", TRANSFORM),
             Sep,
             A(Cancel),
+            Sep,
+            A(Preferences),
         ],
     ),
     (
@@ -205,6 +207,7 @@ pub const TOOLBAR_RIGHT: &[Slot] = &[
     Slot::A(Render),
     Slot::Sep,
     Slot::A(HotkeyList),
+    Slot::A(Preferences),
     Slot::A(About),
 ];
 

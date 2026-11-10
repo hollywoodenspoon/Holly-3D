@@ -32,7 +32,7 @@ pub(crate) fn sub_buttons(ui: &mut egui::Ui, ed: &mut Editor, subs: &[ModSub]) {
         for (i, &s) in subs.iter().enumerate() {
             let on = ed.active_mod_sub() == Some(s);
             let label = format!("{}: {}", i + 1, s.label());
-            let text = if on { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
+            let text = if on { RichText::new(label).color(theme::input()).strong() } else { RichText::new(label) };
             if ui.add_sized([w, 28.0], egui::Button::new(text).selected(on)).clicked() {
                 ed.set_mod_sub(Some(s));
             }
@@ -205,7 +205,7 @@ pub fn unwrap(ui: &mut egui::Ui, ed: &mut Editor) {
         }
         checker_toggle(ui, ed);
         if mismatch {
-            ui.label(RichText::new("Topology below changed — press Reset UVWs.").color(theme::AMBER).small());
+            ui.label(RichText::new("Topology below changed — press Reset UVWs.").color(theme::amber()).small());
         }
     });
     rollout(ui, "Smart UV Project", true, |ui| {

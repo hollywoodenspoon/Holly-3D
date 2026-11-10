@@ -56,12 +56,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             // Camera views orbit around the camera's target (Orbit Camera).
             let pivot = if is_cam { target } else { ed.selection_center().unwrap_or(target) };
             let cam = &mut ed.viewports.views[vi].camera;
+            let vp = &ed.prefs.viewport;
             if mods.alt && (mods.ctrl || mods.command) {
-                cam.zoom(-d.y * 0.02);
+                cam.zoom(vp.zoom_steps(-d.y * 0.02));
             } else if mods.alt {
-                cam.orbit(d, pivot);
+                cam.orbit(d * vp.orbit_speed, pivot);
             } else {
-                cam.pan(d, h);
+                cam.pan(d * vp.pan_speed, h);
             }
             ed.push_view_to_camera(vi);
         }
@@ -69,7 +70,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             st.nav = None;
         }
         if resp.hovered() && scroll.abs() > 0.0 {
-            ed.viewports.views[vi].camera.zoom(scroll / 60.0);
+            let steps = ed.prefs.viewport.zoom_steps(scroll / 60.0);
+            ed.viewports.views[vi].camera.zoom(steps);
             ed.push_view_to_camera(vi);
         }
         // ---- Viewport Paint: left button paints, right-click exits

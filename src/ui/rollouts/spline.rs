@@ -144,7 +144,7 @@ fn level_buttons(ui: &mut egui::Ui, ed: &mut Editor) {
         let w = CONTENT_W / 3.0 - 6.0;
         for (s, label) in [(SubObject::Vertex, "1: Vertex"), (SubObject::Edge, "2: Segment"), (SubObject::Border, "3: Spline")] {
             let on = ed.sub == s;
-            let text = if on { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
+            let text = if on { RichText::new(label).color(theme::input()).strong() } else { RichText::new(label) };
             if ui.add_sized([w, 30.0], egui::Button::new(text).selected(on)).clicked() {
                 ed.set_sub_object(s);
             }
@@ -254,7 +254,7 @@ pub(crate) fn mod_params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&
 pub fn lathe(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Lathe Parameters", true, |ui| {
         let on = ed.active_mod_sub() == Some(ModSub::Axis);
-        let text = if on { RichText::new("1: Axis").color(theme::INPUT).strong() } else { RichText::new("1: Axis") };
+        let text = if on { RichText::new("1: Axis").color(theme::input()).strong() } else { RichText::new("1: Axis") };
         if ui.add_sized([CONTENT_W, 28.0], egui::Button::new(text).selected(on)).on_hover_text("Move the revolution axis with W").clicked()
         {
             ed.set_mod_sub(Some(ModSub::Axis));

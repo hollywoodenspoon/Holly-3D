@@ -15,6 +15,7 @@ pub mod material_editor;
 pub mod menubar;
 pub mod mirror_dialog;
 pub mod paint_box;
+pub mod prefs;
 pub mod quad_menu;
 pub mod render_fx;
 pub mod render_setup;
@@ -47,7 +48,9 @@ impl Plugin for UiPlugin {
 /// Transient UI-only state (not part of undo).
 #[derive(Resource, Default)]
 pub struct UiState {
-    themed: bool,
+    /// Theme settings last applied to egui.
+    themed: Option<(crate::prefs::ThemePrefs, crate::prefs::ViewportPrefs)>,
+    pub prefs: prefs::PrefsUi,
     pub viewport: viewport_ui::ViewportUiState,
     pub modifier_list_open: bool,
     pub uv: uv_editor::UvEditorState,
@@ -57,14 +60,16 @@ pub struct UiState {
 
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
     let ctx = contexts.ctx_mut()?.clone();
-    if !st.themed {
-        theme::apply(&ctx);
+    let want = (ed.prefs.theme.clone(), ed.prefs.viewport.clone());
+    if st.themed.as_ref() != Some(&want) {
+        let first = st.themed.is_none();
+        theme::apply(&ctx, &want.0, &want.1);
+        st.themed = Some(want);
         // egui's debug options only exist in debug builds.
         #[cfg(debug_assertions)]
-        if std::env::var("MINIMAX_DEBUG_UI").is_ok() {
+        if first && std::env::var("MINIMAX_DEBUG_UI").is_ok() {
             ctx.global_style_mut(|s| s.debug.show_expand_width = true);
         }
-        st.themed = true;
     }
     let ed = &mut *ed;
     hotkeys::handle(&ctx, ed);
@@ -90,6 +95,8 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     align_dialog::show(&ctx, ed);
     quad_menu::show(&ctx, ed);
     tool_windows::show(&ctx, ed);
+    prefs::show(&ctx, ed, &mut st.prefs);
+    ed.autosave_tick(ctx.input(|i| i.time));
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
     env_dialog::show(&ctx, ed);

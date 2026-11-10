@@ -17,7 +17,7 @@ pub fn buttons(ui: &mut egui::Ui, ed: &mut Editor, area: egui::Rect) {
         .pivot(egui::Align2::RIGHT_BOTTOM)
         .fixed_pos(area.right_bottom() - egui::vec2(6.0, 6.0))
         .show(ui.ctx(), |ui| {
-            egui::Frame::new().fill(theme::PANEL).corner_radius(4).inner_margin(4).show(ui, |ui| {
+            egui::Frame::new().fill(theme::panel()).corner_radius(4).inner_margin(4).show(ui, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(3.0, 3.0);
                 ui.spacing_mut().button_padding = egui::vec2(2.0, 2.0);
                 for row in NAV_BUTTONS {

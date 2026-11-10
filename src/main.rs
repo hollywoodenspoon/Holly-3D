@@ -4,7 +4,9 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use minimax::editor::Editor;
 use minimax::primitives::PrimitiveKind;
+use minimax::prefs::Preferences;
 use minimax::ui::UiPlugin;
+use minimax::ui::actions::keymap;
 use minimax::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox};
 
 fn main() {
@@ -28,6 +30,14 @@ fn main() {
         editor.report(r);
         editor.history = Default::default();
     }
+    // Preferences (theme, hotkeys, undo steps, render defaults) from ~/.config/minimax.
+    let path = Preferences::default_path();
+    let prefs = Preferences::load_from(&path).unwrap_or_else(|e| {
+        editor.status = format!("{e} (using defaults; fix or delete {})", path.display());
+        Preferences::default()
+    });
+    keymap::set_current(keymap::from_prefs(&prefs.keys));
+    editor.use_prefs(prefs);
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins

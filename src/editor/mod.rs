@@ -22,6 +22,7 @@ pub mod modsub;
 pub mod normals;
 pub mod paint;
 pub mod poly_tools;
+pub mod prefs;
 pub mod render;
 pub mod select;
 #[cfg(test)]
@@ -132,6 +133,8 @@ pub struct Editor {
     pub joint_type: crate::assembly::JointType,
     /// Toolbar toggles, navigation buttons and small tool windows.
     pub iface: InterfaceState,
+    /// Preferences (⚙): theme, hotkeys, viewport, general and render settings.
+    pub prefs: crate::prefs::Preferences,
 }
 
 impl Default for Editor {
@@ -192,6 +195,7 @@ impl Default for Editor {
             scene_path: None,
             joint_type: Default::default(),
             iface: InterfaceState::new(),
+            prefs: Default::default(),
         }
     }
 }
