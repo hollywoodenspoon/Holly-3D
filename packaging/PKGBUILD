@@ -1,0 +1,80 @@
+# Maintainer: Holly-3D <local build>
+#
+# Local pacman package for MiniMax, built from this git checkout.
+#   cd packaging && makepkg -si          # build and install once
+#   ./publish-repo.sh                    # build into the local [minimax] repo
+#
+# The source is a clone of the repository this PKGBUILD lives in
+# (override with MINIMAX_SRC=/path/to/Holly-3D), so only COMMITTED changes on
+# the checked-out branch are built. Every new commit raises the version
+# (0.<commit count>.g<short hash>), so `pacman -Syu` picks it up.
+#
+# CPU: tuned for Zen 3 (Ryzen 5000). On another CPU build with
+#   MINIMAX_TARGET_CPU=native makepkg -sf
+
+pkgname=minimax
+pkgver=0.0.g0000000
+pkgrel=1
+pkgdesc='Clean 3ds Max-style polygon modeler, painter and renderer'
+arch=('x86_64')
+url='https://github.com/hollywoodenspoon/Holly-3D'
+license=('LicenseRef-custom')
+# Bevy / wgpu / winit load X11 and Vulkan at run time (dlopen).
+depends=(
+  'gcc-libs' 'glibc' 'hicolor-icon-theme'
+  'libx11' 'libxcursor' 'libxi' 'libxkbcommon-x11' 'libxrandr'
+  'vulkan-icd-loader' 'vulkan-driver'
+  'xdg-desktop-portal'
+)
+makedepends=('cargo' 'git')
+optdepends=('blender: Cycles renderer bridge in Render Setup (F10)')
+# !debug: Bevy debug info needs many GB of RAM and disk; !lto: cargo's own thin LTO is used.
+options=('!debug' '!lto')
+_src="${MINIMAX_SRC:-$(cd "$startdir/.." && pwd)}"
+source=("$pkgname::git+file://$_src"
+        'minimax.desktop'
+        'minimax.svg'
+        'minimax.xml')
+sha256sums=('SKIP'
+            '5f908b09d1d0f2000ce9477becc9a406de62d89ea234b90e2acd6fbfd25f6eb9'
+            '8e4ca265136d8793d584bbced7fe72e460a8e65a6f8194ff4bf52d7d3f3e8618'
+            '3a2458ba49fbac78ec278dac2988af2d35ab16e125660e294d8ab5b3539cd647')
+
+pkgver() {
+  cd "$pkgname"
+  printf '0.%s.g%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+prepare() {
+  cd "$pkgname"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$pkgname"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  # makepkg.conf's RUSTFLAGS replace .cargo/config.toml's rustflags, so the
+  # CPU target is set here; a later -C target-cpu wins over an earlier one.
+  export RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=${MINIMAX_TARGET_CPU:-znver3}"
+  cargo build --release --locked
+}
+
+check() {
+  cd "$pkgname"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  export RUSTFLAGS="${RUSTFLAGS:-} -C target-cpu=${MINIMAX_TARGET_CPU:-znver3}"
+  cargo test --release --locked --lib
+}
+
+package() {
+  install -Dm755 "$pkgname/target/release/minimax" "$pkgdir/usr/bin/minimax"
+  install -Dm644 minimax.desktop "$pkgdir/usr/share/applications/minimax.desktop"
+  install -Dm644 minimax.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/minimax.svg"
+  # The same icon for .mmax files in Dolphin / Nautilus.
+  install -Dm644 minimax.svg "$pkgdir/usr/share/icons/hicolor/scalable/mimetypes/application-x-minimax-scene.svg"
+  install -Dm644 minimax.xml "$pkgdir/usr/share/mime/packages/minimax.xml"
+  install -Dm644 "$pkgname/README.md" "$pkgdir/usr/share/doc/minimax/README.md"
+}

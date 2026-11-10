@@ -44,6 +44,42 @@ On bash or zsh the steps are the same, except step 3: add
 `export PATH="$HOME/.cargo/bin:$PATH"` to your shell's startup file instead of
 running `fish_add_path`.
 
+### As a pacman package with a local repository (CachyOS / Arch)
+
+`packaging/` builds a real pacman package. It installs `/usr/bin/minimax`, a
+menu entry, the Slate & Amber app icon, and the `application/x-minimax-scene`
+file type, so double-clicking a `.mmax` file in Dolphin or Nautilus opens it in
+MiniMax. Do steps 1–4 above first (packages, driver, Rust, clone), then:
+
+```fish
+packaging/publish-repo.sh
+```
+
+The script runs `makepkg -sf`, copies the package into
+`~/.local/share/minimax-repo/` and updates the repository database. The first
+time, it prints three lines to add to the end of `/etc/pacman.conf`:
+
+```ini
+[minimax]
+SigLevel = Optional TrustAll
+Server = file:///home/<you>/.local/share/minimax-repo
+```
+
+Then install with `sudo pacman -Syu minimax`. To upgrade later, run `git pull`,
+`packaging/publish-repo.sh` and `sudo pacman -Syu`.
+
+- **Version:** the package version is `0.<commit count>.g<short hash>`, so every new
+  commit counts as an upgrade. Only **committed** changes on the checked-out branch
+  are built.
+- **Extra flags** go to makepkg, e.g. `packaging/publish-repo.sh --nocheck` skips
+  the tests.
+- **CPU:** the package targets Zen 3 (`znver3`). On another CPU, run
+  `env MINIMAX_TARGET_CPU=native packaging/publish-repo.sh`.
+- **Permissions:** pacman 7 reads repositories as the `alpm` user. If your home
+  folder is private, the script prints a warning with a `chmod o+x` fix (traverse
+  only), or you can choose another folder with `MINIMAX_REPO_DIR`.
+- **Build once without a repository:** `cd packaging; makepkg -si`.
+
 ### Build & run
 
 ```bash
