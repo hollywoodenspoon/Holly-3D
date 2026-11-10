@@ -45,7 +45,7 @@ fn rows(ui: &mut egui::Ui, ed: &mut Editor) {
                     t.r(ui.color_edit_button_rgb(&mut s.mat.base_color));
                     t.r(ui.checkbox(&mut s.enabled, ""));
                     let label = format!("{} ({})", s.mat.name, s.mat.model.label().split(" /").next().unwrap_or(""));
-                    let text = if i == current { RichText::new(label).color(theme::AMBER) } else { RichText::new(label) };
+                    let text = if i == current { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
                     if ui.add(egui::Button::new(text).selected(i == current).truncate()).on_hover_text("Edit this sub-material").clicked() {
                         pick = Some(i);
                     }

@@ -201,7 +201,7 @@ impl<'a> Tracer<'a> {
     /// plus a soft studio dome (brighter overhead). Camera rays that miss
     /// return zero coverage and show the plain background.
     fn environment(&self, d: Vec3) -> Vec3 {
-        if let Some(c) = self.rs.hdri.as_ref().and_then(|h| h.radiance(d)) {
+        if let Some(c) = self.rs.procedural.as_ref().map(|s| s.radiance(d)).or_else(|| self.rs.hdri.as_ref().and_then(|h| h.radiance(d))) {
             return c + self.rs.sky;
         }
         let up = (0.5 + 0.5 * d.z).clamp(0.0, 1.0);
@@ -209,8 +209,11 @@ impl<'a> Tracer<'a> {
         self.rs.background + self.rs.sky + self.rs.ambient * (1.0 + 5.0 * up * up) + dome
     }
 
-    /// What a camera ray that misses shows: the HDRI, else the plain color.
+    /// What a camera ray that misses shows: the sky / HDRI, else the plain color.
     pub(super) fn backdrop(&self, d: Vec3) -> Vec3 {
+        if let Some(s) = &self.rs.procedural {
+            return s.radiance(d);
+        }
         self.rs.hdri.as_ref().and_then(|h| h.radiance(d)).unwrap_or(self.rs.background)
     }
 

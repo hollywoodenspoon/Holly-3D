@@ -83,7 +83,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         .default_width(330.0)
         .resizable(false)
         .show(ctx, |ui| {
-            egui::ScrollArea::vertical().max_height(680.0).show(ui, |ui| {
+            egui::ScrollArea::vertical().max_height(680.0).min_scrolled_height(620.0).show(ui, |ui| {
                 ui.label(RichText::new("Lighting Preset").strong());
                 let cur = ed.scene.environment.preset;
                 egui::ComboBox::from_id_salt("env_preset").width(300.0).selected_text(cur.label()).show_ui(ui, |ui| {
