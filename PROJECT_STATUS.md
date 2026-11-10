@@ -551,3 +551,43 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - search finds pages (any case), page ids are unique;
   - the Help action opens the window.
 - **Checked in the running app:** the tour opens on first start, the Help window shows the topics and screenshots, and F1 over the Material Editor opens the Materials page.
+
+## 19. Phase 9 PR 5a: Material Library and procedural pattern maps
+
+- **Material Library (`📚 Library` on the toolbar, in the Material Editor and in Rendering → Material Library...):**
+  - 281 ready-made materials in 15 categories:
+    - Classic presets (7)
+    - Ground & Terrain (30): grass, mud, sand, snow, ice, moss, lava crust, peat…
+    - Roads & Urban (30): new / worn / cracked / wet asphalt, white and yellow centre lines (solid and dashed), edge lines, crosswalks, sidewalk slabs, curbs, cobbles, pavers, bike and bus lanes…
+    - Walls & Facades (30)
+    - Roofs (15)
+    - Metals (30)
+    - Wood (20)
+    - Stone & Concrete (20)
+    - Glass & Gems (20)
+    - Plastic & Rubber (15)
+    - Fabric & Leather (12)
+    - Nature & Organic (15)
+    - Glow / Emissive (15)
+    - Toon & Stylised (12)
+    - Sci-Fi (10)
+  - The browser has a category list, a search box (name or category), and preview swatches. Swatches are rendered a few per frame and cached, so opening it never stalls.
+  - **Click a swatch** to load it into the active slot (one undo step). The slot takes the material's name.
+  - **☆ / ★ Favourites** are kept in Preferences (`favourite_materials`) and listed on their own shelf.
+  - Buttons: **Assign to Selection** and **Editor**. The Material Editor's Quick Preset list also ends with "📚 More in the Material Library...".
+- **New procedural map nodes** (Maps rollout and Slate). They work in the viewport, the raytracer and the previews alike:
+  - **Bricks / Tiles:** running bond, stack bond, planks or cobbles. Settings: columns, rows, gap, colour variation and seed.
+  - **Stripes:** count, width, dashes and soft edges, along U or V. This is what makes road markings.
+  - **Cracks / Voronoi:** scale, width, variation and seed.
+  - **Grunge / Wear:** dirt, rust, scratches or stains, with amount and seed. Library materials that use grunge also get matching roughness maps, and metallic maps when the material is metal.
+  - Patterned library materials also get a bump map from their pattern.
+- **Help:** the Materials page has a Material Library screenshot and a "Show me" button. F1 over the library opens the Materials page.
+- **Tests (369 in total):**
+  - the library holds at least 270 uniquely named materials, and every category has items;
+  - every material is valid, and every map samples inside 0..1;
+  - specs give the right shading: Ruby is crystal, Neon Pink glows, Toon Red has an outline, bricks get bump, rust gets metal and roughness maps, and the road line is white on asphalt;
+  - pattern unit tests;
+  - the browser filters by shelf, search and favourites;
+  - loading an item is undoable, and favourites toggle.
+- **Checked in the running app:** swatches render for every category, and the shelves, search and click-to-load work.
+- **Next (PR 5b):** World / Triplanar mapping, and the CC0 asset downloader (Poly Haven 1K photo textures, low-poly and realistic model packs) in Preferences → Assets.

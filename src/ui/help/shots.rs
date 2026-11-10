@@ -21,6 +21,7 @@ pub const SHOTS: &[(&str, &[u8])] = &[
     ("modifiers", include_bytes!("../../../assets/help/modifiers.jpg")),
     ("splines", include_bytes!("../../../assets/help/splines.jpg")),
     ("materials", include_bytes!("../../../assets/help/materials.jpg")),
+    ("library", include_bytes!("../../../assets/help/library.jpg")),
     ("paint", include_bytes!("../../../assets/help/paint.jpg")),
     ("sky", include_bytes!("../../../assets/help/sky.jpg")),
     ("render", include_bytes!("../../../assets/help/render.jpg")),
@@ -30,8 +31,9 @@ pub const SHOTS: &[(&str, &[u8])] = &[
 ];
 
 /// The ids `tools/help_shots.sh` captures.
-pub const IDS: [&str; 14] =
-    ["layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "paint", "sky", "render", "ghosttown", "mech", "prefs"];
+pub const IDS: [&str; 15] = [
+    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "paint", "sky", "render", "ghosttown", "mech", "prefs",
+];
 
 fn demo(ed: &mut Editor) {
     ed.create_primitive(PrimitiveKind::Box, Vec3::ZERO);
@@ -94,6 +96,15 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             demo(ed);
             select_first(ed);
             ed.mat_editor.open = true;
+        }
+        "library" => {
+            demo(ed);
+            select_first(ed);
+            ed.mat_editor.open = true;
+            ed.mat_editor.library = true;
+            ed.apply_library(crate::materials::library::find("Red Brick").expect("in the library"));
+            ed.assign_material_to_selection();
+            ed.prefs.general.favourite_materials = vec!["Red Brick".into(), "Gold".into()];
         }
         "paint" => {
             demo(ed);

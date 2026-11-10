@@ -1,6 +1,7 @@
 //! 3ds Max Compact Material Editor (M): 24 sample slots, material toolbar,
 //! preset / shading-model pickers and the Compact or Slate parameter views.
 
+pub mod library;
 mod maps;
 mod multi;
 mod params;
@@ -22,6 +23,7 @@ const COLS: usize = 6;
 pub struct MatEditorUi {
     previews: HashMap<MatId, (Material, egui::TextureHandle)>,
     slate: slate::SlateState,
+    pub library: library::LibraryUi,
 }
 
 impl MatEditorUi {
@@ -124,6 +126,9 @@ fn material_toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         if toggle_button(ui, picking, "✒ Pick").on_hover_text("Pick Material from Object (eyedropper)").clicked() {
             ed.tool = if picking { Tool::None } else { Tool::PickMaterial };
         }
+        if toggle_button(ui, ed.mat_editor.library, "📚 Library").on_hover_text("Material Library: ~280 ready-made materials").clicked() {
+            ed.mat_editor.library = !ed.mat_editor.library;
+        }
     });
     ui.horizontal(|ui| {
         ui.label("Mode:");
@@ -178,7 +183,7 @@ fn header(ui: &mut egui::Ui, ed: &mut Editor) {
 
 /// Quick Preset + Shading model of the edited (sub-)material.
 fn look(ui: &mut egui::Ui, ed: &mut Editor) {
-    let mut preset = None;
+    let (mut preset, mut library) = (None, false);
     edit(ed, |m, t| {
         egui::Grid::new("mat_look").num_columns(2).spacing([8.0, 6.0]).show(ui, |ui| {
             ui.label("Quick Preset");
@@ -187,6 +192,10 @@ fn look(ui: &mut egui::Ui, ed: &mut Editor) {
                     if ui.selectable_label(false, p.label()).clicked() {
                         preset = Some(p);
                     }
+                }
+                ui.separator();
+                if ui.selectable_label(false, "📚 More in the Material Library...").clicked() {
+                    library = true;
                 }
             });
             ui.end_row();
@@ -202,6 +211,9 @@ fn look(ui: &mut egui::Ui, ed: &mut Editor) {
     });
     if let Some(p) = preset {
         ed.apply_preset(p);
+    }
+    if library {
+        ed.mat_editor.library = true;
     }
 }
 

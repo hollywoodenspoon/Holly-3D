@@ -200,6 +200,8 @@ pub struct MatEditor {
     pub pbr_folder: String,
     /// Sub-material the rollouts edit when the slot is a Multi/Sub-Object.
     pub sub: usize,
+    /// Material Library browser window.
+    pub library: bool,
 }
 
 /// Spinner values of the Editable Spline Geometry rollout.

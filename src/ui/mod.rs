@@ -101,6 +101,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     ed.autosave_tick(ctx.input(|i| i.time));
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
+    material_editor::library::show(&ctx, ed, &mut st.mat.library);
     env_dialog::show(&ctx, ed);
     paint_box::show(&ctx, ed);
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);

@@ -4,8 +4,10 @@
 
 pub mod bake;
 pub mod import;
+pub mod library;
 pub mod maps;
 pub mod multi;
+pub mod patterns;
 pub mod presets;
 pub mod preview;
 pub mod shading;

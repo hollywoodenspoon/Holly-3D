@@ -24,8 +24,9 @@ pub struct HelpUi {
 }
 
 /// Which window (by egui id) leads to which Help page.
-const WINDOW_PAGES: [(&str, &str); 13] = [
+const WINDOW_PAGES: [(&str, &str); 14] = [
     ("material_editor", "materials"),
+    ("material_library", "materials"),
     ("render_setup", "render"),
     ("rfw", "render"),
     ("paint_box", "paint"),

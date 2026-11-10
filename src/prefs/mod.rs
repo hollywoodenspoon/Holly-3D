@@ -151,11 +151,13 @@ pub struct GeneralPrefs {
     pub units: Units,
     /// Show the Getting Started tour on startup (Help).
     pub show_tour: bool,
+    /// Material Library favourites (by name).
+    pub favourite_materials: Vec<String>,
 }
 
 impl Default for GeneralPrefs {
     fn default() -> Self {
-        Self { autosave_minutes: 5, undo_steps: 64, units: Units::Meters, show_tour: true }
+        Self { autosave_minutes: 5, undo_steps: 64, units: Units::Meters, show_tour: true, favourite_materials: Vec::new() }
     }
 }
 

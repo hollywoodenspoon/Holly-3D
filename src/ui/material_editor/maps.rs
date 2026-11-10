@@ -5,6 +5,7 @@ use super::edit;
 use super::params::{color, num};
 use crate::editor::Editor;
 use crate::materials::maps::NoiseKind;
+use crate::materials::patterns::{BrickKind, GrungeKind};
 use crate::materials::{MapChannel, MapNode, import};
 use crate::ui::command::CONTENT_W;
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout as card};
@@ -63,9 +64,7 @@ pub(super) fn node_params(ui: &mut egui::Ui, salt: &str, node: &mut MapNode, t: 
             });
             ui.end_row();
             num(ui, t, "Size", scale, 0.1..=50.0, 4.0);
-            ui.label("Seed");
-            t.r(max_spinner_range(ui, seed, 0.2, 0, 0..=9999));
-            ui.end_row();
+            seed_row(ui, t, seed);
             color(ui, t, "Color #1", color_a);
             color(ui, t, "Color #2", color_b);
         }
@@ -97,6 +96,57 @@ pub(super) fn node_params(ui: &mut egui::Ui, salt: &str, node: &mut MapNode, t: 
             num(ui, t, "Hue Shift", hue, -180.0..=180.0, 0.0);
             color(ui, t, "Tint", tint);
         }
+        MapNode::Bricks { kind, cols, rows, gap, vary, seed, color_a, color_b } => {
+            ui.label("Pattern");
+            egui::ComboBox::from_id_salt(("brick_kind", salt)).selected_text(kind.label()).show_ui(ui, |ui| {
+                for k in BrickKind::ALL {
+                    t.r(ui.selectable_value(kind, k, k.label()));
+                }
+            });
+            ui.end_row();
+            num(ui, t, "Columns", cols, 0.5..=64.0, 4.0);
+            num(ui, t, "Rows", rows, 0.5..=64.0, 8.0);
+            num(ui, t, "Mortar Gap", gap, 0.0..=0.6, 0.1);
+            num(ui, t, "Color Variation", vary, 0.0..=1.0, 0.3);
+            seed_row(ui, t, seed);
+            color(ui, t, "Brick", color_a);
+            color(ui, t, "Mortar", color_b);
+        }
+        MapNode::Stripes { count, width, dash, soft, along_u, color_a, color_b } => {
+            num(ui, t, "Count", count, 0.1..=100.0, 1.0);
+            num(ui, t, "Line Width", width, 0.0..=1.0, 0.06);
+            num(ui, t, "Dashes (0 = solid)", dash, 0.0..=50.0, 0.0);
+            ui.label("Options");
+            ui.horizontal(|ui| {
+                t.r(ui.checkbox(soft, "Corrugated"));
+                t.r(ui.checkbox(along_u, "Along U"));
+            });
+            ui.end_row();
+            color(ui, t, "Line", color_a);
+            color(ui, t, "Ground", color_b);
+        }
+        MapNode::Cracks { scale, width, vary, seed, color_a, color_b } => {
+            num(ui, t, "Size", scale, 0.1..=50.0, 3.0);
+            num(ui, t, "Crack Width", width, 0.0..=0.8, 0.06);
+            num(ui, t, "Color Variation", vary, 0.0..=1.0, 0.2);
+            seed_row(ui, t, seed);
+            color(ui, t, "Surface", color_a);
+            color(ui, t, "Crack", color_b);
+        }
+        MapNode::Grunge { kind, scale, amount, seed, color_a, color_b } => {
+            ui.label("Type");
+            egui::ComboBox::from_id_salt(("grunge_kind", salt)).selected_text(kind.label()).show_ui(ui, |ui| {
+                for k in GrungeKind::ALL {
+                    t.r(ui.selectable_value(kind, k, k.label()));
+                }
+            });
+            ui.end_row();
+            num(ui, t, "Size", scale, 0.1..=50.0, 2.0);
+            num(ui, t, "Amount", amount, 0.0..=1.0, 0.4);
+            seed_row(ui, t, seed);
+            color(ui, t, "Clean", color_a);
+            color(ui, t, "Dirt", color_b);
+        }
     });
     if let MapNode::ColorCorrect { input, .. } = node {
         ui.horizontal(|ui| {
@@ -114,6 +164,12 @@ pub(super) fn node_params(ui: &mut egui::Ui, salt: &str, node: &mut MapNode, t: 
         });
     }
     msg
+}
+
+fn seed_row(ui: &mut egui::Ui, t: &mut Track, seed: &mut u32) {
+    ui.label("Seed");
+    t.r(max_spinner_range(ui, seed, 0.2, 0, 0..=9999));
+    ui.end_row();
 }
 
 pub fn rollout(ui: &mut egui::Ui, ed: &mut Editor) {

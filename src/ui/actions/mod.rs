@@ -85,6 +85,7 @@ pub enum Action {
     RenderSetup,
     FrameWindow,
     MaterialEditor,
+    MaterialLibrary,
     Environment,
     DefaultLights,
     Sky(SkyPreset),
@@ -116,7 +117,7 @@ impl Action {
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(NAVS.map(Nav));
-        v.extend([Render, RenderSetup, FrameWindow, MaterialEditor, Environment, DefaultLights]);
+        v.extend([Render, RenderSetup, FrameWindow, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
         v.extend([Help, Tour, HotkeyList, About, Preferences]);
         v
@@ -192,6 +193,7 @@ impl Action {
             RenderSetup => "Render Setup...",
             FrameWindow => "Rendered Frame Window",
             MaterialEditor => "Material Editor",
+            MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
             DefaultLights => "Default Lights",
             Sky(p) => return p.label().to_string(),
@@ -233,6 +235,7 @@ impl Action {
             DefaultLights => "💡 Default",
             Environment => "☀ Environment",
             MaterialEditor => "🎨 Material",
+            MaterialLibrary => "📚 Library",
             RenderSetup => "⚙ Setup",
             FrameWindow => "🖼",
             Render => "▶ Render",
@@ -277,6 +280,7 @@ impl Action {
             DefaultLights => "Light the viewports with the 2-light headlight rig, even with scene lights",
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
+            MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
             Render => "Render the active viewport into the Rendered Frame Window",
             RemoveSubObjects => "Remove the selected vertices or edges",
             RepeatLast => "Repeat the previous Edit Poly operation",

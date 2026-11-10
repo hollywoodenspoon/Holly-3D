@@ -96,6 +96,7 @@ impl Action {
             RenderSetup => flip(&mut ed.rfw.setup_open),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
             MaterialEditor => flip(&mut ed.mat_editor.open),
+            MaterialLibrary => flip(&mut ed.mat_editor.library),
             Environment => flip(&mut ed.env_open),
             DefaultLights => ed.toggle_default_lights(),
             Sky(p) => {
@@ -146,6 +147,7 @@ impl Action {
             RenderSetup => ed.rfw.setup_open,
             FrameWindow => ed.rfw.rfw_open,
             MaterialEditor => ed.mat_editor.open,
+            MaterialLibrary => ed.mat_editor.library,
             Environment => ed.env_open,
             DefaultLights => ed.uses_default_lights(),
             Sky(p) => SkyPreset::matching(&ed.scene.environment.sky) == Some(p),

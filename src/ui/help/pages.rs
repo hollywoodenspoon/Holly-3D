@@ -223,8 +223,21 @@ pub const MATERIALS: Page = Page {
             "Select objects and click Assign.",
             "Every material has an Ink / Toon Outline rollout.",
             "Maps rollout: image or procedural maps for colour, metal, roughness, bump, opacity and glow.",
+            "Procedural maps include Bricks / Tiles, Stripes (road lines), Cracks and Grunge (dirt, rust, scratches).",
+            "Material Library (📚 Library): ~280 ready-made materials in 15 categories. Click a swatch to load it into the active slot; ☆ marks a favourite.",
         ]),
+        Shot(
+            "library",
+            &[
+                m(957.0, 107.0, "Material Library (📚 Library)"),
+                m(787.0, 141.0, "Search by name or category"),
+                m(760.0, 420.0, "Categories and ★ Favourites"),
+                m(1107.0, 400.0, "Click a swatch to load it into the active slot"),
+                m(640.0, 379.0, "Library button in the Material Editor"),
+            ],
+        ),
         ShowMe("Open the Material Editor", Show::Act(Action::MaterialEditor)),
+        ShowMe("Open the Material Library", Show::Act(Action::MaterialLibrary)),
     ],
 };
 
