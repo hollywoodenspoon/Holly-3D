@@ -10,10 +10,10 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 | Source | 287 `.rs` files, about 44,100 lines; the largest is 347 lines (limit 350) |
 | Tests | 320 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
-| Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README) |
+| Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio. **Phase 8C done** (§13): GhostTown settlements in four eras, the scale-aware Medieval Architect, and period-accurate Battlefield & Ruin destruction with movable Blast Zones.
+**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio. **Phase 8C done** (§13): GhostTown settlements in four eras, the scale-aware Medieval Architect, and period-accurate Battlefield & Ruin destruction with movable Blast Zones. **Packaging done** (§14): a pacman package and a local `[minimax]` repository, plus a fix for release builds, which did not compile before.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -214,6 +214,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 ✅ merged |
 | 8B | §11 polish, procedural Terrain (6 biomes, erosion, auto Material IDs), Gerstner Ocean with crest foam, Planet Studio (surface, clouds, atmosphere, rings) (§12) | #7 ✅ merged |
 | 8C | GhostTown settlements (4 eras), Medieval Architect (5 presets, scale-aware), Battlefield & Ruin (3 period-accurate modes, Blast Zones) (§13) | #9 ✅ merged |
+| Packaging | pacman PKGBUILD, desktop entry, icon, `.mmax` file type, `publish-repo.sh` local repository, release-build fix (§14) | #11 (open) |
 
 ---
 
@@ -403,3 +404,35 @@ Merged to `main` in PR #9. Covered by headless tests only; a hands-on test in th
    - Spinners: Intensity 0–100 %, Seed, Crater Count, Crater Radius, Crater Depth, Rubble Density, Soot Darkening.
    - **Blast Zones** sub-object (`1`): `[➕ Add Zone]` / `[🗑 Remove Zone]` and a zone list with radius spinners; zones draw as three yellow great circles (orange when selected), are picked by click or marquee, move with W and scale with R. With no zones, seeded blasts hit the structures.
 4. Tests (`src/generators/kit/tests.rs`, `src/generators/settlement/tests.rs`, `src/modifiers/medieval/tests.rs`, `src/modifiers/battlefield/tests.rs`, `src/modifiers/tests_gizmo.rs`, `src/editor/worlds.rs`): every era is valid, deterministic, seed-dependent, stays in its area and only uses IDs 1–12; era signatures (downtown towers with lit glass, low suburban houses, timber and plaster medieval towns with no concrete); density and floor counts; the modifier on a plane and a closed spline; damaged medieval towns have charred wood and no rebar, damaged modern towns have rebar, all have craters; every Architect preset is valid, deterministic and sits on its base; toggles remove their details; resizing keeps brick size and recounts details; round / square detection; spline curtain walls; each destruction mode's signature (rebar and shards, charred rafters and no rebar, moss and erosion); zero intensity changes nothing; a user zone only damages its area; zone select / move / scale in the editor; assigning the GhostTown pack with undo.
+
+---
+
+## 14. Packaging: pacman package and local repository
+
+Everything lives in `packaging/`; the README's *As a pacman package* section has the user steps.
+
+1. ✅ **`PKGBUILD`** (`minimax`):
+   - **Version:** `pkgver()` gives `0.<commit count>.g<short hash>`, so every commit is an upgrade for `pacman -Syu`. It builds the committed state of the checked-out branch.
+   - **Build:** `cargo build --release --locked` for `znver3`, or another CPU through `MINIMAX_TARGET_CPU`. `check()` runs `cargo test --lib`.
+   - **Installs:**
+     - `/usr/bin/minimax`
+     - `minimax.desktop`
+     - the Slate & Amber (`#222327` / `#E59C24`) SVG icon, also used as the file icon for scenes
+     - `mime/packages/minimax.xml`, which registers `application/x-minimax-scene` by the `*.mmax` extension and by the `format: "MiniMax"` header
+     - the README
+2. ✅ **`publish-repo.sh`:**
+   - Runs `makepkg -sf`, copies the package into `~/.local/share/minimax-repo/` (or `MINIMAX_REPO_DIR`) and runs `repo-add -R`, which also removes the old package.
+   - Prints the three `/etc/pacman.conf` lines with the real path.
+   - Restores the PKGBUILD that makepkg rewrites.
+   - Warns when pacman 7's `alpm` download user cannot reach the repository folder.
+3. ✅ **Desktop integration:**
+   - The window class is now `minimax`, matching `StartupWMClass`.
+   - `Exec=minimax %f` opens a double-clicked scene through the Phase 6 command-line loader.
+4. ✅ **Fixes the package build turned up:**
+   - Release builds did not compile, because egui's debug style option is now behind `cfg(debug_assertions)`.
+   - Two tests wrote to fixed `/tmp` folders and failed for a second user. They now use per-process folders.
+5. **Verified:**
+   - A full `publish-repo.sh` run as a normal user (makepkg 6 on a non-Arch host) built version `0.59.g20937f2`, passed all 320 tests in `check()` and packaged the files above. It created `minimax.db` / `minimax.files` and left the checkout clean.
+   - `desktop-file-validate` passes.
+   - `update-mime-database` and gio detect `.mmax` files, both by extension and by header, and pick MiniMax as the default app.
+   - **Still to do:** a real `pacman -Syu minimax` on CachyOS.
