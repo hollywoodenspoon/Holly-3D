@@ -69,3 +69,31 @@ fn joint_rollout_edits_and_breaks_joints() {
     ed.break_joints();
     assert!(ed.scene.assembly.joints.is_empty());
 }
+
+#[test]
+fn motion_links_and_contact_members_from_the_rollout() {
+    let (mut ed, a, p) = editor();
+    let b = Primitive::Box { length: 2.0, width: 2.0, height: 2.0, length_segs: 1, width_segs: 1, height_segs: 1 };
+    let c = ed.scene.add(BaseObject::Primitive(b), Vec3::new(0.0, 6.0, 0.0));
+    let m = |obj, x: f32, y: f32| crate::assembly::mount::Mount { obj, point: Vec3::new(x, y, 2.0), normal: Vec3::Z };
+    ed.assemble(m(a, -3.0, 0.0), m(p, 2.5, 0.0)).unwrap();
+    ed.assemble(m(c, 0.0, 6.0), m(p, 3.5, 0.0)).unwrap();
+    ed.scene.select_only(Some(c));
+    ed.set_driver(Some(a));
+    let l = ed.scene.assembly.links[0].clone();
+    assert_eq!((l.driver, l.driven), (a, c));
+    assert!((l.ratio + 1.0).abs() < 1e-3, "equal parts: auto-ratio -1, got {}", l.ratio);
+    ed.scene.select_only(Some(a));
+    ed.edit_joint("Joint Parameters", true, |k| k.set_value(30.0));
+    assert!((ed.scene.joint_value(c).unwrap() + 30.0).abs() < 1e-3, "the driven part follows");
+    ed.set_driver(Some(c));
+    assert_eq!(ed.scene.assembly.links.len(), 1, "a loop of links is refused");
+    ed.set_contact_member(a, true);
+    ed.toggle_contacts();
+    assert!(ed.scene.assembly.contacts_on && ed.scene.assembly.contact_members == vec![a]);
+    ed.undo();
+    assert!(ed.scene.assembly.contact_members.is_empty());
+    ed.undo();
+    ed.undo();
+    assert!(ed.scene.assembly.links.is_empty(), "undo removes the link");
+}

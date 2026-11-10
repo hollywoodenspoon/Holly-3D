@@ -89,12 +89,8 @@ impl Scene {
         true
     }
 
-    /// Enforces every joint; returns true when a part was moved.
-    pub fn solve_assembly(&mut self) -> bool {
-        let objs = &self.objects;
-        self.assembly.joints.retain(|j| j.child != j.parent && objs.contains_key(j.child) && objs.contains_key(j.parent));
-        self.assembly.grounded.retain(|&g| objs.contains_key(g));
-        self.ik_pass();
+    /// Poses every child from its parent, parents first.
+    fn pose_joints(&mut self) -> bool {
         let mut moved = false;
         for i in order(self) {
             let (child, parent) = (self.assembly.joints[i].child, self.assembly.joints[i].parent);
@@ -109,6 +105,24 @@ impl Scene {
             let target = child_pose(j, p);
             j.posed = Some((target, p));
             moved |= self.place(child, target);
+        }
+        moved
+    }
+
+    /// Enforces every joint, then Motion Links and Contact Sets, then aims
+    /// pistons; returns true when a part was moved.
+    pub fn solve_assembly(&mut self) -> bool {
+        let objs = &self.objects;
+        self.assembly.joints.retain(|j| j.child != j.parent && objs.contains_key(j.child) && objs.contains_key(j.parent));
+        self.assembly.grounded.retain(|&g| objs.contains_key(g));
+        self.ik_pass();
+        let mut moved = self.pose_joints();
+        if self.apply_links() {
+            moved |= self.pose_joints();
+        }
+        if self.assembly.contacts_on && self.push_contacts() {
+            self.apply_links();
+            moved |= self.pose_joints();
         }
         for i in 0..self.assembly.joints.len() {
             let j = self.assembly.joints[i].clone();

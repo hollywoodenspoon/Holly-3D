@@ -14,6 +14,7 @@ mod joint_tests;
 pub mod joints;
 pub mod lights;
 pub mod materials;
+pub mod mech;
 pub mod mirror;
 pub mod modsub;
 pub mod normals;

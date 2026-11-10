@@ -7,8 +7,8 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
-| Source | 214 `.rs` files, about 33,100 lines; the largest is 347 lines (limit 350) |
-| Tests | 228 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 218 `.rs` files, about 33,600 lines; the largest is 347 lines (limit 350) |
+| Tests | 232 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
@@ -287,6 +287,9 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - IK on `W`: when a part is moved further than its own joint allows, cyclic coordinate descent re-poses the hinges, ball sockets and sliders above it so its pivot reaches the dragged point, up to the root part or the first part marked **Grounded**. Stops are kept. `[✓] IK Drag` in the Assembly rollout turns it off.
    - `Mirror Mech Limb [X] [Y] [Z]`: copies the selected part and every part it carries across the plane through its parent's pivot (mirrored, negative-scale copies), and rebuilds their joints, with the copy hanging off the same parent. Hinge angles and stops come out mirrored, so equal and opposite angles keep the two limbs mirror images.
    - Tests: a hinge turns to reach a dragged point; a two-link arm bends to reach, stops at a Grounded part (closest reach), and is unchanged with IK off; IK keeps stops; a mirrored limb sits at the mirrored positions with negated angle and swapped stops, already satisfies its joints, stays mirrored under opposite angles, and undoes in one step.
-3. ❌ Contact Sets and Motion Links.
+3. ✅ **Contact Sets and Motion Links.** `src/assembly/contact.rs`, `src/assembly/links.rs`, `src/editor/mech.rs`.
+   - `[Contact]` toolbar toggle and a `[✓] Contact Member` checkbox per part: overlapping members push each other along their own hinge or slider (the smallest change that clears, found by stepping and then bisecting, so parts end up touching). The dragged (selected) part pushes; a part that cannot give way (welded, or at a stop) blocks the dragged part instead. Parts jointed to each other are mated by design and never collide.
+   - Motion Links in the Assembly rollout: `Driven by [part]` links the current part's hinge or slider to another's (driven = offset + Ratio × driver, the offset taken when linking so nothing jumps). `Ratio` spinner (right-click resets to 1) and `[Auto-Ratio from Gear Teeth / Radius]`: meshing gears turn opposite ways at the inverse ratio of their radii; a pinion drives a rack by arc length. Loops of links are refused, chains of links settle, and links to deleted parts are dropped.
+   - Tests: gear pair (−r₁/r₂) and rack (arc length) follow their driver; loop and no-hinge refusals; a new ratio keeps the driven part in place; links drop with their driver; a slider member is pushed until touching; Contact Sets off lets parts pass; a welded member blocks the dragged one; rollout flow with undo.
 4. ❌ Involute Gear, Hydraulic Piston assembly and Hose / Mecha Cable primitives.
 5. ❌ Panel Groove (Edit Poly operation and modifier).

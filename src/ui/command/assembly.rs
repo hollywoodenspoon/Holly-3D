@@ -139,6 +139,11 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         if children > 0 {
             ui.label(dim(&format!("Carries {children} part(s).")));
         }
+        motion_link(ui, ed, id);
+        let mut c = ed.scene.assembly.contact_members.contains(&id);
+        if ui.checkbox(&mut c, "Contact Member").on_hover_text("Pushes and is pushed by other members (toolbar Contact)").changed() {
+            ed.set_contact_member(id, c);
+        }
         let mut g = ed.scene.assembly.grounded.contains(&id);
         if ui.checkbox(&mut g, "Grounded (IK stops here)").changed() {
             ed.set_grounded(id, g);
@@ -156,4 +161,43 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.break_joints();
         }
     });
+}
+
+/// Motion Link: the part's hinge / slider driven by another part's.
+fn motion_link(ui: &mut egui::Ui, ed: &mut Editor, id: crate::scene::ObjId) {
+    if ed.scene.joint_value(id).is_none() {
+        return;
+    }
+    let link = ed.scene.assembly.links.iter().find(|l| l.driven == id).cloned();
+    let name = |ed: &Editor, o| ed.scene.objects.get(o).map_or("?".to_string(), |o| o.name.clone());
+    let drivers: Vec<_> = ed.scene.objects.keys().filter(|&o| o != id && ed.scene.joint_value(o).is_some()).collect();
+    let mut pick = link.as_ref().map(|l| l.driver);
+    ui.horizontal(|ui| {
+        ui.label("Driven by");
+        let shown = pick.map_or("None".to_string(), |d| name(ed, d));
+        egui::ComboBox::from_id_salt("motion_driver").width(150.0).selected_text(shown).show_ui(ui, |ui| {
+            ui.selectable_value(&mut pick, None, "None");
+            for d in drivers {
+                ui.selectable_value(&mut pick, Some(d), name(ed, d));
+            }
+        });
+    });
+    if pick != link.as_ref().map(|l| l.driver) {
+        ed.set_driver(pick);
+        return;
+    }
+    let Some(l) = link else { return };
+    let mut t = Track::default();
+    let mut ratio = l.ratio;
+    grid(ui, "motion_link", |ui| {
+        ui.label("Ratio");
+        t.r(max_spinner(ui, &mut ratio, 0.01, 1.0).on_hover_text("Driven value per unit of driver (negative: opposite way)"));
+        ui.end_row();
+    });
+    if t.changed || t.started {
+        ed.edit_link_ratio(t.started, ratio);
+    }
+    if action(ui, "Auto-Ratio from Gear Teeth / Radius", true, CONTENT_W) {
+        ed.auto_link_ratio();
+    }
 }

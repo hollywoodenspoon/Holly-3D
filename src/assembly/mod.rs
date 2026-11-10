@@ -9,8 +9,10 @@
 //! axes and clamped at its stops (forward kinematics); a `W` move beyond
 //! what the joint allows re-poses the chain above it (IK, see `ik`).
 
+pub mod contact;
 pub mod frame;
 pub mod ik;
+pub mod links;
 pub mod mirror;
 pub mod mount;
 pub mod solve;
@@ -18,10 +20,13 @@ pub mod solve;
 mod tests;
 #[cfg(test)]
 mod tests_ik;
+#[cfg(test)]
+mod tests_links;
 
 use crate::scene::ObjId;
 use bevy::math::{Quat, Vec3};
 pub use frame::Frame;
+pub use links::MotionLink;
 
 /// Local joint axis (in the mount frame; Z is the mount face normal).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -134,6 +139,23 @@ impl JointKind {
         !matches!(self, JointKind::Piston)
     }
 
+    /// Hinge angle or slider travel; None for other joints.
+    pub fn value(&self) -> Option<f32> {
+        match self {
+            JointKind::Revolute { angle, .. } => Some(*angle),
+            JointKind::Slider { travel, .. } => Some(*travel),
+            _ => None,
+        }
+    }
+
+    /// Sets the hinge angle or slider travel, clamped at the stops.
+    pub fn set_value(&mut self, v: f32) {
+        match self {
+            JointKind::Revolute { angle: x, limits, .. } | JointKind::Slider { travel: x, limits, .. } => *x = limits.clamp(v),
+            _ => {}
+        }
+    }
+
     /// The joint's motion from the parent mount to the child mount.
     pub fn motion(&self) -> Frame {
         match self {
@@ -170,6 +192,13 @@ pub struct Assembly {
     /// its own joint.
     #[serde(default)]
     pub no_ik: bool,
+    /// Contact Sets toolbar toggle and its member parts.
+    #[serde(default)]
+    pub contacts_on: bool,
+    #[serde(default)]
+    pub contact_members: Vec<ObjId>,
+    #[serde(default)]
+    pub links: Vec<MotionLink>,
 }
 
 impl Assembly {

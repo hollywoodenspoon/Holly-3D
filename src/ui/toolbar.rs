@@ -52,6 +52,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                 if toggle_button(ui, ed.angle_snap, "A Angle").on_hover_text("Angle Snap 5° (A)").clicked() {
                     ed.angle_snap = !ed.angle_snap;
                 }
+                let tip = "Contact Sets: Contact Member parts push each other along their hinges and sliders";
+                if toggle_button(ui, ed.scene.assembly.contacts_on, "Contact").on_hover_text(tip).clicked() {
+                    ed.toggle_contacts();
+                }
                 ui.separator();
                 let any = !ed.scene.selected().is_empty();
                 if ui.add_enabled(any, egui::Button::new("Mirror")).on_hover_text("Mirror the selection (live preview)").clicked() {
