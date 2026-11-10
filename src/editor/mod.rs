@@ -8,6 +8,7 @@ mod array_tests;
 pub mod blast_zones;
 pub mod boolean;
 pub mod cameras;
+pub mod create_drag;
 pub mod drag;
 pub mod file;
 pub mod interface;
@@ -131,7 +132,6 @@ pub struct Editor {
     pub scene_path: Option<std::path::PathBuf>,
     /// Joint type the J tool creates.
     pub joint_type: crate::assembly::JointType,
-    /// Toolbar toggles, navigation buttons and small tool windows.
     pub iface: InterfaceState,
     /// Preferences (⚙): theme, hotkeys, viewport, general and render settings.
     pub prefs: crate::prefs::Preferences,

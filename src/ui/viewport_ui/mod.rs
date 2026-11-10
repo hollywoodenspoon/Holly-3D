@@ -24,6 +24,8 @@ pub struct ViewportUiState {
     nav: Option<usize>,
     /// Viewport holding the current paint stroke.
     painting: Option<usize>,
+    /// The click that finished a creation step: kept from `tool_click`.
+    eat_click: bool,
 }
 
 fn v2(p: egui::Pos2) -> Vec2 {
@@ -117,6 +119,11 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
             continue;
         }
+        // ---- click-and-drag creation: drag the base, then move + click for height
+        if creating(ui, ed, &mut st.eat_click, &resp, vi, mods.alt, pointer.map(v2)) {
+            overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
+            continue;
+        }
         // ---- navigation buttons: left-drag zooms / pans / orbits
         if nav::drag(ui, ed, &resp, vi, r.size().y) {
             overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
@@ -165,4 +172,40 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
         overlay::draw(ui, ed, vi, rect, st.region.as_ref().filter(|r| r.0 == vi).map(|r| r.1.as_slice()), pointer.map(v2));
     }
     nav::buttons(ui, ed, area);
+}
+
+/// Click-and-drag creation for viewport `vi`. True when it used this frame's input.
+fn creating(ui: &egui::Ui, ed: &mut Editor, eat: &mut bool, resp: &egui::Response, vi: usize, alt: bool, pointer: Option<Vec2>) -> bool {
+    let (pressed, down) = ui.input(|i| (i.pointer.primary_pressed(), i.pointer.primary_down()));
+    if *eat && resp.hovered() {
+        // Swallow the release of the press that ended a step.
+        *eat = down;
+        return true;
+    }
+    let mine = |ed: &Editor| ed.iface.create_drag.as_ref().is_some_and(|d| d.view == vi);
+    let started = |ed: &Editor| ed.iface.create_drag.as_ref().is_some_and(|d| d.id.is_some());
+    if !mine(ed) && crate::editor::create_drag::CreateKind::of(&ed.tool).is_none() {
+        return false;
+    }
+    let was = mine(ed) && started(ed);
+    let Some(p) = pointer else { return was };
+    if pressed && resp.hovered() && !alt {
+        ed.create_press(vi, p);
+    }
+    if mine(ed) {
+        ed.create_move(p);
+        if !down {
+            ed.create_release(p);
+        }
+    }
+    if resp.clicked_by(PointerButton::Secondary) && ed.cancel_create() {
+        return true;
+    }
+    // Ended or advanced this frame: the coming click is not a new object.
+    if was && (pressed || !mine(ed)) {
+        *eat = down;
+        return true;
+    }
+    // A plain click (no drag) still reaches tool_click, which places a default object.
+    mine(ed) && started(ed)
 }

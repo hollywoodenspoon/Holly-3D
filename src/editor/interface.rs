@@ -102,6 +102,9 @@ pub struct InterfaceState {
     /// Autosave: edit count and time (seconds) of the last autosave.
     pub autosave_edits: u64,
     pub autosave_at: f64,
+    /// Click-and-drag creation in progress, and the Creation Method.
+    pub create_drag: Option<super::create_drag::CreateDrag>,
+    pub create_method: super::create_drag::CreateMethod,
 }
 
 /// The default Show Buttons set (the most used modifiers).

@@ -48,7 +48,7 @@ fn pick(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tip: &str, tool: Tool) 
         ed.tool = tool;
         ed.iface.nav_mode = None;
         ed.tab = CommandTab::Create;
-        ed.status = format!("{label}: click in a viewport to place it");
+        ed.status = format!("{label}: drag in a viewport to size it, or click for a default one");
         ui.close();
     }
 }

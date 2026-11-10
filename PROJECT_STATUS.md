@@ -6,9 +6,9 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) and **Phase 9 PR 2** (Preferences; see §16) |
-| Source | 311 `.rs` files, about 47,800 lines; the largest is 350 lines (limit 350) |
-| Tests | 349 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
+| Source | 313 `.rs` files, about 48,300 lines; the largest is 350 lines (limit 350) |
+| Tests | 356 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
@@ -469,3 +469,38 @@ Opened with the toolbar ⚙ button or **Edit -> Preferences...**. Changes apply 
 | 📦 Assets | Download folder and the three CC0 packs (Photo Textures 1K, Low-poly Models, Realistic Models). The download buttons come in PR 5 |
 
 The Hotkey List window has a "⚙ Change hotkeys..." button. Tests cover the RON round trip, partial files, units, zoom, theme readability, keymap edit / swap / import / export, the 3ds Max key set, autosave and the undo limit.
+
+## 17. Phase 9 PR 3: click-and-drag creation
+
+Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on the Create tab or in the Create menu, then:
+
+| Object | Drag | Then move and click |
+|---|---|---|
+| Box | Base, corner to corner | Height (Creation Method *Cube*: one drag from the centre) |
+| Plane, Settlement | Rectangle; releasing finishes it | — |
+| Sphere, Planet, Gear | Radius; releasing finishes it | — |
+| Cylinder, GeoGen (rock, crystal, cliff, stalagmite) | Radius | Height |
+| Cone | Bottom radius | Height, then top radius |
+| Torus | Main radius | Tube thickness |
+| Terrain, Ocean | Area rectangle | Height / wave height |
+
+- **The view sets the plane:** Top and Perspective draw on the ground grid. Front and Left stand objects up on their own plane.
+- **Snaps (`S`) work while dragging.**
+- **Creation Method rollout:**
+  - *Box / Cube* for the Box.
+  - *Center / Edge* for round objects; Edge means the drag spans the diameter.
+- **Cancel and undo:**
+  - Right-click cancels a half-made object.
+  - `Ctrl+Z` removes a finished one in one step.
+- **The tool stays active**, so you can draw several objects in a row.
+- **Default sizes:**
+  - A plain click, with no drag, still places a default-size object.
+  - Right-clicking a Create button places one at the origin.
+  - The Piston and Hose are click-to-place only.
+- **The status bar names the next step.** The Create panel stays open while you draw.
+- **Tests:** seven tests simulate mouse presses and moves with no screen. They check:
+  - each object's final size and position;
+  - that one undo removes the object and that cancelling works;
+  - that the Front view stands objects upright;
+  - that a plain click still places a default object.
+- **Checked in the running app:** dragging a Box in Perspective made a single box of the right size.
