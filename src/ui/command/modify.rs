@@ -43,8 +43,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     if o.active_level.is_none() && o.shape_object().is_some() {
         return rollouts::spline::shape_base(ui, ed);
     }
-    if o.active_level.is_none() && matches!(o.base, crate::scene::BaseObject::GeoGen(_)) {
-        rollouts::geogen::base(ui, ed);
+    let mech = matches!(o.base, crate::scene::BaseObject::Mech(_));
+    if o.active_level.is_none() && (mech || matches!(o.base, crate::scene::BaseObject::GeoGen(_))) {
+        if mech {
+            rollouts::mech::base(ui, ed);
+        } else {
+            rollouts::geogen::base(ui, ed);
+        }
         if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
             ed.convert_to_editable_poly();
         }

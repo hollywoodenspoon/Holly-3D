@@ -22,6 +22,17 @@ impl Editor {
                 self.create_geogen(mode, p);
                 self.tool = Tool::CreateGeoGen(mode);
             }
+            Tool::CreateMech(kind) => {
+                let p = self.snapped_point_pub(view, cursor);
+                self.create_mech(kind, p);
+                self.tool = Tool::CreateMech(kind);
+            }
+            Tool::PickHoseEnd { top } => {
+                if let Some(obj) = self.pick_object(view, cursor) {
+                    self.bind_hose(top, Some(obj));
+                    self.tool = Tool::None;
+                }
+            }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
             Tool::CreateShape(kind) => {
                 let p = self.snapped_point_pub(view, cursor);

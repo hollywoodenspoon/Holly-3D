@@ -43,6 +43,8 @@ pub enum BaseObject {
     Shape(crate::splines::ShapeObject),
     /// GeoGen procedural rock / crystal / cliff / stalagmite.
     GeoGen(crate::modifiers::GeoGenParams),
+    /// Mech primitive: Gear, Hydraulic Piston part or Hose.
+    Mech(crate::mech::MechPart),
 }
 
 impl BaseObject {
@@ -53,6 +55,7 @@ impl BaseObject {
             BaseObject::Light(_) | BaseObject::Target | BaseObject::Camera(_) => EditablePoly::new(),
             BaseObject::Shape(s) => s.viewport_mesh(),
             BaseObject::GeoGen(g) => g.build(),
+            BaseObject::Mech(m) => m.build(),
         }
     }
     /// The shape flowing into the stack (shapes only).
@@ -71,6 +74,7 @@ impl BaseObject {
             BaseObject::Camera(c) => c.kind.label(),
             BaseObject::Shape(s) => s.label(),
             BaseObject::GeoGen(g) => g.mode.short(),
+            BaseObject::Mech(m) => m.name(),
         }
     }
 }

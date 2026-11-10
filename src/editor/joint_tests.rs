@@ -97,3 +97,48 @@ fn motion_links_and_contact_members_from_the_rollout() {
     ed.undo();
     assert!(ed.scene.assembly.links.is_empty(), "undo removes the link");
 }
+
+#[test]
+fn create_mech_piston_is_two_parts_and_a_piston_joint() {
+    let (mut ed, ..) = editor();
+    let n = ed.scene.objects.len();
+    ed.tool = Tool::CreateMech(crate::mech::MechKind::Piston);
+    click(&mut ed, Vec3::new(0.0, 4.0, 0.0));
+    assert_eq!(ed.scene.objects.len(), n + 2);
+    let j = ed.scene.assembly.joints.last().unwrap();
+    assert!(matches!(j.kind, JointKind::Piston));
+    assert!(ed.scene.objects[j.child].mech().is_some() && ed.scene.objects[j.parent].mech().is_some());
+    ed.undo();
+    assert_eq!(ed.scene.objects.len(), n);
+    assert!(ed.scene.assembly.joints.is_empty());
+}
+
+#[test]
+fn bound_hose_follows_its_end_objects() {
+    use crate::mech::MechPart;
+    let (mut ed, a, p) = editor();
+    ed.create_mech(crate::mech::MechKind::Hose, Vec3::ZERO);
+    let h = ed.current().unwrap();
+    ed.tool = Tool::PickHoseEnd { top: true };
+    click(&mut ed, Vec3::new(-3.0, 0.0, 1.0));
+    assert_eq!(ed.tool, Tool::None);
+    ed.bind_hose(false, Some(p));
+    let hose = |ed: &Editor| match ed.scene.objects[h].mech() {
+        Some(MechPart::Hose(x)) => x.clone(),
+        _ => unreachable!(),
+    };
+    assert_eq!((hose(&ed).top, hose(&ed).bottom), (Some(a), Some(p)));
+    assert!(hose(&ed).start.distance(Vec3::new(-3.0, 0.0, 0.0)) < 1e-5);
+    // Moving the bottom object flexes the hose (and its mesh) live.
+    ed.scene.objects[p].transform.translation = Vec3::new(3.0, 5.0, 0.0);
+    assert!(ed.scene.update_hoses());
+    assert!(hose(&ed).end.distance(Vec3::new(3.0, 5.0, 0.0)) < 1e-5);
+    assert!(ed.scene.objects[h].evaluated_mesh.bounds().unwrap().max.y > 4.9);
+    // Deleting an end object frees that end where it was.
+    ed.scene.delete(p);
+    ed.scene.update_hoses();
+    assert_eq!(hose(&ed).bottom, None);
+    assert!(hose(&ed).end.distance(Vec3::new(3.0, 5.0, 0.0)) < 1e-5);
+    ed.bind_hose(true, None);
+    assert_eq!(hose(&ed).top, None);
+}

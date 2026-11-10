@@ -216,6 +216,20 @@ impl SceneObject {
         }
     }
 
+    pub fn mech(&self) -> Option<&crate::mech::MechPart> {
+        match &self.base {
+            BaseObject::Mech(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    pub fn mech_mut(&mut self) -> Option<&mut crate::mech::MechPart> {
+        match &mut self.base {
+            BaseObject::Mech(m) => Some(m),
+            _ => None,
+        }
+    }
+
     // ---- Pivot tab ---------------------------------------------------------
 
     fn set_pivot(&mut self, new_node: Mat4) {

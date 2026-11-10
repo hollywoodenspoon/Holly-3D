@@ -4,11 +4,19 @@
 //! nothing jumps.
 
 use super::Axis;
+use crate::mech::{GearType, MechPart};
 use crate::scene::{ObjId, Scene, SceneObject};
 
-/// Pitch radius of a gear part (mesh units); gears arrive with the Gear primitive.
-fn pitch_radius(_o: &SceneObject) -> Option<f32> {
-    None
+/// Pitch radius of a round gear part (mesh units).
+fn pitch_radius(o: &SceneObject) -> Option<f32> {
+    match o.mech() {
+        Some(MechPart::Gear(g)) if g.kind != GearType::Rack => Some(g.pitch_radius()),
+        _ => None,
+    }
+}
+
+fn is_ring(o: &SceneObject) -> bool {
+    matches!(o.mech(), Some(MechPart::Gear(g)) if g.kind == GearType::Ring)
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -102,14 +110,16 @@ impl Scene {
     }
 
     /// Auto-Ratio from Gear Teeth / Radius: meshing gears turn opposite
-    /// ways at the inverse ratio of their radii; a pinion drives a rack by
-    /// its arc length (and the reverse).
+    /// ways at the inverse ratio of their radii (the same way inside an
+    /// internal ring); a pinion drives a rack by its arc length (and the
+    /// reverse). Gear parts use their pitch radius (module × teeth / 2).
     pub fn auto_ratio(&self, driver: ObjId, driven: ObjId) -> Option<f32> {
         let deg = std::f32::consts::PI / 180.0;
         let (ra, rb) = (self.joint_radius(driver), self.joint_radius(driven));
         self.joint_value(driver)?;
         self.joint_value(driven)?;
         Some(match (ra, rb) {
+            (Some(a), Some(b)) if is_ring(&self.objects[driver]) || is_ring(&self.objects[driven]) => a / b,
             (Some(a), Some(b)) => -a / b,
             (Some(a), None) => a * deg,
             (None, Some(b)) => 1.0 / (b * deg),

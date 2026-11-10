@@ -46,6 +46,12 @@ pub enum Tool {
     Create(PrimitiveKind),
     /// Click-placed GeoGen procedural object.
     CreateGeoGen(crate::modifiers::GeoMode),
+    /// Click-placed Mech primitive (Gear, Piston, Hose).
+    CreateMech(crate::mech::MechKind),
+    /// Hose: click the object its top (start) or bottom (end) binds to.
+    PickHoseEnd {
+        top: bool,
+    },
     TargetWeld {
         first: Option<crate::mesh::VertexId>,
     },
@@ -106,6 +112,9 @@ impl Tool {
             Tool::None => None,
             Tool::Create(_) => Some("Click in a viewport to place the object"),
             Tool::CreateGeoGen(_) => Some("Click in a viewport to place the GeoGen object"),
+            Tool::CreateMech(_) => Some("Click in a viewport to place the Mech part"),
+            Tool::PickHoseEnd { top: true } => Some("Hose: click the Top End Object (Esc to cancel)"),
+            Tool::PickHoseEnd { .. } => Some("Hose: click the Bottom End Object (Esc to cancel)"),
             Tool::TargetWeld { first: None } => Some("Target Weld: click the vertex to weld"),
             Tool::TargetWeld { .. } => Some("Target Weld: click the target vertex"),
             Tool::InsertVertex => Some("Insert Vertex: click on an edge or polygon"),

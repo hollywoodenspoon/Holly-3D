@@ -7,8 +7,8 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
-| Source | 218 `.rs` files, about 33,600 lines; the largest is 347 lines (limit 350) |
-| Tests | 232 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 225 `.rs` files, about 34,600 lines; the largest is 347 lines (limit 350) |
+| Tests | 239 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
@@ -291,5 +291,10 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - `[Contact]` toolbar toggle and a `[✓] Contact Member` checkbox per part: overlapping members push each other along their own hinge or slider (the smallest change that clears, found by stepping and then bisecting, so parts end up touching). The dragged (selected) part pushes; a part that cannot give way (welded, or at a stop) blocks the dragged part instead. Parts jointed to each other are mated by design and never collide.
    - Motion Links in the Assembly rollout: `Driven by [part]` links the current part's hinge or slider to another's (driven = offset + Ratio × driver, the offset taken when linking so nothing jumps). `Ratio` spinner (right-click resets to 1) and `[Auto-Ratio from Gear Teeth / Radius]`: meshing gears turn opposite ways at the inverse ratio of their radii; a pinion drives a rack by arc length. Loops of links are refused, chains of links settle, and links to deleted parts are dropped.
    - Tests: gear pair (−r₁/r₂) and rack (arc length) follow their driver; loop and no-hinge refusals; a new ratio keeps the driven part in place; links drop with their driver; a slider member is pushed until touching; Contact Sets off lets parts pass; a welded member blocks the dragged one; rollout flow with undo.
-4. ❌ Involute Gear, Hydraulic Piston assembly and Hose / Mecha Cable primitives.
+4. ✅ **Mech primitives: Gear, Hydraulic Piston and Hose.** `src/mech/`, `src/editor/mech.rs`, `src/ui/rollouts/mech.rs`.
+   - Create -> Geometry -> Mech: `[Gear]` `[Piston]` `[Hose]`. Click a type, then click in a viewport to place it; right-click a type to create at the origin. Every parameter stays live in the Modify panel, and Convert to Editable Poly collapses the part.
+   - **Involute Gear:** Type (External Spur, Internal Ring or Linear Rack), Teeth 6..200, Module, Pressure Angle (20°), Thickness, Bore Radius and Helix Angle. True involute flanks from the base circle, addendum 1 m and dedendum 1.25 m; ring gears have their teeth inside a rim, racks have straight-sided teeth at the pressure angle. Gear pitch radii drive the Motion Link Auto-Ratio (a ring gear turns the same way as its pinion).
+   - **Hydraulic Piston:** a housing (barrel with a gland) and a rod, each with an eyelet at its pivot, created in line and joined by a Hydraulic Piston joint so they keep aiming at each other. Radius, Length, Eyelet Radius and Sides per part.
+   - **Hose / Mecha Cable:** Bezier or Catmull-Rom path with Tension, Slack, Gravity Sag, Diameter, Sides and Segments, plus Corrugated Rings (Ring Count, Ring Depth, Round or Square). Free ends have Start / End spinners. `Pick Top / Bottom End Object` binds an end to a part: the hose leaves the top object down its −Z axis, enters the bottom object up its +Z, and flexes live as either part moves. `[Free]` unbinds an end; deleting an end object leaves that end where it was.
+   - Tests: spur gear vertex / edge / face counts, closed and outward, addendum and dedendum radii, bore radius (genus 1); ring teeth point inward; rack length is teeth × circular pitch, and the helix twists the top face; piston parts; hose sag, end tangents, square rings and watertight caps; the Create tool builds a piston as two parts and a joint (one undo step); a bound hose follows its end objects and is freed when one is deleted.
 5. ❌ Panel Groove (Edit Poly operation and modifier).

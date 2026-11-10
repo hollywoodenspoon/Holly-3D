@@ -43,6 +43,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                         BaseObject::Camera(_) => "🎥",
                         BaseObject::Shape(_) => "〰",
                         BaseObject::GeoGen(_) => "◆",
+                        BaseObject::Mech(_) => "⚙",
                     };
                     (k, o.name.clone(), o.selected, o.hidden, o.frozen, o.wire_color, icon)
                 })

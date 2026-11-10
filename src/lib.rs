@@ -4,6 +4,7 @@ pub mod assembly;
 pub mod editor;
 pub mod io;
 pub mod materials;
+pub mod mech;
 pub mod mesh;
 pub mod modifiers;
 pub mod paint;

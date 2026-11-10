@@ -1,7 +1,13 @@
-//! Contact Sets and Motion Links, as edited from the toolbar and the
-//! Assembly rollout (each change is one undo step).
+//! Contact Sets and Motion Links (toolbar and Assembly rollout) and the
+//! Mech primitives (Create tab): Gear, Hydraulic Piston and Hose. Each
+//! change is one undo step.
 
 use super::*;
+use crate::assembly::Frame;
+use crate::assembly::mount::{Mount, piston_at};
+use crate::mech::{Gear, Hose, MechKind, MechPart, PistonPart};
+use crate::scene::BaseObject;
+use bevy::math::Quat;
 
 impl Editor {
     /// Toolbar `[Contact]`: Contact Members push each other while on.
@@ -53,5 +59,51 @@ impl Editor {
         self.checkpoint("Auto-Ratio");
         self.scene.set_link_ratio(id, r);
         self.status = format!("Motion Link ratio {r:.4}");
+    }
+
+    /// Create -> Geometry -> Mech. A piston is a housing and a rod (rod
+    /// above, upside down) joined by a Hydraulic Piston joint.
+    pub fn create_mech(&mut self, kind: MechKind, at: Vec3) {
+        self.checkpoint("Create Mech");
+        let mech = |m| BaseObject::Mech(m);
+        let id = match kind {
+            MechKind::Gear => self.scene.add(mech(MechPart::Gear(Gear::default())), at),
+            MechKind::Hose => self.scene.add(mech(MechPart::Hose(Hose::default())), at),
+            MechKind::Piston => {
+                let (hp, rp) = (PistonPart::housing(), PistonPart::rod());
+                let reach = 1.2 * hp.eyelet + hp.length + 1.2 * rp.eyelet + 0.3 * rp.length;
+                let h = self.scene.add(mech(MechPart::Piston(hp)), at);
+                let r = self.scene.add(mech(MechPart::Piston(rp)), at + Vec3::Z * reach);
+                self.scene.objects[r].transform.rotation = Quat::from_rotation_x(std::f32::consts::PI);
+                let f = |s: &Scene, id| Frame::of(&s.objects[id].transform);
+                let (a, b) =
+                    (Mount { obj: h, point: at, normal: Vec3::Z }, Mount { obj: r, point: at + Vec3::Z * reach, normal: -Vec3::Z });
+                let j = piston_at((h, f(&self.scene, h)), (r, f(&self.scene, r)), &a, &b);
+                // New parts cannot form a loop.
+                let _ = self.scene.add_joint(j);
+                h
+            }
+        };
+        self.scene.select_only(Some(id));
+        self.sub = SubObject::Object;
+        self.tab = CommandTab::Modify;
+        self.status = format!("Created {}", self.scene.objects[id].name);
+    }
+
+    /// Binds the current hose's top (start) or bottom (end) to `obj`, or frees it.
+    pub fn bind_hose(&mut self, top: bool, obj: Option<ObjId>) {
+        let Some(id) = self.current() else { return };
+        if obj == Some(id) {
+            return;
+        }
+        self.checkpoint("Bind Hose");
+        if let Some(MechPart::Hose(h)) = self.scene.objects[id].mech_mut() {
+            if top {
+                h.top = obj;
+            } else {
+                h.bottom = obj;
+            }
+        }
+        self.scene.update_hoses();
     }
 }
