@@ -6,7 +6,7 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **8 done**: Phases 1–5 from `CLAUDE.md`, Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) merged to `main` (PRs #1–#5); **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky) merged in PR #6 after a hands-on test; **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio) is in PR #7 |
+| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app) and **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, unit-tested, not yet tested by hand) |
 | Source | 258 `.rs` files, about 39,700 lines; the largest is 347 lines (limit 350) |
 | Tests | 292 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
@@ -210,7 +210,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 6 | File I/O (`.mmax`, OBJ, glTF/GLB, FBX), cameras, Align, Edit Poly gap tools, modifier gizmos, Spline Boolean / Refine, 3D Snaps, selection regions, HDRI, Cycles through Blender, copy-on-write undo, tiled renderer, SIMD BVH (§9) | #4 ✅ merged |
 | 7 | Bone-free mech assembly: joints and the J tool, FK / IK drag, Mirror Mech Limb, Contact Sets, Motion Links, Gear / Piston / Hose primitives, Panel Groove (§10) | #4 ✅ merged |
 | 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 ✅ merged |
-| 8B | §11 polish, procedural Terrain (6 biomes, erosion, auto Material IDs), Gerstner Ocean with crest foam, Planet Studio (surface, clouds, atmosphere, rings) (§12) | #7 open |
+| 8B | §11 polish, procedural Terrain (6 biomes, erosion, auto Material IDs), Gerstner Ocean with crest foam, Planet Studio (surface, clouds, atmosphere, rings) (§12) | #7 ✅ merged |
 
 ---
 
@@ -356,6 +356,9 @@ The app was run on a virtual display and driven with real clicks and hotkeys, us
 - ✅ At night the box rendered almost black under moonlight alone. The night sky now gives a little more skylight (a night ambient term plus a brighter zenith and horizon), and the default Moonlight multiplier is 0.22 (was 0.12).
 
 ## 12. Phase 8B: §11 polish, procedural Terrain, Gerstner Ocean and Planet Studio
+
+Merged to `main` in PR #7. Covered by headless tests only so far; a hands-on test in the running app (Create -> Geometry -> Worlds, the Planet rollouts and an F9 render of a planet) is still to do.
+
 
 0. ✅ **§11 polish:** the four open issues above. `src/viewport/skybox.rs`, `src/render/hdri.rs`, `src/render/gi.rs`, `src/render/sky.rs`, `src/ui/material_editor/multi.rs`. The F9 raytracer's shadow rays also pass through translucent surfaces (opacity × vertex alpha, up to 8 layers), so cloud shells and glass cast soft, partial shadows.
 1. ✅ **Terrain** (`Create -> Geometry -> Worlds -> Terrain`, and a **Terrain** stack modifier). `src/generators/terrain.rs`, `terrain_ids.rs`, `erosion.rs`.
