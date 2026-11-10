@@ -175,3 +175,41 @@ fn edit_normals_rotate_with_the_e_gizmo() {
     assert!((q * n[&top][0]).abs_diff_eq(Vec3::NEG_Y, 1e-4));
     assert_eq!(o.evaluated_mesh.counts(), before.evaluated_mesh.counts());
 }
+
+#[test]
+fn blast_zones_select_move_and_scale() {
+    use crate::editor::select::SelectOp;
+    let mut ed = Editor::default();
+    let id = ed.scene.add(BaseObject::Primitive(Primitive::default_of(PrimitiveKind::Box)), Vec3::new(2.0, 0.0, 0.0));
+    ed.scene.objects[id].evaluate();
+    ed.scene.select_only(Some(id));
+    ed.add_modifier("Battlefield / Ruin");
+    ed.edit_active_modifier("Add Zone", |k, _| {
+        if let ModifierKind::Battlefield(b) = k {
+            b.add_zone(None);
+            b.add_zone(None);
+        }
+    });
+    ed.set_mod_sub(Some(ModSub::BlastZones));
+    assert_eq!(ed.active_mod_sub(), Some(ModSub::BlastZones));
+    let zones = |ed: &Editor| match ed.scene.objects[id].active_modifier() {
+        Some(ModifierKind::Battlefield(b)) => b.zones.clone(),
+        _ => panic!("battlefield on top"),
+    };
+    // Clicking the first zone's centre selects only it.
+    let view = ed.viewports.active;
+    let at = ed.viewports.views[view].to_screen(Vec3::new(2.0, 0.0, 0.0)).unwrap();
+    assert!(ed.mod_click_select(view, at, SelectOp::Replace));
+    let z = zones(&ed);
+    assert!(z[0].selected && !z[1].selected);
+    assert!(ed.mod_sub_frame().unwrap().translation.abs_diff_eq(Vec3::new(2.0, 0.0, 0.0), 1e-4));
+    // W moves it, R scales its sphere.
+    let r0 = z[0].radius;
+    let before = ed.scene.objects[id].clone();
+    let total = Mat4::from_translation(Vec3::new(2.0, 1.0, 0.0)) * Mat4::from_scale(Vec3::splat(2.0)) * Mat4::from_translation(Vec3::new(-2.0, 0.0, 0.0));
+    ed.drag_mod_sub(id, &before, ModSub::BlastZones, total);
+    let z = zones(&ed);
+    assert!(z[0].center.abs_diff_eq(Vec3::Y, 1e-4), "{}", z[0].center);
+    assert!((z[0].radius - r0 * 2.0).abs() < 1e-3);
+    assert_eq!(z[1], zones(&ed)[1], "unselected zone stays");
+}

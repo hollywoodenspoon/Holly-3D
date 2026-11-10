@@ -108,6 +108,10 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         WorldGen::Terrain(p) => rollout(ui, "Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
         WorldGen::Ocean(p) => rollout(ui, "Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
         WorldGen::Planet(p) => tex = super::planet::params(ui, &mut t, p),
+        WorldGen::Settlement(p) => rollout(ui, "GhostTown Settlement", true, |ui| super::ghosttown::settlement_params(ui, &mut t, p, true)),
+    }
+    if matches!(w, WorldGen::Settlement(_)) {
+        super::ghosttown::pack_button(ui, ed);
     }
     if t.started {
         ed.checkpoint("World Parameters");

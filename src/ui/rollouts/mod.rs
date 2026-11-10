@@ -5,6 +5,7 @@ pub mod deformers;
 pub mod edit_geometry;
 pub mod edit_sub;
 pub mod geogen;
+pub mod ghosttown;
 pub mod mech;
 pub mod modifiers;
 pub mod planet;

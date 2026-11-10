@@ -93,6 +93,9 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::EditNormals(_)) => return rollouts::adv_mods::edit_normals(ui, ed),
         Some(ModifierKind::Boolean(_)) => return rollouts::adv_mods::boolean(ui, ed),
         Some(ModifierKind::ProOptimizer(_)) => return rollouts::adv_mods::pro_optimizer(ui, ed),
+        Some(ModifierKind::Settlement(_)) => return rollouts::ghosttown::settlement_modifier(ui, ed),
+        Some(ModifierKind::Architect(_)) => return rollouts::ghosttown::architect_modifier(ui, ed),
+        Some(ModifierKind::Battlefield(_)) => return rollouts::ghosttown::battlefield_modifier(ui, ed),
         _ => {}
     }
     if !o.sub_object_editable() {

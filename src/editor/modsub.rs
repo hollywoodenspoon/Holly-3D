@@ -1,6 +1,6 @@
 //! Modifier sub-objects that are not mesh components: FFD Control Points /
 //! Lattice, the UVW Map / Bend / Twist / Taper Gizmo and Center, the Symmetry
-//! Mirror and the Lathe Axis (selection, W/E/R frames, drags, align tools).
+//! Mirror, the Lathe Axis and Battlefield Blast Zones (selection, W/E/R frames, drags, align tools).
 
 use super::select::{SelectOp, VERTEX_PICK_PX};
 use super::*;
@@ -85,6 +85,7 @@ impl Editor {
                 let (_, r, _) = s.mirror.to_scale_rotation_translation();
                 (s.point(), rot * r)
             }
+            (ModSub::BlastZones, ModifierKind::Battlefield(b)) => (b.selected_center()?, local_rot),
             _ => return None,
         };
         Some(Xform { translation: w.transform_point3(center), rotation: r, scale: Vec3::ONE })
@@ -123,6 +124,7 @@ impl Editor {
                 let (_, r, t) = (local * s.mirror).to_scale_rotation_translation();
                 s.mirror = Mat4::from_rotation_translation(r, t);
             }
+            (ModSub::BlastZones, Some(ModifierKind::Battlefield(b))) => b.transform_selected(local),
             (sub, Some(k)) => match (sub, k.deformer_gizmo_mut()) {
                 (ModSub::Gizmo, Some((g, _))) => *g = local * *g,
                 (ModSub::Center, Some((g, c))) => *c = g.inverse().transform_point3(local.transform_point3(g.transform_point3(*c))),
@@ -172,6 +174,10 @@ impl Editor {
                 self.normals_click(view, cursor, op);
                 true
             }
+            Some(ModSub::BlastZones) => {
+                self.zones_click(view, cursor, op);
+                true
+            }
             Some(_) => true,
             None => false,
         }
@@ -187,6 +193,10 @@ impl Editor {
             }
             Some(ModSub::Normal) => {
                 self.normals_marquee(view, region, op);
+                true
+            }
+            Some(ModSub::BlastZones) => {
+                self.zones_marquee(view, region, op);
                 true
             }
             Some(_) => true,

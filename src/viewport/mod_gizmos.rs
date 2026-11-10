@@ -1,6 +1,6 @@
 //! Viewport wireframes for modifier gizmos: the FFD lattice cage, the UVW Map
 //! projection gizmo, the Bend / Twist / Taper gizmo box and center, and the
-//! Symmetry mirror plane (yellow, orange while their sub-object is active).
+//! Symmetry mirror plane and Battlefield blast zones (yellow, orange while their sub-object is active).
 
 use super::lines::OverlayLines;
 use crate::editor::Editor;
@@ -108,6 +108,17 @@ pub fn draw(g: &mut Gizmos<OverlayLines>, ed: &Editor, cache: &mut BoxCache) {
                 g.line(c[k], c[(k + 1) % 4], color);
             }
             g.line(w.transform_point3(p), w.transform_point3(p + s.normal() * size * 0.3), color);
+        }
+        Some(ModifierKind::Battlefield(b)) => {
+            // Blast zones: three great circles per sphere, orange when selected.
+            let active = sub == Some(ModSub::BlastZones);
+            for z in &b.zones {
+                let color = if active && z.selected { ORANGE } else { YELLOW };
+                let m = w * Mat4::from_scale_rotation_translation(Vec3::splat(z.radius * 2.0), Quat::IDENTITY, z.center);
+                for axis in 0..3 {
+                    circle(g, m, 0.0, axis, color);
+                }
+            }
         }
         Some(k) if k.deformer_gizmo().is_some() => {
             let (gz, center) = k.deformer_gizmo().unwrap_or_default();
