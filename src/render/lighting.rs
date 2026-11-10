@@ -85,6 +85,13 @@ pub struct Light {
     pub use_atten: bool,
     pub atten_start: f32,
     pub atten_end: f32,
+    /// Near attenuation: the light fades in from `near_start` to `near_end`.
+    #[serde(default)]
+    pub use_near: bool,
+    #[serde(default)]
+    pub near_start: f32,
+    #[serde(default)]
+    pub near_end: f32,
     pub show_atten: bool,
     /// Spot cone angles in degrees (full angle, like 3ds Max).
     pub hotspot: f32,
@@ -113,6 +120,9 @@ impl Light {
             use_atten: false,
             atten_start: 0.0,
             atten_end: 20.0,
+            use_near: false,
+            near_start: 0.0,
+            near_end: 2.0,
             show_atten: false,
             hotspot: 43.0,
             falloff: 45.0,
@@ -140,9 +150,35 @@ impl Light {
         self.hotspot = self.hotspot.clamp(0.5, self.falloff - 0.5);
     }
 
+    /// Near / far attenuation ramps (3ds Max: dark before Near Start, full
+    /// from Near End to Far Start, dark again at Far End).
+    pub fn atten(&self) -> Atten {
+        Atten {
+            near: (self.use_near && self.kind.has_range()).then_some((self.near_start, self.near_end.max(self.near_start))),
+            far: (self.use_atten && self.kind.has_range()).then_some((self.atten_start, self.atten_end.max(self.atten_start))),
+        }
+    }
+
     /// Viewport range: attenuation end, or "the whole scene".
     pub fn range(&self) -> f32 {
         if self.use_atten { self.atten_end.max(0.01) } else { 200.0 }
+    }
+}
+
+/// Near / far attenuation ramps of a light (world units).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Atten {
+    pub near: Option<(f32, f32)>,
+    pub far: Option<(f32, f32)>,
+}
+
+impl Atten {
+    /// Intensity factor at distance `d`: linear ramps, like 3ds Max.
+    pub fn factor(&self, d: f32) -> f32 {
+        let ramp = |a: f32, b: f32| if b - a < 1e-6 { if d >= b { 1.0 } else { 0.0 } } else { ((d - a) / (b - a)).clamp(0.0, 1.0) };
+        let near = self.near.map_or(1.0, |(a, b)| ramp(a, b));
+        let far = self.far.map_or(1.0, |(a, b)| 1.0 - ramp(a, b));
+        near * far
     }
 }
 

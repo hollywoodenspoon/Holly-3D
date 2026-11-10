@@ -5,6 +5,7 @@ pub mod bvh;
 pub mod cycles;
 pub mod environment;
 pub mod framebuffer;
+pub mod hdri;
 pub mod job;
 pub mod lighting;
 pub mod outline;

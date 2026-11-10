@@ -116,11 +116,19 @@ fn draw_light<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, o: &SceneObje
     if l.kind.is_directional() {
         cylinder(g, p, dir, len, l.beam_radius, CONE_BLUE);
     }
-    if l.kind.has_range() && l.use_atten && l.show_atten {
-        if l.atten_start > 0.0 {
-            sphere(g, p, l.atten_start, Color::srgba(0.4, 0.9, 1.0, 0.5));
+    // Near Start / End in blues, Far Start / End in yellow / orange.
+    let a = l.atten();
+    if l.show_atten {
+        for (r, c) in [
+            (a.near.map(|n| n.0), Color::srgba(0.25, 0.45, 1.0, 0.55)),
+            (a.near.map(|n| n.1), Color::srgba(0.4, 0.9, 1.0, 0.6)),
+            (a.far.map(|f| f.0), Color::srgba(1.0, 0.85, 0.3, 0.55)),
+            (a.far.map(|f| f.1), Color::srgba(0.95, 0.55, 0.2, 0.6)),
+        ] {
+            if let Some(r) = r.filter(|r| *r > 1e-3) {
+                sphere(g, p, r, c);
+            }
         }
-        sphere(g, p, l.range(), Color::srgba(0.95, 0.55, 0.2, 0.6));
     }
 }
 

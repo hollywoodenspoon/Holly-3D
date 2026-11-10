@@ -1,7 +1,8 @@
 //! Environment & Effects (`8`): 1-click lighting presets, background,
-//! ambient tint and exponential fog.
+//! ambient tint, HDRI environment map and exponential fog.
 
 use crate::editor::Editor;
+use crate::render::hdri::Hdri;
 use crate::render::{Environment, LightingPreset};
 use crate::ui::widgets::{Track, color_row, dim, num_row};
 use bevy_egui::egui::{self, RichText};
@@ -21,6 +22,50 @@ fn edit(ed: &mut Editor, body: impl FnOnce(&mut Environment, &mut Track)) {
     if t.changed {
         ed.scene.environment = env;
     }
+}
+
+/// Environment Map: an equirectangular `.hdr` / `.exr` HDRI.
+fn hdri_rows(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
+    ui.separator();
+    ui.label(RichText::new("Environment Map (HDRI)").strong());
+    ui.horizontal(|ui| {
+        let name = env.hdri.as_ref().and_then(|h| h.path.file_name()).map_or("None".into(), |n| n.to_string_lossy().to_string());
+        let pick = ui.button(format!("Map: {name}")).on_hover_text("Pick an equirectangular .hdr / .exr image");
+        if pick.clicked()
+            && let Some(path) = rfd::FileDialog::new().add_filter("HDR image", &["hdr", "exr"]).pick_file()
+        {
+            t.started = true;
+            match Hdri::open(&path) {
+                Ok(h) => {
+                    ui.data_mut(|d| {
+                        d.remove::<String>(egui::Id::new("hdri_err"));
+                    });
+                    env.hdri = Some(h);
+                    t.changed = true;
+                }
+                Err(e) => {
+                    ui.data_mut(|d| d.insert_temp(egui::Id::new("hdri_err"), e));
+                }
+            }
+        }
+        if env.hdri.is_some() && ui.button("Remove").clicked() {
+            (t.started, t.changed) = (true, true);
+            env.hdri = None;
+        }
+    });
+    if let Some(e) = ui.data(|d| d.get_temp::<String>(egui::Id::new("hdri_err"))) {
+        ui.label(dim(&format!("Could not load: {e}")));
+    }
+    let Some(h) = env.hdri.as_mut() else { return };
+    if h.image.is_none() {
+        ui.label(dim("Image not found on disk; pick it again."));
+    }
+    grid(ui, "env_hdri", |ui| {
+        num_row(ui, t, "Strength", &mut h.strength, 0.0..=20.0, 1.0);
+        num_row(ui, t, "Rotation", &mut h.rotation, -360.0..=360.0, 0.0);
+    });
+    t.r(ui.checkbox(&mut h.lighting, "Use for Lighting (image-based ambient)"));
+    t.r(ui.checkbox(&mut h.show_in_viewport, "Show in Perspective Viewports"));
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor) {
@@ -55,6 +100,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
                     num_row(ui, t, "Ambient Level", &mut env.ambient_level, 0.0..=4.0, 1.0);
                 });
                 t.r(ui.checkbox(&mut env.auto_default_lights, "Default Lights when the scene has none"));
+                hdri_rows(ui, env, t);
                 ui.separator();
                 ui.label(RichText::new("Atmosphere").strong());
                 t.r(ui.checkbox(&mut env.fog, "Exponential Fog"));

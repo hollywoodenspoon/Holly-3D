@@ -98,7 +98,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
   - Length, width, height, U/V/W tile and flip settings, and the X/Y/Z alignment.
   - Fit, Center, Normal Align, View Align and Reset.
   - A gizmo sub-object.
-- ❌ **Bitmap Fit** is greyed out.
+- ✅ **Bitmap Fit:** pick an image; the gizmo keeps its width and takes the image's aspect ratio.
 - ✅ **Unwrap UVW:**
   - A floating UV editor with vertex, edge and polygon selection.
   - Move, rotate, scale, Relax and Stitch.
@@ -134,9 +134,9 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 - ✅ Light types: Omni, Target Spot, Free Spot, Target Directional, Free Directional, Skylight.
 - ✅ Light Parameters: on/off, type, shadows, multiplier, colour plus Kelvin presets, decay/range, Show Attenuation, hotspot and falloff, shadow bias, softness and colour.
 - ✅ Hotspot and falloff cone gizmos.
-- 🟡 Attenuation has a far range only; there is no separate **near** attenuation.
+- ✅ Near and far attenuation (Use Near / Near Start / Near End plus the far range), each drawn as a pair of wire spheres when Show Attenuation is on.
 - ✅ The Environment dialog (`8`): five lighting rig presets, background colour, ambient tint, exponential fog.
-- ❌ **HDRI skybox** (an image as the environment background).
+- ✅ **HDRI environment map** (`.hdr` / `.exr`, equirectangular): Strength, Rotation, Use for Lighting, Show in Perspective Viewports. It is the F9 background and reflection source, the Cycles world texture, and a skybox in perspective viewports.
 
 ---
 
@@ -190,7 +190,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Command panel: Create, Modify and Pivot tabs | ✅ | |
 | Create tab: geometry, GeoGen, shapes, lights, cameras | ✅ | Target and Free Camera |
 | Modify tab: name and wireframe colour, searchable modifier list, stack with sub-object expanders | ✅ | Every modifier in the list is available |
-| Stack action row | 🟡 | Make Unique, Delete and Collapse work. ❌ **Pin Stack**. Show End Result is greyed out because the end result is always shown |
+| Stack action row | 🟡 | Make Unique, Delete and Collapse work. ✅ **Pin Stack** keeps the Modify panel on the pinned object whatever is selected. Show End Result is greyed out because the end result is always shown |
 | Pivot tab: Affect Pivot Only, Center to Object, Align to World, Bottom-Center, Reset XForm | ✅ | |
 | Status bar: mesh statistics, Abs/Offset X/Y/Z type-in | ✅ | |
 | Quad menu: Tools 1, Transform, Display, Convert To | ✅ | |
@@ -256,5 +256,9 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Rectangle drags corner to corner, Circle drags from the center, Lasso drags a free-hand outline. Fence drags its first side, then each click adds a corner; click the first corner, double-click or right-click to close it.
    - Every window selection uses the region: objects, Edit Poly sub-objects, spline vertices / segments / splines, FFD control points and Edit Normals.
    - Tests: shape cycling, containment for each shape (an L-shaped lasso excludes its notch, degenerate regions are refused), and Circle / Fence / Lasso selecting the right boxes in a Top view.
-9. **Smaller items:** HDRI environment background, near attenuation on lights, Bitmap Fit in UVW Map, Pin Stack.
+9. ✅ **Smaller items.**
+   - HDRI environment map: `src/render/hdri.rs`, `src/viewport/skybox.rs`, the `8` dialog. The image path is saved with the scene and the image reloaded on open. In F9, camera misses and reflections sample it, and Use for Lighting adds its solid-angle average to the ambient. Perspective viewports get a cubemap skybox resampled from the equirect image.
+   - Near attenuation: Use Near / Near Start / Near End on Omni and Spot lights. The raytracer ramps light up from Near Start to Near End and down over the far range. Show Attenuation draws both pairs of spheres.
+   - Bitmap Fit in UVW Map; Pin Stack in the stack action row.
+   - Tests: equirect sampling, rotation, average and cube faces; HDRI background and image-based ambient in F9; HDRI save / open round trip; near and far attenuation ramps; Bitmap Fit aspect; Pin Stack.
 10. **Checks still to do:** try Edit Normals `E` rotation in the app, and run the Cycles bridge against a real Cycles install.

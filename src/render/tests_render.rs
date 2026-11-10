@@ -152,3 +152,23 @@ fn frame_buffer_blocks_and_files() {
     assert!(fb.save("x.bmpx").is_err());
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn hdri_background_and_image_based_ambient() {
+    use crate::render::hdri::{HdrImage, Hdri};
+    let mut s = scene_with(PrimitiveKind::Plane, None);
+    let cfg = small();
+    let plain = render(&s, &cfg, false);
+    // Sky blue above, green ground below: the Top camera's misses see the ground.
+    let px = (0..32).map(|i| if i < 16 { Vec3::new(0.2, 0.3, 1.0) } else { Vec3::new(0.1, 0.8, 0.1) }).collect();
+    let mut h = Hdri::with_image("t.hdr".into(), HdrImage { w: 4, h: 8, px });
+    h.lighting = false;
+    s.environment.hdri = Some(h);
+    let px = render(&s, &cfg, false);
+    let c = px[0].hdr.truncate();
+    assert!(c.y > 0.7 && c.x < 0.2, "background shows the HDRI ground: {c}");
+    assert_eq!(px[16 * 32 + 16].hdr, plain[16 * 32 + 16].hdr, "lighting off: the plane is unchanged");
+    s.environment.hdri.as_mut().unwrap().lighting = true;
+    let lit = render(&s, &cfg, false);
+    assert!(lit[16 * 32 + 16].hdr.y > plain[16 * 32 + 16].hdr.y + 0.05, "image-based ambient brightens the plane");
+}

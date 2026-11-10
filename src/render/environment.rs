@@ -41,6 +41,9 @@ pub struct Environment {
     pub fog_color: [f32; 3],
     /// Exponential fog density (per world unit).
     pub fog_density: f32,
+    /// HDRI background / image-based ambient (`.hdr` / `.exr`).
+    #[serde(default)]
+    pub hdri: Option<super::hdri::Hdri>,
 }
 
 impl Default for Environment {
@@ -54,6 +57,7 @@ impl Default for Environment {
             fog: false,
             fog_color: [0.6, 0.65, 0.72],
             fog_density: 0.05,
+            hdri: None,
         }
     }
 }

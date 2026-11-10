@@ -19,7 +19,8 @@ impl Editor {
 
     /// Open Scene (`Ctrl+O`): replaces the scene and clears the undo history.
     pub fn open_scene(&mut self, path: &Path) -> Result<(), String> {
-        let scene = scene_file::load(path)?;
+        let mut scene = scene_file::load(path)?;
+        let hdri = scene.environment.hdri.as_mut().map(|h| h.reload());
         self.scene = scene;
         self.sub = SubObject::Object;
         self.caddy = None;
@@ -27,7 +28,10 @@ impl Editor {
         self.mod_sub = None;
         self.history = Default::default();
         self.scene_path = Some(path.to_path_buf());
-        self.status = format!("Opened {}", path.display());
+        self.status = match hdri {
+            Some(Err(e)) => format!("Opened {} (HDRI missing: {e})", path.display()),
+            _ => format!("Opened {}", path.display()),
+        };
         Ok(())
     }
 

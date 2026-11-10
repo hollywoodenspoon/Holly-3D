@@ -75,3 +75,18 @@ fn presets_place_lights_around_the_scene() {
     apply_preset(&mut env, LightingPreset::DefaultHeadlight, c, 2.0);
     assert!(env.auto_default_lights);
 }
+
+#[test]
+fn near_and_far_attenuation_ramps() {
+    let mut l = Light::new(LightKind::Omni);
+    assert_eq!(l.atten().factor(1000.0), 1.0, "no attenuation: full everywhere");
+    (l.use_near, l.near_start, l.near_end) = (true, 1.0, 3.0);
+    (l.use_atten, l.atten_start, l.atten_end) = (true, 10.0, 20.0);
+    let a = l.atten();
+    let f = |d: f32| a.factor(d);
+    assert_eq!((f(0.5), f(2.0), f(5.0), f(15.0), f(25.0)), (0.0, 0.5, 1.0, 0.5, 0.0));
+    // Directional lights and the Skylight have no range.
+    let mut d = Light::new(LightKind::FreeDirect);
+    d.use_near = true;
+    assert_eq!(d.atten(), Default::default());
+}

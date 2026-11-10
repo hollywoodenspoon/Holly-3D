@@ -120,6 +120,14 @@ impl UvwMapMod {
         }
     }
 
+    /// Bitmap Fit: gives the gizmo a bitmap's `width / height` aspect,
+    /// keeping its width (U) and scaling the length (V).
+    pub fn bitmap_fit(&mut self, aspect: f32) {
+        if aspect.is_finite() && aspect > 1e-6 {
+            self.length = (self.width / aspect).max(1e-4);
+        }
+    }
+
     /// Center: moves the gizmo to the input's center (keeps size/orientation).
     pub fn center_on(&mut self, input: &EditablePoly) {
         let inv = self.rotation.inverse();

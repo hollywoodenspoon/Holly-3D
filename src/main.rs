@@ -5,7 +5,7 @@ use bevy_egui::EguiPlugin;
 use minimax::editor::Editor;
 use minimax::primitives::PrimitiveKind;
 use minimax::ui::UiPlugin;
-use minimax::viewport::{light_icons, light_sync, lines, mat_sync, outline, render_sync};
+use minimax::viewport::{light_icons, light_sync, lines, mat_sync, outline, render_sync, skybox};
 
 fn main() {
     let mut editor = Editor::default();
@@ -61,5 +61,6 @@ fn main() {
     lines::register(&mut app);
     outline::register(&mut app);
     light_sync::register(&mut app);
+    skybox::register(&mut app);
     app.run();
 }

@@ -16,10 +16,10 @@ pub mod modsub;
 pub mod normals;
 pub mod paint;
 pub mod poly_tools;
-#[cfg(test)]
-mod region_tests;
 pub mod render;
 pub mod select;
+#[cfg(test)]
+mod selection_tests;
 pub mod snap;
 pub mod spline_tools;
 pub mod splines;
@@ -93,6 +93,8 @@ pub struct Editor {
     pub autosmooth_threshold: f32,
     pub drag: Option<drag::Drag>,
     pub isolate: Option<Vec<ObjId>>,
+    /// Pin Stack: the Modify panel stays on this object whatever is selected.
+    pub pinned: Option<ObjId>,
     /// Last-used parameters per op kind (main buttons reuse them).
     pub op_memory: std::collections::HashMap<String, PolyOp>,
     /// FFD Control Points / Lattice or UVW Map Gizmo sub-object mode.
@@ -158,6 +160,7 @@ impl Default for Editor {
             autosmooth_threshold: 45.0,
             drag: None,
             isolate: None,
+            pinned: None,
             op_memory: Default::default(),
             mod_sub: None,
             uv_editor_open: false,
@@ -181,8 +184,11 @@ impl Editor {
     }
 
     /// The object the Modify panel works on (first selected).
+    /// Object the Modify panel edits: the pinned one, else the first selected.
     pub fn current(&self) -> Option<ObjId> {
-        self.scene.objects.iter().find(|(_, o)| o.selected).map(|(k, _)| k)
+        self.pinned
+            .filter(|&k| self.scene.objects.contains_key(k))
+            .or_else(|| self.scene.objects.iter().find(|(_, o)| o.selected).map(|(k, _)| k))
     }
 
     pub fn current_obj(&self) -> Option<&SceneObject> {

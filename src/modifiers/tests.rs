@@ -125,6 +125,26 @@ fn uvw_map_planar_fits_top_face_into_unit_square() {
 }
 
 #[test]
+fn uvw_map_bitmap_fit_matches_image_aspect() {
+    let mut m = box_mesh();
+    let mut u = UvwMapMod::default();
+    u.fit(&m);
+    let w = u.width;
+    u.bitmap_fit(2.0); // a 2:1 bitmap
+    assert!((u.width - w).abs() < 1e-6 && (u.length - w * 0.5).abs() < 1e-6);
+    u.bitmap_fit(0.0); // ignored
+    assert!((u.length - w * 0.5).abs() < 1e-6);
+    u.apply(&mut m);
+    let top = m.polygons.values().find(|p| p.vertex_ids().all(|v| m.pos(v).z > 0.9)).unwrap();
+    let span = |f: fn(Vec2) -> f32| {
+        let vs: Vec<f32> = top.corners.iter().map(|c| f(c.uv)).collect();
+        vs.iter().cloned().fold(f32::MIN, f32::max) - vs.iter().cloned().fold(f32::MAX, f32::min)
+    };
+    // The square top now covers the whole bitmap across and twice it down.
+    assert!((span(|v| v.x) - 1.0).abs() < 1e-4 && (span(|v| v.y) - 2.0).abs() < 1e-4);
+}
+
+#[test]
 fn uvw_map_every_type_gives_finite_uvs() {
     let cyl = Primitive::default_of(PrimitiveKind::Cylinder).to_editable_poly();
     for kind in MapType::ALL {

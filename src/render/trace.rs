@@ -138,7 +138,7 @@ impl<'a> Tracer<'a> {
                     let v = l.pos - sh.p;
                     let d = v.length().max(1e-4);
                     let window = (1.0 - (d / l.range.max(1e-3)).powi(4)).clamp(0.0, 1.0).powi(2);
-                    (v / d, d, window / (d * d))
+                    (v / d, d, window * l.atten.factor(d) / (d * d))
                 }
             };
             if let RShape::Spot { dir: axis, cos_in, cos_out } = l.shape {
@@ -204,8 +204,16 @@ impl<'a> Tracer<'a> {
     /// plus a soft studio dome (brighter overhead). Camera rays that miss
     /// return zero coverage and show the plain background.
     fn environment(&self, d: Vec3) -> Vec3 {
+        if let Some(c) = self.rs.hdri.as_ref().and_then(|h| h.radiance(d)) {
+            return c + self.rs.sky;
+        }
         let up = (0.5 + 0.5 * d.z).clamp(0.0, 1.0);
         self.rs.background + self.rs.sky + self.rs.ambient * (1.0 + 5.0 * up * up)
+    }
+
+    /// What a camera ray that misses shows: the HDRI, else the plain color.
+    fn backdrop(&self, d: Vec3) -> Vec3 {
+        self.rs.hdri.as_ref().and_then(|h| h.radiance(d)).unwrap_or(self.rs.background)
     }
 
     fn fog(&self, c: Vec3, t: f32) -> Vec3 {
@@ -247,7 +255,7 @@ impl<'a> Tracer<'a> {
                     glass += self.trace(sh.p - sh.ng * self.eps, t, depth + 1, rng).0 * (1.0 - fr) * tint;
                 }
             } else {
-                glass = self.rs.background * (1.0 - fr) + self.rs.ambient * fr;
+                glass = self.backdrop(d) * (1.0 - fr) + self.rs.ambient * fr;
             }
             return c * (1.0 - s.transmission) + glass * s.transmission;
         }
@@ -278,6 +286,8 @@ impl<'a> Tracer<'a> {
                 let ndc = Vec2::new((x as f32 + jx) / w as f32 * 2.0 - 1.0, 1.0 - (y as f32 + jy) / h as f32 * 2.0);
                 let ray = self.rs.camera.ray(ndc, aspect);
                 let (c, a, gs) = self.trace(ray.origin, ray.dir, 0, &mut rng);
+                let back = self.backdrop(ray.dir);
+                let bg = if self.rs.hdri.is_some() { tonemap(back) } else { bg };
                 if sx == n / 2 && sy == n / 2 {
                     g = gs.unwrap_or(GSample::EMPTY);
                 }
@@ -288,7 +298,7 @@ impl<'a> Tracer<'a> {
                     hdr += c.extend(a);
                 } else {
                     display += (shaded + bg * (1.0 - a)).extend(1.0);
-                    hdr += (c + self.rs.background * (1.0 - a)).extend(1.0);
+                    hdr += (c + back * (1.0 - a)).extend(1.0);
                 }
             }
         }

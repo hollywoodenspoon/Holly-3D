@@ -1,4 +1,4 @@
-//! `Q` region shapes: cycling and Circle / Fence / Lasso window selection.
+//! `Q` region shapes (cycling, Circle / Fence / Lasso window selection) and Pin Stack.
 
 use super::*;
 use crate::primitives::Primitive;
@@ -54,4 +54,51 @@ fn circle_fence_and_lasso_select_what_they_enclose() {
     let r = Region::build(RegionShape::Lasso, &gap, s(&ed, 0.5, 6.0)).unwrap();
     ed.region_select(0, &r, SelectOp::Replace);
     assert_eq!(sel(&ed), [false, false]);
+}
+
+#[test]
+fn pin_stack_keeps_the_modify_panel_on_the_pinned_object() {
+    let (mut ed, [left, right]) = editor();
+    ed.scene.select_only(Some(left));
+    ed.pinned = Some(left);
+    ed.scene.select_only(Some(right));
+    assert_eq!(ed.current(), Some(left), "pinned object stays current");
+    assert_eq!(ed.scene.selected(), vec![right]);
+    ed.pinned = None;
+    assert_eq!(ed.current(), Some(right));
+    // A deleted pinned object no longer holds the panel.
+    ed.pinned = Some(left);
+    ed.scene.objects.remove(left);
+    assert_eq!(ed.current(), Some(right));
+}
+
+#[test]
+fn hdri_survives_save_and_open() {
+    use crate::render::hdri::Hdri;
+    let dir = std::env::temp_dir().join("minimax_hdri_test");
+    std::fs::create_dir_all(&dir).unwrap();
+    // A 64x32 sky: blue above the horizon, warm ground, a bright sun at +X.
+    let img = image::Rgb32FImage::from_fn(64, 32, |x, y| {
+        let sun = (x as i32 - 32).abs() < 3 && (y as i32 - 12).abs() < 3;
+        image::Rgb(if sun {
+            [20.0, 18.0, 12.0]
+        } else if y < 16 {
+            [0.25, 0.45, 1.2]
+        } else {
+            [0.35, 0.25, 0.15]
+        })
+    });
+    let hdr = dir.join("sky.hdr");
+    img.save(&hdr).unwrap();
+    let mut ed = Editor::default();
+    ed.scene.environment.hdri = Some(Hdri::open(&hdr).unwrap());
+    ed.scene.environment.hdri.as_mut().unwrap().strength = 1.5;
+    let file = dir.join("hdri.mmax");
+    ed.save_scene(&file).unwrap();
+    let mut ed2 = Editor::default();
+    ed2.open_scene(&file).unwrap();
+    let h = ed2.scene.environment.hdri.as_ref().unwrap();
+    assert!(h.image.is_some(), "the image is reloaded from its path");
+    assert_eq!(h.strength, 1.5);
+    assert!(h.radiance(bevy::math::Vec3::new(1.0, 0.0, 0.2)).unwrap().x > 10.0, "the sun sits just above +X");
 }

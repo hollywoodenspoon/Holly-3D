@@ -117,7 +117,15 @@ pub fn scene_xml(rs: &RenderScene, cfg: &RenderSettings) -> String {
     camera(&mut out, rs, cfg);
     let world = rs.background + rs.ambient + rs.sky;
     let _ = writeln!(out, "<background>");
-    let _ = writeln!(out, "  <background name=\"bg\" color=\"{}\" strength=\"1\" />", v3(world));
+    if let Some(h) = &rs.hdri {
+        // Cycles' world is Z-up equirect too; the rotation turns its Z axis.
+        let rot = format!("0 0 {}", (-h.rotation).to_radians());
+        let _ = writeln!(out, "  <environment_texture name=\"env\" filename=\"{}\" tex_mapping.rotation=\"{rot}\" />", h.path.display());
+        let _ = writeln!(out, "  <background name=\"bg\" strength=\"{}\" />", h.strength);
+        let _ = writeln!(out, "  <connect from=\"env color\" to=\"bg color\" />");
+    } else {
+        let _ = writeln!(out, "  <background name=\"bg\" color=\"{}\" strength=\"1\" />", v3(world));
+    }
     let _ = writeln!(out, "  <connect from=\"bg background\" to=\"output surface\" />");
     let _ = writeln!(out, "</background>");
     shaders(&mut out, rs);

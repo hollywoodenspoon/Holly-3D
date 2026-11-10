@@ -75,14 +75,22 @@ fn intensity(ui: &mut egui::Ui, ed: &mut Editor) {
             }
             ui.add_space(4.0);
             ui.label(egui::RichText::new("Decay / Range").strong());
+            t.r(ui.checkbox(&mut l.use_near, "Use Near Attenuation"));
+            ui.add_enabled_ui(l.use_near, |ui| {
+                grid(ui, "light_near", |ui| {
+                    num_row(ui, t, "Near Start", &mut l.near_start, 0.0..=500.0, 0.0);
+                    num_row(ui, t, "Near End", &mut l.near_end, 0.0..=500.0, 2.0);
+                });
+            });
+            l.near_end = l.near_end.max(l.near_start);
             t.r(ui.checkbox(&mut l.use_atten, "Use Far Attenuation"));
             ui.add_enabled_ui(l.use_atten, |ui| {
                 grid(ui, "light_atten", |ui| {
                     num_row(ui, t, "Start", &mut l.atten_start, 0.0..=500.0, 0.0);
                     num_row(ui, t, "End / Range", &mut l.atten_end, 0.01..=500.0, 20.0);
                 });
-                t.r(ui.checkbox(&mut l.show_atten, "Show Attenuation Wireframe"));
             });
+            ui.add_enabled_ui(l.use_atten || l.use_near, |ui| t.r(ui.checkbox(&mut l.show_atten, "Show Attenuation Wireframe")));
             l.atten_start = l.atten_start.min(l.atten_end);
         });
     });
