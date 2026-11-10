@@ -38,8 +38,20 @@ impl Editor {
         self.render.view.filter(|v| *v < self.viewports.views.len()).unwrap_or(self.viewports.active)
     }
 
+    /// The chosen camera object, else the rendered viewport's view.
     pub fn render_camera(&self) -> ViewCamera {
-        self.viewports.views[self.render_view()].camera
+        match self.render.camera.and_then(|id| self.scene.camera_view(id)) {
+            Some(c) => c,
+            None => self.viewports.views[self.render_view()].camera,
+        }
+    }
+
+    /// Name of what F9 renders ("Camera001", "Perspective"…).
+    pub fn render_label(&self) -> String {
+        match self.render.camera.and_then(|id| self.scene.objects.get(id)).filter(|o| o.camera().is_some()) {
+            Some(o) => o.name.clone(),
+            None => self.view_label(self.render_view()),
+        }
     }
 
     pub fn is_rendering(&self) -> bool {
@@ -62,7 +74,7 @@ impl Editor {
             Engine::Cycles => RenderJob::cycles(rs, cfg),
         });
         self.rfw.rfw_open = true;
-        self.rfw.message = format!("Rendering {} ({w}x{h})…", self.viewports.views[self.render_view()].camera.kind.label());
+        self.rfw.message = format!("Rendering {} ({w}x{h})…", self.render_label());
         self.status = self.rfw.message.clone();
     }
 

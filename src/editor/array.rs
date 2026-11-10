@@ -135,7 +135,7 @@ impl Editor {
 
     pub fn open_array(&mut self) {
         let sources: Vec<ObjId> =
-            self.scene.selected().into_iter().filter(|&k| !matches!(self.scene.objects[k].base, BaseObject::LightTarget)).collect();
+            self.scene.selected().into_iter().filter(|&k| !matches!(self.scene.objects[k].base, BaseObject::Target)).collect();
         if sources.is_empty() {
             self.status = "Array needs a selected object".into();
             return;

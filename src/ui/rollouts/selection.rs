@@ -43,15 +43,15 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             });
             ui.add_enabled_ui(ed.sub.is_edge_like(), |ui| {
                 ui.horizontal(|ui| {
-                    let w = CONTENT_W / 2.0 - 34.0;
+                    let w = CONTENT_W / 2.0 - 50.0;
                     if ui.add_sized([w, 24.0], egui::Button::new("Ring")).on_hover_text("Alt+R").clicked() {
                         ed.edit_selection(|m, _| m.select_ring());
                     }
+                    shift_arrows(ui, ed, true);
                     if ui.add_sized([w, 24.0], egui::Button::new("Loop")).on_hover_text("Alt+L / double-click").clicked() {
                         ed.edit_selection(|m, _| m.select_loop());
                     }
-                    max_spinner_range(ui, &mut ed.ring_loop_spin, 0.1, 1, 1..=50)
-                        .on_hover_text("Ring/Loop shift steps (shifting arrives in a later phase)");
+                    shift_arrows(ui, ed, false);
                 });
             });
         });
@@ -63,6 +63,24 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         };
         ui.label(dim(&text));
     });
+}
+
+/// Ring / Loop shift arrows: move the edge selection one step along its rings or loops.
+fn shift_arrows(ui: &mut egui::Ui, ed: &mut Editor, ring: bool) {
+    ui.spacing_mut().item_spacing.x = 2.0;
+    let what = if ring { "Ring" } else { "Loop" };
+    for (label, fwd) in [("◀", false), ("▶", true)] {
+        if ui.add_sized([16.0, 24.0], egui::Button::new(label)).on_hover_text(format!("{what} Shift")).clicked() {
+            ed.edit_selection(|m, _| {
+                if ring {
+                    m.shift_ring(fwd);
+                } else {
+                    m.shift_loop(fwd);
+                }
+            });
+        }
+    }
+    ui.spacing_mut().item_spacing.x = 6.0;
 }
 
 pub fn soft_selection(ui: &mut egui::Ui, ed: &mut Editor) {

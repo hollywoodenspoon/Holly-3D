@@ -31,9 +31,10 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                     ui.checkbox(&mut v.views[vi].grid, "Show Grid   G");
                 });
                 let kind = ed.viewports.views[vi].camera.kind;
-                ui.menu_button(small(&format!("[ {} ]", kind.label())), |ui| {
+                ui.menu_button(small(&format!("[ {} ]", ed.view_label(vi))), |ui| {
                     for k in [ViewKind::Perspective, ViewKind::Top, ViewKind::Front, ViewKind::Left] {
                         if ui.selectable_label(kind == k, k.label()).clicked() {
+                            ed.look_through(vi, None);
                             let cam = &mut ed.viewports.views[vi].camera;
                             let keep = (cam.target, cam.distance, cam.ortho_height);
                             *cam = ViewCamera::new(k);
@@ -41,6 +42,19 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                             ui.close();
                         }
                     }
+                    let cams = ed.scene.cameras();
+                    ui.separator();
+                    ui.add_enabled_ui(!cams.is_empty(), |ui| {
+                        ui.menu_button("Cameras   C", |ui| {
+                            for c in cams {
+                                let on = ed.viewports.views[vi].cam_obj == Some(c);
+                                if ui.selectable_label(on, &ed.scene.objects[c].name).clicked() {
+                                    ed.look_through(vi, Some(c));
+                                    ui.close();
+                                }
+                            }
+                        });
+                    });
                 });
                 let label = ed.viewports.views[vi].shading_label();
                 ui.menu_button(small(&format!("[ {label} ]")), |ui| {
@@ -151,7 +165,7 @@ fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
     painter.circle_filled(p(c), 1.5, Color32::WHITE);
 }
 
-pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee: Option<Vec2>, pointer: Option<Vec2>) {
+pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region: Option<&[Vec2]>, pointer: Option<Vec2>) {
     let painter = ui.painter().with_clip_rect(rect);
     let active = vi == ed.viewports.active;
     let border = if active { Stroke::new(2.0, theme::AMBER) } else { Stroke::new(1.0, theme::BORDER) };
@@ -168,10 +182,14 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
     {
         brush_cursor(&painter, ed, vi, ptr);
     }
-    if let (Some(a), Some(b)) = (marquee, pointer) {
-        let r = egui::Rect::from_two_pos(p(a), p(b));
-        painter.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(229, 156, 36, 18));
-        painter.rect_stroke(r, 0.0, Stroke::new(1.0, theme::AMBER), egui::StrokeKind::Inside);
+    if ed.snap
+        && !ed.paint.active
+        && let Some(ptr) = pointer.filter(|q| rect.contains(p(*q)))
+    {
+        crate::ui::snaps::crosshair(&painter, ed, vi, ptr);
+    }
+    if let (Some(pts), Some(b)) = (region, pointer) {
+        super::region::draw(&painter, ed.region_shape, pts, b);
     }
     if active {
         let world_of = |ed: &Editor, v: crate::mesh::VertexId| {
@@ -184,6 +202,16 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
             Tool::QuickSlice { start: Some(s) } => Some(*s),
             _ => None,
         };
+        // Create (polygon): the points so far, rubber-banded to the cursor.
+        let pts: Vec<egui::Pos2> = ed.create_poly_points().into_iter().filter_map(|w| ed.viewports.views[vi].to_screen(w)).map(p).collect();
+        if !pts.is_empty() {
+            let mut line = pts.clone();
+            line.extend(pointer.map(p));
+            painter.add(egui::Shape::line(line, Stroke::new(1.5, theme::AMBER)));
+            for q in &pts {
+                painter.circle_filled(*q, 3.5, theme::AMBER);
+            }
+        }
         if let (Some(a), Some(b)) = (anchor, pointer) {
             let color = if matches!(ed.tool, Tool::QuickSlice { .. }) { Color32::from_rgb(255, 220, 30) } else { theme::AMBER };
             painter.add(egui::Shape::dashed_line(&[p(a), p(b)], Stroke::new(1.5, color), 6.0, 4.0));

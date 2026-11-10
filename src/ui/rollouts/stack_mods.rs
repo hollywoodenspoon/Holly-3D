@@ -1,11 +1,11 @@
-//! Greeble, Chamfer, Symmetry, Shell and TurboSmooth rollouts.
+//! Greeble, Chamfer, Panel Groove, Symmetry, Shell and TurboSmooth rollouts.
 
 use super::deformers::{axis_row, speed_row};
 use super::spline::{grid, mod_params, num_row, u_row};
 use crate::editor::Editor;
 use crate::modifiers::{ChamferFilter, ModifierKind};
 use crate::ui::command::CONTENT_W;
-use crate::ui::widgets::{dim, max_spinner_range, rollout};
+use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
 
 pub fn greeble(ui: &mut egui::Ui, ed: &mut Editor) {
@@ -66,33 +66,57 @@ pub fn chamfer(ui: &mut egui::Ui, ed: &mut Editor) {
                 u_row(ui, t, "Segments:", &mut c.segments, 1, 1..=16);
                 num_row(ui, t, "Tension:", &mut c.tension, 0.0..=1.0, 0.5);
             });
-            ui.label(RichText::new("Selection Filter").strong());
-            let current = c.filter;
-            egui::ComboBox::from_id_salt("chamfer_filter").width(CONTENT_W - 12.0).selected_text(current.label()).show_ui(ui, |ui| {
-                let angle = match current {
-                    ChamferFilter::Angle { .. } => current,
-                    _ => ChamferFilter::Angle { min: 30.0, max: 180.0 },
-                };
-                for f in [ChamferFilter::All, ChamferFilter::Selected, ChamferFilter::SmoothingBoundaries, angle] {
-                    if ui.selectable_label(std::mem::discriminant(&f) == std::mem::discriminant(&current), f.label()).clicked() {
-                        c.filter = f;
-                        t.started = true;
-                        t.changed = true;
-                    }
-                }
-            });
-            if let ChamferFilter::Angle { min, max } = &mut c.filter {
-                grid(ui, "chamfer_angle", |ui| {
-                    speed_row(ui, t, "Min Angle:", min, 0.5, 30.0, 0.0..=180.0);
-                    speed_row(ui, t, "Max Angle:", max, 0.5, 180.0, 0.0..=180.0);
-                });
+            filter(ui, t, &mut c.filter, "chamfer");
+        });
+    });
+}
+
+/// Edge Selection Filter (Chamfer and Panel Groove modifiers).
+fn filter(ui: &mut egui::Ui, t: &mut Track, f: &mut ChamferFilter, id: &str) {
+    ui.label(RichText::new("Selection Filter").strong());
+    let current = *f;
+    egui::ComboBox::from_id_salt(format!("{id}_filter")).width(CONTENT_W - 12.0).selected_text(current.label()).show_ui(ui, |ui| {
+        let angle = match current {
+            ChamferFilter::Angle { .. } => current,
+            _ => ChamferFilter::Angle { min: 30.0, max: 180.0 },
+        };
+        for c in [ChamferFilter::All, ChamferFilter::Selected, ChamferFilter::SmoothingBoundaries, angle] {
+            if ui.selectable_label(std::mem::discriminant(&c) == std::mem::discriminant(&current), c.label()).clicked() {
+                *f = c;
+                t.started = true;
+                t.changed = true;
             }
+        }
+    });
+    if let ChamferFilter::Angle { min, max } = f {
+        grid(ui, &format!("{id}_angle"), |ui| {
+            speed_row(ui, t, "Min Angle:", min, 0.5, 30.0, 0.0..=180.0);
+            speed_row(ui, t, "Max Angle:", max, 0.5, 180.0, 0.0..=180.0);
+        });
+    }
+}
+
+pub fn panel_groove(ui: &mut egui::Ui, ed: &mut Editor) {
+    rollout(ui, "Panel Groove Parameters", true, |ui| {
+        mod_params(ui, ed, |ui, k, t| {
+            let ModifierKind::PanelGroove(g) = k else { return };
+            grid(ui, "panel_groove", |ui| {
+                num_row(ui, t, "Groove Width:", &mut g.width, 0.0..=1e4, 0.04);
+                num_row(ui, t, "Groove Depth:", &mut g.depth, 0.0..=1e4, 0.03);
+                num_row(ui, t, "Bevel Lip Width:", &mut g.lip, 0.0..=1e4, 0.008);
+                ui.label("Inner Groove Mat ID:");
+                t.r(max_spinner_range(ui, &mut g.material_id, 0.1, 2, 1..=64));
+                ui.end_row();
+            });
+            filter(ui, t, &mut g.filter, "groove");
+            ui.label(dim("Selected Edges uses the edges selected below in the stack (e.g. an Edit Poly modifier)."));
         });
     });
 }
 
 pub fn symmetry(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Symmetry Parameters", true, |ui| {
+        super::modifiers::sub_buttons(ui, ed, &[crate::modifiers::ModSub::Mirror]);
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Symmetry(s) = k else { return };
             axis_row(ui, t, "Mirror Axis", &mut s.axis);
@@ -104,7 +128,7 @@ pub fn symmetry(ui: &mut egui::Ui, ed: &mut Editor) {
                 t.r(max_spinner_range(ui, &mut s.threshold, 0.001, 0.01, 0.0..=10.0));
             });
             grid(ui, "sym_offset", |ui| num_row(ui, t, "Mirror Offset:", &mut s.offset, -1e4..=1e4, 0.0));
-            ui.label(dim("Mirror Offset moves the mirror plane along the axis (object space)."));
+            ui.label(dim("Mirror Offset moves the plane along its axis; the Mirror sub-object moves and rotates it with W / E."));
         });
     });
 }

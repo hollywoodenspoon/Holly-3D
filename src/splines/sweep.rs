@@ -6,7 +6,7 @@ use crate::mesh::{EditablePoly, VertexId};
 use bevy::math::{Quat, Vec2, Vec3};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SplineRender {
     pub renderer: bool,
     pub viewport: bool,

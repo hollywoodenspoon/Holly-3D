@@ -8,7 +8,7 @@ use crate::mesh::{EditablePoly, FaceCorner, Polygon, VertexId};
 use bevy::math::{Vec2, Vec3};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ShellMod {
     pub inner: f32,
     pub outer: f32,

@@ -1,7 +1,10 @@
 //! Scene graph: objects with base object + modifier stack + transform.
 
+pub mod camera;
 mod clone;
 mod object;
+pub mod shared;
+pub use shared::Shared;
 #[cfg(test)]
 mod tests;
 
@@ -26,28 +29,33 @@ pub fn next_version() -> u64 {
     VERSION.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum BaseObject {
     Primitive(Primitive),
-    EditablePoly(EditablePoly),
+    EditablePoly(Shared<EditablePoly>),
     /// Light object (no geometry; drawn as a viewport icon).
     Light(crate::render::Light),
-    /// Target helper of a Target Spot / Target Direct light.
-    LightTarget,
+    /// Target helper of a target light or Target Camera.
+    Target,
+    /// Target / Free Camera.
+    Camera(camera::Camera),
     /// Spline shape (parametric or Editable Spline).
     Shape(crate::splines::ShapeObject),
     /// GeoGen procedural rock / crystal / cliff / stalagmite.
     GeoGen(crate::modifiers::GeoGenParams),
+    /// Mech primitive: Gear, Hydraulic Piston part or Hose.
+    Mech(crate::mech::MechPart),
 }
 
 impl BaseObject {
     pub fn to_editable_poly(&self) -> EditablePoly {
         match self {
             BaseObject::Primitive(p) => p.to_editable_poly(),
-            BaseObject::EditablePoly(m) => m.clone(),
-            BaseObject::Light(_) | BaseObject::LightTarget => EditablePoly::new(),
+            BaseObject::EditablePoly(m) => EditablePoly::clone(m),
+            BaseObject::Light(_) | BaseObject::Target | BaseObject::Camera(_) => EditablePoly::new(),
             BaseObject::Shape(s) => s.viewport_mesh(),
             BaseObject::GeoGen(g) => g.build(),
+            BaseObject::Mech(m) => m.build(),
         }
     }
     /// The shape flowing into the stack (shapes only).
@@ -62,15 +70,17 @@ impl BaseObject {
             BaseObject::Primitive(p) => p.name(),
             BaseObject::EditablePoly(_) => "Editable Poly",
             BaseObject::Light(l) => l.kind.label(),
-            BaseObject::LightTarget => "Target",
+            BaseObject::Target => "Target",
+            BaseObject::Camera(c) => c.kind.label(),
             BaseObject::Shape(s) => s.label(),
             BaseObject::GeoGen(g) => g.mode.short(),
+            BaseObject::Mech(m) => m.name(),
         }
     }
 }
 
 /// Object-level transform (3ds Max node TM) — Z up.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Xform {
     pub translation: Vec3,
     pub rotation: Quat,
@@ -93,18 +103,21 @@ impl Xform {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct SceneObject {
     pub name: String,
     pub base: BaseObject,
     /// Bottom-to-top modifier stack.
     pub modifiers: Vec<ModifierEntry>,
     /// Cached fold of the whole (enabled) stack.
-    pub evaluated_mesh: EditablePoly,
+    #[serde(skip)]
+    pub evaluated_mesh: Shared<EditablePoly>,
     /// Mesh at the active stack level (what sub-object tools edit and pick).
-    pub level_mesh: EditablePoly,
+    #[serde(skip)]
+    pub level_mesh: Shared<EditablePoly>,
     /// Shape still flowing out of the stack (drawn as splines); `None` once a
     /// Lathe / Extrude turned it into a mesh, and for non-shape objects.
+    #[serde(skip)]
     pub shape: Option<crate::splines::Shape>,
     /// `None` = base object, `Some(i)` = modifier `i`.
     pub active_level: Option<usize>,
@@ -125,7 +138,9 @@ pub struct SceneObject {
     /// Number of bottom modifiers inherited from `reference_parent`.
     pub reference_shared: usize,
     /// Bumped whenever geometry changes; the renderer re-uploads on change.
+    #[serde(skip)]
     pub version: u64,
+    #[serde(skip)]
     pub selection_version: u64,
 }
 
@@ -135,8 +150,8 @@ impl SceneObject {
             name,
             base,
             modifiers: vec![],
-            evaluated_mesh: EditablePoly::new(),
-            level_mesh: EditablePoly::new(),
+            evaluated_mesh: Default::default(),
+            level_mesh: Default::default(),
             shape: None,
             active_level: None,
             transform: Xform::default(),
@@ -172,9 +187,9 @@ impl SceneObject {
         }
     }
 
-    /// Lights and targets: no geometry, picked and framed by their pivot.
+    /// Lights, cameras and targets: no geometry, picked and framed by their pivot.
     pub fn is_helper(&self) -> bool {
-        matches!(self.base, BaseObject::Light(_) | BaseObject::LightTarget)
+        matches!(self.base, BaseObject::Light(_) | BaseObject::Target | BaseObject::Camera(_))
     }
 
     /// World matrix applied to the evaluated mesh.
@@ -183,13 +198,16 @@ impl SceneObject {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Scene {
     pub objects: SlotMap<ObjId, SceneObject>,
     /// Material library + the 24 Material Editor sample slots.
     pub materials: crate::materials::MaterialLib,
     /// Environment & Effects (`8`): background, ambient, fog, lighting preset.
     pub environment: crate::render::Environment,
+    /// Mech joints between parts (J tool).
+    #[serde(default)]
+    pub assembly: crate::assembly::Assembly,
     name_counters: HashMap<String, u32>,
     next_instance_group: u32,
 }
@@ -243,8 +261,8 @@ impl Scene {
 
     pub fn delete(&mut self, id: ObjId) {
         let Some(o) = self.objects.remove(id) else { return };
-        // A light takes its target along; a deleted target frees its light.
-        if let Some(t) = o.light().and_then(|l| l.target) {
+        // Lights / cameras take their target along; a deleted target frees its owner.
+        if let Some(t) = o.target_id() {
             self.objects.remove(t);
         }
         for o in self.objects.values_mut() {
@@ -252,59 +270,19 @@ impl Scene {
                 o.reference_parent = None;
                 o.reference_shared = 0;
             }
-            if let Some(l) = o.light_mut()
-                && l.target == Some(id)
-            {
-                l.target = None;
-                l.kind = match l.kind {
-                    crate::render::LightKind::TargetSpot => crate::render::LightKind::FreeSpot,
-                    _ => crate::render::LightKind::FreeDirect,
-                };
+            if o.target_id() == Some(id) {
+                o.lose_target();
             }
         }
     }
 
     /// Adds a light (plus its target helper for target lights) aimed at `aim`.
-    pub fn add_light(&mut self, mut light: crate::render::Light, name: Option<&str>, at: Vec3, aim: Vec3) -> ObjId {
+    pub fn add_light(&mut self, light: crate::render::Light, name: Option<&str>, at: Vec3, aim: Vec3) -> ObjId {
         let has_target = light.kind.has_target();
-        light.target = None;
-        let wire = [0.98, 0.85, 0.3];
-        let name = match name {
-            Some(n) => self.unique_name(n),
-            None => self.unique_name(light.kind.label()),
-        };
-        let mut o = SceneObject::new(name.clone(), BaseObject::Light(light));
-        o.transform.translation = at;
-        o.transform.rotation = crate::render::lighting::aim(at, aim);
-        o.wire_color = wire;
-        let id = self.objects.insert(o);
-        if has_target {
-            let mut t = SceneObject::new(format!("{name}.Target"), BaseObject::LightTarget);
-            t.transform.translation = aim;
-            t.wire_color = wire;
-            let tid = self.objects.insert(t);
-            if let Some(l) = self.objects[id].light_mut() {
-                l.target = Some(tid);
-            }
-        }
-        id
-    }
-
-    /// Points every target light at its target. Returns true if any moved.
-    pub fn aim_target_lights(&mut self) -> bool {
-        let aims: Vec<(ObjId, Quat)> = self
-            .objects
-            .iter()
-            .filter_map(|(k, o)| {
-                let t = self.objects.get(o.light()?.target?)?;
-                let q = crate::render::lighting::aim(o.transform.translation, t.transform.translation);
-                (q.dot(o.transform.rotation).abs() < 1.0 - 1e-7).then_some((k, q))
-            })
-            .collect();
-        for (k, q) in &aims {
-            self.objects[*k].transform.rotation = *q;
-        }
-        !aims.is_empty()
+        let name = self.unique_name(name.unwrap_or(light.kind.label()));
+        let mut o = SceneObject::new(name, BaseObject::Light(light));
+        o.wire_color = [0.98, 0.85, 0.3];
+        self.insert_aimed(o, at, aim, has_target)
     }
 
     /// Lights that are switched on (what decides Scene vs Default lighting).

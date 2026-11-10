@@ -125,6 +125,7 @@ fn draw_lines(
     mut g2: Gizmos<Vp2Lines>,
     mut g3: Gizmos<Vp3Lines>,
     mut ov: Gizmos<OverlayLines>,
+    mut box_cache: Local<super::mod_gizmos::BoxCache>,
 ) {
     draw_view(&mut g0, &ed, 0);
     draw_view(&mut g1, &ed, 1);
@@ -163,7 +164,8 @@ fn draw_lines(
         }
         let _ = SubObject::Vertex;
     }
-    super::mod_gizmos::draw(&mut ov, &ed);
+    super::mod_gizmos::draw(&mut ov, &ed, &mut box_cache);
+    super::joint_gizmos::draw(&mut ov, &ed);
     if let (Some(sp), true) = (&ed.slice_plane, ed.in_sub_object()) {
         let m = sp.xform.matrix();
         let size = ed.current_obj().and_then(|o| o.evaluated_mesh.bounds()).map(|b| b.size().length() * 0.75).unwrap_or(1.0);

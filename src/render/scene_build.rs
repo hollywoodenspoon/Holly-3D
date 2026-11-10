@@ -40,6 +40,8 @@ pub struct RLight {
     /// Linear radiance (color x multiplier x engine constant).
     pub radiance: Vec3,
     pub range: f32,
+    /// Near / far attenuation ramps.
+    pub atten: crate::render::lighting::Atten,
     pub shadows: bool,
     pub softness: f32,
     /// Shadow tint factor: (1 - density) + density x shadow color.
@@ -54,6 +56,8 @@ pub struct RenderScene {
     /// Skylight hemisphere radiance (sampled with occlusion).
     pub sky: Vec3,
     pub background: Vec3,
+    /// HDRI seen by camera misses and reflections (strength applied).
+    pub hdri: Option<crate::render::hdri::Hdri>,
     pub fog: Option<(Vec3, f32)>,
     pub camera: ViewCamera,
     /// Scene bounding radius (AO ray length, epsilons).
@@ -108,6 +112,7 @@ impl RenderScene {
                     pos: Vec3::ZERO,
                     radiance: rl.color * rl.strength * K_DIRECT,
                     range: f32::MAX,
+                    atten: Default::default(),
                     shadows: false,
                     softness: 0.0,
                     shadow_tint: Vec3::ZERO,
@@ -134,6 +139,7 @@ impl RenderScene {
                     pos: o.transform.translation,
                     radiance: l.radiance() * k,
                     range: l.range(),
+                    atten: l.atten(),
                     shadows: l.cast_shadows,
                     softness: l.softness,
                     shadow_tint: Vec3::splat(1.0 - d) + lin3(l.shadow_color) * d,
@@ -143,6 +149,10 @@ impl RenderScene {
         let mut ambient = lin3(env.ambient) * env.ambient_level;
         if use_rig {
             ambient = ambient.max(Vec3::splat(0.25));
+        }
+        let hdri = env.hdri.clone().filter(|h| h.image.is_some());
+        if let Some(h) = hdri.as_ref().filter(|h| h.lighting) {
+            ambient += h.image.as_ref().map_or(Vec3::ZERO, |i| i.average()) * h.strength / K_AMBIENT;
         }
         let bvh = Bvh::build(tris);
         let (lo, hi) = bvh.tris.iter().fold((Vec3::splat(f32::MAX), Vec3::splat(f32::MIN)), |(lo, hi), t| {
@@ -156,6 +166,7 @@ impl RenderScene {
             ambient: ambient * K_AMBIENT,
             sky,
             background: lin3(env.background),
+            hdri,
             fog: env.fog.then(|| (lin3(env.fog_color), env.fog_density)),
             camera,
             radius,

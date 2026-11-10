@@ -73,7 +73,7 @@ impl Editor {
             .scene
             .selected()
             .into_iter()
-            .filter(|&k| !matches!(self.scene.objects[k].base, BaseObject::LightTarget))
+            .filter(|&k| !matches!(self.scene.objects[k].base, BaseObject::Target))
             .map(|k| (k, self.scene.objects[k].transform, self.scene.objects[k].instance_group))
             .collect();
         if sources.is_empty() {

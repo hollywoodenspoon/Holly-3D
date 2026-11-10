@@ -3,9 +3,9 @@
 
 use crate::mesh::ops::{slice, weld};
 use crate::mesh::{EditablePoly, PolyId, SubObject};
-use bevy::math::{Mat4, Vec3};
+use bevy::math::{Mat3, Mat4, Vec3};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SymmetryMod {
     pub axis: usize,
     /// Keep the negative side instead of the positive one.
@@ -13,27 +13,36 @@ pub struct SymmetryMod {
     pub slice: bool,
     pub weld: bool,
     pub threshold: f32,
-    /// Mirror plane offset along the axis (the Mirror sub-object).
+    /// Mirror plane offset along the axis.
     pub offset: f32,
+    /// Mirror sub-object frame (object space), moved / rotated with W/E.
+    #[serde(default)]
+    pub mirror: Mat4,
 }
 
 impl Default for SymmetryMod {
     fn default() -> Self {
-        Self { axis: 0, flip: false, slice: true, weld: true, threshold: 0.01, offset: 0.0 }
+        Self { axis: 0, flip: false, slice: true, weld: true, threshold: 0.01, offset: 0.0, mirror: Mat4::IDENTITY }
     }
 }
 
 impl SymmetryMod {
+    /// Kept side's normal of the mirror plane (object space).
     pub fn normal(&self) -> Vec3 {
         let mut n = Vec3::ZERO;
         n[self.axis.min(2)] = if self.flip { -1.0 } else { 1.0 };
-        n
+        self.mirror.transform_vector3(n).normalize_or(n)
+    }
+
+    /// A point on the mirror plane (object space).
+    pub fn point(&self) -> Vec3 {
+        let mut p = Vec3::ZERO;
+        p[self.axis.min(2)] = self.offset;
+        self.mirror.transform_point3(p)
     }
 
     pub fn apply(&self, m: &mut EditablePoly) {
-        let n = self.normal();
-        let mut point = Vec3::ZERO;
-        point[self.axis.min(2)] = self.offset;
+        let (n, point) = (self.normal(), self.point());
         let side = |m: &EditablePoly, p: PolyId| (m.poly_centroid(p) - point).dot(n);
         if self.slice {
             let sel = m.selection_sets();
@@ -55,10 +64,9 @@ impl SymmetryMod {
                 }
             }
         }
-        let a = self.axis.min(2);
-        let mut s = Vec3::ONE;
-        s[a] = -1.0;
-        let mirror = Mat4::from_translation(point) * Mat4::from_scale(s) * Mat4::from_translation(-point);
+        // reflection across the plane: p - 2 ((p - point) . n) n
+        let reflect = Mat4::from_mat3(Mat3::IDENTITY - 2.0 * Mat3::from_cols(n * n.x, n * n.y, n * n.z));
+        let mirror = Mat4::from_translation(point) * reflect * Mat4::from_translation(-point);
         let copy = m.clone();
         m.append(&copy, mirror);
         if self.weld {

@@ -6,7 +6,7 @@ use crate::splines::Shape;
 use crate::splines::sweep::{cap, flip, loft};
 use bevy::math::Vec3;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ExtrudeMod {
     pub amount: f32,
     pub segments: u32,

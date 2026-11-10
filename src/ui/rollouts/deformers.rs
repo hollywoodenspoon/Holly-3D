@@ -2,7 +2,7 @@
 
 use super::spline::{grid, mod_params, num_row};
 use crate::editor::Editor;
-use crate::modifiers::{Limits, ModifierKind, TaperEffect};
+use crate::modifiers::{Limits, ModSub, ModifierKind, TaperEffect};
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
 use bevy::math::Vec3;
 use bevy_egui::egui::{self, RichText};
@@ -43,7 +43,8 @@ fn limits(ui: &mut egui::Ui, t: &mut Track, id: &str, l: &mut Limits) {
 }
 
 fn center(ui: &mut egui::Ui, t: &mut Track, c: &mut Vec3) {
-    ui.label(RichText::new("Center").strong()).on_hover_text("Gizmo center in object space (the pivot by default)");
+    ui.label(RichText::new("Center").strong())
+        .on_hover_text("Gizmo center in gizmo space (the pivot by default); move it with the Center sub-object");
     ui.horizontal(|ui| {
         for (i, n) in ["X:", "Y:", "Z:"].iter().enumerate() {
             ui.label(*n);
@@ -52,8 +53,21 @@ fn center(ui: &mut egui::Ui, t: &mut Track, c: &mut Vec3) {
     });
 }
 
+/// Gizmo / Center sub-object buttons and Reset Gizmo (Bend, Twist, Taper).
+fn gizmo_tools(ui: &mut egui::Ui, ed: &mut Editor) {
+    super::modifiers::sub_buttons(ui, ed, &[ModSub::Gizmo, ModSub::Center]);
+    if ui.button("Reset Gizmo").on_hover_text("Puts the gizmo and its center back on the pivot").clicked() {
+        ed.edit_active_modifier("Reset Gizmo", |k, _| {
+            if let Some((g, c)) = k.deformer_gizmo_mut() {
+                (*g, *c) = (bevy::math::Mat4::IDENTITY, Vec3::ZERO);
+            }
+        });
+    }
+}
+
 pub fn bend(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Bend Parameters", true, |ui| {
+        gizmo_tools(ui, ed);
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Bend(b) = k else { return };
             grid(ui, "bend", |ui| {
@@ -69,6 +83,7 @@ pub fn bend(ui: &mut egui::Ui, ed: &mut Editor) {
 
 pub fn twist(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Twist Parameters", true, |ui| {
+        gizmo_tools(ui, ed);
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Twist(w) = k else { return };
             grid(ui, "twist", |ui| {
@@ -84,6 +99,7 @@ pub fn twist(ui: &mut egui::Ui, ed: &mut Editor) {
 
 pub fn taper(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Taper Parameters", true, |ui| {
+        gizmo_tools(ui, ed);
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Taper(p) = k else { return };
             grid(ui, "taper", |ui| {

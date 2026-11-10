@@ -18,7 +18,7 @@ use noise::{Fbm, MultiFractal, NoiseFn, Perlin, Worley};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum GeoMode {
     #[default]
     Crystal,
@@ -48,7 +48,7 @@ impl GeoMode {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct GeoGenParams {
     pub mode: GeoMode,
     pub seed: u32,
@@ -182,7 +182,7 @@ impl Field {
 }
 
 /// GeoGen as a stack modifier.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct GeoGenMod {
     pub params: GeoGenParams,
     /// false: grow formations on polygons; true: deform the mesh like a rock.

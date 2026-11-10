@@ -82,7 +82,7 @@ impl EditablePoly {
 
     /// Edge continuing straight through `v` coming from `from` (valence-4 rule;
     /// along the border for border edges).
-    fn loop_next(&self, adj: &Adjacency, from: VertexId, v: VertexId) -> Option<VertexId> {
+    pub(crate) fn loop_next(&self, adj: &Adjacency, from: VertexId, v: VertexId) -> Option<VertexId> {
         if adj.is_open_edge(from, v) {
             return adj.neighbors(v).iter().copied().find(|&n| n != from && adj.is_open_edge(v, n));
         }

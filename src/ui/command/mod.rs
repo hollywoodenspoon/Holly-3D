@@ -1,5 +1,7 @@
 //! Right Command Panel (310px): Create | Modify | Pivot.
 
+mod assembly;
+mod camera_params;
 mod create;
 mod light_params;
 mod modify;

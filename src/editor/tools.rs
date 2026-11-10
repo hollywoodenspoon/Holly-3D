@@ -13,16 +13,25 @@ impl Editor {
         match tool {
             Tool::None => return false,
             Tool::Create(kind) => {
-                let p = v.construction_point(cursor);
-                let p = if self.snap { (p * 4.0).round() / 4.0 } else { p };
+                let p = self.snapped_point_pub(view, cursor);
                 self.create_primitive(kind, p);
                 self.tool = Tool::Create(kind);
             }
             Tool::CreateGeoGen(mode) => {
-                let p = v.construction_point(cursor);
-                let p = if self.snap { (p * 4.0).round() / 4.0 } else { p };
+                let p = self.snapped_point_pub(view, cursor);
                 self.create_geogen(mode, p);
                 self.tool = Tool::CreateGeoGen(mode);
+            }
+            Tool::CreateMech(kind) => {
+                let p = self.snapped_point_pub(view, cursor);
+                self.create_mech(kind, p);
+                self.tool = Tool::CreateMech(kind);
+            }
+            Tool::PickHoseEnd { top } => {
+                if let Some(obj) = self.pick_object(view, cursor) {
+                    self.bind_hose(top, Some(obj));
+                    self.tool = Tool::None;
+                }
             }
             Tool::NormalAlign => return self.normal_align_click(view, cursor),
             Tool::CreateShape(kind) => {
@@ -33,11 +42,23 @@ impl Editor {
             // handled on press / drag / release by the viewport
             Tool::Line { .. } => {}
             Tool::CreateLight { kind, first } => self.create_light_click(view, cursor, kind, first),
+            Tool::CreateCamera { kind, first } => self.create_camera_click(view, cursor, kind, first),
             Tool::PickMaterial => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.pick_material_from(other);
                 }
                 self.tool = Tool::None;
+            }
+            Tool::CreatePoly { points } => self.create_poly_click(view, cursor, points),
+            Tool::PickHinge => self.pick_hinge_click(view, cursor),
+            Tool::PickSpline => self.pick_spline_click(view, cursor),
+            Tool::RefineSpline => self.refine_click(view, cursor),
+            Tool::PickSplineBoolean => self.spline_boolean_click(view, cursor),
+            Tool::Joint { first } => self.joint_click(view, cursor, first),
+            Tool::PickAlign => {
+                if let Some(t) = self.pick_object(view, cursor) {
+                    self.open_align(t);
+                }
             }
             Tool::PickBoolean => {
                 if let Some(other) = self.pick_object(view, cursor) {
@@ -122,11 +143,16 @@ impl Editor {
         if matches!(self.tool, Tool::Line { .. }) && self.finish_line(false) {
             return true;
         }
+        if let Tool::CreatePoly { points } = &self.tool
+            && points.len() >= 3
+        {
+            return self.finish_create_poly(self.viewports.active, points.clone());
+        }
         self.tool = Tool::None;
         true
     }
 
-    fn pick_cursor_vertex(&self, view: usize, cursor: Vec2) -> Option<crate::mesh::VertexId> {
+    pub(super) fn pick_cursor_vertex(&self, view: usize, cursor: Vec2) -> Option<crate::mesh::VertexId> {
         let o = self.current_obj()?;
         let v = &self.viewports.views[view];
         let project = |p: Vec3| v.to_screen(p);

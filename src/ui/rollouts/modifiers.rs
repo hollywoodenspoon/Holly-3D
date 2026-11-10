@@ -26,7 +26,7 @@ fn params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&mut egui::Ui, &
     }
 }
 
-fn sub_buttons(ui: &mut egui::Ui, ed: &mut Editor, subs: &[ModSub]) {
+pub(crate) fn sub_buttons(ui: &mut egui::Ui, ed: &mut Editor, subs: &[ModSub]) {
     ui.horizontal(|ui| {
         let w = CONTENT_W / subs.len() as f32 - 8.0;
         for (i, &s) in subs.iter().enumerate() {
@@ -157,8 +157,13 @@ pub fn uvw_map(ui: &mut egui::Ui, ed: &mut Editor) {
             }
         });
         ui.horizontal(|ui| {
-            ui.add_enabled(false, egui::Button::new("Bitmap Fit").min_size(egui::vec2(HALF, 24.0)))
-                .on_disabled_hover_text("Fits the gizmo to a bitmap's aspect — needs the Material Editor (Phase 4)");
+            if ui
+                .add(egui::Button::new("Bitmap Fit").min_size(egui::vec2(HALF, 24.0)))
+                .on_hover_text("Pick a bitmap: the gizmo takes its aspect ratio")
+                .clicked()
+            {
+                bitmap_fit(ed);
+            }
             let on = ed.tool == Tool::NormalAlign;
             if ui.add(egui::Button::new("Normal Align").selected(on).min_size(egui::vec2(HALF, 24.0))).clicked() {
                 ed.tool = if on { Tool::None } else { Tool::NormalAlign };
@@ -228,4 +233,21 @@ pub fn unwrap(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.status = msg;
         }
     });
+}
+
+/// Bitmap Fit: pick an image and give the UVW Map gizmo its aspect ratio.
+fn bitmap_fit(ed: &mut Editor) {
+    let exts = ["png", "jpg", "jpeg", "bmp", "tga", "tif", "tiff", "exr", "hdr"];
+    let Some(path) = rfd::FileDialog::new().add_filter("Images", &exts).pick_file() else { return };
+    match image::image_dimensions(&path) {
+        Ok((w, h)) => {
+            ed.edit_active_modifier("Bitmap Fit", |k, _| {
+                if let ModifierKind::UvwMap(u) = k {
+                    u.bitmap_fit(w as f32 / h.max(1) as f32);
+                }
+            });
+            ed.status = format!("Bitmap Fit: {w} x {h}");
+        }
+        Err(e) => ed.status = format!("Bitmap Fit: {e}"),
+    }
 }

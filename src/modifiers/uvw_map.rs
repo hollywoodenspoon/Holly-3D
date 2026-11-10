@@ -5,7 +5,7 @@ use crate::mesh::{EditablePoly, PolyId};
 use bevy::math::{Mat4, Quat, Vec2, Vec3};
 use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum MapType {
     #[default]
     Planar,
@@ -33,7 +33,7 @@ impl MapType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct UvwMapMod {
     pub kind: MapType,
     pub cap: bool,
@@ -117,6 +117,14 @@ impl UvwMapMod {
             if self.kind != MapType::Cylindrical {
                 self.height = r.max(s.z);
             }
+        }
+    }
+
+    /// Bitmap Fit: gives the gizmo a bitmap's `width / height` aspect,
+    /// keeping its width (U) and scaling the length (V).
+    pub fn bitmap_fit(&mut self, aspect: f32) {
+        if aspect.is_finite() && aspect > 1e-6 {
+            self.length = (self.width / aspect).max(1e-4);
         }
     }
 

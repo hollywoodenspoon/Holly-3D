@@ -5,7 +5,7 @@ use super::{Knot, KnotType, Shape, Spline};
 use bevy::math::Vec3;
 use std::f32::consts::{FRAC_PI_2, TAU};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ShapeKind {
     Line,
     Circle,
@@ -34,7 +34,7 @@ impl ShapeKind {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum ShapeParams {
     Circle {
         radius: f32,

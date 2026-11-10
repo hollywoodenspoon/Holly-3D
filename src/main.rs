@@ -5,7 +5,7 @@ use bevy_egui::EguiPlugin;
 use minimax::editor::Editor;
 use minimax::primitives::PrimitiveKind;
 use minimax::ui::UiPlugin;
-use minimax::viewport::{light_icons, light_sync, lines, mat_sync, outline, render_sync};
+use minimax::viewport::{light_icons, light_sync, lines, mat_sync, outline, render_sync, skybox};
 
 fn main() {
     let mut editor = Editor::default();
@@ -22,11 +22,25 @@ fn main() {
         }
         editor.history = Default::default();
     }
+    // `minimax scene.mmax` / `minimax model.fbx`: open or import on start.
+    if let Some(path) = std::env::args().skip(1).find(|a| !a.starts_with("--")) {
+        let r = editor.open_any(std::path::Path::new(&path));
+        editor.report(r);
+        editor.history = Default::default();
+    }
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window { title: "MiniMax — 3ds Max-style Modeler".into(), resolution: (1600, 920).into(), ..default() }),
-        ..default()
-    }))
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "MiniMax — 3ds Max-style Modeler".into(),
+                    resolution: (1600, 920).into(),
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(minimax::viewport::gpu::render_plugin()),
+    )
     .add_plugins(EguiPlugin::default())
     .add_plugins(UiPlugin)
     .insert_resource(editor)
@@ -47,5 +61,6 @@ fn main() {
     lines::register(&mut app);
     outline::register(&mut app);
     light_sync::register(&mut app);
+    skybox::register(&mut app);
     app.run();
 }

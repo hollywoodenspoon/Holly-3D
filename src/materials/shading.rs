@@ -25,7 +25,7 @@ pub fn lin(c: Vec3) -> Vec3 {
 }
 
 /// Material resolved at one surface point (linear color).
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Surface {
     pub base: Vec3,
     pub alpha: f32,
@@ -76,7 +76,7 @@ pub fn bump_height(m: &Material, uv: Vec2, p: Vec3) -> f32 {
 }
 
 /// Incoming light at a point: direction towards the light + radiance (shadowed).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LightIn {
     pub dir: Vec3,
     pub radiance: Vec3,

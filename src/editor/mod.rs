@@ -1,19 +1,31 @@
 //! Editor state: scene, modes, tools, dialogs and undo history.
 
 pub mod actions;
+pub mod align;
 pub mod array;
 #[cfg(test)]
 mod array_tests;
 pub mod boolean;
+pub mod cameras;
 pub mod drag;
+pub mod file;
+#[cfg(test)]
+mod joint_tests;
+pub mod joints;
 pub mod lights;
 pub mod materials;
+pub mod mech;
 pub mod mirror;
 pub mod modsub;
 pub mod normals;
 pub mod paint;
+pub mod poly_tools;
 pub mod render;
 pub mod select;
+#[cfg(test)]
+mod selection_tests;
+pub mod snap;
+pub mod spline_tools;
 pub mod splines;
 pub mod tools;
 pub mod types;
@@ -50,6 +62,10 @@ pub struct Editor {
     pub coord: CoordSystem,
     pub pivot_mode: PivotMode,
     pub snap: bool,
+    /// Selection region shape (`Q` cycles it in Select mode).
+    pub region_shape: crate::viewport::region::RegionShape,
+    /// 3D Snaps settings (right-click `S`).
+    pub snap_cfg: snap::SnapSettings,
     pub angle_snap: bool,
     pub tab: CommandTab,
     pub tool: Tool,
@@ -61,6 +77,10 @@ pub struct Editor {
     pub array_dialog: Option<array::ArrayDialog>,
     pub mirror_settings: mirror::MirrorSettings,
     pub mirror_dialog: Option<mirror::MirrorDialog>,
+    pub align_settings: align::AlignSettings,
+    pub align_dialog: Option<align::AlignDialog>,
+    /// Create Shape from Selection: Smooth (true) or Linear knots.
+    pub shape_smooth: bool,
     pub last_op: Option<PolyOp>,
     pub slice_plane: Option<SlicePlane>,
     pub ignore_backfacing: bool,
@@ -77,7 +97,8 @@ pub struct Editor {
     pub autosmooth_threshold: f32,
     pub drag: Option<drag::Drag>,
     pub isolate: Option<Vec<ObjId>>,
-    pub ring_loop_spin: i32,
+    /// Pin Stack: the Modify panel stays on this object whatever is selected.
+    pub pinned: Option<ObjId>,
     /// Last-used parameters per op kind (main buttons reuse them).
     pub op_memory: std::collections::HashMap<String, PolyOp>,
     /// FFD Control Points / Lattice or UVW Map Gizmo sub-object mode.
@@ -97,6 +118,10 @@ pub struct Editor {
     pub rfw: render::RenderUi,
     /// Editable Spline tool spinners (Fillet, Chamfer, Weld, Divide, Outline…).
     pub spline_ui: SplineUi,
+    /// Current `.mmax` file (Save writes here; `None` = Save As).
+    pub scene_path: Option<std::path::PathBuf>,
+    /// Joint type the J tool creates.
+    pub joint_type: crate::assembly::JointType,
 }
 
 impl Default for Editor {
@@ -109,6 +134,8 @@ impl Default for Editor {
             coord: CoordSystem::World,
             pivot_mode: PivotMode::SelectionCenter,
             snap: false,
+            region_shape: Default::default(),
+            snap_cfg: Default::default(),
             angle_snap: false,
             tab: CommandTab::Create,
             tool: Tool::None,
@@ -120,6 +147,9 @@ impl Default for Editor {
             array_dialog: None,
             mirror_settings: Default::default(),
             mirror_dialog: None,
+            align_settings: Default::default(),
+            align_dialog: None,
+            shape_smooth: true,
             last_op: None,
             slice_plane: None,
             ignore_backfacing: false,
@@ -136,7 +166,7 @@ impl Default for Editor {
             autosmooth_threshold: 45.0,
             drag: None,
             isolate: None,
-            ring_loop_spin: 1,
+            pinned: None,
             op_memory: Default::default(),
             mod_sub: None,
             uv_editor_open: false,
@@ -148,6 +178,8 @@ impl Default for Editor {
             render: Default::default(),
             rfw: Default::default(),
             spline_ui: Default::default(),
+            scene_path: None,
+            joint_type: Default::default(),
         }
     }
 }
@@ -159,8 +191,11 @@ impl Editor {
     }
 
     /// The object the Modify panel works on (first selected).
+    /// Object the Modify panel edits: the pinned one, else the first selected.
     pub fn current(&self) -> Option<ObjId> {
-        self.scene.objects.iter().find(|(_, o)| o.selected).map(|(k, _)| k)
+        self.pinned
+            .filter(|&k| self.scene.objects.contains_key(k))
+            .or_else(|| self.scene.objects.iter().find(|(_, o)| o.selected).map(|(k, _)| k))
     }
 
     pub fn current_obj(&self) -> Option<&SceneObject> {

@@ -46,10 +46,7 @@ impl Editor {
 
     pub(super) fn create_light_click(&mut self, view: usize, cursor: Vec2, kind: LightKind, first: Option<Vec3>) {
         let v = &self.viewports.views[view];
-        let mut p = v.construction_point(cursor);
-        if self.snap {
-            p = (p * 4.0).round() / 4.0;
-        }
+        let p = self.snapped_point_pub(view, cursor);
         // Ground-plane views place lights above the grid, like a ceiling rig.
         let ground = !matches!(v.camera.kind, ViewKind::Front | ViewKind::Left);
         match (kind.has_target(), first) {
@@ -166,11 +163,11 @@ mod tests {
         ed.toggle_default_lights();
         // Moving the target re-aims the light.
         ed.scene.objects[t].transform.translation = Vec3::new(3.0, 0.0, 0.0);
-        assert!(ed.scene.aim_target_lights());
+        assert!(ed.scene.aim_targets());
         let o = &ed.scene.objects[id];
         let d = crate::render::lighting::emit_dir(o.transform.rotation);
         assert!(d.distance((Vec3::new(3.0, 0.0, 0.0) - o.transform.translation).normalize()) < 1e-4);
-        assert!(!ed.scene.aim_target_lights(), "already aimed");
+        assert!(!ed.scene.aim_targets(), "already aimed");
         // Type change: Free Spot drops the target, keeping the direction.
         ed.set_light_kind(LightKind::FreeSpot);
         let id = ed.current().unwrap();

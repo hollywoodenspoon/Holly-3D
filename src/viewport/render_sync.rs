@@ -105,7 +105,8 @@ pub fn sync_cameras(
                 ..OrthographicProjection::default_3d()
             })
         } else {
-            Projection::Perspective(PerspectiveProjection { fov: c.fov, near: 0.02, ..default() })
+            let far = if c.far.is_finite() { c.far } else { PerspectiveProjection::default().far };
+            Projection::Perspective(PerspectiveProjection { fov: c.fov_y(v.rect.aspect()), near: c.near, far, ..default() })
         };
         let mut want = vec![view_layer(vc.0), LAYER_OVERLAY];
         if v.shading == Shading::Default {

@@ -1,4 +1,4 @@
-//! Viewport icons for lights and targets (constant pixel size per view),
+//! Viewport icons for lights and targets (cameras: `camera_icons`) (constant pixel size per view),
 //! plus hotspot / falloff cones, beam cylinders, target lines and
 //! attenuation spheres for selected lights.
 
@@ -116,11 +116,19 @@ fn draw_light<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, o: &SceneObje
     if l.kind.is_directional() {
         cylinder(g, p, dir, len, l.beam_radius, CONE_BLUE);
     }
-    if l.kind.has_range() && l.use_atten && l.show_atten {
-        if l.atten_start > 0.0 {
-            sphere(g, p, l.atten_start, Color::srgba(0.4, 0.9, 1.0, 0.5));
+    // Near Start / End in blues, Far Start / End in yellow / orange.
+    let a = l.atten();
+    if l.show_atten {
+        for (r, c) in [
+            (a.near.map(|n| n.0), Color::srgba(0.25, 0.45, 1.0, 0.55)),
+            (a.near.map(|n| n.1), Color::srgba(0.4, 0.9, 1.0, 0.6)),
+            (a.far.map(|f| f.0), Color::srgba(1.0, 0.85, 0.3, 0.55)),
+            (a.far.map(|f| f.1), Color::srgba(0.95, 0.55, 0.2, 0.6)),
+        ] {
+            if let Some(r) = r.filter(|r| *r > 1e-3) {
+                sphere(g, p, r, c);
+            }
         }
-        sphere(g, p, l.range(), Color::srgba(0.95, 0.55, 0.2, 0.6));
     }
 }
 
@@ -130,13 +138,16 @@ fn draw_view<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, v: &ViewState)
     }
     let h = v.rect.size().y.max(1.0);
     let upp = |p: Vec3| v.camera.units_per_pixel(p, h);
-    for o in ed.scene.objects.values().filter(|o| !o.hidden) {
+    for (id, o) in ed.scene.objects.iter().filter(|(_, o)| !o.hidden) {
         match &o.base {
+            BaseObject::Camera(c) if super::camera_icons::visible_in(v, id) => super::camera_icons::draw(g, ed, o, c, upp),
             BaseObject::Light(l) => draw_light(g, ed, o, l, upp),
-            BaseObject::LightTarget => {
+            BaseObject::Target => {
                 let p = o.transform.translation;
                 let s = ICON_PX * 0.3 * upp(p);
-                let c = if o.selected { Color::WHITE } else { LIGHT_YELLOW };
+                let owner_cam = ed.scene.objects.values().any(|c| c.camera().is_some() && c.target_id() == Some(id));
+                let base = if owner_cam { Color::srgb(0.35, 0.75, 0.95) } else { LIGHT_YELLOW };
+                let c = if o.selected { Color::WHITE } else { base };
                 g.cube(Transform::from_translation(p).with_scale(Vec3::splat(s * 2.0)), c);
             }
             _ => {}

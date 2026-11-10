@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 /// A face corner: polygon + corner index.
 pub type CornerKey = (PolyId, usize);
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum NormalSelBy {
     #[default]
     Normal,
@@ -31,7 +31,7 @@ impl NormalSelBy {
 }
 
 /// Viewport colour class of a normal.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum NormalKind {
     /// Faceted: follows its face only.
     Unspecified,
@@ -40,7 +40,7 @@ pub enum NormalKind {
     Explicit,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct EditNormalsMod {
     pub explicit: HashMap<CornerKey, Vec3>,
     pub selected: HashSet<CornerKey>,

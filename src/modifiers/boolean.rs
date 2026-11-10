@@ -8,7 +8,7 @@ use bevy::math::{Vec2, Vec3};
 use boolmesh::prelude::{Manifold, OpType, compute_boolean};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum BoolOp {
     #[default]
     Union,
@@ -31,7 +31,7 @@ impl BoolOp {
 }
 
 /// One picked operand, stored in the owning object's mesh space.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BoolOperand {
     pub name: String,
     pub op: BoolOp,
@@ -39,7 +39,7 @@ pub struct BoolOperand {
     pub mesh: EditablePoly,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BooleanMod {
     /// Operation given to the next picked operand.
     pub op: BoolOp,

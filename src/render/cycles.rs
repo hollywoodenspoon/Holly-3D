@@ -1,10 +1,11 @@
 //! Cycles Standalone Bridge: writes the render scene as a Cycles XML file
 //! (camera, Principled BSDF shaders, meshes, lights, background) and runs
 //! the headless `cycles` CLI, loading its PNG back into the frame buffer.
+//! The default route goes through Blender instead (`blender.rs`).
 
 use super::framebuffer::FrameBuffer;
 use super::scene_build::{RShape, RenderScene};
-use super::settings::RenderSettings;
+use super::settings::{CyclesVia, RenderSettings};
 use crate::materials::ShadingModel;
 use crate::materials::shading::lin3;
 use bevy::math::Vec3;
@@ -26,7 +27,7 @@ fn camera(out: &mut String, rs: &RenderScene, cfg: &RenderSettings) {
     if c.is_ortho() {
         let _ = writeln!(out, "  <camera type=\"orthographic\" />");
     } else {
-        let _ = writeln!(out, "  <camera type=\"perspective\" fov=\"{}\" />", c.fov);
+        let _ = writeln!(out, "  <camera type=\"perspective\" fov=\"{}\" />", c.fov_y(cfg.width as f32 / cfg.height.max(1) as f32));
     }
     let _ = writeln!(out, "</transform>");
 }
@@ -117,7 +118,15 @@ pub fn scene_xml(rs: &RenderScene, cfg: &RenderSettings) -> String {
     camera(&mut out, rs, cfg);
     let world = rs.background + rs.ambient + rs.sky;
     let _ = writeln!(out, "<background>");
-    let _ = writeln!(out, "  <background name=\"bg\" color=\"{}\" strength=\"1\" />", v3(world));
+    if let Some(h) = &rs.hdri {
+        // Cycles' world is Z-up equirect too; the rotation turns its Z axis.
+        let rot = format!("0 0 {}", (-h.rotation).to_radians());
+        let _ = writeln!(out, "  <environment_texture name=\"env\" filename=\"{}\" tex_mapping.rotation=\"{rot}\" />", h.path.display());
+        let _ = writeln!(out, "  <background name=\"bg\" strength=\"{}\" />", h.strength);
+        let _ = writeln!(out, "  <connect from=\"env color\" to=\"bg color\" />");
+    } else {
+        let _ = writeln!(out, "  <background name=\"bg\" color=\"{}\" strength=\"1\" />", v3(world));
+    }
     let _ = writeln!(out, "  <connect from=\"bg background\" to=\"output surface\" />");
     let _ = writeln!(out, "</background>");
     shaders(&mut out, rs);
@@ -129,38 +138,56 @@ pub fn scene_xml(rs: &RenderScene, cfg: &RenderSettings) -> String {
 
 /// Writes the scene, runs the CLI and loads the result.
 pub fn run(rs: &RenderScene, cfg: &RenderSettings, cancel: &AtomicBool) -> Result<FrameBuffer, String> {
-    let dir = std::env::temp_dir().join(format!("minimax_cycles_{}", std::process::id()));
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    if cfg.cycles_via == CyclesVia::Blender {
+        return super::blender::run(rs, cfg, cancel);
+    }
+    let dir = work_dir()?;
     let (xml, png) = (dir.join("scene.xml"), dir.join("render.png"));
     std::fs::write(&xml, scene_xml(rs, cfg)).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_file(&png);
-    let mut child = std::process::Command::new(&cfg.cycles_exe)
-        .args(["--background", "--samples", &cfg.cycles_samples.to_string()])
+    let mut cmd = std::process::Command::new(&cfg.cycles_exe);
+    cmd.args(["--background", "--samples", &cfg.cycles_samples.to_string()])
+        .args(["--device", cfg.cycles_device.id()])
         .args(["--width", &cfg.width.to_string(), "--height", &cfg.height.to_string()])
         .arg("--output")
         .arg(&png)
-        .arg(&xml)
+        .arg(&xml);
+    wait(cmd, &cfg.cycles_exe, cancel)?;
+    let img = image::open(&png).map_err(|e| format!("Cycles produced no image: {e}"))?;
+    Ok(FrameBuffer::from_image(img))
+}
+
+/// Per-process scratch folder for exported scenes and results.
+pub(super) fn work_dir() -> Result<std::path::PathBuf, String> {
+    let dir = std::env::temp_dir().join(format!("minimax_cycles_{}", std::process::id()));
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
+/// Runs `cmd` to completion (killing it on cancel); errors carry the last
+/// line of its stderr.
+pub(super) fn wait(mut cmd: std::process::Command, exe: &str, cancel: &AtomicBool) -> Result<(), String> {
+    let mut child = cmd
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Could not start Cycles '{}': {e}. Set the executable path in Render Setup (F10).", cfg.cycles_exe))?;
+        .map_err(|e| format!("Could not start '{exe}': {e}. Set the executable path in Render Setup (F10)."))?;
     loop {
         if cancel.load(Ordering::Relaxed) {
             let _ = child.kill();
             return Err("Render cancelled".into());
         }
         if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
-            if !status.success() {
-                let mut err = String::new();
-                if let Some(mut s) = child.stderr.take() {
-                    let _ = std::io::Read::read_to_string(&mut s, &mut err);
-                }
-                return Err(format!("Cycles exited with {status}: {}", err.lines().last().unwrap_or("")));
+            if status.success() {
+                return Ok(());
             }
-            break;
+            let mut err = String::new();
+            if let Some(mut s) = child.stderr.take() {
+                let _ = std::io::Read::read_to_string(&mut s, &mut err);
+            }
+            let last = err.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("");
+            return Err(format!("{exe} exited with {status}: {last}"));
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    let img = image::open(&png).map_err(|e| format!("Cycles produced no image: {e}"))?;
-    Ok(FrameBuffer::from_image(img))
 }

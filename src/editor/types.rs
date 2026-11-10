@@ -46,6 +46,12 @@ pub enum Tool {
     Create(PrimitiveKind),
     /// Click-placed GeoGen procedural object.
     CreateGeoGen(crate::modifiers::GeoMode),
+    /// Click-placed Mech primitive (Gear, Piston, Hose).
+    CreateMech(crate::mech::MechKind),
+    /// Hose: click the object its top (start) or bottom (end) binds to.
+    PickHoseEnd {
+        top: bool,
+    },
     TargetWeld {
         first: Option<crate::mesh::VertexId>,
     },
@@ -62,9 +68,32 @@ pub enum Tool {
     NormalAlign,
     /// Pick Material from Object (eyedropper) into the active slot.
     PickMaterial,
+    /// Edit Poly Create: points clicked so far.
+    CreatePoly {
+        points: Vec<crate::mesh::ops::sweep::CreatePoint>,
+    },
+    /// Hinge From Edge: pick the hinge edge.
+    PickHinge,
+    /// Extrude Along Spline: pick the path shape.
+    PickSpline,
+    /// Tools -> Align: pick the target object.
+    PickAlign,
+    /// Assemble Joint (`J`): mount on the child part, then on the parent.
+    Joint {
+        first: Option<crate::assembly::mount::Mount>,
+    },
+    /// Editable Spline Refine: click on segments to add vertices.
+    RefineSpline,
+    /// Editable Spline Boolean: click the second spline.
+    PickSplineBoolean,
     /// Create a light; target lights take a second click for the target.
     CreateLight {
         kind: crate::render::LightKind,
+        first: Option<bevy::math::Vec3>,
+    },
+    /// Create a camera; Target Cameras take a second click for the target.
+    CreateCamera {
+        kind: crate::scene::camera::CameraKind,
         first: Option<bevy::math::Vec3>,
     },
     /// Click-placed parametric shape (Circle, Rectangle, Star…).
@@ -83,6 +112,9 @@ impl Tool {
             Tool::None => None,
             Tool::Create(_) => Some("Click in a viewport to place the object"),
             Tool::CreateGeoGen(_) => Some("Click in a viewport to place the GeoGen object"),
+            Tool::CreateMech(_) => Some("Click in a viewport to place the Mech part"),
+            Tool::PickHoseEnd { top: true } => Some("Hose: click the Top End Object (Esc to cancel)"),
+            Tool::PickHoseEnd { .. } => Some("Hose: click the Bottom End Object (Esc to cancel)"),
             Tool::TargetWeld { first: None } => Some("Target Weld: click the vertex to weld"),
             Tool::TargetWeld { .. } => Some("Target Weld: click the target vertex"),
             Tool::InsertVertex => Some("Insert Vertex: click on an edge or polygon"),
@@ -92,10 +124,21 @@ impl Tool {
             Tool::Attach => Some("Attach: click an object to merge it"),
             Tool::PickBoolean => Some("Boolean: click objects to add them as operands (Esc to stop)"),
             Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
+            Tool::CreatePoly { points } if points.len() < 3 => Some("Create: click vertices or empty space"),
+            Tool::CreatePoly { .. } => Some("Create: click the first point or right-click to finish"),
+            Tool::PickHinge => Some("Hinge From Edge: click the hinge edge"),
+            Tool::PickSpline => Some("Extrude Along Spline: click a shape"),
+            Tool::PickAlign => Some("Align: click the target object (Esc to cancel)"),
+            Tool::Joint { first: None } => Some("Assemble Joint: click a mount point on the part to attach (child)"),
+            Tool::Joint { .. } => Some("Assemble Joint: click the mount point on the parent part"),
+            Tool::RefineSpline => Some("Refine: click on a segment to add a vertex (Esc to stop)"),
+            Tool::PickSplineBoolean => Some("Boolean: click the other closed spline"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
             Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),
             Tool::CreateLight { .. } => Some("Click in a viewport to place the light"),
+            Tool::CreateCamera { first: None, .. } => Some("Click to place the camera"),
+            Tool::CreateCamera { .. } => Some("Click to place the camera's target"),
             Tool::CreateShape(_) => Some("Click in a viewport to place the shape"),
             Tool::Line { knots, .. } if knots.is_empty() => Some("Line: click for corners, drag for Bezier handles"),
             Tool::Line { .. } => Some("Line: right-click to finish, click the first vertex to close"),
@@ -159,10 +202,20 @@ pub struct SplineUi {
     /// 0 = horizontal (X), 1 = vertical (Y), 2 = both.
     pub mirror_axis: usize,
     pub mirror_copy: bool,
+    pub bool_op: crate::splines::boolean::SplineBoolOp,
 }
 
 impl Default for SplineUi {
     fn default() -> Self {
-        Self { fillet: 0.1, chamfer: 0.1, weld: 0.05, divide: 1, outline: 0.05, mirror_axis: 0, mirror_copy: false }
+        Self {
+            fillet: 0.1,
+            chamfer: 0.1,
+            weld: 0.05,
+            divide: 1,
+            outline: 0.05,
+            mirror_axis: 0,
+            mirror_copy: false,
+            bool_op: Default::default(),
+        }
     }
 }

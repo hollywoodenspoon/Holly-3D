@@ -1,5 +1,6 @@
-//! Viewport wireframes for modifier gizmos: the FFD lattice cage (yellow) and
-//! the UVW Map projection gizmo (yellow, orange while its sub-object is active).
+//! Viewport wireframes for modifier gizmos: the FFD lattice cage, the UVW Map
+//! projection gizmo, the Bend / Twist / Taper gizmo box and center, and the
+//! Symmetry mirror plane (yellow, orange while their sub-object is active).
 
 use super::lines::OverlayLines;
 use crate::editor::Editor;
@@ -39,7 +40,17 @@ fn cube(g: &mut Gizmos<OverlayLines>, m: Mat4, color: Color) {
     }
 }
 
-pub fn draw(g: &mut Gizmos<OverlayLines>, ed: &Editor) {
+/// Deformer gizmo box, refitted only when the object re-evaluates.
+#[derive(Default)]
+pub struct BoxCache(Option<(u64, Mat4)>);
+
+fn cross(g: &mut Gizmos<OverlayLines>, p: Vec3, size: f32, color: Color) {
+    for d in [Vec3::X, Vec3::Y, Vec3::Z] {
+        g.line(p - d * size, p + d * size, color);
+    }
+}
+
+pub fn draw(g: &mut Gizmos<OverlayLines>, ed: &Editor, cache: &mut BoxCache) {
     let Some(o) = ed.current_obj() else { return };
     if o.hidden {
         return;
@@ -83,6 +94,32 @@ pub fn draw(g: &mut Gizmos<OverlayLines>, ed: &Editor) {
                     g.line(p(0.0, 0.0, 0.0), p(-0.5, 0.0, 0.0), SEAM);
                 }
                 MapType::Box => cube(g, m, color),
+            }
+        }
+        Some(ModifierKind::Symmetry(s)) => {
+            let color = if sub == Some(ModSub::Mirror) { ORANGE } else { YELLOW };
+            let size = o.evaluated_mesh.bounds().map(|b| b.size().max_element() * 0.6).unwrap_or(1.0);
+            let a = s.axis.min(2);
+            let (u, v) = (s.mirror.transform_vector3(Vec3::AXES[(a + 1) % 3]), s.mirror.transform_vector3(Vec3::AXES[(a + 2) % 3]));
+            let p = s.point();
+            let c = [p - u * size - v * size, p + u * size - v * size, p + u * size + v * size, p - u * size + v * size]
+                .map(|q| w.transform_point3(q));
+            for k in 0..4 {
+                g.line(c[k], c[(k + 1) % 4], color);
+            }
+            g.line(w.transform_point3(p), w.transform_point3(p + s.normal() * size * 0.3), color);
+        }
+        Some(k) if k.deformer_gizmo().is_some() => {
+            let (gz, center) = k.deformer_gizmo().unwrap_or_default();
+            if cache.0.is_none_or(|(v, _)| v != o.version) {
+                let input = o.active_level.map(|l| o.input_of(l));
+                let fitted = input.and_then(|m| crate::modifiers::deformers::gizmo_box(&m, gz));
+                cache.0 = fitted.map(|b| (o.version, b));
+            }
+            if let Some((_, b)) = cache.0 {
+                cube(g, w * b, if sub == Some(ModSub::Gizmo) { ORANGE } else { YELLOW });
+                let size = (w * b).transform_vector3(Vec3::ONE).length() * 0.06;
+                cross(g, w.transform_point3(gz.transform_point3(center)), size, if sub == Some(ModSub::Center) { ORANGE } else { YELLOW });
             }
         }
         _ => {}

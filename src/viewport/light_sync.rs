@@ -85,7 +85,7 @@ pub fn sync_lights(
     mut tfs: Query<(&mut Transform, &mut Visibility), (With<SceneLight>, Without<RigLight>)>,
     cams: Query<(Entity, &ViewportCam, Option<&DistanceFog>)>,
 ) {
-    if editor.bypass_change_detection().scene.aim_target_lights() {
+    if editor.bypass_change_detection().scene.aim_targets() {
         editor.set_changed();
     }
     let ed = &*editor;

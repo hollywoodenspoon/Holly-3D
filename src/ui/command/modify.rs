@@ -25,10 +25,14 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         ui.add_space(6.0);
         return light_params::show(ui, ed);
     }
-    if ed.scene.objects[id].is_helper() {
-        let owner = ed.scene.objects.values().find(|o| o.light().is_some_and(|l| l.target == Some(id))).map(|o| o.name.clone());
+    if ed.scene.objects[id].camera().is_some() {
         ui.add_space(6.0);
-        ui.label(dim(&format!("Target of {} — move it with W to aim the light.", owner.unwrap_or_default())));
+        return super::camera_params::show(ui, ed);
+    }
+    if ed.scene.objects[id].is_helper() {
+        let owner = ed.scene.objects.values().find(|o| o.target_id() == Some(id)).map(|o| o.name.clone());
+        ui.add_space(6.0);
+        ui.label(dim(&format!("Target of {} — move it with W to aim it.", owner.unwrap_or_default())));
         return;
     }
     stack::modifier_list(ui, ed, st);
@@ -39,8 +43,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     if o.active_level.is_none() && o.shape_object().is_some() {
         return rollouts::spline::shape_base(ui, ed);
     }
-    if o.active_level.is_none() && matches!(o.base, crate::scene::BaseObject::GeoGen(_)) {
-        rollouts::geogen::base(ui, ed);
+    let mech = matches!(o.base, crate::scene::BaseObject::Mech(_));
+    if o.active_level.is_none() && (mech || matches!(o.base, crate::scene::BaseObject::GeoGen(_))) {
+        if mech {
+            rollouts::mech::base(ui, ed);
+        } else {
+            rollouts::geogen::base(ui, ed);
+        }
         if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
             ed.convert_to_editable_poly();
         }
@@ -64,6 +73,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),
         Some(ModifierKind::Greeble(_)) => return rollouts::stack_mods::greeble(ui, ed),
         Some(ModifierKind::Chamfer(_)) => return rollouts::stack_mods::chamfer(ui, ed),
+        Some(ModifierKind::PanelGroove(_)) => return rollouts::stack_mods::panel_groove(ui, ed),
         Some(ModifierKind::Symmetry(_)) => return rollouts::stack_mods::symmetry(ui, ed),
         Some(ModifierKind::Shell(_)) => return rollouts::stack_mods::shell(ui, ed),
         Some(ModifierKind::TurboSmooth(_)) => return rollouts::stack_mods::turbosmooth(ui, ed),

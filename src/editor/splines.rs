@@ -7,7 +7,7 @@ use super::*;
 use crate::scene::BaseObject;
 use crate::splines::edit::SplineLevel;
 use crate::splines::{Knot, KnotType, Shape, ShapeKind, ShapeObject, ShapeParams, ShapeSource, Spline, bezier};
-use crate::viewport::picking::{in_rect, point_segment};
+use crate::viewport::picking::point_segment;
 use bevy::math::{Mat3, Mat4, Quat};
 
 impl Editor {
@@ -71,11 +71,6 @@ impl Editor {
         self.checkpoint("Create Shape");
         let rot = self.view_plane_rotation(view);
         self.add_shape(ShapeObject::param(p), at, rot);
-    }
-
-    pub fn snapped_point_pub(&self, view: usize, cursor: Vec2) -> Vec3 {
-        let p = self.viewports.views[view].construction_point(cursor);
-        if self.snap { (p * 4.0).round() / 4.0 } else { p }
     }
 
     /// Line tool, mouse down: closes the spline on its first knot, else adds a knot.
@@ -225,12 +220,11 @@ impl Editor {
     }
 
     /// Marquee at a spline sub-object level. Returns true when handled.
-    pub fn spline_marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) -> bool {
+    pub fn spline_marquee_select(&mut self, view: usize, region: &crate::viewport::region::Region, op: SelectOp) -> bool {
         let Some(level) = self.spline_level() else { return false };
         let Some((sh, w)) = self.base_shape() else { return true };
-        let (min, max) = (a.min(b), a.max(b));
         let v = &self.viewports.views[view];
-        let inside = |p: Vec3| v.to_screen(w.transform_point3(p)).is_some_and(|s| in_rect(s, min, max));
+        let inside = |p: Vec3| v.to_screen(w.transform_point3(p)).is_some_and(|s| region.contains(s));
         let mut hits = vec![];
         for (si, s) in sh.splines.iter().enumerate() {
             let n = s.knots.len();

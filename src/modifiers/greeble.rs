@@ -7,7 +7,7 @@ use crate::mesh::{EditablePoly, PolyId};
 use bevy::math::{Vec2, Vec3};
 use rand_chacha::ChaCha8Rng;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct GreebleMod {
     pub seed: u32,
     pub min_height: f32,

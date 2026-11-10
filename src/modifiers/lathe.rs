@@ -5,7 +5,7 @@ use crate::splines::Shape;
 use crate::splines::sweep::{cap, flip, loft};
 use bevy::math::{Quat, Vec3};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum LatheAlign {
     #[default]
     Min,
@@ -13,7 +13,7 @@ pub enum LatheAlign {
     Max,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct LatheMod {
     pub degrees: f32,
     pub segments: u32,

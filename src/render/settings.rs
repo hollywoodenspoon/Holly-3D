@@ -1,6 +1,6 @@
 //! Render Setup (F10) parameters shared by both renderer engines.
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum Engine {
     /// Built-in high-quality CPU raytracer (default).
     #[default]
@@ -14,7 +14,65 @@ impl Engine {
     pub fn label(self) -> &'static str {
         match self {
             Engine::Raytracer => "Built-in High-Quality Raytracer",
-            Engine::Cycles => "Cycles Standalone Bridge",
+            Engine::Cycles => "Cycles Bridge (Blender / Standalone)",
+        }
+    }
+}
+
+/// How the Cycles engine is reached.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+pub enum CyclesVia {
+    /// `blender --background -E CYCLES` with a Python scene loader (default).
+    #[default]
+    Blender,
+    /// The standalone `cycles` CLI reading Cycles XML.
+    Standalone,
+}
+
+impl CyclesVia {
+    pub const ALL: [CyclesVia; 2] = [CyclesVia::Blender, CyclesVia::Standalone];
+    pub fn label(self) -> &'static str {
+        match self {
+            CyclesVia::Blender => "Blender (background)",
+            CyclesVia::Standalone => "Standalone cycles CLI",
+        }
+    }
+}
+
+/// Cycles compute device (Blender's Cycles device names).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+pub enum CyclesDevice {
+    /// AMD GPUs (HIP, optionally HIP-RT hardware ray tracing).
+    #[default]
+    Hip,
+    Optix,
+    Cuda,
+    OneApi,
+    Metal,
+    Cpu,
+}
+
+impl CyclesDevice {
+    pub const ALL: [CyclesDevice; 6] = [Self::Hip, Self::Optix, Self::Cuda, Self::OneApi, Self::Metal, Self::Cpu];
+    /// Device type name as Blender / the cycles CLI spell it.
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Hip => "HIP",
+            Self::Optix => "OPTIX",
+            Self::Cuda => "CUDA",
+            Self::OneApi => "ONEAPI",
+            Self::Metal => "METAL",
+            Self::Cpu => "CPU",
+        }
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Hip => "HIP (AMD)",
+            Self::Optix => "OptiX (NVIDIA RTX)",
+            Self::Cuda => "CUDA (NVIDIA)",
+            Self::OneApi => "oneAPI (Intel Arc)",
+            Self::Metal => "Metal (Apple)",
+            Self::Cpu => "CPU",
         }
     }
 }
@@ -25,7 +83,8 @@ pub const RESOLUTIONS: [(u32, u32); 5] = [(800, 600), (1280, 720), (1920, 1080),
 /// Anti-aliasing: samples per pixel (stratified n x n grid).
 pub const AA_LEVELS: [(u32, &str); 4] = [(1, "Off (1 sample)"), (2, "2x2 (4 samples)"), (3, "3x3 (9 samples)"), (4, "4x4 (16 samples)")];
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct RenderSettings {
     pub width: u32,
     pub height: u32,
@@ -34,6 +93,9 @@ pub struct RenderSettings {
     pub transparent: bool,
     /// Viewport whose camera is rendered (`None` = the active viewport).
     pub view: Option<usize>,
+    /// Camera object rendered instead of a viewport (Render Setup's View list).
+    #[serde(default)]
+    pub camera: Option<crate::scene::ObjId>,
     pub engine: Engine,
     /// AA grid size (n x n samples per pixel).
     pub aa: u32,
@@ -48,6 +110,13 @@ pub struct RenderSettings {
     pub outlines: bool,
     pub cycles_exe: String,
     pub cycles_samples: u32,
+    pub cycles_via: CyclesVia,
+    pub blender_exe: String,
+    pub cycles_device: CyclesDevice,
+    /// HIP-RT hardware ray tracing (HIP device only).
+    pub hiprt: bool,
+    /// OpenImageDenoise on the final image.
+    pub denoise: bool,
 }
 
 impl Default for RenderSettings {
@@ -58,6 +127,7 @@ impl Default for RenderSettings {
             lock_aspect: false,
             transparent: false,
             view: None,
+            camera: None,
             engine: Engine::Raytracer,
             aa: 2,
             shadows: true,
@@ -67,6 +137,11 @@ impl Default for RenderSettings {
             outlines: true,
             cycles_exe: "cycles".into(),
             cycles_samples: 64,
+            cycles_via: CyclesVia::Blender,
+            blender_exe: if cfg!(windows) { "blender.exe".into() } else { "/usr/bin/blender".into() },
+            cycles_device: CyclesDevice::Hip,
+            hiprt: true,
+            denoise: true,
         }
     }
 }

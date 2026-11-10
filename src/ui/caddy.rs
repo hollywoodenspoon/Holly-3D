@@ -1,7 +1,7 @@
 //! Floating in-viewport Caddy: live-preview spinners + OK / Apply & Continue / Cancel.
 
 use super::widgets::{max_spinner_range, toggle_button};
-use crate::editor::Editor;
+use crate::editor::{Editor, Tool};
 use crate::mesh::ops::{ExtrudeMode, PolyOp};
 use bevy_egui::egui::{self, RichText};
 
@@ -72,6 +72,12 @@ pub fn params(ui: &mut egui::Ui, op: &mut PolyOp) -> bool {
             ui.checkbox(open, "");
             ui.end_row();
         }
+        PanelGroove { width, depth, lip, material_id } => {
+            row(ui, "Groove Width", width, 0.001, 0.04, 0.0..=100.0);
+            row(ui, "Groove Depth", depth, 0.001, 0.03, 0.0..=100.0);
+            row(ui, "Bevel Lip Width", lip, 0.001, 0.008, 0.0..=100.0);
+            row(ui, "Inner Groove Mat ID", material_id, 0.1, 2, 1..=64);
+        }
         ConnectEdges { segments, pinch, slide } => {
             row(ui, "Segments", segments, 0.1, 1, 1..=32);
             row(ui, "Pinch", pinch, 0.5, 0.0, -100.0..=100.0);
@@ -84,9 +90,36 @@ pub fn params(ui: &mut egui::Ui, op: &mut PolyOp) -> bool {
             row(ui, "Twist", twist, 0.1, 0, -64..=64);
         }
         MSmooth { strength } => row(ui, "Smoothness", strength, 0.005, 0.5, 0.0..=1.0),
+        Hinge { angle, segments, .. } => {
+            row(ui, "Angle", angle, 0.5, 45.0, -360.0..=360.0);
+            row(ui, "Segments", segments, 0.1, 1, 1..=64);
+        }
+        ExtrudeAlongSpline { segments, taper, twist, align, .. } => {
+            row(ui, "Segments", segments, 0.1, 6, 1..=256);
+            row(ui, "Taper Amount", taper, 0.005, 0.0, -1.0..=10.0);
+            row(ui, "Twist", twist, 0.5, 0.0, -3600.0..=3600.0);
+            ui.label("Align to Face Normal");
+            ui.checkbox(align, "");
+            ui.end_row();
+        }
         _ => any = false,
     });
     any
+}
+
+/// Hinge / spline pick button for the pick-based caddies.
+fn pick_row(ui: &mut egui::Ui, ed: &mut Editor, op: &PolyOp) {
+    let (tool, label, picked) = match op {
+        PolyOp::Hinge { axis, .. } => (Tool::PickHinge, "Pick Hinge", *axis != bevy::math::Vec3::ZERO),
+        PolyOp::ExtrudeAlongSpline { path, .. } => (Tool::PickSpline, "Pick Spline", !path.is_empty()),
+        _ => return,
+    };
+    ui.horizontal(|ui| {
+        if ui.add(egui::Button::new(label).selected(ed.tool == tool)).clicked() {
+            ed.tool = tool;
+        }
+        ui.label(super::widgets::dim(if picked { "picked" } else { "none picked" }));
+    });
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor) {
@@ -105,6 +138,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         .show(ctx, |ui| {
             ui.set_min_width(210.0);
             params(ui, &mut caddy.op);
+            pick_row(ui, ed, &caddy.op);
             ui.add_space(4.0);
             ui.horizontal(|ui| {
                 if ui.button("✔ OK").clicked() {

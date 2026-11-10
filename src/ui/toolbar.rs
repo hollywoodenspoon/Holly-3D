@@ -4,9 +4,8 @@ use super::theme;
 use super::widgets::toggle_button;
 use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::CloneKind;
-use bevy_egui::egui::{self, RichText};
-
-const PHASE5: &str = "Not available yet";
+use crate::viewport::region::RegionShape;
+use bevy_egui::egui::{self, RichText, Stroke};
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::top("main_toolbar")
@@ -18,8 +17,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
             ui.horizontal_centered(|ui| {
                 menus(ui, ed);
                 ui.separator();
+                region_button(ui, ed);
                 for (mode, key, tip) in [
-                    (TransformMode::Select, "Q", "Select Object"),
                     (TransformMode::Move, "W", "Select and Move"),
                     (TransformMode::Rotate, "E", "Select and Rotate"),
                     (TransformMode::Scale, "R", "Select and Scale"),
@@ -45,11 +44,17 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     }
                 });
                 ui.separator();
-                if toggle_button(ui, ed.snap, "S Snap").on_hover_text("3D Grid Snap (S)").clicked() {
+                let snap = toggle_button(ui, ed.snap, "S Snap").on_hover_text("3D Snaps (S) — right-click for Grid and Snap Settings");
+                if snap.clicked() {
                     ed.snap = !ed.snap;
                 }
+                snap.context_menu(|ui| crate::ui::snaps::settings(ui, ed));
                 if toggle_button(ui, ed.angle_snap, "A Angle").on_hover_text("Angle Snap 5° (A)").clicked() {
                     ed.angle_snap = !ed.angle_snap;
+                }
+                let tip = "Contact Sets: Contact Member parts push each other along their hinges and sliders";
+                if toggle_button(ui, ed.scene.assembly.contacts_on, "Contact").on_hover_text(tip).clicked() {
+                    ed.toggle_contacts();
                 }
                 ui.separator();
                 let any = !ed.scene.selected().is_empty();
@@ -86,17 +91,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
 
 fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.label(RichText::new("MiniMax").color(theme::AMBER).strong());
-    ui.menu_button("File", |ui| {
-        if ui.button("New Scene").clicked() {
-            ed.checkpoint("New Scene");
-            ed.scene = Default::default();
-            ed.sub = crate::mesh::SubObject::Object;
-            ui.close();
-        }
-        for item in ["Open...", "Save", "Import OBJ / glTF...", "Export OBJ / glTF..."] {
-            ui.add_enabled(false, egui::Button::new(item)).on_disabled_hover_text("File I/O arrives with the import/export phase");
-        }
-    });
+    ui.menu_button("File", |ui| super::file_menu::menu(ui, ed));
     ui.menu_button("Edit", |ui| {
         if ui.add_enabled(ed.history.can_undo(), egui::Button::new("Undo   Ctrl+Z")).clicked() {
             ed.undo();
@@ -138,10 +133,70 @@ fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.open_mirror();
             ui.close();
         }
-        ui.add_enabled(false, egui::Button::new("Align...")).on_disabled_hover_text(PHASE5);
+        if ui.button("Align...   Alt+A").clicked() {
+            ed.start_align();
+            ui.close();
+        }
         if ui.button("Isolate Selection   Alt+Q").clicked() {
             ed.toggle_isolate();
             ui.close();
+        }
+    });
+}
+
+/// Small icon of a selection region shape inside `r`.
+pub fn region_icon(painter: &egui::Painter, r: egui::Rect, shape: RegionShape, color: egui::Color32) {
+    let st = Stroke::new(1.3, color);
+    let c = r.center();
+    match shape {
+        RegionShape::Rectangle => {
+            painter.rect_stroke(r.shrink(1.0), 0.0, st, egui::StrokeKind::Inside);
+        }
+        RegionShape::Circle => {
+            painter.circle_stroke(c, r.width().min(r.height()) * 0.5 - 1.0, st);
+        }
+        RegionShape::Fence => {
+            let pts = [(0.0, 0.2), (0.6, 0.0), (1.0, 0.55), (0.45, 1.0), (0.1, 0.7), (0.0, 0.2)];
+            let line = pts.iter().map(|&(x, y)| r.lerp_inside(egui::vec2(x, y))).collect();
+            painter.add(egui::Shape::line(line, st));
+        }
+        RegionShape::Lasso => {
+            let line = (0..=16)
+                .map(|i| {
+                    let a = i as f32 / 16.0 * std::f32::consts::TAU;
+                    let k = 1.0 + 0.18 * (3.0 * a).sin();
+                    c + egui::vec2(a.cos(), a.sin()) * r.width().min(r.height()) * 0.45 * k
+                })
+                .collect();
+            painter.add(egui::Shape::line(line, st));
+        }
+    }
+}
+
+/// `Q` Select Object, with the current region shape drawn on the button
+/// (`Q` again cycles it; right-click picks one).
+fn region_button(ui: &mut egui::Ui, ed: &mut Editor) {
+    let on = ed.mode == TransformMode::Select;
+    let resp = toggle_button(ui, on, "Q     ")
+        .on_hover_text(format!("Select Object (Q) — {}; Q again cycles, right-click to pick", ed.region_shape.label()));
+    let r = resp.rect;
+    let icon = egui::Rect::from_center_size(egui::pos2(r.right() - 13.0, r.center().y), egui::vec2(12.0, 11.0));
+    let color = if on { theme::INPUT } else { theme::TEXT };
+    region_icon(ui.painter(), icon, ed.region_shape, color);
+    if resp.clicked() {
+        ed.mode = TransformMode::Select;
+    }
+    resp.context_menu(|ui| {
+        for shape in RegionShape::ALL {
+            ui.horizontal(|ui| {
+                let (rect, _) = ui.allocate_exact_size(egui::vec2(14.0, 12.0), egui::Sense::hover());
+                region_icon(ui.painter(), rect, shape, theme::TEXT);
+                if ui.selectable_label(ed.region_shape == shape, shape.label()).clicked() {
+                    ed.region_shape = shape;
+                    ed.mode = TransformMode::Select;
+                    ui.close();
+                }
+            });
         }
     });
 }

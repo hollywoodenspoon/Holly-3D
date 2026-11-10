@@ -110,11 +110,6 @@ pub fn pick_edge(
     best.map(|(id, _, t)| (id, t))
 }
 
-/// Screen-space rectangle test helper for marquee (window) selection.
-pub fn in_rect(p: Vec2, min: Vec2, max: Vec2) -> bool {
-    p.x >= min.x && p.y >= min.y && p.x <= max.x && p.y <= max.y
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

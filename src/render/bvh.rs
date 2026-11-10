@@ -1,4 +1,5 @@
-//! Flattened render triangles + a binned-median BVH for ray queries.
+//! Flattened render triangles + a median-split BVH, collapsed to a 4-wide
+//! SIMD BVH (`bvh_wide`) for ray queries.
 
 use bevy::math::{Vec2, Vec3, Vec4};
 
@@ -26,21 +27,23 @@ pub struct Hit {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct Node {
-    lo: Vec3,
-    hi: Vec3,
+pub(super) struct Node {
+    pub(super) lo: Vec3,
+    pub(super) hi: Vec3,
     /// Leaf: first triangle index; inner: right child index.
-    start: u32,
+    pub(super) start: u32,
     /// Leaf triangle count (0 = inner node, left child = self + 1).
-    count: u32,
+    pub(super) count: u32,
 }
 
 pub struct Bvh {
     pub tris: Vec<Tri>,
+    #[cfg(test)]
     nodes: Vec<Node>,
+    wide: Vec<super::bvh_wide::Node4>,
 }
 
-fn intersect(t: &Tri, o: Vec3, d: Vec3) -> Option<(f32, f32, f32)> {
+pub(super) fn intersect(t: &Tri, o: Vec3, d: Vec3) -> Option<(f32, f32, f32)> {
     let e1 = t.p[1] - t.p[0];
     let e2 = t.p[2] - t.p[0];
     let pv = d.cross(e2);
@@ -62,12 +65,21 @@ fn intersect(t: &Tri, o: Vec3, d: Vec3) -> Option<(f32, f32, f32)> {
     Some((e2.dot(q) * inv, u, v))
 }
 
+#[cfg(test)]
 fn slab(lo: Vec3, hi: Vec3, o: Vec3, inv: Vec3, tmax: f32) -> bool {
     let a = (lo - o) * inv;
     let b = (hi - o) * inv;
     let t0 = a.min(b).max_element().max(0.0);
     let t1 = a.max(b).min_element().min(tmax);
     t0 <= t1
+}
+
+#[cfg(test)]
+impl Tri {
+    /// Ray distance by direct intersection (brute-force reference).
+    pub fn ray(&self, o: Vec3, d: Vec3) -> Option<f32> {
+        intersect(self, o, d).map(|h| h.0)
+    }
 }
 
 impl Bvh {
@@ -77,7 +89,13 @@ impl Bvh {
             let n = tris.len();
             Self::split(&mut tris, &mut nodes, 0, n);
         }
-        Self { tris, nodes }
+        let wide = super::bvh_wide::collapse(&nodes);
+        Self {
+            tris,
+            #[cfg(test)]
+            nodes,
+            wide,
+        }
     }
 
     fn bounds(tris: &[Tri]) -> (Vec3, Vec3) {
@@ -113,15 +131,17 @@ impl Bvh {
 
     /// Closest hit along `o + t d` with `t` in (eps, tmax).
     pub fn closest(&self, o: Vec3, d: Vec3, tmax: f32) -> Option<Hit> {
-        self.walk(o, d, tmax, false)
+        super::bvh_wide::walk(&self.wide, &self.tris, o, d, tmax, false)
     }
 
     /// True when anything blocks the segment (shadow rays).
     pub fn occluded(&self, o: Vec3, d: Vec3, tmax: f32) -> bool {
-        self.walk(o, d, tmax, true).is_some()
+        super::bvh_wide::walk(&self.wide, &self.tris, o, d, tmax, true).is_some()
     }
 
-    fn walk(&self, o: Vec3, d: Vec3, tmax: f32, any: bool) -> Option<Hit> {
+    /// Binary-tree traversal (reference for the wide BVH's tests).
+    #[cfg(test)]
+    pub(super) fn walk_binary(&self, o: Vec3, d: Vec3, tmax: f32, any: bool) -> Option<Hit> {
         if self.nodes.is_empty() {
             return None;
         }

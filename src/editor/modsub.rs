@@ -1,11 +1,12 @@
 //! Modifier sub-objects that are not mesh components: FFD Control Points /
-//! Lattice and the UVW Map Gizmo (selection, W/E/R frames, drags, align tools).
+//! Lattice, the UVW Map / Bend / Twist / Taper Gizmo and Center, the Symmetry
+//! Mirror and the Lathe Axis (selection, W/E/R frames, drags, align tools).
 
 use super::select::{SelectOp, VERTEX_PICK_PX};
 use super::*;
 use crate::mesh::EditablePoly;
 use crate::modifiers::{ModSub, ModifierKind};
-use crate::viewport::picking::{in_rect, pick_polygon};
+use crate::viewport::picking::pick_polygon;
 use bevy::math::{Mat4, Quat};
 
 impl Editor {
@@ -72,6 +73,18 @@ impl Editor {
                 let shape = o.shape_input_of(o.active_level?)?;
                 (l.axis_point(&shape), local_rot)
             }
+            (ModSub::Gizmo, k) if k.deformer_gizmo().is_some() => {
+                let (g, c) = k.deformer_gizmo()?;
+                (g.transform_point3(c), rot * Quat::from_mat4(&g).normalize())
+            }
+            (ModSub::Center, k) if k.deformer_gizmo().is_some() => {
+                let (g, c) = k.deformer_gizmo()?;
+                (g.transform_point3(c), local_rot)
+            }
+            (ModSub::Mirror, ModifierKind::Symmetry(s)) => {
+                let (_, r, _) = s.mirror.to_scale_rotation_translation();
+                (s.point(), rot * r)
+            }
             _ => return None,
         };
         Some(Xform { translation: w.transform_point3(center), rotation: r, scale: Vec3::ONE })
@@ -105,6 +118,16 @@ impl Editor {
             (ModSub::Normal, Some(ModifierKind::EditNormals(e))) => {
                 super::normals::rotate_normals(e, &before.level_mesh, local);
             }
+            (ModSub::Mirror, Some(ModifierKind::Symmetry(s))) => {
+                // rigid: the mirror plane has no scale
+                let (_, r, t) = (local * s.mirror).to_scale_rotation_translation();
+                s.mirror = Mat4::from_rotation_translation(r, t);
+            }
+            (sub, Some(k)) => match (sub, k.deformer_gizmo_mut()) {
+                (ModSub::Gizmo, Some((g, _))) => *g = local * *g,
+                (ModSub::Center, Some((g, c))) => *c = g.inverse().transform_point3(local.transform_point3(g.transform_point3(*c))),
+                _ => return,
+            },
             _ => return,
         }
         o.evaluate();
@@ -155,17 +178,15 @@ impl Editor {
     }
 
     /// Marquee while a modifier sub-object is active. Returns true when handled.
-    pub fn mod_marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) -> bool {
+    pub fn mod_marquee_select(&mut self, view: usize, region: &crate::viewport::region::Region, op: SelectOp) -> bool {
         match self.active_mod_sub() {
             Some(ModSub::ControlPoints) => {
-                let (min, max) = (a.min(b), a.max(b));
-                let hits: Vec<usize> =
-                    self.ffd_screen_points(view).into_iter().filter(|(_, s)| in_rect(*s, min, max)).map(|x| x.0).collect();
+                let hits: Vec<usize> = self.ffd_screen_points(view).into_iter().filter(|(_, s)| region.contains(*s)).map(|x| x.0).collect();
                 self.set_ffd_selection(&hits, op);
                 true
             }
             Some(ModSub::Normal) => {
-                self.normals_marquee(view, a, b, op);
+                self.normals_marquee(view, region, op);
                 true
             }
             Some(_) => true,

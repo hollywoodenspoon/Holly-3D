@@ -1,11 +1,13 @@
 //! egui front-end: fixed 5-zone 3ds Max layout + floating windows.
 
+pub mod align_dialog;
 pub mod array_dialog;
 pub mod caddy;
 pub mod clone_dialog;
 pub mod command;
 pub mod env_dialog;
 pub mod explorer;
+pub mod file_menu;
 pub mod hotkeys;
 pub mod material_editor;
 pub mod mirror_dialog;
@@ -14,6 +16,7 @@ pub mod quad_menu;
 pub mod render_setup;
 pub mod render_window;
 pub mod rollouts;
+pub mod snaps;
 pub mod status_bar;
 pub mod theme;
 pub mod toolbar;
@@ -71,6 +74,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     clone_dialog::show(&ctx, ed);
     array_dialog::show(&ctx, ed);
     mirror_dialog::show(&ctx, ed);
+    align_dialog::show(&ctx, ed);
     quad_menu::show(&ctx, ed);
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
@@ -79,5 +83,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);
     ed.update_caddy_preview();
+    ed.scene.solve_assembly();
+    ed.scene.update_hoses();
     Ok(())
 }

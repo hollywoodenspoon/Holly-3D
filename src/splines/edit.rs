@@ -6,7 +6,7 @@ use super::{Knot, KnotType, Shape, Spline};
 use bevy::math::{Mat4, Vec3};
 
 /// Spline sub-object level (keys 1 / 2 / 3).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SplineLevel {
     Vertex,
     Segment,

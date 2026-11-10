@@ -10,6 +10,7 @@ pub mod merge;
 pub mod normals;
 pub mod ops;
 pub mod selection;
+pub mod selection_shift;
 pub mod triangulate;
 pub mod validate;
 
@@ -23,7 +24,7 @@ new_key_type! {
     pub struct PolyId;
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
     pub position: Vec3,
     /// RGBA for VertexPaint / direct model painting without UVs.
@@ -37,7 +38,7 @@ impl Vertex {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct FaceCorner {
     pub vertex_id: VertexId,
     pub uv: Vec2,
@@ -51,7 +52,7 @@ impl FaceCorner {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Polygon {
     /// Triangles, quads and N-gons (>= 3 corners), counter-clockwise seen from outside.
     pub corners: Vec<FaceCorner>,
@@ -81,7 +82,7 @@ impl Polygon {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Edge {
     pub v0: VertexId,
     pub v1: VertexId,
@@ -102,7 +103,7 @@ pub fn edge_key(a: VertexId, b: VertexId) -> (VertexId, VertexId) {
     if a < b { (a, b) } else { (b, a) }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct EditablePoly {
     pub vertices: SlotMap<VertexId, Vertex>,
     pub edges: SlotMap<EdgeId, Edge>,
@@ -112,7 +113,7 @@ pub struct EditablePoly {
 }
 
 /// Which sub-object level an operation or selection refers to (3ds Max `1`..`5`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize)]
 pub enum SubObject {
     #[default]
     Object,
@@ -163,7 +164,7 @@ impl SubObject {
 }
 
 /// Snapshot of the selection flags (used by the Edit Poly modifier).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SelectionSets {
     pub vertices: Vec<VertexId>,
     pub edges: Vec<(VertexId, VertexId)>,
@@ -171,7 +172,7 @@ pub struct SelectionSets {
 }
 
 /// Axis-aligned bounding box.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Aabb {
     pub min: Vec3,
     pub max: Vec3,

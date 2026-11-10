@@ -5,10 +5,12 @@ pub mod deformers;
 pub mod edit_geometry;
 pub mod edit_sub;
 pub mod geogen;
+pub mod mech;
 pub mod modifiers;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;
+pub mod spline_tools;
 pub mod stack_mods;
 
 use crate::editor::Editor;
@@ -36,8 +38,4 @@ pub(crate) fn op_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, op: PolyO
     if action(ui, label, enabled, HALF) {
         ed.apply_op(op);
     }
-}
-
-pub(crate) fn later(ui: &mut egui::Ui, label: &str) {
-    ui.add_enabled(false, egui::Button::new(label).min_size(egui::vec2(HALF, 24.0))).on_disabled_hover_text("Arrives in a later phase");
 }

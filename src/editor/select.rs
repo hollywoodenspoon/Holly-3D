@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::mesh::adjacency::Adjacency;
-use crate::viewport::picking::{in_rect, pick_edge, pick_polygon, pick_vertex};
+use crate::viewport::picking::{pick_edge, pick_polygon, pick_vertex};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SelectOp {
@@ -18,7 +18,7 @@ pub const EDGE_PICK_PX: f32 = 7.0;
 pub const HELPER_PICK_PX: f32 = 12.0;
 
 impl Editor {
-    fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
+    pub(super) fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
         self.scene.objects.iter().filter(|(_, o)| !o.hidden && !o.frozen)
     }
 
@@ -148,18 +148,33 @@ impl Editor {
         });
     }
 
+    /// `Q`: Select Object; pressed again in Select mode, the next region shape.
+    pub fn select_mode_or_cycle_region(&mut self) {
+        if self.mode == TransformMode::Select {
+            self.region_shape = self.region_shape.next();
+        } else {
+            self.mode = TransformMode::Select;
+        }
+        self.status = self.region_shape.label().into();
+    }
+
+    /// Rectangular marquee from corner `a` to `b`.
     pub fn marquee_select(&mut self, view: usize, a: Vec2, b: Vec2, op: SelectOp) {
-        if self.mod_marquee_select(view, a, b, op) || self.spline_marquee_select(view, a, b, op) {
+        self.region_select(view, &crate::viewport::region::Region::rect(a, b), op);
+    }
+
+    /// Window selection with any region shape (Rectangle / Circle / Fence / Lasso).
+    pub fn region_select(&mut self, view: usize, region: &crate::viewport::region::Region, op: SelectOp) {
+        if self.mod_marquee_select(view, region, op) || self.spline_marquee_select(view, region, op) {
             return;
         }
-        let (min, max) = (a.min(b), a.max(b));
         let v = self.viewports.views[view].clone();
         if !self.in_sub_object() {
             let inside: Vec<ObjId> = self
                 .selectable()
                 .filter(|(_, o)| {
                     if o.is_helper() {
-                        return v.to_screen(o.transform.translation).is_some_and(|s| in_rect(s, min, max));
+                        return v.to_screen(o.transform.translation).is_some_and(|s| region.contains(s));
                     }
                     let w = o.world_matrix();
                     let shape_pts = o.shape.iter().flat_map(|s| s.polylines()).flat_map(|pl| pl.pts);
@@ -168,7 +183,7 @@ impl Editor {
                         .values()
                         .map(|p| p.position)
                         .chain(shape_pts)
-                        .any(|p| v.to_screen(w.transform_point3(p)).is_some_and(|s| in_rect(s, min, max)))
+                        .any(|p| v.to_screen(w.transform_point3(p)).is_some_and(|s| region.contains(s)))
                 })
                 .map(|x| x.0)
                 .collect();
@@ -191,7 +206,7 @@ impl Editor {
             .filter(|(k, _)| vis(*k))
             .filter_map(|(k, p)| v.to_screen(w.transform_point3(p.position)).map(|s| (k, s)))
             .collect();
-        let inside = |k: &crate::mesh::VertexId| screen.get(k).is_some_and(|s| in_rect(*s, min, max));
+        let inside = |k: &crate::mesh::VertexId| screen.get(k).is_some_and(|s| region.contains(*s));
         let m = &o.level_mesh;
         let sel_v: Vec<_> = m.vertices.keys().filter(|k| inside(k)).collect();
         let sel_e: Vec<_> = m.edges.iter().filter(|(_, e)| inside(&e.v0) && inside(&e.v1)).map(|x| x.0).collect();

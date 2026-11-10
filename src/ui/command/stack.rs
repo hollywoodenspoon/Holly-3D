@@ -6,7 +6,7 @@ use crate::mesh::SubObject;
 use crate::modifiers::{MODIFIER_LIST, ModSub};
 use crate::ui::UiState;
 use crate::ui::theme;
-use crate::ui::widgets::dim;
+use crate::ui::widgets::{dim, toggle_button};
 use bevy_egui::egui::{self, RichText};
 
 const SUBS: [SubObject; 5] = [SubObject::Vertex, SubObject::Edge, SubObject::Border, SubObject::Polygon, SubObject::Element];
@@ -157,7 +157,13 @@ pub fn stack_actions(ui: &mut egui::Ui, ed: &mut Editor) {
     let has_mod = o.active_level.is_some();
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-        ui.add_enabled(false, egui::Button::new("📌 Pin")).on_disabled_hover_text("Pin Stack — later phase");
+        let pinned = ed.pinned == Some(id);
+        if toggle_button(ui, pinned, "📌 Pin")
+            .on_hover_text("Pin Stack: keep this object in the Modify panel while selecting others")
+            .clicked()
+        {
+            ed.pinned = if pinned { None } else { Some(id) };
+        }
         ui.add_enabled(false, egui::Button::new("Show End Result")).on_disabled_hover_text("End result is always shown");
         if ui.add_enabled(shared, egui::Button::new("Make Unique")).clicked() {
             ed.checkpoint("Make Unique");

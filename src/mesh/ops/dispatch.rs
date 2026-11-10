@@ -4,7 +4,7 @@
 use super::*;
 use bevy::math::Mat4;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum ExtrudeMode {
     #[default]
     Group,
@@ -24,52 +24,167 @@ impl ExtrudeMode {
 }
 
 /// A point the Cut tool clicked: an existing vertex or a spot on an edge.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum CutPoint {
     Vertex(VertexId),
     Edge(VertexId, VertexId, f32),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum PolyOp {
-    ExtrudeVertices { height: f32, width: f32 },
-    ExtrudeEdges { height: f32, width: f32 },
-    ExtrudePolygons { mode: ExtrudeMode, height: f32 },
-    Bevel { mode: ExtrudeMode, height: f32, outline: f32 },
-    Inset { by_polygon: bool, amount: f32 },
-    Outline { amount: f32 },
-    ChamferVertices { amount: f32 },
-    ChamferEdges { amount: f32, segments: u32, tension: f32, open: bool },
-    ConnectEdges { segments: u32, pinch: f32, slide: f32 },
+    ExtrudeVertices {
+        height: f32,
+        width: f32,
+    },
+    ExtrudeEdges {
+        height: f32,
+        width: f32,
+    },
+    ExtrudePolygons {
+        mode: ExtrudeMode,
+        height: f32,
+    },
+    Bevel {
+        mode: ExtrudeMode,
+        height: f32,
+        outline: f32,
+    },
+    Inset {
+        by_polygon: bool,
+        amount: f32,
+    },
+    Outline {
+        amount: f32,
+    },
+    ChamferVertices {
+        amount: f32,
+    },
+    ChamferEdges {
+        amount: f32,
+        segments: u32,
+        tension: f32,
+        open: bool,
+    },
+    /// Panel Line / Seam Groove along the selected edges.
+    PanelGroove {
+        width: f32,
+        depth: f32,
+        lip: f32,
+        material_id: u16,
+    },
+    ConnectEdges {
+        segments: u32,
+        pinch: f32,
+        slide: f32,
+    },
     ConnectVertices,
-    Weld { level: SubObject, threshold: f32 },
-    TargetWeld { from: VertexId, to: VertexId },
-    Collapse { level: SubObject },
+    Weld {
+        level: SubObject,
+        threshold: f32,
+    },
+    TargetWeld {
+        from: VertexId,
+        to: VertexId,
+    },
+    Collapse {
+        level: SubObject,
+    },
     RemoveVertices,
-    RemoveEdges { remove_verts: bool },
+    RemoveEdges {
+        remove_verts: bool,
+    },
     BreakVertices,
     SplitEdges,
-    Delete { level: SubObject },
-    InsertVertexOnEdge { a: VertexId, b: VertexId, t: f32 },
-    InsertVertexInPolygon { poly: PolyId, point: Vec3 },
-    Cut { from: CutPoint, to: CutPoint, view_dir: Vec3 },
-    Slice { point: Vec3, normal: Vec3, only_selected: bool, split: bool },
+    Delete {
+        level: SubObject,
+    },
+    InsertVertexOnEdge {
+        a: VertexId,
+        b: VertexId,
+        t: f32,
+    },
+    InsertVertexInPolygon {
+        poly: PolyId,
+        point: Vec3,
+    },
+    Cut {
+        from: CutPoint,
+        to: CutPoint,
+        view_dir: Vec3,
+    },
+    Slice {
+        point: Vec3,
+        normal: Vec3,
+        only_selected: bool,
+        split: bool,
+    },
     Cap,
-    BridgeBorders { segments: u32, taper: f32, twist: i32 },
-    BridgePolygons { segments: u32, taper: f32, twist: i32 },
-    MakePlanar { level: SubObject },
-    Flatten { level: SubObject, axis: usize },
+    BridgeBorders {
+        segments: u32,
+        taper: f32,
+        twist: i32,
+    },
+    BridgePolygons {
+        segments: u32,
+        taper: f32,
+        twist: i32,
+    },
+    MakePlanar {
+        level: SubObject,
+    },
+    Flatten {
+        level: SubObject,
+        axis: usize,
+    },
     Flip,
-    SetSmoothing { bit: u32, on: bool },
+    SetSmoothing {
+        bit: u32,
+        on: bool,
+    },
     ClearSmoothing,
-    AutoSmooth { threshold: f32 },
-    SetMaterialId { id: u16 },
-    Tessellate { face_center: bool },
-    MSmooth { strength: f32 },
-    Transform { verts: Vec<VertexId>, matrix: Mat4 },
-    SoftTransform { weights: Vec<(VertexId, f32)>, matrix: Mat4 },
+    AutoSmooth {
+        threshold: f32,
+    },
+    SetMaterialId {
+        id: u16,
+    },
+    Tessellate {
+        face_center: bool,
+    },
+    MSmooth {
+        strength: f32,
+    },
+    Transform {
+        verts: Vec<VertexId>,
+        matrix: Mat4,
+    },
+    SoftTransform {
+        weights: Vec<(VertexId, f32)>,
+        matrix: Mat4,
+    },
     ShiftExtrudeEdges,
-    Attach { mesh: Box<EditablePoly> },
+    Attach {
+        mesh: Box<EditablePoly>,
+    },
+    /// Hinge From Edge: axis through `origin` along `axis` (zero until picked).
+    Hinge {
+        origin: Vec3,
+        axis: Vec3,
+        angle: f32,
+        segments: u32,
+    },
+    /// Extrude Along Spline: `path` in mesh space (empty until picked).
+    ExtrudeAlongSpline {
+        path: Vec<Vec3>,
+        segments: u32,
+        taper: f32,
+        twist: f32,
+        align: bool,
+    },
+    CreatePolygon {
+        points: Vec<sweep::CreatePoint>,
+        view_dir: Vec3,
+    },
 }
 
 impl PolyOp {
@@ -81,6 +196,7 @@ impl PolyOp {
             Inset { .. } => "Inset",
             Outline { .. } => "Outline",
             ChamferVertices { .. } | ChamferEdges { .. } => "Chamfer",
+            PanelGroove { .. } => "Panel Groove",
             ConnectEdges { .. } | ConnectVertices => "Connect",
             Weld { .. } => "Weld",
             TargetWeld { .. } => "Target Weld",
@@ -105,6 +221,9 @@ impl PolyOp {
             Transform { .. } | SoftTransform { .. } => "Transform",
             ShiftExtrudeEdges => "Shift Extrude",
             Attach { .. } => "Attach",
+            Hinge { .. } => "Hinge From Edge",
+            ExtrudeAlongSpline { .. } => "Extrude Along Spline",
+            CreatePolygon { .. } => "Create",
         }
     }
 
@@ -119,6 +238,7 @@ impl PolyOp {
                 | PolyOp::Transform { .. }
                 | PolyOp::SoftTransform { .. }
                 | PolyOp::Attach { .. }
+                | PolyOp::CreatePolygon { .. }
         )
     }
 
@@ -134,6 +254,7 @@ impl PolyOp {
             Outline { amount } => inset::outline(m, *amount),
             ChamferVertices { amount } => chamfer::chamfer_vertices(m, *amount),
             ChamferEdges { amount, segments, tension, open } => chamfer::chamfer_edges_ex(m, *amount, *segments, *tension, *open),
+            PanelGroove { width, depth, lip, material_id } => return groove::panel_groove(m, *width, *depth, *lip, *material_id),
             ConnectEdges { segments, pinch, slide } => connect::connect_edges(m, *segments, *pinch, *slide),
             ConnectVertices => connect::connect_vertices(m),
             Weld { level, threshold } => weld::weld(m, *level, *threshold),
@@ -192,6 +313,11 @@ impl PolyOp {
             Attach { mesh } => {
                 m.append(mesh, Mat4::IDENTITY);
             }
+            Hinge { origin, axis, angle, segments } => return sweep::hinge(m, *origin, *axis, *angle, *segments),
+            ExtrudeAlongSpline { path, segments, taper, twist, align } => {
+                return sweep::extrude_along_path(m, path, *segments, *taper, *twist, *align);
+            }
+            CreatePolygon { points, view_dir } => return sweep::create_polygon(m, points, *view_dir),
         }
         true
     }

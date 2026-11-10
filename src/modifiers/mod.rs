@@ -8,6 +8,7 @@ pub mod ffd;
 pub mod geogen;
 pub mod greeble;
 pub mod lathe;
+pub mod panel_groove;
 pub mod pro_optimizer;
 pub mod shell;
 pub mod smart_uv;
@@ -26,6 +27,7 @@ pub use ffd::FfdMod;
 pub use geogen::{GeoGenMod, GeoGenParams, GeoMode};
 pub use greeble::GreebleMod;
 pub use lathe::{LatheAlign, LatheMod};
+pub use panel_groove::PanelGrooveMod;
 pub use pro_optimizer::ProOptimizerMod;
 pub use shell::ShellMod;
 pub use spline_extrude::ExtrudeMod;
@@ -40,7 +42,7 @@ use crate::mesh::{EditablePoly, SelectionSets};
 
 /// The Edit Poly modifier: records every Edit Poly op together with the
 /// selection it acted on, and replays them on its input mesh.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct EditPolyMod {
     pub ops: Vec<(SelectionSets, PolyOp)>,
     /// Current sub-object selection held by the modifier.
@@ -57,7 +59,7 @@ impl EditPolyMod {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum ModifierKind {
     EditPoly(EditPolyMod),
     Ffd(FfdMod),
@@ -69,6 +71,7 @@ pub enum ModifierKind {
     GeoGen(GeoGenMod),
     Greeble(GreebleMod),
     Chamfer(ChamferMod),
+    PanelGroove(PanelGrooveMod),
     Symmetry(SymmetryMod),
     Shell(ShellMod),
     TurboSmooth(TurboSmoothMod),
@@ -82,7 +85,7 @@ pub enum ModifierKind {
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ModSub {
     ControlPoints,
     Lattice,
@@ -91,6 +94,10 @@ pub enum ModSub {
     Axis,
     /// Edit Normals face-corner normals.
     Normal,
+    /// Bend / Twist / Taper gizmo center.
+    Center,
+    /// Symmetry mirror plane.
+    Mirror,
 }
 
 impl ModSub {
@@ -101,6 +108,8 @@ impl ModSub {
             ModSub::Gizmo => "Gizmo",
             ModSub::Axis => "Axis",
             ModSub::Normal => "Normal",
+            ModSub::Center => "Center",
+            ModSub::Mirror => "Mirror",
         }
     }
 }
@@ -118,6 +127,7 @@ impl ModifierKind {
             ModifierKind::GeoGen(_) => "GeoGen",
             ModifierKind::Greeble(_) => "Greeble",
             ModifierKind::Chamfer(_) => "Chamfer",
+            ModifierKind::PanelGroove(_) => "Panel Groove",
             ModifierKind::Symmetry(_) => "Symmetry",
             ModifierKind::Shell(_) => "Shell",
             ModifierKind::TurboSmooth(_) => "TurboSmooth",
@@ -143,6 +153,8 @@ impl ModifierKind {
             ModifierKind::UvwMap(_) => &[ModSub::Gizmo],
             ModifierKind::Lathe(_) => &[ModSub::Axis],
             ModifierKind::EditNormals(_) => &[ModSub::Normal],
+            ModifierKind::Bend(_) | ModifierKind::Twist(_) | ModifierKind::Taper(_) => &[ModSub::Gizmo, ModSub::Center],
+            ModifierKind::Symmetry(_) => &[ModSub::Mirror],
             _ => &[],
         }
     }
@@ -160,7 +172,7 @@ impl ModifierKind {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ModifierEntry {
     pub enabled_in_viewport: bool,
     pub name: String,
@@ -185,6 +197,7 @@ impl ModifierEntry {
             ModifierKind::GeoGen(g) => g.apply(mesh),
             ModifierKind::Greeble(g) => g.apply(mesh),
             ModifierKind::Chamfer(c) => c.apply(mesh),
+            ModifierKind::PanelGroove(g) => g.apply(mesh),
             ModifierKind::Symmetry(s) => s.apply(mesh),
             ModifierKind::Shell(s) => s.apply(mesh),
             ModifierKind::TurboSmooth(t) => t.apply(mesh),
@@ -238,6 +251,7 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Taper", available: true },
     ModifierListItem { name: "Push", available: true },
     ModifierListItem { name: "Chamfer", available: true },
+    ModifierListItem { name: "Panel Groove", available: true },
     ModifierListItem { name: "Lathe", available: true },
     ModifierListItem { name: "Extrude", available: true },
     ModifierListItem { name: "Edit Normals", available: true },
@@ -259,6 +273,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
         "Greeble" => Some(ModifierEntry::new(ModifierKind::Greeble(GreebleMod::default()))),
         "Chamfer" => Some(ModifierEntry::new(ModifierKind::Chamfer(ChamferMod::default()))),
+        "Panel Groove" => Some(ModifierEntry::new(ModifierKind::PanelGroove(PanelGrooveMod::default()))),
         "Symmetry" => Some(ModifierEntry::new(ModifierKind::Symmetry(SymmetryMod::default()))),
         "Shell" => Some(ModifierEntry::new(ModifierKind::Shell(ShellMod::default()))),
         "TurboSmooth" => Some(ModifierEntry::new(ModifierKind::TurboSmooth(TurboSmoothMod::default()))),
@@ -277,5 +292,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
 mod tests;
 #[cfg(test)]
 mod tests_adv;
+#[cfg(test)]
+mod tests_gizmo;
 #[cfg(test)]
 mod tests_stack;
