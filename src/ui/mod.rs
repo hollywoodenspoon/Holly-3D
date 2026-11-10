@@ -1,5 +1,7 @@
 //! egui front-end: fixed 5-zone 3ds Max layout + floating windows.
 
+pub mod action_ui;
+pub mod actions;
 pub mod align_dialog;
 pub mod array_dialog;
 pub mod caddy;
@@ -10,17 +12,20 @@ pub mod explorer;
 pub mod file_menu;
 pub mod hotkeys;
 pub mod material_editor;
+pub mod menubar;
 pub mod mirror_dialog;
 pub mod paint_box;
 pub mod quad_menu;
 pub mod render_fx;
 pub mod render_setup;
 pub mod render_window;
+pub mod ribbon;
 pub mod rollouts;
 pub mod sky_dialog;
 pub mod snaps;
 pub mod status_bar;
 pub mod theme;
+pub mod tool_windows;
 pub mod toolbar;
 pub mod uv_editor;
 pub mod viewport_ui;
@@ -66,7 +71,11 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     let mut root =
         Ui::new(ctx.clone(), "minimax_root".into(), UiBuilder::new().layer_id(LayerId::background()).max_rect(ctx.viewport_rect()));
     let screen = ctx.viewport_rect();
-    let top = toolbar::show(&mut root, ed).max.y;
+    menubar::show(&mut root, ed);
+    let mut top = toolbar::show(&mut root, ed).max.y;
+    if ed.iface.ribbon {
+        top = ribbon::show(&mut root, ed).max.y;
+    }
     let bottom = status_bar::show(&mut root, ed).min.y;
     // Side panels are fixed-width (3ds Max layout), so the viewport edges are
     // derived from those widths rather than from content-dependent rects.
@@ -80,6 +89,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     mirror_dialog::show(&ctx, ed);
     align_dialog::show(&ctx, ed);
     quad_menu::show(&ctx, ed);
+    tool_windows::show(&ctx, ed);
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
     env_dialog::show(&ctx, ed);

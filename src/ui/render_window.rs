@@ -55,7 +55,7 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.start_render();
         }
         view_combo(ui, ed, "rfw_view", 150.0);
-        if toggle_button(ui, ed.rfw.region_mode, "⬚ Region").on_hover_text("Drag on the image to set the region / crop").clicked() {
+        if toggle_button(ui, ed.rfw.region_mode, "▣ Region").on_hover_text("Drag on the image to set the region / crop").clicked() {
             ed.rfw.region_mode = !ed.rfw.region_mode;
         }
         if ui.button("⚙ Setup").on_hover_text("Render Setup (F10)").clicked() {
@@ -78,7 +78,7 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.ctx().copy_image(color_image(fb, ChannelView::default()));
             ed.rfw.message = "Image copied to the clipboard".into();
         }
-        if ui.add_enabled(has, egui::Button::new("⧉ Clone")).on_hover_text("Clone Render Window").clicked() {
+        if ui.add_enabled(has, egui::Button::new("🗐 Clone")).on_hover_text("Clone Render Window").clicked() {
             ed.clone_render_window();
         }
         ui.separator();

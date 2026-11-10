@@ -174,7 +174,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
 /// Modify panel rollout when a VertexPaint modifier is highlighted.
 pub fn modifier_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "VertexPaint", true, |ui| {
-        let label = if ed.paint.active { "Close PaintBox" } else { "🖌 Open PaintBox" };
+        let label = if ed.paint.active { "Close PaintBox" } else { "🎨 Open PaintBox" };
         if action(ui, label, true, CONTENT_W) {
             ed.paint.mode = PaintMode::Vertex;
             ed.toggle_paint();

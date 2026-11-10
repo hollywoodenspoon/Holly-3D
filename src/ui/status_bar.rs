@@ -40,13 +40,40 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                 ui.label(RichText::new(sel).color(theme::AMBER));
                 ui.label(dim(&format!("Verts: {}  |  Edges: {}  |  Polys: {}", thousands(v), thousands(e), thousands(f))));
                 ui.separator();
-                let hint = ed.tool.label().map(str::to_string).unwrap_or_else(|| ed.status.clone());
-                ui.label(dim(&hint));
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| typein(ui, ed));
+                crate::ui::action_ui::button(ui, ed, crate::ui::actions::Action::LockSelection);
+                ui.label(dim(&prompt(ed)));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    ui.label(dim(&format!("Grid = {}", ed.snap_cfg.grid_size)))
+                        .on_hover_text("Grid spacing (change it in Grid and Snap Settings)");
+                    ui.separator();
+                    typein(ui, ed);
+                });
             });
         })
         .response
         .rect
+}
+
+/// What the current tool expects next (3ds Max's prompt line).
+pub fn prompt(ed: &Editor) -> String {
+    if let Some(label) = ed.tool.label() {
+        return label.to_string();
+    }
+    if let Some(m) = ed.iface.nav_mode {
+        return format!("{}  ·  right-click or Esc to stop", m.label());
+    }
+    if ed.iface.lock_selection {
+        return "Selection is locked: press Space or the lock button to unlock".into();
+    }
+    if !ed.status.is_empty() {
+        return ed.status.clone();
+    }
+    let n = ed.scene.selected().len();
+    match ed.mode {
+        _ if n == 0 => "Click or drag to select objects".into(),
+        crate::editor::TransformMode::Select => "Click or drag to select; W / E / R to transform".into(),
+        _ => "Drag the gizmo to transform; Shift+drag clones".into(),
+    }
 }
 
 fn typein(ui: &mut egui::Ui, ed: &mut Editor) {

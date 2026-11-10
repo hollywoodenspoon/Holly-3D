@@ -32,7 +32,7 @@ fn texture_row(ui: &mut egui::Ui, part: PlanetPart, current: &Option<String>, la
         {
             *req = Some((part, Some(p)));
         }
-        if current.is_some() && ui.button("✕ Procedural").clicked() {
+        if current.is_some() && ui.button("✖ Procedural").clicked() {
             *req = Some((part, None));
         }
     });

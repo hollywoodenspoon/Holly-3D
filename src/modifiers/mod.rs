@@ -2,6 +2,7 @@
 
 pub mod battlefield;
 pub mod boolean;
+pub mod catalog;
 pub mod chamfer;
 pub mod deformers;
 pub mod edit_normals;

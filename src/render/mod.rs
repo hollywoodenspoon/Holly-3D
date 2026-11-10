@@ -19,6 +19,7 @@ pub mod sample;
 pub mod scene_build;
 pub mod settings;
 pub mod sky;
+pub mod sky_presets;
 mod sky_noise;
 #[cfg(test)]
 mod tests;

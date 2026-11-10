@@ -95,21 +95,11 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         Item::Rotate => ed.mode = TransformMode::Rotate,
         Item::Scale => ed.mode = TransformMode::Scale,
         Item::Clone => ed.clone_selected(CloneKind::Copy),
-        Item::Align => ed.status = "Align is not available yet".into(),
+        Item::Align => ed.start_align(),
         Item::ToSpline => ed.convert_to_editable_spline(),
-        Item::Hide => {
-            for id in ed.scene.selected() {
-                ed.scene.objects[id].hidden = true;
-                ed.scene.objects[id].selected = false;
-            }
-        }
-        Item::UnhideAll => ed.scene.objects.values_mut().for_each(|o| o.hidden = false),
-        Item::Freeze => {
-            for id in ed.scene.selected() {
-                ed.scene.objects[id].frozen = true;
-                ed.scene.objects[id].selected = false;
-            }
-        }
+        Item::Hide => ed.hide_selected(),
+        Item::UnhideAll => ed.unhide_all(),
+        Item::Freeze => ed.freeze_selected(),
         Item::Isolate => ed.toggle_isolate(),
         Item::ToPoly => ed.convert_to_editable_poly(),
         Item::Op(name) => tool_op(ed, name),

@@ -42,7 +42,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                         BaseObject::Target => "◎",
                         BaseObject::Camera(_) => "🎥",
                         BaseObject::Shape(_) => "〰",
-                        BaseObject::GeoGen(_) => "◆",
+                        BaseObject::GeoGen(_) => "💎",
                         BaseObject::Mech(_) => "⚙",
                         BaseObject::World(_) => "🌍",
                     };

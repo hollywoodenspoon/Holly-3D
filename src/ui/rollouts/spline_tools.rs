@@ -26,7 +26,7 @@ pub fn spline_level(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SplineUi) {
         ed.edit_shape("Outline", |s| s.outline_selected(st.outline));
     }
     ui.horizontal(|ui| {
-        for (i, l) in ["↔", "↕", "✣"].iter().enumerate() {
+        for (i, l) in ["↔ H", "↕ V", "Both"].iter().enumerate() {
             ui.radio_value(&mut st.mirror_axis, i, *l);
         }
         ui.checkbox(&mut st.mirror_copy, "Copy");

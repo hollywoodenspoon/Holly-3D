@@ -94,7 +94,11 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
     };
     let v = &ed.viewports.views[view];
     let r = v.rect;
-    let snapping = if ed.mode == TransformMode::Rotate { ed.angle_snap } else { ed.snap && ed.snap_cfg.grid };
+    let snapping = match ed.mode {
+        TransformMode::Rotate => ed.angle_snap,
+        TransformMode::Scale => ed.iface.percent_snap,
+        _ => ed.snap && ed.snap_cfg.grid,
+    };
     gz.update_config(GizmoConfig {
         view_matrix: to_rows(v.camera.view_matrix()),
         projection_matrix: to_rows(v.camera.projection_matrix(r.aspect())),

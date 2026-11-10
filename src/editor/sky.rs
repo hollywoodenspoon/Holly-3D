@@ -46,6 +46,16 @@ impl Editor {
     }
 }
 
+impl Editor {
+    /// Applies a one-click sky preset (one undo step) and re-links the sun.
+    pub fn apply_sky_preset(&mut self, p: crate::render::sky_presets::SkyPreset) {
+        self.checkpoint("Sky Preset");
+        p.apply(&mut self.scene.environment.sky);
+        self.link_sun_to_sky();
+        self.status = format!("Sky: {}", p.label());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -6,9 +6,9 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), and **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand) |
-| Source | 287 `.rs` files, about 44,100 lines; the largest is 347 lines (limit 350) |
-| Tests | 320 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), and **Phase 9 PR 1** (a button for everything; see §15) |
+| Source | 303 `.rs` files, about 46,300 lines; the largest is 347 lines (limit 350) |
+| Tests | 334 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
@@ -436,3 +436,21 @@ Everything lives in `packaging/`; the README's *As a pacman package* section has
    - `desktop-file-validate` passes.
    - `update-mime-database` and gio detect `.mmax` files, both by extension and by header, and pick MiniMax as the default app.
    - **Still to do:** a real `pacman -Syu minimax` on CachyOS.
+
+## 15. Phase 9 PR 1: a button for everything
+
+The first of the seven PRs in `docs/PHASE_9_PLAN.md`. New rule in `CLAUDE.md` §1: every feature must be reachable from a visible button, dropdown or menu. Hotkeys are shortcuts only.
+
+| Area | What's new |
+|---|---|
+| Action registry | `src/ui/actions/`: one `Action` enum with label, short glyph, tooltip, run, checked and enabled state. The default keymap is built from it, and toolbar, menus, quad menu and hotkeys all call the same code |
+| Menu bar | File · Edit · Tools · Views · Create · Modifiers · Rendering · Help. Shortcuts show next to each entry and toggles have tick marks. Create lists every object type; Modifiers lists every modifier, grouped |
+| Main Toolbar | Built from `actions::layout`. Adds Undo/Redo, Selection Filter, the region-shape dropdown, Window/Crossing, Lock Selection, Select From Scene, Mirror/Align/Array, a one-click Sky menu (day, sunset, overcast, night, deep space, nebula), Material Editor and Render. Wraps onto a second row on narrow windows instead of hiding buttons |
+| Command Panel | Five tabs as in 3ds Max: Create, Modify, Hierarchy (was Pivot), Display (Hide by Category, Hide/Freeze, Display Properties) and Utilities (Reset XForm, Collapse, Measure and more) |
+| Modifier List | One tall scrolling list of every modifier, grouped under headings with an optional filter. Modifiers that don't fit the selection are dimmed and explain why. Show Buttons gives a grid of favourite modifiers; right-click its header to edit the set |
+| Modeling Ribbon | Toggle with 🛠 Ribbon. Big buttons for every Edit Poly tool, which change with the sub-object level. Caddy tools apply their last settings on click; right-click opens the caddy |
+| Viewport navigation | Eight buttons at the bottom right: Zoom, Zoom All, Field of View, Pan, Orbit, Zoom Extents, Zoom Extents All, Maximize. Drag in a viewport to use one; right-click leaves it |
+| Status bar | Prompt line (current tool and next step), Lock Selection, and `Grid = …` |
+| Tool windows | Select From Scene, Measure, Grid and Snap Settings, Hotkey List, About |
+| Tests | `every_action_has_a_button` enforces the rule. Other tests check that hotkeys are unique, that every action runs, and that every glyph used in the UI source exists in the UI fonts. The glyph test works around egui's `has_glyph`, which wrongly reports emoji-font glyphs as missing |
+

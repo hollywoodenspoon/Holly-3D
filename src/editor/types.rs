@@ -35,7 +35,10 @@ pub enum CommandTab {
     #[default]
     Create,
     Modify,
-    Pivot,
+    /// Pivot and assembly (3ds Max's Hierarchy tab).
+    Hierarchy,
+    Display,
+    Utilities,
 }
 
 /// Interactive viewport tools (modal, like 3ds Max pick modes).

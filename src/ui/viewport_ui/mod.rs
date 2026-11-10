@@ -2,6 +2,7 @@
 //! marquee, modal tools and the right-click quad menu.
 
 mod gizmo;
+mod nav;
 mod overlay;
 mod region;
 
@@ -114,6 +115,11 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
             continue;
         }
+        // ---- navigation buttons: left-drag zooms / pans / orbits
+        if nav::drag(ui, ed, &resp, vi, r.size().y) {
+            overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
+            continue;
+        }
         // ---- gizmo (active viewport only)
         let mut gizmo_hot = false;
         if vi == ed.viewports.active && ed.tool == crate::editor::Tool::None {
@@ -156,4 +162,5 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
         }
         overlay::draw(ui, ed, vi, rect, st.region.as_ref().filter(|r| r.0 == vi).map(|r| r.1.as_slice()), pointer.map(v2));
     }
+    nav::buttons(ui, ed, area);
 }

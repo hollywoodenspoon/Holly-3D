@@ -100,7 +100,7 @@ fn post_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                 match name {
                     Some(n) => {
                         ui.label(n);
-                        if ui.small_button("✕").on_hover_text("Use Focus Distance").clicked() {
+                        if ui.small_button("✖").on_hover_text("Use Focus Distance").clicked() {
                             ed.render.post.focus_object = None;
                         }
                     }

@@ -10,6 +10,7 @@ pub mod boolean;
 pub mod cameras;
 pub mod drag;
 pub mod file;
+pub mod interface;
 #[cfg(test)]
 mod joint_tests;
 pub mod joints;
@@ -41,6 +42,7 @@ use crate::scene::{CloneKind, ObjId, Scene, SceneObject, Xform};
 use crate::viewport::layout::Viewports;
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::Resource;
+pub use interface::{InterfaceState, NavMode, ObjCategory};
 pub use types::*;
 use undo::History;
 
@@ -128,6 +130,8 @@ pub struct Editor {
     pub scene_path: Option<std::path::PathBuf>,
     /// Joint type the J tool creates.
     pub joint_type: crate::assembly::JointType,
+    /// Toolbar toggles, navigation buttons and small tool windows.
+    pub iface: InterfaceState,
 }
 
 impl Default for Editor {
@@ -187,6 +191,7 @@ impl Default for Editor {
             spline_ui: Default::default(),
             scene_path: None,
             joint_type: Default::default(),
+            iface: InterfaceState::new(),
         }
     }
 }
