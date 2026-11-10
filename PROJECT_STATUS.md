@@ -7,12 +7,12 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
-| Source | 202 `.rs` files, about 31,500 lines; the largest is 347 lines (limit 350) |
-| Tests | 213 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 211 `.rs` files, about 32,700 lines; the largest is 347 lines (limit 350) |
+| Tests | 224 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 next:** the mech assembly system. File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
+**Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 in progress:** the bone-free mech assembly system (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -271,3 +271,18 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - F9 raytracer: worker threads (one per core) pull 32x32 tiles from an atomic counter and stream each finished tile to the Frame Window. Progress is counted in pixels.
    - 4-wide SIMD BVH: the median-split binary BVH is collapsed into nodes with four child boxes stored as SoA `Vec4`s, so one step tests four slabs at once (SSE / NEON through glam). The nearest children are visited first, and shadow rays stop at the first hit.
    - Tests: snapshots share every mesh and an edit copies only the edited one (undo still restores it); random triangle soups (1 to 2000 triangles, including axis-aligned rays) give the same hits through the wide BVH, the binary BVH and brute force; tiles cover any region exactly once.
+
+---
+
+## 10. Phase 7: mech assembly (bone-free)
+
+1. ✅ **Joints and the J tool.** `src/assembly/` (frame, solve, mount), `src/editor/joints.rs`, `src/ui/command/assembly.rs`, `src/viewport/joint_gizmos.rs`.
+   - `J` or `[Assemble Joint]` in the Pivot tab's Assembly rollout: click a mount on part A (the child), then on part B (the parent). A mount is a vertex, an edge (the center of its closed edge loop, e.g. a cylinder ring) or a face / cap center. A is snapped face to face onto B and linked by the chosen joint.
+   - Joints: Rigid (welded), Revolute / Hinge (X/Y/Z axis, angle, min/max stops), Ball Socket (swing cone and twist limit), Slider / Rail (axis, travel, min/max), Hydraulic Piston (the two parts turn about their mounts to aim at each other; neither is moved).
+   - Transforms stay in world space. Each frame the solver poses children from their parents, parents first. A direct move or turn of a child is projected onto the joint's free axes and clamped at its stops, so `W` / `E` on a jointed part only moves it the way the joint allows. Loops are refused, deleting a part drops its joints, and joints are saved with the scene (older scenes still load).
+   - The rollout edits the selected part's joint type, axis, angle / travel, limits, cone and twist (one undo step per drag), and offers Select Parent and Break Joint. The viewport draws mounts, the hinge axis with its yellow limit arc and a cyan angle tick, the ball cone, the slider rail and the piston line.
+   - Tests: welded child follows its parent; hinge projection and clamping, angle unwrap past 180°; ball cone and twist clamp; slider projection and stops; chain order, loop refusal and cleanup on delete; piston aim; face, cap and edge-loop mounts and the face-to-face mate; RON round trip; two viewport clicks build a joint, undo removes it, and parameter edits re-pose the child.
+2. ❌ FK / IK drag and Mirror Mech Limb.
+3. ❌ Contact Sets and Motion Links.
+4. ❌ Involute Gear, Hydraulic Piston assembly and Hose / Mecha Cable primitives.
+5. ❌ Panel Groove (Edit Poly operation and modifier).

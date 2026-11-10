@@ -201,6 +201,9 @@ pub struct Scene {
     pub materials: crate::materials::MaterialLib,
     /// Environment & Effects (`8`): background, ambient, fog, lighting preset.
     pub environment: crate::render::Environment,
+    /// Mech joints between parts (J tool).
+    #[serde(default)]
+    pub assembly: crate::assembly::Assembly,
     name_counters: HashMap<String, u32>,
     next_instance_group: u32,
 }

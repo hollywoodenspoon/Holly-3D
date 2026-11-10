@@ -9,6 +9,9 @@ pub mod boolean;
 pub mod cameras;
 pub mod drag;
 pub mod file;
+#[cfg(test)]
+mod joint_tests;
+pub mod joints;
 pub mod lights;
 pub mod materials;
 pub mod mirror;
@@ -116,6 +119,8 @@ pub struct Editor {
     pub spline_ui: SplineUi,
     /// Current `.mmax` file (Save writes here; `None` = Save As).
     pub scene_path: Option<std::path::PathBuf>,
+    /// Joint type the J tool creates.
+    pub joint_type: crate::assembly::JointType,
 }
 
 impl Default for Editor {
@@ -173,6 +178,7 @@ impl Default for Editor {
             rfw: Default::default(),
             spline_ui: Default::default(),
             scene_path: None,
+            joint_type: Default::default(),
         }
     }
 }

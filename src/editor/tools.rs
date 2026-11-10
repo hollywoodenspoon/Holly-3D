@@ -43,6 +43,7 @@ impl Editor {
             Tool::PickSpline => self.pick_spline_click(view, cursor),
             Tool::RefineSpline => self.refine_click(view, cursor),
             Tool::PickSplineBoolean => self.spline_boolean_click(view, cursor),
+            Tool::Joint { first } => self.joint_click(view, cursor, first),
             Tool::PickAlign => {
                 if let Some(t) = self.pick_object(view, cursor) {
                     self.open_align(t);

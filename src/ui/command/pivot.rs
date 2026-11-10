@@ -30,4 +30,5 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.label(dim("Select an object first."));
         }
     });
+    super::assembly::show(ui, ed);
 }

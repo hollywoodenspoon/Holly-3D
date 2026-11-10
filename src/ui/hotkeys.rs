@@ -105,6 +105,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             }
             Key::S => ed.snap = !ed.snap,
             Key::A => ed.angle_snap = !ed.angle_snap,
+            Key::J => ed.toggle_joint_tool(),
             Key::H => ed.explorer_visible = !ed.explorer_visible,
             Key::Delete => ed.delete_selection(),
             Key::Backspace if ed.in_sub_object() => match ed.sub {

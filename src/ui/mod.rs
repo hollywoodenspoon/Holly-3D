@@ -83,5 +83,6 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);
     ed.update_caddy_preview();
+    ed.scene.solve_assembly();
     Ok(())
 }

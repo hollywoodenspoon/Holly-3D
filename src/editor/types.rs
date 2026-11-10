@@ -72,6 +72,10 @@ pub enum Tool {
     PickSpline,
     /// Tools -> Align: pick the target object.
     PickAlign,
+    /// Assemble Joint (`J`): mount on the child part, then on the parent.
+    Joint {
+        first: Option<crate::assembly::mount::Mount>,
+    },
     /// Editable Spline Refine: click on segments to add vertices.
     RefineSpline,
     /// Editable Spline Boolean: click the second spline.
@@ -116,6 +120,8 @@ impl Tool {
             Tool::PickHinge => Some("Hinge From Edge: click the hinge edge"),
             Tool::PickSpline => Some("Extrude Along Spline: click a shape"),
             Tool::PickAlign => Some("Align: click the target object (Esc to cancel)"),
+            Tool::Joint { first: None } => Some("Assemble Joint: click a mount point on the part to attach (child)"),
+            Tool::Joint { .. } => Some("Assemble Joint: click the mount point on the parent part"),
             Tool::RefineSpline => Some("Refine: click on a segment to add a vertex (Esc to stop)"),
             Tool::PickSplineBoolean => Some("Boolean: click the other closed spline"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),

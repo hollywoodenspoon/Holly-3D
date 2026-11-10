@@ -3,6 +3,7 @@
 pub mod camera;
 pub mod camera_icons;
 pub mod gpu;
+pub mod joint_gizmos;
 pub mod layout;
 pub mod light_icons;
 pub mod light_sync;
