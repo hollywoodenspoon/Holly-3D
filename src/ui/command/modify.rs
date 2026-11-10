@@ -73,6 +73,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),
         Some(ModifierKind::Greeble(_)) => return rollouts::stack_mods::greeble(ui, ed),
         Some(ModifierKind::Chamfer(_)) => return rollouts::stack_mods::chamfer(ui, ed),
+        Some(ModifierKind::PanelGroove(_)) => return rollouts::stack_mods::panel_groove(ui, ed),
         Some(ModifierKind::Symmetry(_)) => return rollouts::stack_mods::symmetry(ui, ed),
         Some(ModifierKind::Shell(_)) => return rollouts::stack_mods::shell(ui, ed),
         Some(ModifierKind::TurboSmooth(_)) => return rollouts::stack_mods::turbosmooth(ui, ed),

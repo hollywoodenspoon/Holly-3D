@@ -72,6 +72,12 @@ pub fn params(ui: &mut egui::Ui, op: &mut PolyOp) -> bool {
             ui.checkbox(open, "");
             ui.end_row();
         }
+        PanelGroove { width, depth, lip, material_id } => {
+            row(ui, "Groove Width", width, 0.001, 0.04, 0.0..=100.0);
+            row(ui, "Groove Depth", depth, 0.001, 0.03, 0.0..=100.0);
+            row(ui, "Bevel Lip Width", lip, 0.001, 0.008, 0.0..=100.0);
+            row(ui, "Inner Groove Mat ID", material_id, 0.1, 2, 1..=64);
+        }
         ConnectEdges { segments, pinch, slide } => {
             row(ui, "Segments", segments, 0.1, 1, 1..=32);
             row(ui, "Pinch", pinch, 0.5, 0.0, -100.0..=100.0);

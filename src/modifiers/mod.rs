@@ -8,6 +8,7 @@ pub mod ffd;
 pub mod geogen;
 pub mod greeble;
 pub mod lathe;
+pub mod panel_groove;
 pub mod pro_optimizer;
 pub mod shell;
 pub mod smart_uv;
@@ -26,6 +27,7 @@ pub use ffd::FfdMod;
 pub use geogen::{GeoGenMod, GeoGenParams, GeoMode};
 pub use greeble::GreebleMod;
 pub use lathe::{LatheAlign, LatheMod};
+pub use panel_groove::PanelGrooveMod;
 pub use pro_optimizer::ProOptimizerMod;
 pub use shell::ShellMod;
 pub use spline_extrude::ExtrudeMod;
@@ -69,6 +71,7 @@ pub enum ModifierKind {
     GeoGen(GeoGenMod),
     Greeble(GreebleMod),
     Chamfer(ChamferMod),
+    PanelGroove(PanelGrooveMod),
     Symmetry(SymmetryMod),
     Shell(ShellMod),
     TurboSmooth(TurboSmoothMod),
@@ -124,6 +127,7 @@ impl ModifierKind {
             ModifierKind::GeoGen(_) => "GeoGen",
             ModifierKind::Greeble(_) => "Greeble",
             ModifierKind::Chamfer(_) => "Chamfer",
+            ModifierKind::PanelGroove(_) => "Panel Groove",
             ModifierKind::Symmetry(_) => "Symmetry",
             ModifierKind::Shell(_) => "Shell",
             ModifierKind::TurboSmooth(_) => "TurboSmooth",
@@ -193,6 +197,7 @@ impl ModifierEntry {
             ModifierKind::GeoGen(g) => g.apply(mesh),
             ModifierKind::Greeble(g) => g.apply(mesh),
             ModifierKind::Chamfer(c) => c.apply(mesh),
+            ModifierKind::PanelGroove(g) => g.apply(mesh),
             ModifierKind::Symmetry(s) => s.apply(mesh),
             ModifierKind::Shell(s) => s.apply(mesh),
             ModifierKind::TurboSmooth(t) => t.apply(mesh),
@@ -246,6 +251,7 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Taper", available: true },
     ModifierListItem { name: "Push", available: true },
     ModifierListItem { name: "Chamfer", available: true },
+    ModifierListItem { name: "Panel Groove", available: true },
     ModifierListItem { name: "Lathe", available: true },
     ModifierListItem { name: "Extrude", available: true },
     ModifierListItem { name: "Edit Normals", available: true },
@@ -267,6 +273,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
         "Greeble" => Some(ModifierEntry::new(ModifierKind::Greeble(GreebleMod::default()))),
         "Chamfer" => Some(ModifierEntry::new(ModifierKind::Chamfer(ChamferMod::default()))),
+        "Panel Groove" => Some(ModifierEntry::new(ModifierKind::PanelGroove(PanelGrooveMod::default()))),
         "Symmetry" => Some(ModifierEntry::new(ModifierKind::Symmetry(SymmetryMod::default()))),
         "Shell" => Some(ModifierEntry::new(ModifierKind::Shell(ShellMod::default()))),
         "TurboSmooth" => Some(ModifierEntry::new(ModifierKind::TurboSmooth(TurboSmoothMod::default()))),

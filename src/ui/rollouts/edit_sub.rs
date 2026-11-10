@@ -89,6 +89,9 @@ pub fn edges(ui: &mut egui::Ui, ed: &mut Editor) {
             caddy_cell(ui, ed, "Bridge", PolyOp::BridgeBorders { segments: 1, taper: 0.0, twist: 0 }, true);
             op_cell(ui, ed, "Cap", PolyOp::Cap, border);
             ui.end_row();
+            caddy_cell(ui, ed, "Panel Groove", PolyOp::PanelGroove { width: 0.04, depth: 0.03, lip: 0.008, material_id: 2 }, !border);
+            ui.label("");
+            ui.end_row();
             if ui
                 .add_sized([HALF, 24.0], egui::Button::new("Create Shape"))
                 .on_hover_text("New Editable Spline from the selected edges")

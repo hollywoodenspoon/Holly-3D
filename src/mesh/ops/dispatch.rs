@@ -65,6 +65,13 @@ pub enum PolyOp {
         tension: f32,
         open: bool,
     },
+    /// Panel Line / Seam Groove along the selected edges.
+    PanelGroove {
+        width: f32,
+        depth: f32,
+        lip: f32,
+        material_id: u16,
+    },
     ConnectEdges {
         segments: u32,
         pinch: f32,
@@ -189,6 +196,7 @@ impl PolyOp {
             Inset { .. } => "Inset",
             Outline { .. } => "Outline",
             ChamferVertices { .. } | ChamferEdges { .. } => "Chamfer",
+            PanelGroove { .. } => "Panel Groove",
             ConnectEdges { .. } | ConnectVertices => "Connect",
             Weld { .. } => "Weld",
             TargetWeld { .. } => "Target Weld",
@@ -246,6 +254,7 @@ impl PolyOp {
             Outline { amount } => inset::outline(m, *amount),
             ChamferVertices { amount } => chamfer::chamfer_vertices(m, *amount),
             ChamferEdges { amount, segments, tension, open } => chamfer::chamfer_edges_ex(m, *amount, *segments, *tension, *open),
+            PanelGroove { width, depth, lip, material_id } => return groove::panel_groove(m, *width, *depth, *lip, *material_id),
             ConnectEdges { segments, pinch, slide } => connect::connect_edges(m, *segments, *pinch, *slide),
             ConnectVertices => connect::connect_vertices(m),
             Weld { level, threshold } => weld::weld(m, *level, *threshold),

@@ -7,12 +7,12 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases in `CLAUDE.md` | **5 of 5 done** (merged to `main` in PRs #1, #2 and #3) |
-| Source | 225 `.rs` files, about 34,600 lines; the largest is 347 lines (limit 350) |
-| Tests | 239 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 228 `.rs` files, about 34,900 lines; the largest is 347 lines (limit 350) |
+| Tests | 242 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 in progress:** the bone-free mech assembly system (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
+**Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -297,4 +297,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - **Hydraulic Piston:** a housing (barrel with a gland) and a rod, each with an eyelet at its pivot, created in line and joined by a Hydraulic Piston joint so they keep aiming at each other. Radius, Length, Eyelet Radius and Sides per part.
    - **Hose / Mecha Cable:** Bezier or Catmull-Rom path with Tension, Slack, Gravity Sag, Diameter, Sides and Segments, plus Corrugated Rings (Ring Count, Ring Depth, Round or Square). Free ends have Start / End spinners. `Pick Top / Bottom End Object` binds an end to a part: the hose leaves the top object down its −Z axis, enters the bottom object up its +Z, and flexes live as either part moves. `[Free]` unbinds an end; deleting an end object leaves that end where it was.
    - Tests: spur gear vertex / edge / face counts, closed and outward, addendum and dedendum radii, bore radius (genus 1); ring teeth point inward; rack length is teeth × circular pitch, and the helix twists the top face; piston parts; hose sag, end tangents, square rings and watertight caps; the Create tool builds a piston as two parts and a joint (one undo step); a bound hose follows its end objects and is freed when one is deleted.
-5. ❌ Panel Groove (Edit Poly operation and modifier).
+5. ✅ **Panel Groove (Panel Line / Seam Groove).** `src/mesh/ops/groove.rs`, `src/modifiers/panel_groove.rs`.
+   - Edit Poly, Edge mode: `[Panel Groove] [□]` with a caddy for Groove Width, Groove Depth, Bevel Lip Width and Inner Groove Material ID (recorded in the Edit Poly modifier and available to Repeat Last).
+   - `Panel Groove` modifier with the same parameters plus the Chamfer modifier's Selection Filter (Selected Edges by default, so an Edit Poly below picks the seams; or All Edges, Smoothing Group Boundaries, By Angle).
+   - The edges are chamfered into a strip `width + 2 × lip` wide, a 45° bevel lip steps down and in, then the channel floor sinks to the full depth along mitered normals, so the depth stays exact across hard edges and box corners. Walls and floor take the inner material ID and are faceted; the surface around keeps its material; the incoming polygon selection flows up the stack.
+   - Tests: a groove line across a plane (counts, depth, floor width, material IDs); a loop around a box stays watertight with the floor at height − depth; all 12 cube edges through the modifier (counts, closed, Euler 2, material and smoothing); no-op cases (nothing selected, zero width).
