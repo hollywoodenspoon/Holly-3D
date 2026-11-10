@@ -68,7 +68,7 @@ fn blender_scene_json_describes_the_scene() {
 fn blender_round_trip_with_a_stand_in_executable() {
     use std::os::unix::fs::PermissionsExt;
     let (_, rs) = scene();
-    let dir = std::env::temp_dir().join("minimax_fake_blender");
+    let dir = std::env::temp_dir().join(format!("minimax_fake_blender_{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let png = dir.join("result.png");
     image::RgbaImage::from_pixel(8, 6, image::Rgba([10, 200, 30, 255])).save(&png).unwrap();
