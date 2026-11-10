@@ -54,6 +54,8 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     let ctx = contexts.ctx_mut()?.clone();
     if !st.themed {
         theme::apply(&ctx);
+        // egui's debug options only exist in debug builds.
+        #[cfg(debug_assertions)]
         if std::env::var("MINIMAX_DEBUG_UI").is_ok() {
             ctx.global_style_mut(|s| s.debug.show_expand_width = true);
         }
