@@ -198,7 +198,7 @@ pub fn sync_lights(
     let tint = Vec3::from_array(env.ambient.map(crate::materials::shading::srgb_to_linear)) * env.ambient_level;
     let sky: Vec3 =
         ed.scene.active_lights().filter(|(_, _, l)| l.kind == LightKind::Skylight && !use_rig).map(|(_, _, l)| l.radiance()).sum();
-    let mut amb = tint + sky;
+    let mut amb = tint + sky + env.sky.night_ambient();
     if use_rig {
         amb = amb.max(Vec3::splat(0.25));
     }

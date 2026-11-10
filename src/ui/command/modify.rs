@@ -43,6 +43,13 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     if o.active_level.is_none() && o.shape_object().is_some() {
         return rollouts::spline::shape_base(ui, ed);
     }
+    if o.active_level.is_none() && matches!(o.base, crate::scene::BaseObject::World(_)) {
+        rollouts::worlds::base(ui, ed);
+        if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
+            ed.convert_to_editable_poly();
+        }
+        return;
+    }
     let mech = matches!(o.base, crate::scene::BaseObject::Mech(_));
     if o.active_level.is_none() && (mech || matches!(o.base, crate::scene::BaseObject::GeoGen(_))) {
         if mech {
@@ -71,6 +78,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::Lathe(_)) => return rollouts::spline::lathe(ui, ed),
         Some(ModifierKind::Extrude(_)) => return rollouts::spline::extrude(ui, ed),
         Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),
+        Some(ModifierKind::Terrain(_)) => return rollouts::worlds::terrain_modifier(ui, ed),
+        Some(ModifierKind::Ocean(_)) => return rollouts::worlds::ocean_modifier(ui, ed),
         Some(ModifierKind::Greeble(_)) => return rollouts::stack_mods::greeble(ui, ed),
         Some(ModifierKind::Chamfer(_)) => return rollouts::stack_mods::chamfer(ui, ed),
         Some(ModifierKind::PanelGroove(_)) => return rollouts::stack_mods::panel_groove(ui, ed),

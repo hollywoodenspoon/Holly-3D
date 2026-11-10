@@ -45,6 +45,8 @@ pub enum BaseObject {
     GeoGen(crate::modifiers::GeoGenParams),
     /// Mech primitive: Gear, Hydraulic Piston part or Hose.
     Mech(crate::mech::MechPart),
+    /// Procedural world: Terrain, Ocean or Planet.
+    World(crate::generators::WorldGen),
 }
 
 impl BaseObject {
@@ -56,6 +58,7 @@ impl BaseObject {
             BaseObject::Shape(s) => s.viewport_mesh(),
             BaseObject::GeoGen(g) => g.build(),
             BaseObject::Mech(m) => m.build(),
+            BaseObject::World(w) => w.build(),
         }
     }
     /// The shape flowing into the stack (shapes only).
@@ -75,6 +78,7 @@ impl BaseObject {
             BaseObject::Shape(s) => s.label(),
             BaseObject::GeoGen(g) => g.mode.short(),
             BaseObject::Mech(m) => m.name(),
+            BaseObject::World(w) => w.short(),
         }
     }
 }

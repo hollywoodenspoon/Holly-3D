@@ -46,6 +46,8 @@ pub enum Tool {
     Create(PrimitiveKind),
     /// Click-placed GeoGen procedural object.
     CreateGeoGen(crate::modifiers::GeoMode),
+    /// Click-placed procedural world (Terrain, Ocean, Planet).
+    CreateWorld(crate::generators::WorldKind),
     /// Click-placed Mech primitive (Gear, Piston, Hose).
     CreateMech(crate::mech::MechKind),
     /// Hose: click the object its top (start) or bottom (end) binds to.
@@ -114,6 +116,7 @@ impl Tool {
             Tool::None => None,
             Tool::Create(_) => Some("Click in a viewport to place the object"),
             Tool::CreateGeoGen(_) => Some("Click in a viewport to place the GeoGen object"),
+            Tool::CreateWorld(_) => Some("Click in a viewport to place the world object"),
             Tool::CreateMech(_) => Some("Click in a viewport to place the Mech part"),
             Tool::PickHoseEnd { top: true } => Some("Hose: click the Top End Object (Esc to cancel)"),
             Tool::PickHoseEnd { .. } => Some("Hose: click the Bottom End Object (Esc to cancel)"),

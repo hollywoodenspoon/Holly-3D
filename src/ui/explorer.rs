@@ -44,6 +44,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                         BaseObject::Shape(_) => "〰",
                         BaseObject::GeoGen(_) => "◆",
                         BaseObject::Mech(_) => "⚙",
+                        BaseObject::World(_) => "🌍",
                     };
                     (k, o.name.clone(), o.selected, o.hidden, o.frozen, o.wire_color, icon)
                 })

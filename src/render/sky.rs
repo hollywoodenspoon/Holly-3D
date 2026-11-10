@@ -6,6 +6,7 @@
 //! reflections, ambient, viewport skybox). Z-up.
 
 use super::hdri::HdrImage;
+use super::sky_noise::{fbm, hash3, smooth};
 use bevy::math::{Quat, Vec3};
 use std::f32::consts::{PI, TAU};
 
@@ -117,45 +118,8 @@ impl Default for SkySettings {
 
 /// Tilt of the daily sun path from the zenith (noon elevation = 90 - tilt).
 const PATH_TILT: f32 = 35.0;
-
-fn smooth(a: f32, b: f32, x: f32) -> f32 {
-    let t = ((x - a) / (b - a)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
-}
-
-fn hash3(x: i32, y: i32, z: i32) -> f32 {
-    let mut h = (x as u32).wrapping_mul(0x8da6_b343) ^ (y as u32).wrapping_mul(0xd816_3841) ^ (z as u32).wrapping_mul(0xcb1a_b31f);
-    h ^= h >> 13;
-    h = h.wrapping_mul(0x5bd1_e995);
-    h ^= h >> 15;
-    (h & 0x00ff_ffff) as f32 / 16_777_216.0
-}
-
-/// Smooth 3D value noise in 0..1.
-fn vnoise(p: Vec3) -> f32 {
-    let i = p.floor();
-    let f = p - i;
-    let u = f * f * (Vec3::splat(3.0) - f * 2.0);
-    let (x, y, z) = (i.x as i32, i.y as i32, i.z as i32);
-    let l = |a: f32, b: f32, t: f32| a + (b - a) * t;
-    let c = |dx, dy, dz| hash3(x + dx, y + dy, z + dz);
-    l(
-        l(l(c(0, 0, 0), c(1, 0, 0), u.x), l(c(0, 1, 0), c(1, 1, 0), u.x), u.y),
-        l(l(c(0, 0, 1), c(1, 0, 1), u.x), l(c(0, 1, 1), c(1, 1, 1), u.x), u.y),
-        u.z,
-    )
-}
-
-fn fbm(p: Vec3, octaves: u32) -> f32 {
-    let (mut s, mut a, mut f, mut n) = (0.0, 0.5, 1.0, 0.0);
-    for _ in 0..octaves {
-        s += vnoise(p * f) * a;
-        n += a;
-        a *= 0.5;
-        f *= 2.03;
-    }
-    s / n
-}
+/// Default multiplier of the linked moonlight at night.
+pub const MOONLIGHT: f32 = 0.22;
 
 impl SkySettings {
     /// Unit direction toward the sun for the current Time of Day.
@@ -191,10 +155,26 @@ impl SkySettings {
                     let col = Vec3::new(1.0, 0.96, 0.9).lerp(Vec3::new(1.0, 0.55, 0.25), warm);
                     Some((s, col, 1.4 * smooth(-0.03, 0.08, s.z)))
                 } else {
-                    Some((self.moon_dir(), Vec3::new(0.55, 0.65, 1.0), 0.12))
+                    Some((self.moon_dir(), Vec3::new(0.55, 0.65, 1.0), MOONLIGHT))
                 }
             }
         }
+    }
+
+    /// Cool night skylight added to the ambient term (viewport and F9) so
+    /// unlit surfaces stay readable under moonlight; zero by day.
+    pub fn night_ambient(&self) -> Vec3 {
+        if self.mode != SkyMode::Earth {
+            return Vec3::ZERO;
+        }
+        let night = 1.0 - smooth(-0.12, 0.2, self.sun_dir().z);
+        Vec3::new(0.05, 0.06, 0.1) * night * self.intensity.max(0.0)
+    }
+
+    /// Six `size`² cube faces evaluated straight from the sky (no equirect
+    /// bake in between), so stars stay crisp in the viewport skybox.
+    pub fn cube_faces(&self, size: u32) -> Vec<[f32; 4]> {
+        super::hdri::cube_faces_with(size, |d| self.radiance(d))
     }
 
     /// Linear sky radiance in direction `d`.
@@ -250,8 +230,8 @@ impl SkySettings {
         let day = smooth(-0.12, 0.2, e);
         let up = d.z.max(0.0);
         // Rayleigh: deep blue zenith, pale horizon; Mie: glow around the sun.
-        let zenith = Vec3::new(0.18, 0.38, 0.95) * day + Vec3::new(0.01, 0.012, 0.035) * (1.0 - day);
-        let horizon = Vec3::new(0.65, 0.75, 0.9) * day + Vec3::new(0.03, 0.035, 0.07) * (1.0 - day);
+        let zenith = Vec3::new(0.18, 0.38, 0.95) * day + Vec3::new(0.02, 0.025, 0.065) * (1.0 - day);
+        let horizon = Vec3::new(0.65, 0.75, 0.9) * day + Vec3::new(0.05, 0.058, 0.1) * (1.0 - day);
         let mut c = horizon.lerp(zenith, up.powf(0.45));
         let golden = (-(e.abs() * 7.0)).exp();
         let toward = d.dot(Vec3::new(sun.x, sun.y, 0.0).normalize_or_zero()).max(0.0);
