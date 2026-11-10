@@ -6,7 +6,7 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **8 done**: Phases 1–5 from `CLAUDE.md`, Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) merged to `main` (PRs #1–#5); **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky) is on the working branch |
+| Build phases | **8 done**: Phases 1–5 from `CLAUDE.md`, Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) merged to `main` (PRs #1–#5); **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky) is in PR #6, tested by hand in the running app |
 | Source | 243 `.rs` files, about 37,400 lines; the largest is 347 lines (limit 350) |
 | Tests | 268 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
@@ -208,7 +208,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 5 | Splines, Lathe, Extrude, Array, Mirror, GeoGen, Greeble, Chamfer, Symmetry, Shell, TurboSmooth, deformers, Edit Normals, Boolean, ProOptimizer | #3 ✅ merged |
 | 6 | File I/O (`.mmax`, OBJ, glTF/GLB, FBX), cameras, Align, Edit Poly gap tools, modifier gizmos, Spline Boolean / Refine, 3D Snaps, selection regions, HDRI, Cycles through Blender, copy-on-write undo, tiled renderer, SIMD BVH (§9) | #4 ✅ merged |
 | 7 | Bone-free mech assembly: joints and the J tool, FK / IK drag, Mirror Mech Limb, Contact Sets, Motion Links, Gear / Piston / Hose primitives, Panel Groove (§10) | #4 ✅ merged |
-| 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | branch, not yet in a PR |
+| 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 open |
 
 ---
 
@@ -323,5 +323,32 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - `[✓] Link Main Directional Sun to Sky Time` aims the first directional light (creating a "Sun" if needed) along the sun, with warm golden-hour colour, and switches to cool moonlight at night.
    - **Procedural Clouds** rollout: Coverage, Density, Altitude, Wind Drift Speed (clouds drift with the time of day), tinted by sunset and moonlight.
    - **Deep Space:** high-contrast starfield (density, brightness), two-colour nebula bands with density, and one bright star (azimuth, elevation, colour) that lights the scene.
-   - The sky is baked to an equirect image and used like an HDRI: F9 background, reflections and ambient; a skybox in perspective viewports; written to a temporary `.hdr` for Cycles / Blender.
+   - F9 evaluates the sky per ray, so stars and the sun stay sharp in the background and reflections. The sky is also baked to a 1024-wide equirect image, used for ambient light, the skybox in perspective viewports, and a temporary `.hdr` for Cycles / Blender.
    - Tests: noon blue zenith, sunset glow on the sun's side, dark night with stars and moonlight, cloud coverage and wind drift, deep-space stars / nebula / star, bake layout and cache key, `.hdr` round trip, an F9 render using the sky, the linked sun following the time, and the HH:MM clock label.
+
+### Hands-on test (10 November 2026)
+
+The app was run on a virtual display and driven with real clicks and hotkeys, using a test scene: floor, a Multi/Sub-Object box, an emissive blue panel, a wood sphere, Camera001 and the Earth sky.
+
+| Feature | Result |
+|---|---|
+| Multi/Sub-Object box in the viewport | ✅ each face shows its sub-material |
+| `M` editor: Set Number, ID list, sub-material editing, pack presets | ✅ |
+| F10 GI & Post-FX tab | ✅ all controls present |
+| F9 at 800×600 with GI, AO and bloom | ✅ about 9 s; the panel blooms and lights the floor blue |
+| Live retone (tone operator, EV, Contrast) | ✅ updates without a re-render |
+| `8` Dynamic Sky: time as HH:MM, clouds rollout | ✅ |
+| Viewport skybox at 17:30 and 22:00 | ✅ sunset clouds; indigo night with moonlight on the scene |
+| F9 night render through Camera001 | ✅ sharp starfield (after fix 1) |
+| Deep Space mode | not tested by hand (covered by unit tests) |
+
+**Fixed during the test (PR #6):**
+1. F9 stars were blurry because the renderer read the 512-wide sky bake. It now evaluates the sky per ray.
+2. The selected row label in the Multi/Sub-Object list was amber on amber. It is now dark bold text.
+3. The `8` dialog was only about 400 px tall. It now uses a taller scroll area.
+
+**Open minor issues:**
+- Viewport stars are softer than in F9 (the skybox cubemap faces are 256 px).
+- Sparkle noise on the floor near emitters at low Emitter Samples.
+- Sub-material name fields are cut off by the narrow column in the `M` editor.
+- At night the box renders almost black under moonlight alone; possibly correct, worth a check.
