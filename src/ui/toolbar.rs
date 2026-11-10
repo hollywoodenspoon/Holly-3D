@@ -43,9 +43,11 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
                     }
                 });
                 ui.separator();
-                if toggle_button(ui, ed.snap, "S Snap").on_hover_text("3D Grid Snap (S)").clicked() {
+                let snap = toggle_button(ui, ed.snap, "S Snap").on_hover_text("3D Snaps (S) — right-click for Grid and Snap Settings");
+                if snap.clicked() {
                     ed.snap = !ed.snap;
                 }
+                snap.context_menu(|ui| crate::ui::snaps::settings(ui, ed));
                 if toggle_button(ui, ed.angle_snap, "A Angle").on_hover_text("Angle Snap 5° (A)").clicked() {
                     ed.angle_snap = !ed.angle_snap;
                 }

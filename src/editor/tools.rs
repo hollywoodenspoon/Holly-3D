@@ -13,14 +13,12 @@ impl Editor {
         match tool {
             Tool::None => return false,
             Tool::Create(kind) => {
-                let p = v.construction_point(cursor);
-                let p = if self.snap { (p * 4.0).round() / 4.0 } else { p };
+                let p = self.snapped_point_pub(view, cursor);
                 self.create_primitive(kind, p);
                 self.tool = Tool::Create(kind);
             }
             Tool::CreateGeoGen(mode) => {
-                let p = v.construction_point(cursor);
-                let p = if self.snap { (p * 4.0).round() / 4.0 } else { p };
+                let p = self.snapped_point_pub(view, cursor);
                 self.create_geogen(mode, p);
                 self.tool = Tool::CreateGeoGen(mode);
             }

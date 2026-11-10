@@ -3,7 +3,7 @@
 
 use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::{ObjId, Xform};
-use bevy::math::{Mat4, Quat, Vec3};
+use bevy::math::{Mat4, Quat, Vec2, Vec3};
 use bevy_egui::egui;
 use transform_gizmo_egui::math::Transform as GTransform;
 use transform_gizmo_egui::{
@@ -94,7 +94,7 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
     };
     let v = &ed.viewports.views[view];
     let r = v.rect;
-    let snapping = if ed.mode == TransformMode::Rotate { ed.angle_snap } else { ed.snap };
+    let snapping = if ed.mode == TransformMode::Rotate { ed.angle_snap } else { ed.snap && ed.snap_cfg.grid };
     gz.update_config(GizmoConfig {
         view_matrix: to_rows(v.camera.view_matrix()),
         projection_matrix: to_rows(v.camera.projection_matrix(r.aspect())),
@@ -108,7 +108,7 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
         },
         snapping,
         snap_angle: 5f32.to_radians(),
-        snap_distance: 0.25,
+        snap_distance: ed.snap_cfg.grid_size,
         snap_scale: 0.1,
         pixels_per_point: ui.ctx().pixels_per_point(),
         visuals: GizmoVisuals { gizmo_size: 80.0, stroke_width: 3.0, ..Default::default() },
@@ -145,15 +145,23 @@ pub fn run(ui: &egui::Ui, ed: &mut Editor, gz: &mut Gizmo, view: usize, hovered:
             };
             ed.begin_drag(start, shift);
         }
+        // 3D Snaps: Move puts the gizmo origin on the vertex / edge / … under the cursor.
+        let hit = (ed.snap && ed.mode == TransformMode::Move).then(|| ed.snap_at(view, Vec2::new(cursor.x, cursor.y))).flatten();
         match &t {
-            Targets::Objects(ids, _) => {
-                let pairs: Vec<(ObjId, Xform)> = ids.iter().copied().zip(new.iter().map(from_g)).collect();
+            Targets::Objects(ids, xs) => {
+                let mut pairs: Vec<(ObjId, Xform)> = ids.iter().copied().zip(new.iter().map(from_g)).collect();
+                if let Some(h) = hit {
+                    let d = h.pos - xs[0].translation;
+                    pairs = ids.iter().copied().zip(xs.iter().map(|x| Xform { translation: x.translation + d, ..*x })).collect();
+                }
                 ed.drag_objects(&pairs);
             }
-            Targets::Frame(_) => {
-                if let Some(n) = new.first() {
-                    ed.drag_frame(from_g(n).matrix());
-                }
+            Targets::Frame(x) => {
+                let frame = match hit {
+                    Some(h) => Mat4::from_translation(h.pos - x.translation) * x.matrix(),
+                    None => new.first().map(|n| from_g(n).matrix()).unwrap_or(x.matrix()),
+                };
+                ed.drag_frame(frame);
             }
         }
     }

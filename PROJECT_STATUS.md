@@ -55,7 +55,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | `Q` cycles selection-region shapes | ❌ | Rectangle marquee only; no circle, fence or lasso |
 | Shift+Drag clone (Copy / Instance / Reference, number of copies) | ✅ | |
 | Shift+Drag border edges to extrude | ✅ | |
-| `S` snap / `A` angle snap | 🟡 | Snaps to increments only (0.25 units, 5°, 10% scale); no vertex or midpoint snapping |
+| `S` snap / `A` angle snap | ✅ | 3D Snaps: Grid Points, Pivot, Vertex, Edge/Segment, Midpoint, Face Center; right-click `S` for settings; cyan crosshair at the snap point. Angle snap 5° |
 | `Ctrl+Z` / `Ctrl+Y` | ✅ | Covers transforms, mesh, modifier, material and paint edits |
 | `Delete` | ✅ | Objects or sub-objects |
 | `M`, `F9`, `F10`, `8`, `Ctrl+L` | ✅ | |
@@ -245,7 +245,12 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Refine (Vertex level): click a segment to insert a knot at that point; the Bezier shape is kept (de Casteljau split). Undoable.
    - Boolean (Spline level): pick Union / Subtraction / Intersection, select a closed spline, then click the other. Both are cut at their crossings without losing curvature, each segment is kept or dropped by side, and the kept pieces are joined into closed splines (holes come out as separate splines). Open splines are refused unchanged.
    - Tests: square union / subtraction / intersection areas and knot counts (either operand order, either winding), a circle lens within 2% of the exact area, disjoint and nested shapes, open splines refused, and the editor click flow with undo.
-7. **Snapping to vertices, edges and midpoints** (today `S` snaps to increments only).
+7. ✅ **3D Snaps.** `src/editor/snap.rs`, `src/ui/snaps.rs`.
+   - Snap types: Grid Points, Pivot, Vertex (mesh vertices and spline knots), Edge/Segment (perspective-correct nearest point), Midpoint and Face Center. Point snaps win over edges, edges over the grid.
+   - Right-click the `S` button for Grid and Snap Settings: the six types, Grid Spacing (also the Move gizmo increment), Snap Strength in pixels, Clear All / Defaults.
+   - A cyan crosshair with the snap type follows the cursor while `S` is on.
+   - Used by every creation click (primitives, shapes, Line, lights, cameras, Create polygon) and by the Move gizmo, which drops the pivot or sub-object center onto the snap point. The selection being moved is ignored, so it never snaps to itself.
+   - Tests: vertex, midpoint, edge, face-center, pivot and grid hits on a box in perspective; nothing with `S` off; a selected object is skipped while moving but snapped to by creation tools.
 8. **Selection-region shapes** cycled with `Q`: circle, fence, lasso.
 9. **Smaller items:** HDRI environment background, near attenuation on lights, Bitmap Fit in UVW Map, Pin Stack.
 10. **Checks still to do:** try Edit Normals `E` rotation in the app, and run the Cycles bridge against a real Cycles install.

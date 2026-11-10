@@ -18,7 +18,7 @@ pub const EDGE_PICK_PX: f32 = 7.0;
 pub const HELPER_PICK_PX: f32 = 12.0;
 
 impl Editor {
-    fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
+    pub(super) fn selectable(&self) -> impl Iterator<Item = (ObjId, &SceneObject)> {
         self.scene.objects.iter().filter(|(_, o)| !o.hidden && !o.frozen)
     }
 

@@ -25,10 +25,7 @@ impl Editor {
     pub(super) fn create_camera_click(&mut self, view: usize, cursor: Vec2, kind: CameraKind, first: Option<Vec3>) {
         let v = &self.viewports.views[view];
         let fwd = v.camera.forward();
-        let mut p = v.construction_point(cursor);
-        if self.snap {
-            p = (p * 4.0).round() / 4.0;
-        }
+        let p = self.snapped_point_pub(view, cursor);
         let ground = !matches!(v.camera.kind, ViewKind::Front | ViewKind::Left);
         let at = if ground { p + Vec3::Z * EYE_HEIGHT } else { p };
         match (kind, first) {

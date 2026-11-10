@@ -182,6 +182,12 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, marquee
     {
         brush_cursor(&painter, ed, vi, ptr);
     }
+    if ed.snap
+        && !ed.paint.active
+        && let Some(ptr) = pointer.filter(|q| rect.contains(p(*q)))
+    {
+        crate::ui::snaps::crosshair(&painter, ed, vi, ptr);
+    }
     if let (Some(a), Some(b)) = (marquee, pointer) {
         let r = egui::Rect::from_two_pos(p(a), p(b));
         painter.rect_filled(r, 0.0, Color32::from_rgba_unmultiplied(229, 156, 36, 18));

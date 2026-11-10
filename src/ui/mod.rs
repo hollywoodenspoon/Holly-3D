@@ -16,6 +16,7 @@ pub mod quad_menu;
 pub mod render_setup;
 pub mod render_window;
 pub mod rollouts;
+pub mod snaps;
 pub mod status_bar;
 pub mod theme;
 pub mod toolbar;

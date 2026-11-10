@@ -18,6 +18,7 @@ pub mod paint;
 pub mod poly_tools;
 pub mod render;
 pub mod select;
+pub mod snap;
 pub mod spline_tools;
 pub mod splines;
 pub mod tools;
@@ -55,6 +56,8 @@ pub struct Editor {
     pub coord: CoordSystem,
     pub pivot_mode: PivotMode,
     pub snap: bool,
+    /// 3D Snaps settings (right-click `S`).
+    pub snap_cfg: snap::SnapSettings,
     pub angle_snap: bool,
     pub tab: CommandTab,
     pub tool: Tool,
@@ -119,6 +122,7 @@ impl Default for Editor {
             coord: CoordSystem::World,
             pivot_mode: PivotMode::SelectionCenter,
             snap: false,
+            snap_cfg: Default::default(),
             angle_snap: false,
             tab: CommandTab::Create,
             tool: Tool::None,

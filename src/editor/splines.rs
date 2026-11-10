@@ -73,11 +73,6 @@ impl Editor {
         self.add_shape(ShapeObject::param(p), at, rot);
     }
 
-    pub fn snapped_point_pub(&self, view: usize, cursor: Vec2) -> Vec3 {
-        let p = self.viewports.views[view].construction_point(cursor);
-        if self.snap { (p * 4.0).round() / 4.0 } else { p }
-    }
-
     /// Line tool, mouse down: closes the spline on its first knot, else adds a knot.
     pub fn line_press(&mut self, view: usize, cursor: Vec2) {
         let p = self.snapped_point_pub(view, cursor);

@@ -46,10 +46,7 @@ impl Editor {
 
     pub(super) fn create_light_click(&mut self, view: usize, cursor: Vec2, kind: LightKind, first: Option<Vec3>) {
         let v = &self.viewports.views[view];
-        let mut p = v.construction_point(cursor);
-        if self.snap {
-            p = (p * 4.0).round() / 4.0;
-        }
+        let p = self.snapped_point_pub(view, cursor);
         // Ground-plane views place lights above the grid, like a ceiling rig.
         let ground = !matches!(v.camera.kind, ViewKind::Front | ViewKind::Left);
         match (kind.has_target(), first) {
