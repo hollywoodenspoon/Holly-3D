@@ -1,6 +1,7 @@
 //! Editor state: scene, modes, tools, dialogs and undo history.
 
 pub mod actions;
+pub mod align;
 pub mod array;
 #[cfg(test)]
 mod array_tests;
@@ -63,6 +64,8 @@ pub struct Editor {
     pub array_dialog: Option<array::ArrayDialog>,
     pub mirror_settings: mirror::MirrorSettings,
     pub mirror_dialog: Option<mirror::MirrorDialog>,
+    pub align_settings: align::AlignSettings,
+    pub align_dialog: Option<align::AlignDialog>,
     pub last_op: Option<PolyOp>,
     pub slice_plane: Option<SlicePlane>,
     pub ignore_backfacing: bool,
@@ -124,6 +127,8 @@ impl Default for Editor {
             array_dialog: None,
             mirror_settings: Default::default(),
             mirror_dialog: None,
+            align_settings: Default::default(),
+            align_dialog: None,
             last_op: None,
             slice_plane: None,
             ignore_backfacing: false,

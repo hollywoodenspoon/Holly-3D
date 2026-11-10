@@ -62,6 +62,8 @@ pub enum Tool {
     NormalAlign,
     /// Pick Material from Object (eyedropper) into the active slot.
     PickMaterial,
+    /// Tools -> Align: pick the target object.
+    PickAlign,
     /// Create a light; target lights take a second click for the target.
     CreateLight {
         kind: crate::render::LightKind,
@@ -97,6 +99,7 @@ impl Tool {
             Tool::Attach => Some("Attach: click an object to merge it"),
             Tool::PickBoolean => Some("Boolean: click objects to add them as operands (Esc to stop)"),
             Tool::NormalAlign => Some("Normal Align: click a face to align the UVW gizmo"),
+            Tool::PickAlign => Some("Align: click the target object (Esc to cancel)"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),
             Tool::CreateLight { first: Some(_), .. } => Some("Click to place the light's target"),

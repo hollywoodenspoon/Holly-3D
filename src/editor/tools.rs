@@ -40,6 +40,11 @@ impl Editor {
                 }
                 self.tool = Tool::None;
             }
+            Tool::PickAlign => {
+                if let Some(t) = self.pick_object(view, cursor) {
+                    self.open_align(t);
+                }
+            }
             Tool::PickBoolean => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.pick_boolean_operand(other);

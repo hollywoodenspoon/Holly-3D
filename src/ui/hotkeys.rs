@@ -10,15 +10,25 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
     if ctx.egui_wants_keyboard_input() {
         return;
     }
-    // Array / Mirror dialogs own the keyboard: Esc cancels, Enter confirms.
-    if ed.array_dialog.is_some() || ed.mirror_dialog.is_some() {
+    // Array / Mirror / Align dialogs own the keyboard: Esc cancels, Enter confirms.
+    if ed.array_dialog.is_some() || ed.mirror_dialog.is_some() || ed.align_dialog.is_some() {
         let (esc, enter) = ctx.input(|i| (i.key_pressed(Key::Escape), i.key_pressed(Key::Enter)));
-        match (esc, enter, ed.array_dialog.is_some()) {
-            (true, _, true) => ed.cancel_array(),
-            (true, _, false) => ed.cancel_mirror(),
-            (_, true, true) => ed.confirm_array(),
-            (_, true, false) => ed.confirm_mirror(),
-            _ => {}
+        if ed.array_dialog.is_some() {
+            if esc {
+                ed.cancel_array();
+            } else if enter {
+                ed.confirm_array();
+            }
+        } else if ed.mirror_dialog.is_some() {
+            if esc {
+                ed.cancel_mirror();
+            } else if enter {
+                ed.confirm_mirror();
+            }
+        } else if esc {
+            ed.cancel_align();
+        } else if enter {
+            ed.confirm_align();
         }
         return;
     }
@@ -42,7 +52,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             ..ev_mods
         };
         let ctrl = m.command || m.ctrl;
-        if m.alt && !matches!(key, Key::W | Key::X | Key::Q | Key::R | Key::L) {
+        if m.alt && !matches!(key, Key::W | Key::X | Key::Q | Key::R | Key::L | Key::A) {
             continue;
         }
         match key {
@@ -52,6 +62,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             Key::O if ctrl => super::file_menu::open(ed),
             Key::L if ctrl => ed.toggle_default_lights(),
             Key::Y if ctrl => ed.redo(),
+            Key::A if m.alt => ed.start_align(),
             Key::A if ctrl => ed.select_all(true),
             Key::D if ctrl => ed.select_all(false),
             Key::I if ctrl => ed.invert_selection(),

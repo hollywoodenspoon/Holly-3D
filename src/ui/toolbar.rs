@@ -6,8 +6,6 @@ use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};
 use crate::scene::CloneKind;
 use bevy_egui::egui::{self, RichText};
 
-const PHASE5: &str = "Not available yet";
-
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
     egui::Panel::top("main_toolbar")
         .resizable(false)
@@ -128,7 +126,10 @@ fn menus(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.open_mirror();
             ui.close();
         }
-        ui.add_enabled(false, egui::Button::new("Align...")).on_disabled_hover_text(PHASE5);
+        if ui.button("Align...   Alt+A").clicked() {
+            ed.start_align();
+            ui.close();
+        }
         if ui.button("Isolate Selection   Alt+Q").clicked() {
             ed.toggle_isolate();
             ui.close();

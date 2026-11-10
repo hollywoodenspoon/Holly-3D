@@ -182,7 +182,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 |---|---|---|
 | Theme colours, spacing, corner radius | ✅ | |
 | Right-click resets any spinner (`max_spinner`) | ✅ | |
-| Top toolbar: File, Edit, Tools menus | 🟡 | File: New, Open (`Ctrl+O`), Save (`Ctrl+S`), Save As (`Ctrl+Shift+S`), Import, Export All / Selected all work. **Tools → Align** is greyed out |
+| Top toolbar: File, Edit, Tools menus | 🟡 | File: New, Open (`Ctrl+O`), Save (`Ctrl+S`), Save As (`Ctrl+Shift+S`), Import, Export All / Selected all work. Tools has Array, Mirror, Align (`Alt+A`) and Isolate |
 | Toolbar centre: Q/W/E/R, View/World/Local, the three pivot modes, snaps, Mirror, Array, Paint | ✅ | |
 | Toolbar right: Material Editor, Render Setup, Quick Render | ✅ | |
 | Scene Explorer: visibility, freeze, type icons, search filter | ✅ | |
@@ -223,7 +223,12 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - `C` looks through the selected camera (or cycles through the cameras); the `[ View ]` label menu has a Cameras list. Navigating a camera view moves the camera, and Alt+MMB orbits around its target.
    - Render Setup and the Frame Window list the cameras, and F9 renders through them. The raytracer and Cycles honour the lens; near clip applies in the raytracer and viewports. In the viewports, the far clip only culls whole objects, because Bevy's projection is infinite.
    - Tests: lens/FOV maths, target aiming, deleting the target, looking straight down, look-through, orbit write-back, Target <-> Free, and undoing a lens change.
-3. **Align tool** (Tools → Align).
+3. ✅ **Align Selection dialog** (Tools → Align, `Alt+A`). `src/editor/align.rs`, `src/ui/align_dialog.rs`.
+   - Pick the target object with a click (Esc cancels). Targets of lights and cameras are never moved.
+   - Align Position (World): X / Y / Z, with Minimum / Center / Pivot Point / Maximum for the current and the target object (world bounding boxes).
+   - Align Orientation (Local) X / Y / Z: one axis turns that local axis onto the target's; two or more copy the target's rotation. Match Scale X / Y / Z.
+   - Live preview in every viewport. Apply keeps the result and starts a fresh alignment; OK / Enter confirms; Cancel / Esc restores the originals. Each step is one undo step.
+   - Tests: Min→Max on X only, Center→Center, undo, orientation, scale, cancel, and picking the selection itself.
 4. **Missing Edit Poly tools:** Create (polygon), Create Shape from Selection, Hinge From Edge, Extrude Along Spline, and shifting the selection with the Ring/Loop spinner.
 5. **Viewport gizmos** for the Bend, Twist and Taper Gizmo/Center sub-objects and the Symmetry Mirror plane.
 6. **Spline Boolean** and a click-to-Refine tool for Editable Spline.
