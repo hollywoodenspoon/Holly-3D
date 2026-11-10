@@ -9,6 +9,10 @@ use crate::ui::widgets::{dim, rollout};
 use bevy_egui::egui::{self, RichText};
 
 const LIST_H: f32 = 230.0;
+/// Sub-material name column (wide enough for names like "Cliff Rock").
+const NAME_W: f32 = 132.0;
+/// Sub-Material button column.
+const SUB_W: f32 = 100.0;
 
 fn set_number(ui: &mut egui::Ui, ed: &mut Editor, count: usize) {
     let id = egui::Id::new("multi_set_number");
@@ -41,12 +45,12 @@ fn rows(ui: &mut egui::Ui, ed: &mut Editor) {
                 ui.end_row();
                 for (i, s) in ms.subs.iter_mut().enumerate() {
                     t.r(ui.add(egui::DragValue::new(&mut s.id).range(1..=999).speed(0.1)));
-                    t.r(ui.add(egui::TextEdit::singleline(&mut s.name).desired_width(78.0)));
+                    t.r(ui.add(egui::TextEdit::singleline(&mut s.name).desired_width(NAME_W)));
                     t.r(ui.color_edit_button_rgb(&mut s.mat.base_color));
                     t.r(ui.checkbox(&mut s.enabled, ""));
                     let label = format!("{} ({})", s.mat.name, s.mat.model.label().split(" /").next().unwrap_or(""));
                     let text = if i == current { RichText::new(label).color(theme::INPUT).strong() } else { RichText::new(label) };
-                    if ui.add(egui::Button::new(text).selected(i == current).truncate()).on_hover_text("Edit this sub-material").clicked() {
+                    if ui.add(egui::Button::new(text).selected(i == current).truncate().min_size(egui::vec2(SUB_W, 0.0))).on_hover_text("Edit this sub-material").clicked() {
                         pick = Some(i);
                     }
                     ui.end_row();

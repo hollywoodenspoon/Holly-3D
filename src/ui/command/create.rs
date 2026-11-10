@@ -2,6 +2,7 @@
 
 use super::CONTENT_W;
 use crate::editor::{Editor, Tool};
+use crate::generators::WorldKind;
 use crate::mech::MechKind;
 use crate::modifiers::GeoMode;
 use crate::primitives::PrimitiveKind;
@@ -49,6 +50,22 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             }
         });
+    });
+    rollout(ui, "Geometry — Worlds", true, |ui| {
+        ui.horizontal(|ui| {
+            for kind in WorldKind::ALL {
+                let active = ed.tool == Tool::CreateWorld(kind);
+                let r =
+                    ui.add_sized([CONTENT_W / 3.0 - 6.0, 28.0], egui::Button::new(kind.label()).selected(active)).on_hover_text(kind.tip());
+                if r.clicked() {
+                    ed.tool = if active { Tool::None } else { Tool::CreateWorld(kind) };
+                }
+                if r.secondary_clicked() {
+                    ed.create_world(kind, Vec3::ZERO);
+                }
+            }
+        });
+        ui.label(dim("Each world comes with its Multi/Sub-Object pack, so the generated Material IDs render right away."));
     });
     rollout(ui, "Geometry — Mech", true, |ui| {
         ui.horizontal(|ui| {

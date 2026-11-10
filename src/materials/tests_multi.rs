@@ -54,8 +54,9 @@ fn pack_presets_and_save_round_trip() {
         let mut m = Material::named("05 - Slot");
         p.apply(&mut m);
         let ms = m.multi.as_ref().unwrap();
-        assert_eq!(ms.subs.len(), 8, "{}", p.label());
-        assert_eq!(ms.subs.iter().map(|s| s.id).collect::<Vec<_>>(), (1..=8).collect::<Vec<u16>>());
+        let n = ms.subs.len() as u16;
+        assert!(n >= 2, "{}", p.label());
+        assert_eq!(ms.subs.iter().map(|s| s.id).collect::<Vec<_>>(), (1..=n).collect::<Vec<u16>>(), "{}", p.label());
         assert_eq!(m.name, "05 - Slot");
         let names: Vec<&str> = ms.subs.iter().map(|s| s.name.as_str()).collect();
         assert!(names.iter().all(|n| !n.is_empty()));
@@ -70,6 +71,9 @@ fn pack_presets_and_save_round_trip() {
     assert!(city.subs.iter().filter(|s| s.mat.emissive_strength > 0.0).count() >= 2, "neon and windows glow");
     let alpine = MultiPreset::AlpineTerrain.build();
     assert_eq!(alpine.resolve(6).model, ShadingModel::Crystal, "glacier ice refracts");
+    assert_eq!((alpine.resolve(1).name.as_str(), alpine.resolve(4).name.as_str()), ("Alpine Grass", "Riverbed Sand"), "matches Terrain IDs");
+    assert_eq!(MultiPreset::OceanWater.build().subs.len(), 2);
+    assert_eq!(MultiPreset::PlanetStudio.build().subs.len(), 7);
     // Older scene files (no `multi` field) still load.
     let old = ron::to_string(&Material::default()).unwrap().replace(",multi:None", "");
     assert!(!old.contains("multi"));

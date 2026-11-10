@@ -46,6 +46,24 @@ pub fn softbox(d: Vec3) -> Vec3 {
     Vec3::new(1.0, 0.98, 0.95) * c
 }
 
+/// Smallest squared distance to an emitter sample (stops the 1/d² blow-up
+/// for points right next to an emissive panel).
+pub const MIN_DIST_SQ: f32 = 0.05;
+/// Firefly clamp: one NEE sample may carry at most this many times the
+/// emitter's radiance (before the 1/n average).
+pub const FIREFLY_CAP: f32 = 4.0;
+
+/// Radiance carried by one emitter NEE sample: the area-light estimator
+/// `L cos_l A / (d² p n)` with d² clamped to [`MIN_DIST_SQ`], the solid
+/// angle bounded by a hemisphere (2π) and a luminance firefly clamp, so low
+/// Emitter Samples give smooth falloff instead of sparkle near floors.
+pub fn nee_radiance(radiance: Vec3, cos_l: f32, area: f32, d2: f32, prob: f32, n: u32) -> Vec3 {
+    let solid_angle = (cos_l * area / d2.max(MIN_DIST_SQ)).min(std::f32::consts::TAU);
+    let w = solid_angle / (prob.max(1e-6) * n.max(1) as f32);
+    let cap = FIREFLY_CAP * std::f32::consts::TAU / n.max(1) as f32;
+    radiance * w.min(cap)
+}
+
 impl Tracer<'_> {
     /// Next-event estimation: one [`LightIn`] per sample on an emissive
     /// polygon, with its unbiased area-light weight.
@@ -64,8 +82,7 @@ impl Tracer<'_> {
             let t = &self.rs.bvh.tris[e.tri];
             let q = point_on(&t.p, rng);
             let v = q - o;
-            let d2 = v.length_squared().max(1e-6);
-            let (dir, dist) = (v / d2.sqrt(), d2.sqrt());
+            let (dist, dir) = (v.length().max(1e-4), v.normalize_or_zero());
             let nl = (t.p[1] - t.p[0]).cross(t.p[2] - t.p[0]).normalize_or_zero();
             let cos_l = nl.dot(-dir).abs();
             if sh.n.dot(dir) <= 0.0 || cos_l <= 1e-4 {
@@ -74,8 +91,7 @@ impl Tracer<'_> {
             if self.cfg.shadows && self.rs.bvh.occluded(o, dir, dist - self.eps * 4.0) {
                 continue;
             }
-            let w = cos_l * e.area / (d2 * prob * n as f32);
-            out.push(LightIn { dir, radiance: e.radiance * w.min(1e4) });
+            out.push(LightIn { dir, radiance: nee_radiance(e.radiance, cos_l, e.area, dist * dist, prob, n) });
         }
     }
 
@@ -122,6 +138,21 @@ impl Tracer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nee_clamps_near_emitters_and_fireflies() {
+        let l = Vec3::ONE;
+        // Far away: plain inverse-square estimator.
+        let far = nee_radiance(l, 1.0, 1.0, 100.0, 1.0, 1);
+        assert!((far.x - 0.01).abs() < 1e-6);
+        // Touching the panel: bounded, not ~1e6.
+        let near = nee_radiance(l, 1.0, 1.0, 1e-6, 1.0, 1);
+        assert_eq!(near, nee_radiance(l, 1.0, 1.0, MIN_DIST_SQ, 1.0, 1).min(near));
+        assert!(near.x <= std::f32::consts::TAU + 1e-4, "solid angle <= 2π: {near}");
+        // A rarely picked tiny emitter can't spike beyond the firefly cap.
+        let rare = nee_radiance(l, 1.0, 0.1, 0.06, 1e-4, 4);
+        assert!(rare.x <= FIREFLY_CAP * std::f32::consts::TAU / 4.0 + 1e-4, "{rare}");
+    }
 
     #[test]
     fn softbox_has_bright_panels_and_dark_gaps() {

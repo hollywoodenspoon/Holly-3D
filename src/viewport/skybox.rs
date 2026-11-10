@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureViewDescriptor, TextureViewDimension};
 
 /// Cube face edge in texels.
-const FACE: u32 = 256;
+const FACE: u32 = 512;
 /// Skybox brightness (cd/m²) for HDRI radiance 1 at the default exposure.
 pub const SKY_NITS: f32 = 1_000.0;
 
@@ -55,7 +55,7 @@ pub fn sync_skybox(
             images.remove(&old);
         }
         cache.handle = match sky {
-            Some(s) => key.map(|_| images.add(cubemap(s.bake(512, 256).cube_faces(FACE, 0.0)))),
+            Some(s) => key.map(|_| images.add(cubemap(s.cube_faces(FACE)))),
             None => hdri.and_then(|h| h.image.as_ref()).map(|i| images.add(cubemap(i.cube_faces(FACE, hdri.map_or(0.0, |h| h.rotation))))),
         };
         cache.key = key;

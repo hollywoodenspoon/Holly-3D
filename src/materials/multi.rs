@@ -3,7 +3,7 @@
 //! list, a sub-material that is switched off renders as the default gray),
 //! plus the pre-built Medieval Castle, Modern City and Alpine Terrain packs.
 
-use super::{Material, Preset};
+use super::{Material, Preset, ShadingModel};
 use std::sync::LazyLock;
 
 /// Highest sub-material count `Set Number` accepts.
@@ -134,6 +134,8 @@ pub enum MultiPreset {
     MedievalCastle,
     ModernCity,
     AlpineTerrain,
+    OceanWater,
+    PlanetStudio,
 }
 
 fn pbr(name: &str, rgb: [f32; 3], metallic: f32, roughness: f32) -> Material {
@@ -152,17 +154,19 @@ fn glass(name: &str, tint: [f32; 3], attenuation: [f32; 3], roughness: f32) -> M
 }
 
 impl MultiPreset {
-    pub const ALL: [MultiPreset; 3] = [Self::MedievalCastle, Self::ModernCity, Self::AlpineTerrain];
+    pub const ALL: [MultiPreset; 5] = [Self::MedievalCastle, Self::ModernCity, Self::AlpineTerrain, Self::OceanWater, Self::PlanetStudio];
 
     pub fn label(self) -> &'static str {
         match self {
             Self::MedievalCastle => "Medieval Castle Pack",
             Self::ModernCity => "Modern City Pack",
             Self::AlpineTerrain => "Alpine Terrain Pack",
+            Self::OceanWater => "Ocean Water Pack",
+            Self::PlanetStudio => "Planet Studio Pack",
         }
     }
 
-    /// The pack's sub-materials, IDs 1..=8.
+    /// The pack's sub-materials, IDs 1..=N.
     pub fn build(self) -> MultiSub {
         let mats: Vec<Material> = match self {
             Self::MedievalCastle => vec![
@@ -185,15 +189,30 @@ impl MultiPreset {
                 glow("Office Windows", [1.0, 0.86, 0.6], 4.0),
                 pbr("Red Brick", [0.55, 0.22, 0.15], 0.0, 0.85),
             ],
+            // IDs 1-4 match the Terrain generator's auto Material IDs.
             Self::AlpineTerrain => vec![
-                pbr("Snow", [0.95, 0.96, 1.0], 0.0, 0.55),
-                pbr("Granite", [0.45, 0.44, 0.43], 0.0, 0.8),
-                pbr("Pine Needles", [0.12, 0.26, 0.14], 0.0, 0.85),
                 pbr("Alpine Grass", [0.32, 0.48, 0.18], 0.0, 0.9),
-                pbr("Dirt Path", [0.38, 0.28, 0.18], 0.0, 0.95),
+                pbr("Granite Cliff", [0.45, 0.44, 0.43], 0.0, 0.8),
+                pbr("Snow", [0.95, 0.96, 1.0], 0.0, 0.55),
+                pbr("Riverbed Sand", [0.72, 0.64, 0.48], 0.0, 0.92),
+                pbr("Pine Needles", [0.12, 0.26, 0.14], 0.0, 0.85),
                 glass("Glacier Ice", [0.85, 0.95, 1.0], [0.55, 0.8, 0.95], 0.08),
                 glass("Lake Water", [0.6, 0.78, 0.82], [0.2, 0.45, 0.5], 0.02),
-                pbr("Lichen", [0.62, 0.6, 0.3], 0.0, 0.9),
+                pbr("Dirt Path", [0.38, 0.28, 0.18], 0.0, 0.95),
+            ],
+            // The Ocean generator's IDs; the water tint and foam live in the
+            // vertex colors, so both bases are white.
+            Self::OceanWater => vec![pbr("Ocean Water", [1.0, 1.0, 1.0], 0.0, 0.06), pbr("Wave Foam", [1.0, 1.0, 1.0], 0.0, 0.85)],
+            // Planet Studio layers: surface colors come from vertex colors,
+            // cloud / atmosphere / ring density from vertex alpha.
+            Self::PlanetStudio => vec![
+                pbr("Ocean / Lowland", [1.0, 1.0, 1.0], 0.0, 0.2),
+                pbr("Land", [1.0, 1.0, 1.0], 0.0, 0.9),
+                pbr("Highland Rock", [1.0, 1.0, 1.0], 0.0, 0.85),
+                pbr("Ice Caps", [1.0, 1.0, 1.0], 0.0, 0.45),
+                Material { opacity: 0.999, ..pbr("Cloud Shell", [1.0, 1.0, 1.0], 0.0, 1.0) },
+                Material { model: ShadingModel::Unlit, opacity: 0.999, ..pbr("Atmosphere Halo", [1.0, 1.0, 1.0], 0.0, 1.0) },
+                Material { opacity: 0.999, ..pbr("Planetary Rings", [1.0, 1.0, 1.0], 0.0, 0.8) },
             ],
         };
         MultiSub { subs: mats.into_iter().enumerate().map(|(i, m)| sub(i as u16 + 1, m)).collect() }

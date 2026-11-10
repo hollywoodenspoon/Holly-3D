@@ -31,6 +31,7 @@ pub mod splines;
 pub mod tools;
 pub mod types;
 pub mod undo;
+pub mod worlds;
 
 use crate::mesh::SubObject;
 use crate::mesh::ops::PolyOp;

@@ -82,6 +82,8 @@ pub enum ModifierKind {
     EditNormals(EditNormalsMod),
     Boolean(BooleanMod),
     ProOptimizer(ProOptimizerMod),
+    Terrain(crate::generators::TerrainMod),
+    Ocean(crate::generators::OceanMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -125,6 +127,8 @@ impl ModifierKind {
             ModifierKind::Lathe(_) => "Lathe",
             ModifierKind::Extrude(_) => "Extrude",
             ModifierKind::GeoGen(_) => "GeoGen",
+            ModifierKind::Terrain(_) => "Terrain",
+            ModifierKind::Ocean(_) => "Ocean",
             ModifierKind::Greeble(_) => "Greeble",
             ModifierKind::Chamfer(_) => "Chamfer",
             ModifierKind::PanelGroove(_) => "Panel Groove",
@@ -208,6 +212,8 @@ impl ModifierEntry {
             ModifierKind::EditNormals(e) => e.apply(mesh),
             ModifierKind::Boolean(b) => b.apply(mesh),
             ModifierKind::ProOptimizer(p) => p.apply(mesh),
+            ModifierKind::Terrain(t) => t.apply(mesh),
+            ModifierKind::Ocean(o) => o.apply(mesh),
             // shape modifiers pass meshes through untouched
             ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
         }
@@ -242,6 +248,8 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Unwrap UVW", available: true },
     ModifierListItem { name: "VertexPaint", available: true },
     ModifierListItem { name: "GeoGen", available: true },
+    ModifierListItem { name: "Terrain", available: true },
+    ModifierListItem { name: "Ocean", available: true },
     ModifierListItem { name: "Greeble", available: true },
     ModifierListItem { name: "TurboSmooth", available: true },
     ModifierListItem { name: "Symmetry", available: true },
@@ -271,6 +279,8 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Lathe" => Some(ModifierEntry::new(ModifierKind::Lathe(LatheMod::default()))),
         "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
         "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
+        "Terrain" => Some(ModifierEntry::new(ModifierKind::Terrain(Default::default()))),
+        "Ocean" => Some(ModifierEntry::new(ModifierKind::Ocean(Default::default()))),
         "Greeble" => Some(ModifierEntry::new(ModifierKind::Greeble(GreebleMod::default()))),
         "Chamfer" => Some(ModifierEntry::new(ModifierKind::Chamfer(ChamferMod::default()))),
         "Panel Groove" => Some(ModifierEntry::new(ModifierKind::PanelGroove(PanelGrooveMod::default()))),

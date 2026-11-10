@@ -67,27 +67,38 @@ impl HdrImage {
     /// Six `size`² RGBA f32 cube faces (+X, -X, +Y, -Y, +Z, -Z) for Bevy's
     /// skybox, which samples `world_dir * (1, 1, -1)`.
     pub fn cube_faces(&self, size: u32, rotation_deg: f32) -> Vec<[f32; 4]> {
-        let mut out = Vec::with_capacity((size * size * 6) as usize);
-        for face in 0..6 {
-            for j in 0..size {
-                for i in 0..size {
-                    let u = (i as f32 + 0.5) / size as f32 * 2.0 - 1.0;
-                    let v = (j as f32 + 0.5) / size as f32 * 2.0 - 1.0;
-                    let s = match face {
-                        0 => Vec3::new(1.0, -v, -u),
-                        1 => Vec3::new(-1.0, -v, u),
-                        2 => Vec3::new(u, 1.0, v),
-                        3 => Vec3::new(u, -1.0, -v),
-                        4 => Vec3::new(u, -v, 1.0),
-                        _ => Vec3::new(-u, -v, -1.0),
-                    };
-                    let c = self.sample(s * Vec3::new(1.0, 1.0, -1.0), rotation_deg);
-                    out.push([c.x, c.y, c.z, 1.0]);
-                }
+        cube_faces_with(size, |d| self.sample(d, rotation_deg))
+    }
+}
+
+/// Six `size`² RGBA f32 cube faces (+X, -X, +Y, -Y, +Z, -Z) of the radiance
+/// `f(world_dir)`, one thread per face.
+pub fn cube_faces_with(size: u32, f: impl Fn(Vec3) -> Vec3 + Sync) -> Vec<[f32; 4]> {
+    let face = |face: u32| {
+        let mut out = Vec::with_capacity((size * size) as usize);
+        for j in 0..size {
+            for i in 0..size {
+                let u = (i as f32 + 0.5) / size as f32 * 2.0 - 1.0;
+                let v = (j as f32 + 0.5) / size as f32 * 2.0 - 1.0;
+                let s = match face {
+                    0 => Vec3::new(1.0, -v, -u),
+                    1 => Vec3::new(-1.0, -v, u),
+                    2 => Vec3::new(u, 1.0, v),
+                    3 => Vec3::new(u, -1.0, -v),
+                    4 => Vec3::new(u, -v, 1.0),
+                    _ => Vec3::new(-u, -v, -1.0),
+                };
+                let c = f(s * Vec3::new(1.0, 1.0, -1.0));
+                out.push([c.x, c.y, c.z, 1.0]);
             }
         }
         out
-    }
+    };
+    let f = &face;
+    std::thread::scope(|sc| {
+        let hs: Vec<_> = (0..6).map(|k| sc.spawn(move || f(k))).collect();
+        hs.into_iter().flat_map(|h| h.join().expect("cube face thread")).collect()
+    })
 }
 
 /// The Environment's HDRI map and how it is used.

@@ -7,11 +7,13 @@ pub mod edit_sub;
 pub mod geogen;
 pub mod mech;
 pub mod modifiers;
+pub mod planet;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;
 pub mod spline_tools;
 pub mod stack_mods;
+pub mod worlds;
 
 use crate::editor::Editor;
 use crate::mesh::ops::PolyOp;

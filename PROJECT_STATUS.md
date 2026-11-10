@@ -6,13 +6,13 @@ _Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **8 done**: Phases 1–5 from `CLAUDE.md`, Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) merged to `main` (PRs #1–#5); **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky) is in PR #6, tested by hand in the running app |
-| Source | 243 `.rs` files, about 37,400 lines; the largest is 347 lines (limit 350) |
-| Tests | 268 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Build phases | **8 done**: Phases 1–5 from `CLAUDE.md`, Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) merged to `main` (PRs #1–#5); **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky) merged in PR #6 after a hands-on test; **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio) is in PR #7 |
+| Source | 258 `.rs` files, about 39,700 lines; the largest is 347 lines (limit 350) |
+| Tests | 292 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works.
+**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -173,6 +173,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Edit Normals | ✅ | Cyan, blue and green lines; select by Normal, Vertex, Edge or Face; Break, Unify, Reset, Make Explicit; `E` rotates the selected normals (tried in the app, and tested on a rotated object) |
 | Boolean (boolmesh) | ✅ | Union, A−B, B−A, Intersect; Pick Operand B; an operand list with Remove, Extract and on/off toggles; Merge Coplanar Faces. Open meshes are skipped with a warning |
 | ProOptimizer (meshopt) | ✅ | Calculate, linked Vertex % and Vertex Count, keeps material, UV, colour and normal boundaries, Protect Borders |
+| Terrain, Ocean (Phase 8B) | ✅ | Objects under `Create -> Geometry -> Worlds` and stack modifiers; see §12. Planet Studio is an object only |
 
 ---
 
@@ -208,7 +209,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 5 | Splines, Lathe, Extrude, Array, Mirror, GeoGen, Greeble, Chamfer, Symmetry, Shell, TurboSmooth, deformers, Edit Normals, Boolean, ProOptimizer | #3 ✅ merged |
 | 6 | File I/O (`.mmax`, OBJ, glTF/GLB, FBX), cameras, Align, Edit Poly gap tools, modifier gizmos, Spline Boolean / Refine, 3D Snaps, selection regions, HDRI, Cycles through Blender, copy-on-write undo, tiled renderer, SIMD BVH (§9) | #4 ✅ merged |
 | 7 | Bone-free mech assembly: joints and the J tool, FK / IK drag, Mirror Mech Limb, Contact Sets, Motion Links, Gear / Piston / Hose primitives, Panel Groove (§10) | #4 ✅ merged |
-| 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 open |
+| 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 ✅ merged |
+| 8B | §11 polish, procedural Terrain (6 biomes, erosion, auto Material IDs), Gerstner Ocean with crest foam, Planet Studio (surface, clouds, atmosphere, rings) (§12) | #7 open |
 
 ---
 
@@ -347,8 +349,28 @@ The app was run on a virtual display and driven with real clicks and hotkeys, us
 2. The selected row label in the Multi/Sub-Object list was amber on amber. It is now dark bold text.
 3. The `8` dialog was only about 400 px tall. It now uses a taller scroll area.
 
-**Open minor issues:**
-- Viewport stars are softer than in F9 (the skybox cubemap faces are 256 px).
-- Sparkle noise on the floor near emitters at low Emitter Samples.
-- Sub-material name fields are cut off by the narrow column in the `M` editor.
-- At night the box renders almost black under moonlight alone; possibly correct, worth a check.
+**Open minor issues (all fixed in Phase 8B, §12 step 0):**
+- ✅ Viewport stars were softer than in F9. The skybox cubemap faces are now 512 px, built on six threads.
+- ✅ Sparkle noise on the floor near emitters at low Emitter Samples. Fixed with a distance² floor of 0.05 and a firefly clamp on emitter NEE weights (solid angle bounded at 2π, weight cap 4·2π/N). This is a clamp, not full MIS.
+- ✅ Sub-material name fields were cut off. The Name column is now 132 px (was 78) and the sub-material button is at least 100 px wide.
+- ✅ At night the box rendered almost black under moonlight alone. The night sky now gives a little more skylight (a night ambient term plus a brighter zenith and horizon), and the default Moonlight multiplier is 0.22 (was 0.12).
+
+## 12. Phase 8B: §11 polish, procedural Terrain, Gerstner Ocean and Planet Studio
+
+0. ✅ **§11 polish:** the four open issues above. `src/viewport/skybox.rs`, `src/render/hdri.rs`, `src/render/gi.rs`, `src/render/sky.rs`, `src/ui/material_editor/multi.rs`. The F9 raytracer's shadow rays also pass through translucent surfaces (opacity × vertex alpha, up to 8 layers), so cloud shells and glass cast soft, partial shadows.
+1. ✅ **Terrain** (`Create -> Geometry -> Worlds -> Terrain`, and a **Terrain** stack modifier). `src/generators/terrain.rs`, `terrain_ids.rs`, `erosion.rs`.
+   - Biome presets: Plains, Rolling Hills, Jagged Mountains (ridged multifractal plus erosion), Mesa (terraces and canyon cuts), Savannah (riverbeds and termite mounds), Desert Dunes (wind-sheared Worley crescents with a Wind Direction).
+   - Parameters: Width, Length, Segments, Random Seed with `[🎲 New Seed]`, Max Elevation, Octaves, Roughness, Terrace Steps, Erosion Strength (droplet hydraulic erosion followed by thermal talus slumping).
+   - `[✓] Auto-Assign Material IDs by Slope & Altitude` with Cliff Angle, Snow Line and Sand Line: ID 1 Grass, 2 Cliff Rock, 3 Snow, 4 Sand / Riverbed. A new Terrain gets its own copy of the **Alpine Terrain Pack**, now reordered to match (1 Alpine Grass, 2 Granite Cliff, 3 Snow, 4 Riverbed Sand, then Pine Needles, Glacier Ice, Lake Water, Dirt Path).
+   - The modifier raises any input mesh along local Z over its XY bounds.
+2. ✅ **Gerstner Ocean** (base object and **Ocean** modifier). `src/generators/ocean.rs`.
+   - Six-wave trochoidal spectrum around the wind direction. Parameters: Width, Length, Segments, Wave Height, Choppiness (per-wave steepness so crests never loop), Wavelength, Wind Direction, and a Phase / Time scrubber.
+   - `[✓] Auto-Crest Foam` with Foam Threshold: foam from crest height and the Jacobian pinch whitens `Vertex.color` and sets Material ID 2. A new Ocean gets the new **Ocean Water Pack** (1 Ocean Water, 2 Wave Foam).
+3. ✅ **Planet Studio** (`Create -> Geometry -> Worlds -> Planet`). `src/generators/planet.rs`, `planet_surface.rs`, `planet_layers.rs`, `sphere.rs`, `src/editor/worlds.rs`, `src/ui/rollouts/planet.rs`.
+   - Equal-angle (tangent-warped) quad sphere: even quads with no pole pinching, shared seam vertices, and lat-long UVs that are unwrapped across the seam. Radius, Subdivisions (4..128), Random Seed.
+   - **1. Planet Surface:** presets Terran, Moon (seeded craters), Desert, Ice, Gas Giant (bands and storm ovals); Sea Level and Mountain Relief; IDs 1 Ocean / Lowland, 2 Land, 3 Highland, 4 Ice. `[Load Custom Surface Texture]` turns the surface into a plain ID 1 sphere and puts the image on the ID 1 sub-material; `[✕ Procedural]` restores it.
+   - **2. Weather & Cloud Shell** (radius × 1.015, ID 5): Coverage, Swirl Intensity (Coriolis spirals around storm eyes, counter-clockwise in the north), Storm Eye Count, Opacity, latitude weather bands, and an optional custom cloud map (colour and opacity). The cloud alpha casts soft shadows on the surface in F9.
+   - **3. Atmosphere Rim Halo** (ID 6): three stacked see-through shells, so the halo glows brightest at the limb. Colour, Density, Sunset Terminator Glow, and Sun Azimuth / Elevation.
+   - **4. Planetary Rings** (ID 7): Inner and Outer Radius, Tilt Angle, Radial Band Noise (with a Cassini-style gap), Opacity.
+   - Each layer has its own toggle. Presets set sensible layers: gas giants get rings, and moons have no air or clouds. A new Planet gets the **Planet Studio Pack**.
+   - Tests (`src/generators/tests.rs`, `tests_planet.rs`, `src/editor/worlds.rs`): grid topology `(n+1)²` vertices / `2n(n+1)` edges / `n²` polygons; IDs 1–4 for every biome (mountains have cliffs and snow, savannah has riverbeds, dunes are mostly sand); seed determinism; erosion lowers the steepest step; both modifiers keep topology; ocean foam IDs and white foam colours, with no foam when it is off; the quad sphere is closed (6n² quads, Euler 2, outward, seam-safe UVs, near-even areas); surface IDs 1–4 per preset; layer IDs 5 / 6 / 7 come and go with their toggles; clouds sit at 1.015 R; rings face +Z inside their radii; a custom surface is plain ID 1; each world gets its matching pack; loading a custom texture and going back to procedural.

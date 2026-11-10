@@ -59,7 +59,8 @@ fn midnight_is_dark_indigo_with_stars() {
         v.sort_by(f32::total_cmp);
         v[v.len() / 2]
     };
-    assert!(median < 0.08, "night sky is dark: {median}");
+    // Phase 8B lifted the night sky a little so moonlit scenes read.
+    assert!(median < 0.12, "night sky is dark: {median}");
     assert!(s.radiance(Vec3::Z).z > s.radiance(Vec3::Z).x, "indigo tint");
     assert!(sky.iter().any(|c| c.length() > median * 4.0), "some stars twinkle");
     let (_, col, mult) = s.key_light().unwrap();

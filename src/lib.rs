@@ -2,6 +2,7 @@
 
 pub mod assembly;
 pub mod editor;
+pub mod generators;
 pub mod io;
 pub mod materials;
 pub mod mech;

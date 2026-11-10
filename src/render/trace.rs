@@ -106,7 +106,7 @@ impl<'a> Tracer<'a> {
     /// Fraction of the light reaching `p` (0..1), with soft jitter.
     fn visibility(&self, p: Vec3, to_light: Vec3, dist: f32, soft: f32, rng: &mut Rng) -> f32 {
         let n = if soft > 0.0 { self.cfg.shadow_samples.max(1) } else { 1 };
-        let mut lit = 0;
+        let mut lit = 0.0;
         for _ in 0..n {
             let (dir, len) = if soft <= 0.0 {
                 (to_light, dist)
@@ -117,11 +117,35 @@ impl<'a> Tracer<'a> {
             } else {
                 ((to_light + rng.ball() * soft * 0.05).normalize(), dist)
             };
-            if !self.rs.bvh.occluded(p, dir, (len - self.eps).min(1e30)) {
-                lit += 1;
-            }
+            lit += self.transmittance(p, dir, (len - self.eps).min(1e30));
         }
-        lit as f32 / n as f32
+        lit / n as f32
+    }
+
+    /// Light passing along a shadow ray (0 = blocked): opaque hits stop it,
+    /// see-through surfaces (alpha < 1) dim it by their alpha and let it on.
+    pub(super) fn transmittance(&self, p: Vec3, dir: Vec3, tmax: f32) -> f32 {
+        if !self.rs.bvh.occluded(p, dir, tmax) {
+            return 1.0;
+        }
+        if !self.rs.translucent {
+            return 0.0;
+        }
+        let (mut o, mut left, mut t) = (p, tmax, 1.0);
+        for _ in 0..8 {
+            let Some(h) = self.rs.bvh.closest(o, dir, left) else { return t };
+            let a = self.interp(&h, o, dir).s.alpha;
+            if a >= 0.999 {
+                return 0.0;
+            }
+            t *= 1.0 - a;
+            if t < 1e-3 {
+                return 0.0;
+            }
+            let step = h.t + self.eps;
+            (o, left) = (o + dir * step, left - step);
+        }
+        t
     }
 
     pub(super) fn direct(&self, sh: &Shading, rng: &mut Rng) -> Vec<LightIn> {

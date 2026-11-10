@@ -67,6 +67,9 @@ pub struct RenderScene {
     pub radius: f32,
     /// Emissive polygons sampled as area lights.
     pub emitters: super::emitters::Emitters,
+    /// Any see-through surface (opacity, opacity map or vertex alpha): shadow
+    /// rays then pass through it, dimmed by its alpha (cloud shells).
+    pub translucent: bool,
 }
 
 fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
@@ -162,6 +165,7 @@ impl RenderScene {
         if use_rig {
             ambient = ambient.max(Vec3::splat(0.25));
         }
+        ambient += env.sky.night_ambient();
         let procedural = (env.sky.mode != super::sky::SkyMode::Off).then(|| env.sky.clone());
         let hdri = super::sky::procedural_hdri(&env.sky, 1024).or_else(|| env.hdri.clone()).filter(|h| h.image.is_some());
         if let Some(h) = hdri.as_ref().filter(|h| h.lighting) {
@@ -173,6 +177,10 @@ impl RenderScene {
         });
         let radius = if bvh.tris.is_empty() { 1.0 } else { ((hi - lo).length() * 0.5).max(0.1) };
         let emitters = super::emitters::Emitters::build(&bvh, &materials);
+        let translucent = bvh.tris.iter().any(|t| {
+            let m = &materials[t.mat];
+            m.opacity < 0.999 || m.active_map(crate::materials::MapChannel::Opacity).is_some() || t.col.iter().any(|c| c.w < 0.999)
+        });
         Self {
             bvh,
             materials,
@@ -186,6 +194,7 @@ impl RenderScene {
             camera,
             radius,
             emitters,
+            translucent,
         }
     }
 }
