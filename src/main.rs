@@ -34,6 +34,9 @@ fn main() {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "MiniMax — 3ds Max-style Modeler".into(),
+                    // WM_CLASS / Wayland app ID: matches `StartupWMClass` in
+                    // packaging/minimax.desktop so the taskbar shows the icon.
+                    name: Some("minimax".into()),
                     resolution: (1600, 920).into(),
                     ..default()
                 }),

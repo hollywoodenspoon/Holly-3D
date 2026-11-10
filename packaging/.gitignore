@@ -1,0 +1,6 @@
+# makepkg output
+/minimax/
+/src/
+/pkg/
+*.pkg.tar*
+*.log
