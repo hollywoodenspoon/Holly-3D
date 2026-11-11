@@ -46,11 +46,19 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         }
     });
     ui.horizontal(|ui| {
+        ui.label("Font");
+        egui::ComboBox::from_id_salt("ui_font").selected_text(t.font.label()).show_ui(ui, |ui| {
+            for f in crate::prefs::UiFont::ALL {
+                ui.selectable_value(&mut t.font, f, f.label());
+            }
+        });
+    });
+    ui.horizontal(|ui| {
         ui.label("Font size");
         ui.add(egui::Slider::new(&mut t.font_size, 9.0..=20.0).step_by(0.5).suffix(" pt"));
     });
     ui.add_space(6.0);
-    if reset_button(ui, "theme, UI size and font size") {
+    if reset_button(ui, "theme, font, UI size and font size") {
         *t = ThemePrefs::default();
     }
 }

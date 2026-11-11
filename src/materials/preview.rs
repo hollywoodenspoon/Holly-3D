@@ -36,7 +36,15 @@ fn trace(m: &Material, o: Vec3, d: Vec3) -> (Vec3, f32) {
     let n = p.normalize();
     let v = -d;
     let uv = Vec2::new(n.x.atan2(n.z) / std::f32::consts::TAU + 0.5, n.y.asin() / std::f32::consts::PI + 0.5);
-    let s = surface(m, uv, Vec3::new(p.x, -p.z, p.y), Vec4::ONE);
+    let q = Vec3::new(p.x, -p.z, p.y);
+    // Relief on the sphere: U runs around it, V up it (3 tiles around, so bricks read).
+    let east = Vec3::new(n.z, 0.0, -n.x).normalize_or(Vec3::X);
+    let north = n.cross(east);
+    let n = match super::relief::tangent_normal(m, uv, q, Vec3::ZERO, Vec3::ZERO) {
+        Some(tn) => super::relief::perturb(n, east, north, tn),
+        None => n,
+    };
+    let s = surface(m, uv, q, Vec4::ONE);
     let lights = [
         LightIn { dir: KEY.normalize(), radiance: Vec3::splat(3.2) },
         LightIn { dir: Vec3::new(0.7, -0.2, 0.68).normalize(), radiance: Vec3::new(0.7, 0.75, 0.9) },

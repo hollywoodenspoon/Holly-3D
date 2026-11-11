@@ -224,8 +224,28 @@ pub const MATERIALS: Page = Page {
             "Every material has an Ink / Toon Outline rollout.",
             "Maps rollout: image or procedural maps for colour, metal, roughness, bump, opacity and glow.",
             "Procedural maps include Bricks / Tiles, Stripes (road lines), Cracks and Grunge (dirt, rust, scratches).",
-            "Material Library (📚 Library): ~280 ready-made materials in 15 categories. Click a swatch to load it into the active slot; ☆ marks a favourite.",
+            "Material Library (📚 Library): over 300 ready-made materials in 16 categories. Click a swatch to load it into the active slot; ☆ marks a favourite.",
         ]),
+        H("Procedural Pattern & Weathering"),
+        Shot(
+            "procedural",
+            &[
+                m(336.0, 140.0, "The sample slot shows the result"),
+                m(530.0, 636.0, "Pattern and Style: bricks, cobbles, rock, wood, weave, metal, asphalt, terrain"),
+                m(480.0, 755.0, "Tiling, Seed, Gap, Bevel, Color Variation, Surface Relief (scroll down for Live Weathering)"),
+                m(1017.0, 684.0, "Colour, normals, roughness and AO follow the pattern in the viewport"),
+            ],
+        ),
+        Steps(&[
+            "In the Material Editor (Compact mode), open the Procedural Pattern & Weathering rollout.",
+            "Pick a Pattern, then a Style. One click sets its colours, gap, roughness and metalness.",
+            "Tune Tiling / Scale, Seed (🎲 for a new one), Gap / Mortar Width, Gap / Bevel Depth, Color Variation and Surface Relief.",
+            "Drag the Live Weathering sliders: Edge Wear, Cavity Dirt, Moss, Scorch / Rust and Wetness / Puddles.",
+            "Leave Auto-Derive Normal, Roughness & Cavity AO ticked: the normal map, roughness variation and ambient occlusion follow the pattern in the viewport and in F9 renders.",
+            "Every pattern tiles seamlessly, so it repeats across any surface with no seams.",
+        ]),
+        Tip("Maps cook on background threads. While you drag a spinner the old look stays on screen and updates a moment later."),
+        Tip("In the Maps rollout (or the Slate view) any channel can also take a Tileable Pattern, Levels (with a histogram), Height Blend, Slope Blur or Normal From Height map."),
         Shot(
             "library",
             &[

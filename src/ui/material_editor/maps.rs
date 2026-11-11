@@ -1,8 +1,8 @@
 //! Maps rollout (channel slots with amount spinners) and the shared map-node
 //! parameter editor used by both Compact and Slate views.
 
-use super::edit;
 use super::params::{color, num};
+use super::{craft_params, edit};
 use crate::editor::Editor;
 use crate::materials::maps::NoiseKind;
 use crate::materials::patterns::{BrickKind, GrungeKind};
@@ -33,7 +33,7 @@ pub(super) fn kind_combo(ui: &mut egui::Ui, id: egui::Id, node: &mut Option<MapN
 /// Returns a status message (bitmap load result).
 pub(super) fn node_params(ui: &mut egui::Ui, salt: &str, node: &mut MapNode, t: &mut Track) -> Option<String> {
     let mut msg = None;
-    egui::Grid::new(("node", salt)).num_columns(2).spacing([10.0, 5.0]).min_col_width(96.0).show(ui, |ui| match node {
+    egui::Grid::new(("node", salt)).num_columns(2).spacing([10.0, 5.0]).min_col_width(96.0).show(ui, |ui| match &mut *node {
         MapNode::Bitmap { path, tex } => {
             ui.label("File");
             t.r(ui.add(egui::TextEdit::singleline(path).desired_width(150.0).hint_text("/path/to/image.png")));
@@ -147,21 +147,30 @@ pub(super) fn node_params(ui: &mut egui::Ui, salt: &str, node: &mut MapNode, t: 
             color(ui, t, "Clean", color_a);
             color(ui, t, "Dirt", color_b);
         }
+        other => _ = craft_params::rows(ui, salt, other, t),
     });
-    if let MapNode::ColorCorrect { input, .. } = node {
+    // Input sockets: pick what feeds each one and edit it in place.
+    let many = node.input_count() > 1;
+    for (i, (name, input)) in node.inputs_mut().into_iter().enumerate() {
         ui.horizontal(|ui| {
-            ui.label("Input Map");
-            let mut inner = Some((**input).clone());
-            kind_combo(ui, egui::Id::new((salt, "cc_in")), &mut inner, t);
-            // Color Correction always needs an input; "None" falls back to Noise.
-            **input = inner.unwrap_or_else(|| MapNode::new_kind(1, None));
+            ui.label(format!("{name} Map"));
+            let mut inner = Some(input.clone());
+            kind_combo(ui, egui::Id::new((salt, "in", i)), &mut inner, t);
+            // A socket always needs a map; "None" falls back to Noise.
+            *input = inner.unwrap_or_else(|| MapNode::new_kind(1, None));
         });
-        ui.indent((salt, "cc_body"), |ui| {
-            let sub = format!("{salt}/in");
+        let sub = format!("{salt}/in{i}");
+        let title = dim(&format!("{name}: {}", input.kind_name()));
+        let mut body = |ui: &mut egui::Ui| {
             if let Some(m) = node_params(ui, &sub, input, t) {
                 msg = Some(m);
             }
-        });
+        };
+        if many {
+            egui::CollapsingHeader::new(title).id_salt((salt, "in_body", i)).show(ui, body);
+        } else {
+            ui.indent((salt, "in_body", i), &mut body);
+        }
     }
     msg
 }

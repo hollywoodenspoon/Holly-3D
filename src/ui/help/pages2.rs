@@ -125,6 +125,11 @@ pub const CREDITS: Page = Page {
     blocks: &[
         P("MiniMax is built with Bevy, egui, transform-gizmo, slotmap, boolmesh, meshopt, uvunwrap, noise and image."),
         P("Free CC0 assets: Poly Haven (photo textures and realistic models), Kenney and Quaternius (low-poly models). Thank you!"),
+        H("MaterialCraft"),
+        P("The procedural texture engine (tileable lattice noise, brick, Voronoi crack, wood, weave and scratch generators, Levels, Height Blend, Slope Blur, Normal From Height, cavity AO, weathering masks and the content-addressed cache) is ported from MaterialCraft by the ArtCraft Team and the MaterialCraft contributors: github.com/storytold/materialcraft. Licensed MIT / Apache-2.0."),
+        H("Fira Code"),
+        P("The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. Licensed under the SIL Open Font License 1.1."),
+        P("The licence texts ship with MiniMax in the licenses folder."),
     ],
 };
 

@@ -5,7 +5,7 @@
 use super::bvh::Hit;
 use super::scene_build::{RShape, RenderScene};
 use super::settings::RenderSettings;
-use crate::materials::ShadingModel;
+use crate::materials::{ShadingModel, relief};
 use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface};
 use bevy::math::{Vec2, Vec3, Vec4};
 
@@ -99,7 +99,17 @@ impl<'a> Tracer<'a> {
         }
         let uv: Vec2 = t.uv[0] * w.x + t.uv[1] * w.y + t.uv[2] * w.z;
         let col: Vec4 = t.col[0] * w.x + t.col[1] * w.y + t.col[2] * w.z;
-        let s = surface(&self.rs.materials[t.mat], uv, p, col);
+        let m = &self.rs.materials[t.mat];
+        // Relief: tilt the shading normal by the material's normal map.
+        if let Some((dpdu, dpdv)) = relief::uv_frame(t.p, t.uv)
+            && let Some(tn) = relief::tangent_normal(m, uv, p, dpdu, dpdv)
+        {
+            let bumped = relief::perturb(n, dpdu, dpdv, tn);
+            if bumped.dot(ng) > 0.0 {
+                n = bumped;
+            }
+        }
+        let s = surface(m, uv, p, col);
         Shading { p, n, ng, entering, s, tri: h.tri }
     }
 

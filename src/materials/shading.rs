@@ -34,13 +34,20 @@ pub struct Surface {
     pub transmission: f32,
     pub ior: f32,
     pub emissive: Vec3,
+    /// Cavity ambient occlusion (1 = open); darkens ambient light only.
+    pub ao: f32,
 }
 
 /// Evaluates material parameters and maps; `vcol` is the vertex paint color.
 pub fn surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
     let mut base = Vec3::from_array(m.base_color);
     let mut alpha = m.opacity;
-    let (mut metallic, mut roughness) = (m.metallic, m.roughness);
+    let (mut metallic, mut roughness, mut ao) = (m.metallic, m.roughness, 1.0);
+    // The procedural surface stands in for the plain colour, roughness and metalness.
+    if let Some(pm) = super::proc_engine::surface::maps(&m.proc, m.roughness, m.metallic) {
+        let s = pm.at(uv);
+        (base, metallic, roughness, ao) = (s.base, s.metal, s.rough, s.ao);
+    }
     let mut emissive = lin3(m.emissive) * m.emissive_strength;
     if let Some((n, a)) = m.active_map(MapChannel::BaseColor) {
         let s = n.sample(uv, p);
@@ -67,6 +74,7 @@ pub fn surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
         transmission: if m.model == ShadingModel::Crystal { m.transmission.clamp(0.0, 1.0) } else { 0.0 },
         ior: m.ior.max(1.0),
         emissive,
+        ao,
     }
 }
 
@@ -118,7 +126,7 @@ pub fn shade(m: &Material, s: &Surface, n: Vec3, v: Vec3, lights: &[LightIn], am
         _ => {
             let f0 = Vec3::splat(0.04).lerp(s.base, s.metallic);
             let diffuse = s.base * (1.0 - s.metallic) * (1.0 - s.transmission);
-            let mut c = diffuse * ambient + s.emissive;
+            let mut c = diffuse * ambient * s.ao + s.emissive;
             for l in lights {
                 let nl = n.dot(l.dir).max(0.0);
                 if nl > 0.0 {

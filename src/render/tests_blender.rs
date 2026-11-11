@@ -38,6 +38,7 @@ fn blender_scene_json_describes_the_scene() {
     assert_eq!(tris, rs.bvh.tris.len(), "every triangle exported");
     let m0 = &j["meshes"][0];
     assert_eq!(m0["verts"].as_array().unwrap().len(), m0["normals"].as_array().unwrap().len());
+    assert_eq!(m0["uvs"].as_array().unwrap().len() * 3, m0["verts"].as_array().unwrap().len() * 2, "two UV numbers per corner");
     let l = &j["lights"][0];
     assert_eq!(l["type"], "SPOT");
     assert!(l["energy"].as_f64().unwrap() > 0.0 && l["spot"].as_array().unwrap().len() == 2);
@@ -105,4 +106,35 @@ fn real_blender_renders_the_scene() {
     assert_eq!((fb.width, fb.height), (96, 72));
     let out = std::env::temp_dir().join("minimax_real_blender.png");
     fb.save(&out.display().to_string()).unwrap();
+}
+
+#[test]
+fn procedural_materials_export_their_maps_for_blender() {
+    use crate::materials::Material;
+    use crate::materials::proc_engine::Pattern;
+    let dir = std::env::temp_dir().join(format!("minimax_tex_test_{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    // A plain material has nothing to bake.
+    let plain = blender_tex::export(&Material::default(), 0, &dir).unwrap();
+    assert!(plain["base"].is_null() && plain["orm"].is_null() && plain["normal"].is_null());
+    // A procedural surface writes base colour, ORM and normal PNGs.
+    let mut m = Material::default();
+    m.set_pattern(Pattern::Bricks, 0);
+    let tex = blender_tex::export(&m, 3, &dir).unwrap();
+    for kind in ["base", "orm", "normal"] {
+        let path = tex[kind].as_str().unwrap_or_else(|| panic!("{kind} exported"));
+        assert!(path.ends_with(&format!("mat3_{kind}.png")));
+        let img = image::open(path).unwrap().to_rgba8();
+        assert_eq!(img.width(), 256);
+        assert!(img.pixels().any(|p| p.0 != img.get_pixel(0, 0).0), "{kind} varies");
+    }
+    // The scene description gets one `textures` entry per material.
+    let mut scene = serde_json::json!({ "materials": [{}, {}] });
+    blender_tex::attach(&mut scene, &[Material::default(), m], &dir).unwrap();
+    assert!(scene["materials"][0]["textures"]["normal"].is_null() && scene["materials"][1]["textures"]["normal"].is_string());
+    // The loader wires them in and reads the UVs.
+    for word in ["link_textures", "ShaderNodeNormalMap", "ShaderNodeSeparateColor", "uv_layers"] {
+        assert!(blender::LOADER.contains(word), "loader uses {word}");
+    }
+    std::fs::remove_dir_all(&dir).ok();
 }
