@@ -14,6 +14,7 @@ use crate::viewport::layout::Shading;
 impl Action {
     pub fn run(self, ed: &mut Editor) {
         use Action::*;
+        crate::diagnostics::breadcrumbs::record("Action", self.label().to_string());
         let any = !ed.scene.selected().is_empty();
         match self {
             NewScene => ed.new_scene(),
@@ -115,6 +116,7 @@ impl Action {
             Tour => ed.iface.tour = Some(0),
             HotkeyList => flip(&mut ed.iface.hotkeys_open),
             About => flip(&mut ed.iface.about_open),
+            CrashReports => flip(&mut ed.iface.crash_open),
             Preferences => flip(&mut ed.iface.prefs_open),
             Array | Mirror => ed.status = "Select an object first".into(),
         }
@@ -161,6 +163,7 @@ impl Action {
             Tour => ed.iface.tour.is_some(),
             HotkeyList => ed.iface.hotkeys_open,
             About => ed.iface.about_open,
+            CrashReports => ed.iface.crash_open,
             Preferences => ed.iface.prefs_open,
             _ => return None,
         })

@@ -46,6 +46,7 @@ impl Editor {
             return;
         };
         self.checkpoint("Add Modifier");
+        crate::diagnostics::breadcrumbs::record("Modifier", format!("Added {name}"));
         self.scene.objects[id].add_modifier(md);
         self.scene.propagate_from(id);
         self.mod_sub = None;
@@ -93,6 +94,7 @@ impl Editor {
 
     /// Runs an Edit Poly op on the current object (with undo + Repeat Last).
     pub fn apply_op(&mut self, op: PolyOp) -> bool {
+        crate::diagnostics::breadcrumbs::record("Op", op.name().to_string());
         let Some(id) = self.current() else {
             return false;
         };

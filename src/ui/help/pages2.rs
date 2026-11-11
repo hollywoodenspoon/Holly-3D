@@ -150,6 +150,31 @@ pub const PREFS: Page = Page {
     ],
 };
 
+pub const CRASH: Page = Page {
+    id: "crash",
+    title: "16. Crash reports and recovery",
+    blocks: &[
+        P("If MiniMax ever crashes, it writes a report of what happened and saves your scene first. Next time it starts, this dialog appears."),
+        Shot(
+            "crash",
+            &[
+                m(657.0, 473.0, "Copy the report, then paste it into Claude Code"),
+                m(713.0, 503.0, "Open the scene as it was (unsaved)"),
+                m(651.0, 533.0, "Open the crashes folder"),
+                m(616.0, 563.0, "Close; the reports are kept"),
+            ],
+        ),
+        Steps(&[
+            "Copy Crash Report for Claude copies the whole Markdown report. Paste it into Claude Code and ask it to fix the bug.",
+            "The report says where it crashed, your last 50 actions (tools, hotkeys, modifiers, dialogs), the scene and selection, and the MiniMax functions that were running.",
+            "Restore Unsaved Scene opens crash_recovery.mmax. It opens unsaved, so use File > Save As to keep it.",
+            "Reports live in ~/.local/share/minimax/crashes.",
+        ]),
+        Tip("Help > View Crash Reports... lists every report. Simulate Test Crash Report writes a sample one without crashing, so you can check it works."),
+        ShowMe("View Crash Reports", Show::Act(Action::CrashReports)),
+    ],
+};
+
 pub const HOTKEYS: Page = Page {
     id: "hotkeys",
     title: "Hotkey cheat sheet",
@@ -179,8 +204,8 @@ pub const CREDITS: Page = Page {
 };
 
 /// Every page, in topic order.
-pub const ALL: [Page; 17] =
-    [BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, CAD, FILES, PREFS, HOTKEYS, CREDITS];
+pub const ALL: [Page; 18] =
+    [BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, CAD, FILES, PREFS, CRASH, HOTKEYS, CREDITS];
 
 pub fn index_of(id: &str) -> usize {
     ALL.iter().position(|p| p.id == id).unwrap_or(0)

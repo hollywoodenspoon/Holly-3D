@@ -7,6 +7,7 @@ pub mod array_dialog;
 pub mod caddy;
 pub mod clone_dialog;
 pub mod command;
+pub mod crash_dialog;
 pub mod env_dialog;
 pub mod explorer;
 pub mod file_menu;
@@ -116,6 +117,8 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);
     help::show(&ctx, ed, &mut st.help);
+    crash_dialog::show(&ctx, ed);
+    crate::diagnostics::state::tick(ed, ctx.input(|i| i.time));
     ed.update_caddy_preview();
     ed.scene.solve_assembly();
     ed.scene.update_hoses();

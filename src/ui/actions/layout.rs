@@ -153,7 +153,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(DefaultLights),
         ],
     ),
-    ("Help", &[A(Help), A(Tour), A(HotkeyList), Sep, A(About)]),
+    ("Help", &[A(Help), A(Tour), A(HotkeyList), Sep, A(CrashReports), A(About)]),
 ];
 
 /// One slot of the main toolbar.

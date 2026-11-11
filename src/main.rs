@@ -10,6 +10,8 @@ use minimax::ui::actions::keymap;
 use minimax::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox};
 
 fn main() {
+    // Crash reporter first, so even a crash during start-up is recorded.
+    minimax::diagnostics::hook::install();
     let mut editor = Editor::default();
     if std::env::args().any(|a| a == "--demo") {
         editor.create_primitive(PrimitiveKind::Box, Vec3::ZERO);
@@ -46,6 +48,9 @@ fn main() {
             eprintln!("unknown help shot {id}; known: {}", minimax::ui::help::shots::IDS.join(", "));
             std::process::exit(2);
         }
+    } else {
+        // A crash last time: show the recovery dialog.
+        editor.iface.crash_pending = minimax::diagnostics::recovery::detect_pending(&minimax::diagnostics::recovery::crash_dir());
     }
     let mut app = App::new();
     app.add_plugins(
@@ -71,6 +76,7 @@ fn main() {
     .init_resource::<mat_sync::MatCache>()
     .init_resource::<multi_sync::MultiParts>()
     .add_systems(Startup, render_sync::setup_scene)
+    .add_systems(Update, record_gpu_name.run_if(run_once))
     .add_systems(
         Update,
         (
@@ -86,4 +92,11 @@ fn main() {
     light_sync::register(&mut app);
     skybox::register(&mut app);
     app.run();
+}
+
+/// The GPU name for crash reports.
+fn record_gpu_name(info: Option<Res<bevy::render::renderer::RenderAdapterInfo>>) {
+    if let Some(i) = info {
+        minimax::diagnostics::state::set_gpu(format!("{} ({:?}, {})", i.name, i.backend, i.driver));
+    }
 }

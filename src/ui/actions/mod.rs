@@ -98,6 +98,7 @@ pub enum Action {
     Tour,
     HotkeyList,
     About,
+    CrashReports,
     Preferences,
 }
 
@@ -124,7 +125,7 @@ impl Action {
         v.extend(NAVS.map(Nav));
         v.extend([Render, RenderSetup, FrameWindow, ColorGrading, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
-        v.extend([Help, Tour, HotkeyList, About, Preferences]);
+        v.extend([Help, Tour, HotkeyList, About, CrashReports, Preferences]);
         v
     }
 
@@ -208,6 +209,7 @@ impl Action {
             Tour => "Getting Started Tour",
             HotkeyList => "Hotkey List",
             About => "About MiniMax",
+            CrashReports => "View Crash Reports...",
             Preferences => "Preferences...",
         };
         s.to_string()
@@ -250,6 +252,7 @@ impl Action {
             Tour => "▶ Tour",
             HotkeyList => "⌨",
             About => "ℹ",
+            CrashReports => "Crash Reports",
             Preferences => "⚙",
             Nav(NavMode::Zoom) => "🔍",
             Nav(NavMode::ZoomAll) => "🔍⁴",
@@ -296,6 +299,7 @@ impl Action {
             Cancel => "Leave the current tool, caddy or menu",
             Help => "How MiniMax works, with screenshots (F1 opens the page for what is under the mouse)",
             Tour => "A short step-by-step tour of the screen",
+            CrashReports => "Crash reports MiniMax wrote after a crash: copy one for Claude, restore the unsaved scene, or simulate a test report",
             _ => "",
         }
     }

@@ -9,7 +9,7 @@ OUT=assets/help
 WAIT=${WAIT:-14}
 IDS=("$@")
 if [ ${#IDS[@]} -eq 0 ]; then
-  IDS=(layout create transform editpoly ribbon modifiers splines materials library procedural paint sky render grading ghosttown mech cad prefs)
+  IDS=(layout create transform editpoly ribbon modifiers splines materials library procedural paint sky render grading ghosttown mech cad prefs crash)
 fi
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"; kill "${XPID:-0}" 2>/dev/null || true' EXIT

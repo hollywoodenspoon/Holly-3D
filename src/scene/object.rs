@@ -7,6 +7,7 @@ use crate::modifiers::{ModifierEntry, ModifierKind};
 impl SceneObject {
     /// Folds base + modifiers (bottom to top); also refreshes `level_mesh`.
     pub fn evaluate(&mut self) {
+        crate::diagnostics::breadcrumbs::record("Evaluate", self.name.clone());
         let (m, shape, level) = self.fold(self.modifiers.len(), self.active_level);
         let m = Shared::new(m);
         self.level_mesh = match (&self.base, self.active_level) {

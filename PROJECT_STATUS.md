@@ -747,3 +747,49 @@ Known limits:
 - Constraints are one-shot, not a live solver. Moving a segment later does not keep it parallel.
 - Holes drill straight along each polygon's normal from its centroid. There is no click-to-place point yet, and each hole is a separate Boolean (dozens of holes on a dense mesh take a moment).
 - Loft sections are taken flat from each shape's own XY plane, about its pivot.
+
+## 24. Phase 12: Black-box flight recorder, crash reporter and emergency scene recovery
+
+The code is in `src/diagnostics/` and `src/ui/crash_dialog.rs`.
+
+- **Readable backtraces in release:** `[profile.release]` now uses `debug = "line-tables-only"` and `strip = false`, so backtraces keep `file:line`. `build.rs` stamps the git commit (`MINIMAX_GIT_SHA`) into the build.
+- **Flight recorder** (`breadcrumbs.rs`): a ring buffer of the last 50 events, each timed in seconds since start. It records:
+  - every `Action` run from a button or menu;
+  - every hotkey (chord and action);
+  - every Edit Poly op;
+  - every added modifier;
+  - every stack evaluation, with identical repeats folded into one `×n` line.
+  The UI's `Observer` (`state.rs`) adds tool changes, sub-object level changes, caddy opens and dialog opens. It also keeps a Markdown summary of the scene and selection current (every 0.5 s), and a scene snapshot for the emergency save (on each new undo step, or every 5 s). The snapshot is cheap because meshes are `Arc`-shared.
+- **Crash triggers** (`hook.rs`):
+  - **Panic hook:** captures the message, `file:line:col`, the thread name and a forced `Backtrace`. It then calls the previous hook, so the usual message still prints.
+  - **Unix signal handlers** (`SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE`, `SIGABRT`): these write the same report from a fresh reporter thread. That thread is needed because a fault may arrive on an exhausted stack. The handler then restores the previous handler. A real fault simply happens again; a signal that was sent (by `kill` or `abort`) is raised again. Either way the process ends as it would have (exit 139 for a segfault).
+  - Only the first crash is written.
+  - Every lock is taken with `try_lock`, so a crash while the recorder is busy still produces a report, with that section marked as unavailable.
+- **Report** (`report.rs`): written to `~/.local/share/minimax/crashes/crash_<YYYYMMDD-HHMMSS>.md`. A header gives the version, git sha, OS, kernel and GPU adapter (from `RenderAdapterInfo`). The sections are:
+  1. Crash Summary & Location
+  2. Last 50 User Actions
+  3. Active Scene & Selection State: object count, selection, sub-object level, tool, caddy, tab, the modifier stack with the active level marked, mesh counts, the last undo step and the scene file
+  4. MiniMax Stack Frames: only `minimax::` frames, excluding the reporter itself
+  5. Full Backtrace
+- **Emergency save and next-launch detection** (`recovery.rs`): writes `crash_recovery.mmax` next to the report, plus a `.pending` marker. On the next start, `detect_pending` shows the **MiniMax closed unexpectedly** dialog, with:
+  - `Copy Crash Report for Claude`
+  - `Restore Unsaved Scene (crash_recovery.mmax)` (it opens unsaved)
+  - `Open Crash Reports Folder` (xdg-open)
+  - `Dismiss / Clear` (this keeps the files)
+- **Help → View Crash Reports...** (`Action::CrashReports`) opens a window listing the reports, newest first, with a preview. From there you can copy a report, restore the scene, open the folder, use `Simulate Test Crash Report` (writes a real report and emergency save without crashing) or `Delete All Reports`.
+- **Help:** there is a new page, "16. Crash reports and recovery", with a screenshot (`crash`).
+- **Tests:** 8 tests in `src/diagnostics/tests.rs`:
+  - the ring buffer (cap of 50, oldest dropped, repeat folding);
+  - UTC date formatting;
+  - backtrace frame filtering;
+  - the five report sections, in order and with balanced fences;
+  - the bundle writing a loadable `.mmax` without overwriting a report from the same second;
+  - pending detection, dismiss and clear;
+  - the observer's change crumbs;
+  - the scene summary.
+- **Checked by hand:** I ran the app under Xvfb and sent `SIGSEGV`. The report and emergency scene were written, the process exited with 139, and the next launch showed the dialog.
+
+Known limits:
+- After a fatal signal (rather than a panic), the crashing thread's backtrace is not available. The report says so, and the breadcrumbs and scene state are still there.
+- The emergency scene is the last snapshot. It can be up to 5 s behind an edit that is still being dragged.
+- The signal handlers are Unix-only. On other systems only panics are recorded.
