@@ -9,6 +9,8 @@ pub mod maps;
 pub mod multi;
 pub mod patterns;
 pub mod presets;
+pub mod proc_engine;
+pub mod relief;
 pub mod preview;
 pub mod shading;
 #[cfg(test)]
@@ -119,6 +121,9 @@ pub struct Material {
     /// Multi/Sub-Object: sub-materials by polygon material ID.
     #[serde(default)]
     pub multi: Option<MultiSub>,
+    /// "Procedural Pattern & Weathering" rollout (inactive with no pattern).
+    #[serde(default)]
+    pub proc: proc_engine::ProcSurface,
 }
 
 impl Default for Material {
@@ -142,6 +147,7 @@ impl Default for Material {
             slate_nodes: vec![],
             show_in_viewport: true,
             multi: None,
+            proc: Default::default(),
         }
     }
 }
@@ -157,6 +163,15 @@ impl Material {
 
     pub fn map_mut(&mut self, ch: MapChannel) -> &mut MapSlot {
         &mut self.maps[ch as usize]
+    }
+
+    /// Picks a procedural pattern and style (one click): the style's
+    /// colours, gap and bevel, plus its roughness and metalness.
+    pub fn set_pattern(&mut self, pattern: proc_engine::Pattern, style: u8) {
+        self.proc.restyle(pattern, style);
+        if let Some(s) = self.proc.style_def() {
+            (self.roughness, self.metallic) = (s.rough, s.metal);
+        }
     }
 
     /// Slot whose map is active (enabled with a node).

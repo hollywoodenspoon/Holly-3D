@@ -126,6 +126,7 @@ pub(super) fn build_mesh(t: &crate::mesh::triangulate::TriMesh) -> Mesh {
     m.insert_attribute(Mesh::ATTRIBUTE_POSITION, t.positions.clone());
     m.insert_attribute(Mesh::ATTRIBUTE_NORMAL, t.normals.clone());
     m.insert_attribute(Mesh::ATTRIBUTE_UV_0, t.uvs.clone());
+    m.insert_attribute(Mesh::ATTRIBUTE_TANGENT, super::tangents::tangents(t));
     // Vertex colors are authored in sRGB; Bevy expects linear.
     let lin = crate::materials::shading::srgb_to_linear;
     let colors: Vec<[f32; 4]> = t.colors.iter().map(|c| [lin(c[0]), lin(c[1]), lin(c[2]), c[3]]).collect();

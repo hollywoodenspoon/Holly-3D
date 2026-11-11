@@ -21,6 +21,26 @@ pub struct Preferences {
     pub assets: AssetPrefs,
 }
 
+/// The interface font (Preferences > Theme).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum UiFont {
+    /// Fira Code, built into the program.
+    #[default]
+    FiraCode,
+    /// egui's own proportional font.
+    Classic,
+}
+
+impl UiFont {
+    pub const ALL: [UiFont; 2] = [UiFont::FiraCode, UiFont::Classic];
+    pub fn label(self) -> &'static str {
+        match self {
+            UiFont::FiraCode => "Fira Code (default)",
+            UiFont::Classic => "Classic (proportional)",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ThemePrefs {
@@ -31,11 +51,13 @@ pub struct ThemePrefs {
     pub ui_scale: f32,
     /// Body text size in points.
     pub font_size: f32,
+    /// The interface font.
+    pub font: UiFont,
 }
 
 impl Default for ThemePrefs {
     fn default() -> Self {
-        Self { preset: ThemePreset::SlateAmber, custom: Palette::default(), ui_scale: 1.0, font_size: 12.5 }
+        Self { preset: ThemePreset::SlateAmber, custom: Palette::default(), ui_scale: 1.0, font_size: 11.5, font: UiFont::FiraCode }
     }
 }
 

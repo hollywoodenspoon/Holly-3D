@@ -1,7 +1,8 @@
 //! Optional Slate node view: map nodes wired into the material's channel
-//! sockets. Drag from a node's output socket onto a channel (or onto a Color
-//! Correction input) to wire it; drop on empty canvas to unwire. Right-click
-//! the canvas to add nodes.
+//! sockets. Drag from a node's output socket onto a channel (or onto an
+//! input socket of a Color Correction, Levels, Height Blend, Slope Blur or
+//! Normal From Height node) to wire it; drop on empty canvas to unwire.
+//! Right-click the canvas to add nodes.
 
 use super::edit;
 use super::maps::node_params;
@@ -21,8 +22,8 @@ const INSPECTOR_H: f32 = 150.0;
 pub enum NodeRef {
     /// Node feeding a material channel.
     Wired(usize),
-    /// Input of the Color Correction node on a channel.
-    Input(usize),
+    /// Input socket `.1` of the node on channel `.0`.
+    Input(usize, usize),
     /// Unwired node on the canvas.
     Free(usize),
 }
@@ -37,29 +38,26 @@ pub struct SlateState {
 fn node_mut(m: &mut Material, r: NodeRef) -> Option<&mut MapNode> {
     match r {
         NodeRef::Wired(c) => m.maps[c].node.as_mut(),
-        NodeRef::Input(c) => match m.maps[c].node.as_mut() {
-            Some(MapNode::ColorCorrect { input, .. }) => Some(input),
-            _ => None,
-        },
+        NodeRef::Input(c, i) => m.maps[c].node.as_mut().and_then(|n| n.inputs_mut().into_iter().nth(i).map(|(_, n)| n)),
         NodeRef::Free(i) => m.slate_nodes.get_mut(i),
     }
 }
 
-/// Removes a node from where it sits (Color Correction inputs are copied:
-/// the corrector always keeps an input).
+/// Removes a node from where it sits (inputs are copied: a socket always
+/// keeps a map).
 fn take(m: &mut Material, r: NodeRef) -> Option<MapNode> {
     match r {
         NodeRef::Wired(c) => m.maps[c].node.take(),
-        NodeRef::Input(_) => node_mut(m, r).cloned(),
+        NodeRef::Input(..) => node_mut(m, r).cloned(),
         NodeRef::Free(i) => (i < m.slate_nodes.len()).then(|| m.slate_nodes.remove(i)),
     }
 }
 
-/// Drop targets: material channel sockets or a corrector's input socket.
+/// Drop targets: material channel sockets or a wired node's input socket.
 #[derive(Clone, Copy, PartialEq)]
 enum Target {
     Channel(usize),
-    CorrectorInput(usize),
+    Input(usize, usize),
 }
 
 /// Rewires `src` into `dst`; displaced nodes go back on the canvas.
@@ -75,11 +73,11 @@ fn wire(m: &mut Material, src: NodeRef, dst: Option<Target>) {
     let Some(node) = take(m, src) else { return };
     let old = match dst {
         Some(Target::Channel(c)) => m.maps[c].node.replace(node),
-        Some(Target::CorrectorInput(c)) => match m.maps[c].node.as_mut() {
-            Some(MapNode::ColorCorrect { input, .. }) => Some(std::mem::replace(&mut **input, node)),
-            _ => Some(node),
+        Some(Target::Input(c, i)) => match m.maps[c].node.as_mut().and_then(|n| n.inputs_mut().into_iter().nth(i)) {
+            Some((_, input)) => Some(std::mem::replace(input, node)),
+            None => Some(node),
         },
-        None if matches!(src, NodeRef::Input(_)) => None,
+        None if matches!(src, NodeRef::Input(..)) => None,
         None => Some(node),
     };
     m.slate_nodes.extend(old);
@@ -97,6 +95,10 @@ impl Layout {
     fn rect(&self, r: NodeRef) -> Option<Rect> {
         self.nodes.iter().find(|(k, _)| *k == r).map(|(_, rc)| *rc)
     }
+    /// Input socket `i` of `count` on the left edge of the node on channel `c`.
+    fn input_socket(&self, c: usize, i: usize, count: usize) -> Option<Pos2> {
+        self.rect(NodeRef::Wired(c)).map(|rc| pos2(rc.left(), rc.top() + rc.height() * (i + 1) as f32 / (count + 1) as f32))
+    }
 }
 
 fn layout(m: &Material, canvas: Rect, st: &SlateState) -> Layout {
@@ -111,10 +113,12 @@ fn layout(m: &Material, canvas: Rect, st: &SlateState) -> Layout {
     for c in 0..6 {
         let y = (mat.top() + 30.0 + c as f32 * ROW + ROW * 0.5 - NODE.y * 0.5).max(next_y);
         if let Some(n) = &m.maps[c].node {
-            next_y = y + NODE.y + 6.0;
+            // Its inputs stack to its left.
+            let inputs = n.input_count();
+            next_y = y + inputs.max(1) as f32 * (NODE.y + 6.0);
             put(NodeRef::Wired(c), pos2(mat.left() - NODE.x - 40.0, y));
-            if matches!(n, MapNode::ColorCorrect { .. }) {
-                put(NodeRef::Input(c), pos2(mat.left() - 2.0 * NODE.x - 70.0, y));
+            for i in 0..inputs {
+                put(NodeRef::Input(c, i), pos2(mat.left() - 2.0 * NODE.x - 70.0, y + i as f32 * (NODE.y + 6.0)));
             }
         }
     }
@@ -162,9 +166,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
         let out = pos2(rect.right(), rect.center().y);
         match r {
             NodeRef::Wired(c) => wire_curve(&p, out, lay.socket(c), theme::amber()),
-            NodeRef::Input(c) => {
-                if let Some(cc) = lay.rect(NodeRef::Wired(c)) {
-                    wire_curve(&p, out, pos2(cc.left(), cc.center().y), theme::blue());
+            NodeRef::Input(c, i) => {
+                let count = m.maps[c].node.as_ref().map_or(1, |n| n.input_count());
+                if let Some(socket) = lay.input_socket(c, i, count) {
+                    wire_curve(&p, out, socket, theme::blue());
                 }
             }
             NodeRef::Free(_) => {}
@@ -175,13 +180,16 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
     for &(r, rect) in &lay.nodes {
         let Some(n) = node_mut(&mut m2, r) else { continue };
         let sub = match r {
-            NodeRef::Free(_) => "unwired",
-            NodeRef::Input(_) => "into Color Correction",
-            NodeRef::Wired(c) => MapChannel::ALL[c].label(),
+            NodeRef::Free(_) => "unwired".to_string(),
+            NodeRef::Input(c, _) => format!("into {}", m.maps[c].node.as_ref().map_or("", |n| n.kind_name())),
+            NodeRef::Wired(c) => MapChannel::ALL[c].label().to_string(),
         };
-        draw_node(&p, rect, n.kind_name(), sub, st.selected == Some(r), true);
-        if matches!(n, MapNode::ColorCorrect { .. }) {
-            p.circle_filled(pos2(rect.left(), rect.center().y), 5.0, theme::blue());
+        draw_node(&p, rect, n.kind_name(), &sub, st.selected == Some(r), true);
+        if let NodeRef::Wired(c) = r {
+            let count = n.input_count();
+            for socket in (0..count).filter_map(|i| lay.input_socket(c, i, count)) {
+                p.circle_filled(socket, 5.0, theme::blue());
+            }
         }
         // One widget per node: a drag that starts on the right-hand output
         // strip pulls a wire, anywhere else moves the node.
@@ -204,12 +212,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
             let near = |q: Pos2| q.distance(at) < 14.0;
             let mut dst = (0..6).find(|&c| near(lay.socket(c))).map(Target::Channel);
             if dst.is_none() {
-                dst = (0..6)
-                    .find(|&c| {
-                        matches!(m.maps[c].node, Some(MapNode::ColorCorrect { .. }))
-                            && lay.rect(NodeRef::Wired(c)).is_some_and(|rc| near(pos2(rc.left(), rc.center().y)))
-                    })
-                    .map(Target::CorrectorInput);
+                dst = (0..6).find_map(|c| {
+                    let count = m.maps[c].node.as_ref().map_or(0, |n| n.input_count());
+                    (0..count).find(|&i| lay.input_socket(c, i, count).is_some_and(near)).map(|i| Target::Input(c, i))
+                });
             }
             action = Some((src, dst));
         }
@@ -260,7 +266,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SlateState) {
         };
         ui.horizontal(|ui| {
             ui.label(RichText::new("Selected Node").strong());
-            if !matches!(sel, NodeRef::Input(_)) && ui.button("🗑 Delete Node").clicked() {
+            if !matches!(sel, NodeRef::Input(..)) && ui.button("🗑 Delete Node").clicked() {
                 delete = Some(sel);
             }
         });
@@ -294,7 +300,7 @@ mod tests {
         assert_eq!(m.maps[0].node.as_ref().unwrap().kind_name(), "Color Correction");
         assert_eq!(m.slate_nodes.len(), 1);
         // Feed the checker into the corrector's input.
-        wire(&mut m, NodeRef::Free(0), Some(Target::CorrectorInput(0)));
+        wire(&mut m, NodeRef::Free(0), Some(Target::Input(0, 0)));
         let Some(MapNode::ColorCorrect { input, .. }) = &m.maps[0].node else { panic!() };
         assert_eq!(input.kind_name(), "Checker");
         assert_eq!(m.slate_nodes.len(), 1, "the default noise input is displaced");
@@ -302,6 +308,14 @@ mod tests {
         wire(&mut m, NodeRef::Wired(0), None);
         assert!(m.maps[0].node.is_none());
         assert_eq!(m.slate_nodes.len(), 2);
+        // A Height Blend has three sockets; a node dropped on the third lands there.
+        m.slate_nodes.push(MapNode::new_kind(12, None));
+        wire(&mut m, NodeRef::Free(2), Some(Target::Channel(1)));
+        assert_eq!(m.maps[1].node.as_ref().unwrap().input_count(), 3);
+        wire(&mut m, NodeRef::Free(0), Some(Target::Input(1, 2)));
+        let Some(MapNode::HeightBlend { height, .. }) = &m.maps[1].node else { panic!() };
+        assert_eq!(height.kind_name(), "Noise", "the displaced default noise went into the Height socket");
+        assert!(node_mut(&mut m, NodeRef::Input(1, 2)).is_some() && node_mut(&mut m, NodeRef::Input(1, 3)).is_none());
         // Moving a wired node onto another channel.
         wire(&mut m, NodeRef::Free(1), Some(Target::Channel(2)));
         wire(&mut m, NodeRef::Wired(2), Some(Target::Channel(4)));

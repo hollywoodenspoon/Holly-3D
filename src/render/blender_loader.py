@@ -30,6 +30,36 @@ def rgba(c):
     return (c[0], c[1], c[2], 1.0)
 
 
+def image_node(nt, path, colorspace):
+    """An Image Texture node for a baked map (None when there is no map)."""
+    if not path:
+        return None
+    node = nt.nodes.new("ShaderNodeTexImage")
+    node.image = bpy.data.images.load(path)
+    node.image.colorspace_settings.name = colorspace
+    return node
+
+
+def link_textures(nt, sh, tex):
+    """Wires baked base colour, roughness / metallic and normal maps into the BSDF."""
+    base = image_node(nt, tex.get("base"), "sRGB")
+    if base:
+        nt.links.new(base.outputs["Color"], sh.inputs["Base Color"])
+        nt.links.new(base.outputs["Alpha"], sh.inputs["Alpha"])
+    orm = image_node(nt, tex.get("orm"), "Non-Color")
+    if orm:
+        # glTF layout: G = roughness, B = metallic (R = cavity AO, which Cycles traces itself).
+        sep = nt.nodes.new("ShaderNodeSeparateColor")
+        nt.links.new(orm.outputs["Color"], sep.inputs["Color"])
+        nt.links.new(sep.outputs["Green"], sh.inputs["Roughness"])
+        nt.links.new(sep.outputs["Blue"], sh.inputs["Metallic"])
+    normal = image_node(nt, tex.get("normal"), "Non-Color")
+    if normal:
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nt.links.new(normal.outputs["Color"], nm.inputs["Color"])
+        nt.links.new(nm.outputs["Normal"], sh.inputs["Normal"])
+
+
 # --- Materials -------------------------------------------------------------
 mats = []
 for i, m in enumerate(cfg["materials"]):
@@ -54,6 +84,10 @@ for i, m in enumerate(cfg["materials"]):
         set_input(sh, ["Emission Color", "Emission"], rgba(m["emission"]))
         set_input(sh, ["Emission Strength"], 1.0)
         nt.links.new(sh.outputs["BSDF"], out.inputs["Surface"])
+        try:
+            link_textures(nt, sh, m.get("textures") or {})
+        except Exception as e:  # a render without maps beats no render
+            print("MiniMax: textures skipped:", e)
     mats.append(mat)
 
 # --- Meshes ----------------------------------------------------------------
@@ -73,6 +107,9 @@ for k, g in enumerate(cfg["meshes"]):
         me.normals_split_custom_set(normals)
     except Exception as e:  # custom normals are a nicety
         print("MiniMax: custom normals skipped:", e)
+    uvs = g.get("uvs")
+    if uvs and len(uvs) == len(faces) * 6:
+        me.uv_layers.new(name="UVMap").data.foreach_set("uv", uvs)
     me.materials.append(mats[g["mat"]])
     ob = bpy.data.objects.new("obj%d_%d" % (g["obj"], k), me)
     scene.collection.objects.link(ob)

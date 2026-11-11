@@ -591,3 +591,52 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - loading an item is undoable, and favourites toggle.
 - **Checked in the running app:** swatches render for every category, and the shelves, search and click-to-load work.
 - **Next (PR 5b):** World / Triplanar mapping, and the CC0 asset downloader (Poly Haven 1K photo textures, low-poly and realistic model packs) in Preferences → Assets.
+
+## 20. PR 5.5: MaterialCraft procedural engine, Pattern & Weathering rollout, Fira Code
+
+- **Procedural engine (`src/materials/proc_engine/`), ported from MaterialCraft (MIT / Apache-2.0):**
+  - **Tileable lattice noise** (`lattice.rs`): integer hashing, value, Perlin, fractal, ridged and cellular noise. Counts are whole numbers, so every pattern repeats seamlessly at any resolution.
+  - **20 generators** (`generators.rs`, `masonry.rs`, `voronoi.rs`, `fibers.rs`), each with four knobs and a random id per tile:
+    - masonry: running-bond bricks, stack-bond tiles, herringbone, medieval coursed stone, planks;
+    - Voronoi: cobbles, rock plates / flagstones, warped cracks with branches, crackle, cells, asphalt aggregate;
+    - directional: anisotropic wood grain, brushed metal, diamond plate, weave, chainmail, carbon-fibre twill, scratches;
+    - fractal and ridged noise.
+  - **Adjustments and filters** (`adjust.rs`, `filters.rs`): Levels, Height Blend, Slope Blur, Normal From Height (5 × 5 Sobel-like kernel) and cavity AO.
+  - **Weathering** (`weather.rs`): edge wear (slope-blurred), cavity dirt and moss (height-blended into low places first), scorch (rust on metal), wetness with level puddles.
+  - **Content-addressed cache** (`cache.rs`, `node_key.rs`): a key hashes everything that decides a result. Equal work is cooked once, an edit makes a new key, and old results leave a byte-bounded LRU (256 MB).
+  - **Background worker** (`worker.rs`): the viewport and sample slots keep the previous look while a worker thread cooks the new maps; generators and filters run on all cores. F9 renders wait for the maps.
+- **Compact Material Editor: "Procedural Pattern & Weathering" rollout** (first rollout, on every Standard material and every Multi/Sub-Object sub-material):
+  - **Pattern:** None, Bricks & Masonry, Cobblestone & Flagstone, Voronoi Rock & Cracks, Wood Planks & Grain, Weave / Chainmail / Fabric, Brushed / Diamond Metal, Asphalt & Road Markings, Terrain Grass / Dirt / Moss.
+  - **Style** within the pattern (23 in total, e.g. Herringbone Paving, Chainmail, Asphalt + Dashed Yellow Line). One click sets its colours, gap, bevel, roughness and metalness.
+  - **Spinners:** Tiling / Scale, Seed with a 🎲 button, Gap / Mortar Width, Gap / Bevel Depth, Color Variation, Surface Relief, plus Surface and Gap colours.
+  - **Live Weathering sliders (0–100 %):** Edge Wear / Chipping, Cavity Dirt / Grunge, Moss / Overgrowth, Scorch / Burn / Rust, Wetness / Puddles.
+  - **Auto-Derive Normal, Roughness & Cavity AO** checkbox.
+- **Normal maps and AO now render.** Before this PR the Bump / Normal slot had no effect anywhere.
+  - **F9 raytracer and sample slots:** shading normals are tilted in the triangle's UV frame; AO darkens ambient light.
+  - **Viewport:** baked normal and occlusion textures, with per-vertex tangents on every mesh.
+  - **Cycles via Blender:** base colour, roughness / metallic and normal maps are written as PNGs and wired into the Principled BSDF; meshes now export UVs. This covers every map type, not only the new ones. Not run against a real Blender in this session (none installed); the JSON, the PNGs and the loader script are tested.
+  - A height map on the Bump slot is turned into normals; a Normal From Height node on the slot is used as a normal map.
+- **Maps rollout and Slate view:**
+  - Five new map kinds on any channel: **Tileable Pattern** (all 20 generators), **Levels** (with a histogram of its input), **Height Blend**, **Slope Blur**, **Normal From Height**.
+  - Nodes with inputs show each socket with its own map picker and parameters, in both Compact and Slate (the two views share one parameter editor).
+  - Slate draws and wires up to three input sockets per node. Inputs nested deeper than one level are edited in the inspector, not as separate canvas nodes.
+- **Material Library:** new category **Weathered Surfaces (Procedural)** with 32 presets (Mossy Brick Wall, Wet Cobblestone Street, Rusty Diamond Plate, Charred Timber Planks...). The library now has 313 materials in 16 categories.
+- **Fira Code is the default interface font** (proportional and monospace; bold for headings):
+  - Built into the program from `assets/fonts/` (release 5.2). egui's fonts stay behind it as fallbacks, so emoji and icons still draw.
+  - Preferences → Theme has a **Font** dropdown: Fira Code (default) or Classic (proportional). Font size scaling works as before.
+  - The default font size went from 12.5 pt to 11.5 pt, since Fira Code is wider. Saved preferences keep their own size.
+- **Credits and licences:** Help → Credits credits MaterialCraft (MIT / Apache-2.0) and Fira Code (OFL-1.1). The licence texts are in `licenses/`.
+- **Help:** the Materials page has a Procedural Pattern & Weathering section with a screenshot. The other screenshots were taken before the font change.
+- **Tests (402 in total, 33 new):**
+  - every lattice noise and every generator tiles seamlessly and stays in 0..1;
+  - normals lean away from rising height, flat heights give flat normals, cavities are occluded;
+  - each weathering slider changes the surface its own way (moss fills gaps first, rust is not metal, puddles are glossy);
+  - recipes and map nodes are content-addressed: equal keys cook once, any edit changes the key, filters share baked inputs;
+  - the worker cooks in the background until the maps are ready;
+  - Compact-mode edits: picking a pattern is one undo step, fills base colour / roughness / AO / normal, and weathering survives a style change;
+  - tangents follow U and their sign follows V; the Blender export writes its PNGs;
+  - Fira Code is first in every font family, is monospaced, and icons still draw.
+- **Checked in the running app:** the rollout, the brick pattern with moss on a box in the viewport, the sample slot, and the Fira Code interface. A contact sheet of eight weathered presets showed relief, AO, puddles and rust as intended.
+- **Not done:**
+  - **World / Triplanar mapping and the CC0 asset downloader (PR 5b).** The Poly Haven hosts are blocked in this session's network, so the downloader could not be tested.
+  - The older Help screenshots were not re-captured with the new font.

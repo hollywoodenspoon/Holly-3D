@@ -10,6 +10,7 @@ pub mod command;
 pub mod env_dialog;
 pub mod explorer;
 pub mod file_menu;
+pub mod fonts;
 pub mod help;
 pub mod hotkeys;
 pub mod material_editor;
@@ -63,7 +64,13 @@ pub struct UiState {
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
     let ctx = contexts.ctx_mut()?.clone();
     let want = (ed.prefs.theme.clone(), ed.prefs.viewport.clone());
-    if st.themed.as_ref() != Some(&want) {
+    if fonts::installed(&ctx) != Some(want.0.font) {
+        // egui loads new fonts at the start of the next frame; the theme (which
+        // names the bold face) is applied then.
+        fonts::install(&ctx, want.0.font);
+        st.themed = None;
+        ctx.request_repaint();
+    } else if st.themed.as_ref() != Some(&want) {
         let first = st.themed.is_none();
         theme::apply(&ctx, &want.0, &want.1);
         st.themed = Some(want);

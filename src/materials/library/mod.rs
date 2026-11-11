@@ -1,12 +1,13 @@
-//! The Material Library: about 280 one-click materials in categories
+//! The Material Library: over 300 one-click materials in categories
 //! (ground, roads, walls, roofs, metals, wood, stone, glass, plastic,
-//! fabric, nature, glow, toon, sci-fi). Each is a short spec built into a
+//! fabric, nature, glow, toon, sci-fi, weathered procedural surfaces). Each is a short spec built into a
 //! full [`Material`] with procedural maps, so they all work with no files.
 
 mod build;
 mod ground;
 mod hard;
 mod soft;
+mod weathered;
 #[cfg(test)]
 mod tests;
 
@@ -31,10 +32,12 @@ pub enum Category {
     Glow,
     Toon,
     SciFi,
+    /// Built with the Procedural Pattern & Weathering rollout.
+    Weathered,
 }
 
 impl Category {
-    pub const ALL: [Category; 15] = [
+    pub const ALL: [Category; 16] = [
         Category::Classic,
         Category::Ground,
         Category::Roads,
@@ -50,6 +53,7 @@ impl Category {
         Category::Glow,
         Category::Toon,
         Category::SciFi,
+        Category::Weathered,
     ];
 
     pub fn label(self) -> &'static str {
@@ -69,12 +73,13 @@ impl Category {
             Category::Glow => "Glow / Emissive",
             Category::Toon => "Toon & Stylised",
             Category::SciFi => "Sci-Fi",
+            Category::Weathered => "Weathered Surfaces (Procedural)",
         }
     }
 
     fn specs(self) -> &'static [Spec] {
         match self {
-            Category::Classic => &[],
+            Category::Classic | Category::Weathered => &[],
             Category::Ground => ground::GROUND,
             Category::Roads => ground::ROADS,
             Category::Walls => build::WALLS,
@@ -96,17 +101,20 @@ impl Category {
     pub fn items(self) -> Vec<Item> {
         match self {
             Category::Classic => Preset::ALL.into_iter().map(Item::Classic).collect(),
+            Category::Weathered => weathered::WEATHERED.iter().map(Item::Proc).collect(),
             c => c.specs().iter().map(Item::Lib).collect(),
         }
     }
 }
 
 /// One library material.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy)]
 pub enum Item {
     /// The original seven Quick Presets.
     Classic(Preset),
     Lib(&'static Spec),
+    /// A procedural pattern with weathering.
+    Proc(&'static weathered::ProcSpec),
 }
 
 impl Item {
@@ -114,6 +122,7 @@ impl Item {
         match self {
             Item::Classic(p) => p.label(),
             Item::Lib(s) => s.name,
+            Item::Proc(s) => s.name,
         }
     }
 
@@ -121,6 +130,7 @@ impl Item {
         match self {
             Item::Classic(p) => p.material(),
             Item::Lib(s) => s.material(),
+            Item::Proc(s) => s.material(),
         }
     }
 }

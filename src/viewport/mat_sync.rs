@@ -1,7 +1,7 @@
 //! Scene materials -> Bevy `StandardMaterial`s: bakes map textures once per
 //! material change and builds per-object PBR / transmission / unlit looks.
 
-use crate::materials::bake::{BAKE_SIZE, bake_base, bake_emissive, bake_metal_rough, direct_base};
+use crate::materials::bake::{BAKE_SIZE, bake_base, bake_emissive, bake_metal_rough, bake_normal, direct_base};
 use crate::materials::shading::lin3;
 use crate::materials::{MatId, Material, ShadingModel, Texture};
 use bevy::asset::RenderAssetUsages;
@@ -16,6 +16,10 @@ pub struct MatTextures {
     pub base: Option<Handle<Image>>,
     pub metal_rough: Option<Handle<Image>>,
     pub emissive: Option<(Handle<Image>, f32)>,
+    /// Tangent-space normal map (Bump map or procedural relief).
+    pub normal: Option<Handle<Image>>,
+    /// Cavity AO: the metal-rough texture's red channel, when it carries one.
+    pub occlusion: Option<Handle<Image>>,
 }
 
 struct Entry {
@@ -64,14 +68,17 @@ pub fn to_image(t: &Texture, srgb: bool) -> Image {
 }
 
 fn bake_all(m: &Material, images: &mut Assets<Image>) -> MatTextures {
-    let base = match direct_base(m) {
-        Some(h) => Some(to_image(&h.tex, true)),
-        None => bake_base(m, BAKE_SIZE).map(|t| to_image(&t, true)),
-    };
+    let base = direct_base(m).map(|h| to_image(&h.tex, true));
+    // Procedural surfaces are cooked at a higher resolution than plain map bakes.
+    let size = if m.proc.active() { crate::materials::proc_engine::surface::COOK_SIZE } else { BAKE_SIZE };
+    let base = base.or_else(|| bake_base(m, size).map(|t| to_image(&t, true)));
+    let metal_rough = bake_metal_rough(m, size).map(|t| images.add(to_image(&t, false)));
     MatTextures {
         base: base.map(|i| images.add(i)),
-        metal_rough: bake_metal_rough(m, BAKE_SIZE).map(|t| images.add(to_image(&t, false))),
+        occlusion: metal_rough.clone().filter(|_| m.proc.active() && m.proc.auto_pbr),
+        metal_rough,
         emissive: bake_emissive(m, BAKE_SIZE).map(|(t, peak)| (images.add(to_image(&t, true)), peak)),
+        normal: bake_normal(m, size).map(|t| images.add(to_image(&t, false))),
     }
 }
 
@@ -83,6 +90,10 @@ pub fn sync_material_cache(editor: Res<crate::editor::Editor>, mut cache: ResMut
     for id in used {
         let m = &lib.mats[id];
         if cache.entries.get(&id).is_some_and(|e| e.mat == *m) {
+            continue;
+        }
+        // Procedural maps cook on a worker thread; keep the old look until they are ready.
+        if !crate::materials::proc_engine::worker::ready(m) {
             continue;
         }
         let tex = bake_all(m, &mut images);
@@ -114,6 +125,8 @@ pub fn standard(m: &Material, tex: &MatTextures, see_through: bool) -> StandardM
         metallic: if tex.metal_rough.is_some() { 1.0 } else { m.metallic },
         perceptual_roughness: if tex.metal_rough.is_some() { 1.0 } else { m.roughness.max(0.02) },
         metallic_roughness_texture: tex.metal_rough.clone(),
+        normal_map_texture: tex.normal.clone(),
+        occlusion_texture: tex.occlusion.clone(),
         emissive,
         emissive_texture,
         double_sided: true,

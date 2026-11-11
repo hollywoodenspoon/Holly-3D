@@ -2,6 +2,7 @@
 //! built-in CPU raytracer and the Cycles standalone bridge.
 
 pub mod blender;
+pub mod blender_tex;
 pub mod bvh;
 mod bvh_wide;
 pub mod cycles;

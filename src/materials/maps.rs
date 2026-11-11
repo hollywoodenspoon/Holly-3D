@@ -2,6 +2,7 @@
 //! them (also the nodes shown in the Slate view).
 
 use super::patterns::{self as pat, BrickKind, GrungeKind};
+use super::proc_engine::{TileKind, adjust, generators, node_key};
 use super::texture::TexHandle;
 use bevy::math::{Vec2, Vec3, Vec4};
 use noise::{Fbm, NoiseFn, Perlin, Worley};
@@ -81,28 +82,91 @@ pub enum MapNode {
     Cracks { scale: f32, width: f32, vary: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },
     /// Dirt, rust, scratches and stains (3D). A = clean, B = dirt.
     Grunge { kind: GrungeKind, scale: f32, amount: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },
+    /// Tileable generator on the whole-number lattice (UV space); the four
+    /// knobs mean what `TileKind::knobs` says. A = low, B = high.
+    Tile { kind: TileKind, scale: f32, detail: f32, width: f32, warp: f32, seed: u32, color_a: [f32; 3], color_b: [f32; 3] },
+    /// Remaps the input range, midtone and output range.
+    Levels { input: Box<MapNode>, in_low: f32, in_mid: f32, in_high: f32, out_low: f32, out_high: f32 },
+    /// `top` over `bottom` wherever a layer at `level` stands above the
+    /// `height` map, so it fills low places first.
+    HeightBlend { top: Box<MapNode>, bottom: Box<MapNode>, height: Box<MapNode>, level: f32, contrast: f32 },
+    /// Smears `input` downhill along the slopes of `slope`.
+    SlopeBlur { input: Box<MapNode>, slope: Box<MapNode>, intensity: f32, samples: u32 },
+    /// Tangent-space normal map of the `input` height map.
+    NormalFromHeight { input: Box<MapNode>, intensity: f32 },
 }
 
 impl MapNode {
-    pub const KINDS: [&'static str; 10] =
-        ["Bitmap", "Noise", "Checker", "Gradient Ramp", "Wood", "Color Correction", "Bricks / Tiles", "Stripes", "Cracks / Voronoi", "Grunge / Wear"];
+    pub const KINDS: [&'static str; 15] = [
+        "Bitmap",
+        "Noise",
+        "Checker",
+        "Gradient Ramp",
+        "Wood",
+        "Color Correction",
+        "Bricks / Tiles",
+        "Stripes",
+        "Cracks / Voronoi",
+        "Grunge / Wear",
+        "Tileable Pattern",
+        "Levels",
+        "Height Blend",
+        "Slope Blur",
+        "Normal From Height",
+    ];
 
-    pub fn kind_name(&self) -> &'static str {
+    /// Index of this node's kind in [`Self::KINDS`].
+    pub fn kind_index(&self) -> usize {
         match self {
-            MapNode::Bitmap { .. } => Self::KINDS[0],
-            MapNode::Noise { .. } => Self::KINDS[1],
-            MapNode::Checker { .. } => Self::KINDS[2],
-            MapNode::Gradient { .. } => Self::KINDS[3],
-            MapNode::Wood { .. } => Self::KINDS[4],
-            MapNode::ColorCorrect { .. } => Self::KINDS[5],
-            MapNode::Bricks { .. } => Self::KINDS[6],
-            MapNode::Stripes { .. } => Self::KINDS[7],
-            MapNode::Cracks { .. } => Self::KINDS[8],
-            MapNode::Grunge { .. } => Self::KINDS[9],
+            MapNode::Bitmap { .. } => 0,
+            MapNode::Noise { .. } => 1,
+            MapNode::Checker { .. } => 2,
+            MapNode::Gradient { .. } => 3,
+            MapNode::Wood { .. } => 4,
+            MapNode::ColorCorrect { .. } => 5,
+            MapNode::Bricks { .. } => 6,
+            MapNode::Stripes { .. } => 7,
+            MapNode::Cracks { .. } => 8,
+            MapNode::Grunge { .. } => 9,
+            MapNode::Tile { .. } => 10,
+            MapNode::Levels { .. } => 11,
+            MapNode::HeightBlend { .. } => 12,
+            MapNode::SlopeBlur { .. } => 13,
+            MapNode::NormalFromHeight { .. } => 14,
         }
     }
 
-    /// A new node of `KINDS[i]` (Color Correction wraps `input`).
+    pub fn kind_name(&self) -> &'static str {
+        Self::KINDS[self.kind_index()]
+    }
+
+    /// A Tileable Pattern node of `kind` with its default knobs.
+    pub fn tile(kind: TileKind, color_a: [f32; 3], color_b: [f32; 3]) -> MapNode {
+        let k = kind.defaults();
+        MapNode::Tile { kind, scale: k[0], detail: k[1], width: k[2], warp: k[3], seed: 0, color_a, color_b }
+    }
+
+    /// The nodes wired into this one, with their socket names.
+    pub fn inputs_mut(&mut self) -> Vec<(&'static str, &mut MapNode)> {
+        match self {
+            MapNode::ColorCorrect { input, .. } | MapNode::Levels { input, .. } | MapNode::NormalFromHeight { input, .. } => vec![("Input", &mut **input)],
+            MapNode::HeightBlend { top, bottom, height, .. } => vec![("Top", &mut **top), ("Bottom", &mut **bottom), ("Height", &mut **height)],
+            MapNode::SlopeBlur { input, slope, .. } => vec![("Input", &mut **input), ("Slope", &mut **slope)],
+            _ => vec![],
+        }
+    }
+
+    /// How many input sockets this kind of node has.
+    pub fn input_count(&self) -> usize {
+        match self {
+            MapNode::ColorCorrect { .. } | MapNode::Levels { .. } | MapNode::NormalFromHeight { .. } => 1,
+            MapNode::SlopeBlur { .. } => 2,
+            MapNode::HeightBlend { .. } => 3,
+            _ => 0,
+        }
+    }
+
+    /// A new node of `KINDS[i]` (Color Correction and the filters wrap `input`).
     pub fn new_kind(i: usize, input: Option<MapNode>) -> MapNode {
         let (w, k) = ([1.0, 1.0, 1.0], [0.0, 0.0, 0.0]);
         match i {
@@ -124,6 +188,20 @@ impl MapNode {
             7 => MapNode::Stripes { count: 1.0, width: 0.06, dash: 0.0, soft: false, along_u: false, color_a: w, color_b: [0.12; 3] },
             8 => MapNode::Cracks { scale: 3.0, width: 0.06, vary: 0.2, seed: 0, color_a: [0.6, 0.48, 0.34], color_b: [0.12, 0.09, 0.07] },
             9 => MapNode::Grunge { kind: GrungeKind::Dirt, scale: 2.0, amount: 0.4, seed: 0, color_a: w, color_b: [0.3, 0.25, 0.2] },
+            10 => MapNode::tile(TileKind::Bricks, [0.0; 3], w),
+            11..=14 => {
+                let bricks = || MapNode::tile(TileKind::Bricks, [0.0; 3], w);
+                let input = Box::new(input.unwrap_or_else(bricks));
+                match i {
+                    11 => MapNode::Levels { input, in_low: 0.0, in_mid: 0.5, in_high: 1.0, out_low: 0.0, out_high: 1.0 },
+                    12 => {
+                        let moss = MapNode::tile(TileKind::Fbm, [0.14, 0.24, 0.07], [0.32, 0.42, 0.13]);
+                        MapNode::HeightBlend { top: Box::new(moss), height: input.clone(), bottom: input, level: 0.35, contrast: 0.8 }
+                    }
+                    13 => MapNode::SlopeBlur { slope: input.clone(), input, intensity: 8.0, samples: 12 },
+                    _ => MapNode::NormalFromHeight { input, intensity: 1.0 },
+                }
+            }
             _ => MapNode::ColorCorrect {
                 input: Box::new(input.unwrap_or_else(|| MapNode::new_kind(1, None))),
                 brightness: 0.0,
@@ -182,6 +260,20 @@ impl MapNode {
             MapNode::Grunge { kind, scale, amount, seed, color_a, color_b } => {
                 pat::grunge(*kind, *scale, *amount, *seed, rgb(*color_a), rgb(*color_b), p)
             }
+            MapNode::Tile { kind, scale, detail, width, warp, seed, color_a, color_b } => {
+                let h = generators::height(*kind, uv.x, uv.y, [*scale, *detail, *width, *warp], *seed);
+                rgb(*color_a).lerp(rgb(*color_b), h)
+            }
+            MapNode::Levels { input, in_low, in_mid, in_high, out_low, out_high } => {
+                let s = input.sample(uv, p);
+                let f = |v: f32| adjust::levels(v, *in_low, *in_mid, *in_high, *out_low, *out_high).clamp(0.0, 1.0);
+                return Vec4::new(f(s.x), f(s.y), f(s.z), s.w);
+            }
+            MapNode::HeightBlend { top, bottom, height, level, contrast } => {
+                let k = adjust::height_blend(*level, height.sample_scalar(uv, p), *contrast);
+                return bottom.sample(uv, p).lerp(top.sample(uv, p), k);
+            }
+            MapNode::SlopeBlur { .. } | MapNode::NormalFromHeight { .. } => return node_key::grid(self).sample(uv),
         };
         out.extend(1.0)
     }

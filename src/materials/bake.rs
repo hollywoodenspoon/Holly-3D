@@ -45,7 +45,7 @@ pub fn direct_base(m: &Material) -> Option<&TexHandle> {
 
 /// Base color (sRGB) + alpha when a Base Color or Opacity map is active.
 pub fn bake_base(m: &Material, size: u32) -> Option<Texture> {
-    if m.active_map(MapChannel::BaseColor).is_none() && m.active_map(MapChannel::Opacity).is_none() {
+    if m.active_map(MapChannel::BaseColor).is_none() && m.active_map(MapChannel::Opacity).is_none() && !m.proc.active() {
         return None;
     }
     Some(bake(size, |uv| {
@@ -54,15 +54,32 @@ pub fn bake_base(m: &Material, size: u32) -> Option<Texture> {
     }))
 }
 
-/// glTF-style metallic-roughness texture (G = roughness, B = metallic, linear).
+/// glTF-style occlusion-roughness-metallic texture (R = cavity AO,
+/// G = roughness, B = metallic, linear).
 pub fn bake_metal_rough(m: &Material, size: u32) -> Option<Texture> {
-    if m.active_map(MapChannel::Metallic).is_none() && m.active_map(MapChannel::Roughness).is_none() {
+    if m.active_map(MapChannel::Metallic).is_none() && m.active_map(MapChannel::Roughness).is_none() && !m.proc.active() {
         return None;
     }
     Some(bake(size, |uv| {
         let s = surface(m, uv, uv_point(uv), Vec4::ONE);
-        [255, byte(s.roughness), byte(s.metallic), 255]
+        [byte(s.ao), byte(s.roughness), byte(s.metallic), 255]
     }))
+}
+
+/// True when the material tilts its normals (a Bump / Normal map, or a
+/// procedural surface with auto-derived relief).
+pub fn has_relief(m: &Material) -> bool {
+    m.active_map(MapChannel::Bump).is_some() || (m.proc.active() && m.proc.auto_pbr && m.proc.relief > 0.0)
+}
+
+/// Tangent-space normal map (linear, +Y up the V axis).
+pub fn bake_normal(m: &Material, size: u32) -> Option<Texture> {
+    has_relief(m).then(|| {
+        bake(size, |uv| {
+            let n = super::relief::tangent_normal(m, uv, uv_point(uv), Vec3::X * 2.0, Vec3::Y * 2.0).unwrap_or(Vec3::Z);
+            [byte(n.x * 0.5 + 0.5), byte(n.y * 0.5 + 0.5), byte(n.z * 0.5 + 0.5), 255]
+        })
+    })
 }
 
 /// Emission (sRGB, normalised to 0..1; the material scales it back up).

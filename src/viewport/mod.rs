@@ -17,3 +17,4 @@ pub mod region;
 pub mod render_sync;
 pub mod skybox;
 pub mod spline_lines;
+pub mod tangents;

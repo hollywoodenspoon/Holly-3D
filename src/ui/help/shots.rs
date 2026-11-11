@@ -22,6 +22,7 @@ pub const SHOTS: &[(&str, &[u8])] = &[
     ("splines", include_bytes!("../../../assets/help/splines.jpg")),
     ("materials", include_bytes!("../../../assets/help/materials.jpg")),
     ("library", include_bytes!("../../../assets/help/library.jpg")),
+    ("procedural", include_bytes!("../../../assets/help/procedural.jpg")),
     ("paint", include_bytes!("../../../assets/help/paint.jpg")),
     ("sky", include_bytes!("../../../assets/help/sky.jpg")),
     ("render", include_bytes!("../../../assets/help/render.jpg")),
@@ -31,8 +32,8 @@ pub const SHOTS: &[(&str, &[u8])] = &[
 ];
 
 /// The ids `tools/help_shots.sh` captures.
-pub const IDS: [&str; 15] = [
-    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "paint", "sky", "render", "ghosttown", "mech", "prefs",
+pub const IDS: [&str; 16] = [
+    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "ghosttown", "mech", "prefs",
 ];
 
 fn demo(ed: &mut Editor) {
@@ -105,6 +106,16 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             ed.apply_library(crate::materials::library::find("Red Brick").expect("in the library"));
             ed.assign_material_to_selection();
             ed.prefs.general.favourite_materials = vec!["Red Brick".into(), "Gold".into()];
+        }
+        "procedural" => {
+            demo(ed);
+            select_first(ed);
+            ed.mat_editor.open = true;
+            ed.edit_material(None, |m| {
+                m.set_pattern(crate::materials::proc_engine::Pattern::Bricks, 0);
+                (m.proc.moss, m.proc.cavity_dirt, m.proc.edge_wear) = (0.45, 0.35, 0.4);
+            });
+            ed.assign_material_to_selection();
         }
         "paint" => {
             demo(ed);

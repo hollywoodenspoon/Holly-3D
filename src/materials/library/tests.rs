@@ -25,6 +25,7 @@ fn every_material_is_valid_and_samples_in_range() {
         assert_eq!(m.name.as_str(), match i {
             Item::Classic(_) => m.name.as_str(),
             Item::Lib(s) => s.name,
+            Item::Proc(s) => s.name,
         });
         for v in [m.metallic, m.roughness, m.opacity, m.transmission] {
             assert!((0.0..=1.0).contains(&v), "{}: {v}", i.name());
@@ -56,6 +57,13 @@ fn specs_turn_into_the_right_shading() {
     assert!(brick.active_map(MapChannel::Bump).is_some(), "patterns add bump");
     let rust = find("Heavy Rust").unwrap().material();
     assert!(rust.active_map(MapChannel::Metallic).is_some() && rust.active_map(MapChannel::Roughness).is_some());
+    // Weathered surfaces use the Procedural Pattern & Weathering rollout.
+    let moss = find("Mossy Brick Wall").unwrap().material();
+    assert!(moss.proc.active() && moss.proc.moss > 0.5 && moss.proc.auto_pbr && moss.roughness == 0.85);
+    assert!(crate::materials::bake::bake_normal(&moss, 16).is_some(), "it derives its own normal map");
+    let plate = find("Rusty Diamond Plate").unwrap().material();
+    assert!(plate.metallic == 1.0 && plate.proc.scorch > 0.5);
+    assert!(Category::Weathered.items().len() >= 30);
     let line = find("Road: White Centre Line").unwrap().material();
     let Some((MapNode::Stripes { color_a, color_b, .. }, _)) = line.active_map(MapChannel::BaseColor) else { panic!() };
     assert!(color_a[0] > 0.8 && color_b[0] < 0.3, "white line on dark asphalt");

@@ -83,7 +83,7 @@ pub fn apply(ctx: &egui::Context, t: &ThemePrefs, vp: &ViewportPrefs) {
         (TextStyle::Small, FontId::proportional(fs * 0.72)),
         (TextStyle::Body, FontId::proportional(fs)),
         (TextStyle::Button, FontId::proportional(fs)),
-        (TextStyle::Heading, FontId::proportional(fs * 1.45)),
+        (TextStyle::Heading, FontId::new(fs * 1.45, super::fonts::heading_family(ctx))),
         (TextStyle::Monospace, FontId::monospace(fs)),
     ]
     .into();

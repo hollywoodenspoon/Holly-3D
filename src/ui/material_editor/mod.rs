@@ -1,8 +1,10 @@
 //! 3ds Max Compact Material Editor (M): 24 sample slots, material toolbar,
 //! preset / shading-model pickers and the Compact or Slate parameter views.
 
+mod craft_params;
 pub mod library;
 mod maps;
+mod proc_rollout;
 mod multi;
 mod params;
 mod slate;
@@ -29,10 +31,15 @@ pub struct MatEditorUi {
 impl MatEditorUi {
     /// Preview texture for a material, re-rendered only when it changed.
     fn preview(&mut self, ctx: &egui::Context, id: MatId, m: &Material) -> egui::TextureId {
-        if let Some((cached, tex)) = self.previews.get(&id)
-            && cached == m
-        {
-            return tex.id();
+        if let Some((cached, tex)) = self.previews.get(&id) {
+            if cached == m {
+                return tex.id();
+            }
+            // Procedural maps cook on a worker: show the old swatch until they are ready.
+            if !crate::materials::proc_engine::worker::ready(m) {
+                ctx.request_repaint();
+                return tex.id();
+            }
         }
         // A Multi/Sub-Object slot previews its ID 1 sub-material.
         let px = preview::render_preview(m.for_id(1), PREVIEW_PX);
@@ -243,6 +250,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
                 slate::show(ui, ed, &mut st.slate);
             } else {
                 egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+                    proc_rollout::rollout(ui, ed);
                     params::basic(ui, ed);
                     params::outline(ui, ed);
                     maps::rollout(ui, ed);

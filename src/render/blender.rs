@@ -57,17 +57,18 @@ fn materials(rs: &RenderScene) -> Value {
         .collect()
 }
 
-/// One mesh per (object, material): unwelded triangles + corner normals.
+/// One mesh per (object, material): unwelded triangles + corner normals and UVs.
 fn meshes(rs: &RenderScene) -> Value {
-    let mut groups: std::collections::BTreeMap<(u32, usize), (Vec<f32>, Vec<f32>)> = Default::default();
+    let mut groups: std::collections::BTreeMap<(u32, usize), [Vec<f32>; 3]> = Default::default();
     for t in &rs.bvh.tris {
-        let (p, n) = groups.entry((t.obj, t.mat)).or_default();
+        let [p, n, uv] = groups.entry((t.obj, t.mat)).or_default();
         for k in 0..3 {
             p.extend(t.p[k].to_array());
             n.extend(t.n[k].to_array());
+            uv.extend(t.uv[k].to_array());
         }
     }
-    groups.into_iter().map(|((obj, mat), (p, n))| json!({ "obj": obj, "mat": mat, "verts": p, "normals": n })).collect()
+    groups.into_iter().map(|((obj, mat), [p, n, uv])| json!({ "obj": obj, "mat": mat, "verts": p, "normals": n, "uvs": uv })).collect()
 }
 
 /// Lights in Blender units: our radiance is irradiance x d² for points
@@ -152,7 +153,9 @@ pub fn run(rs: &RenderScene, cfg: &RenderSettings, cancel: &AtomicBool) -> Resul
     }
     let dir = work_dir()?;
     let (scene, loader, png) = (dir.join("scene.json"), dir.join("loader.py"), dir.join("render.png"));
-    let text = serde_json::to_string(&scene_json(rs, cfg, &png)).map_err(|e| e.to_string())?;
+    let mut json = scene_json(rs, cfg, &png);
+    super::blender_tex::attach(&mut json, &rs.materials, &dir)?;
+    let text = serde_json::to_string(&json).map_err(|e| e.to_string())?;
     std::fs::write(&scene, text).map_err(|e| e.to_string())?;
     std::fs::write(&loader, LOADER).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_file(&png);
