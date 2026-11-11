@@ -84,6 +84,7 @@ pub enum Action {
     Render,
     RenderSetup,
     FrameWindow,
+    ColorGrading,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -117,7 +118,7 @@ impl Action {
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(NAVS.map(Nav));
-        v.extend([Render, RenderSetup, FrameWindow, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
+        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
         v.extend([Help, Tour, HotkeyList, About, Preferences]);
         v
@@ -192,6 +193,7 @@ impl Action {
             Render => "Render",
             RenderSetup => "Render Setup...",
             FrameWindow => "Rendered Frame Window",
+            ColorGrading => "Color Grading & Camera RAW",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -281,6 +283,7 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",
             Render => "Render the active viewport into the Rendered Frame Window",
             RemoveSubObjects => "Remove the selected vertices or edges",
             RepeatLast => "Repeat the previous Edit Poly operation",

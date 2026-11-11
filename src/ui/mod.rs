@@ -20,6 +20,7 @@ pub mod paintbox;
 pub mod prefs;
 pub mod quad_menu;
 pub mod render_fx;
+pub mod render_grading;
 pub mod render_setup;
 pub mod render_window;
 pub mod ribbon;

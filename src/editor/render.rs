@@ -30,6 +30,8 @@ pub struct RenderUi {
     pub next_clone: u32,
     /// Last render / save message shown in the RFW.
     pub message: String,
+    /// The Color Grading & Camera RAW sidebar is shown.
+    pub grading_open: bool,
 }
 
 impl Editor {
@@ -99,9 +101,9 @@ impl Editor {
 
     /// F9 tone controls changed: re-tonemap the image without re-rendering.
     pub fn retone_render(&mut self) {
-        let tone = self.render.post.tone;
+        let (tone, grade) = (self.render.post.tone, self.render.post.grade);
         if let Some(fb) = self.rfw.fb.as_mut() {
-            fb.retone(&tone);
+            fb.regrade(&tone, &grade);
         }
     }
 
@@ -119,6 +121,10 @@ impl Editor {
             self.rfw.message = r.unwrap_or_else(|e| e);
             self.status = self.rfw.message.clone();
             self.rfw.job = None;
+            // The finished image gets the Color Grading.
+            if !self.render.post.grade.is_neutral() {
+                self.retone_render();
+            }
         }
     }
 

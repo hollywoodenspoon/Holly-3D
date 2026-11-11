@@ -103,6 +103,8 @@ pub struct PostFx {
     /// `[ Pick Focus Object ]`: focus on this object's center instead.
     pub focus_object: Option<crate::scene::ObjId>,
     pub f_stop: f32,
+    /// F9 Color Grading & Camera RAW (applied to the finished image).
+    pub grade: super::grading::Grading,
 }
 
 impl Default for PostFx {
@@ -117,6 +119,7 @@ impl Default for PostFx {
             focus_distance: 5.0,
             focus_object: None,
             f_stop: 2.8,
+            grade: Default::default(),
         }
     }
 }

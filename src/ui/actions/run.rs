@@ -95,6 +95,10 @@ impl Action {
             Render => ed.start_render(),
             RenderSetup => flip(&mut ed.rfw.setup_open),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
+            ColorGrading => {
+                ed.rfw.grading_open = !(ed.rfw.grading_open && ed.rfw.rfw_open);
+                ed.rfw.rfw_open |= ed.rfw.grading_open;
+            }
             MaterialEditor => flip(&mut ed.mat_editor.open),
             MaterialLibrary => flip(&mut ed.mat_editor.library),
             Environment => flip(&mut ed.env_open),
@@ -146,6 +150,7 @@ impl Action {
             Nav(m) => ed.iface.nav_mode == Some(m),
             RenderSetup => ed.rfw.setup_open,
             FrameWindow => ed.rfw.rfw_open,
+            ColorGrading => ed.rfw.rfw_open && ed.rfw.grading_open,
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,
             Environment => ed.env_open,

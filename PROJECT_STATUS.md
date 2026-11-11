@@ -706,3 +706,24 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - Painted glow is visible and bounces light in F9, but is not sampled as an area light unless the material's Emission Multiplier is above 0.
   - Downloaded model packs are not yet used by any generator (that is PR 6's Prop Style selector).
 - **Build note:** this repository's `.cargo/config.toml` targets `znver3`. On an Intel machine, set `RUSTFLAGS="-C target-cpu=x86-64-v3"` (as this session did), or the build crashes.
+
+## 22. Phase 11 PR A: F9 Color Grading & Camera RAW (LightCraft)
+
+The Rendered Frame Window has a collapsible **Color Grading & Camera RAW** sidebar (`🎨 Grading` on the RFW toolbar, or Rendering → Color Grading & Camera RAW). Every control re-grades the image at once without re-rendering, for the built-in raytracer and for Cycles images alike.
+
+- **Tone & Presence:** Highlights, Shadows, Whites, Blacks, Clarity (local contrast against a soft blur), Vibrance, Saturation.
+- **White Balance & Split Toning:** Temperature in Kelvin (6500 K neutral, higher is warmer, as in Camera RAW), Tint (green ↔ magenta), and Shadows / Midtones / Highlights colour wheels (angle = hue, distance = amount).
+- **Lens & Film FX:** Vignette with Midpoint, Chromatic Aberration (radial red / blue fringing), Film Grain with a `🎲 New Grain` seed.
+- Right-click resets any slider or wheel; `Reset All` and `Enable Grading` sit at the top.
+
+How it works:
+- `src/render/grading.rs` holds `Grading` (saved with the scene in `RenderSettings.post.grade`; older files load neutral) and `grade()`, which runs on the display image in this order: chromatic aberration → white balance (linear light) → clarity and tone curve → saturation / vibrance → split toning → vignette → grain.
+- `FrameBuffer.base` keeps the ungraded display image. `regrade()` re-tonemaps from the stored layers when it can, then grades a fresh copy of `base`, so grading never stacks. A finished render is graded automatically.
+- Saved PNG / JPG files include the grade; EXR keeps the ungraded linear light.
+- UI: `src/ui/render_grading.rs`.
+- Help: the Rendering page has a new section with a screenshot (`grading`). Help → Credits and `licenses/` credit LightCraft (MIT / Apache-2.0).
+- 12 headless tests are in `src/render/tests_grading.rs`.
+
+Known limits:
+- The code was written from LightCraft's published feature list; its repository was not inspected file by file, and no source files were copied.
+- Grading is per pixel on the CPU. A 1920×1080 image re-grades in a fraction of a second, but very large renders with Clarity on will lag a little while you drag.

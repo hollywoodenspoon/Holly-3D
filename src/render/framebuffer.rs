@@ -1,6 +1,7 @@
 //! Rendered Frame Window image: display sRGB (straight alpha) + linear HDR,
 //! channel views (R/G/B/A/Mono) and PNG / JPG / EXR export.
 
+use super::grading::{Grading, grade};
 use super::post::{PixelLayers, Tone, compose};
 use bevy::math::{Vec3, Vec4};
 
@@ -8,8 +9,10 @@ use bevy::math::{Vec3, Vec4};
 pub struct FrameBuffer {
     pub width: u32,
     pub height: u32,
-    /// Tonemapped sRGB 0..1 + straight alpha.
+    /// Tonemapped sRGB 0..1 + straight alpha, after Color Grading.
     pub display: Vec<Vec4>,
+    /// `display` before Color Grading (the grade is re-run from this).
+    pub base: Vec<Vec4>,
     /// Linear radiance + alpha (EXR output).
     pub hdr: Vec<Vec4>,
     /// Bumped on every write so the UI re-uploads its texture.
@@ -46,6 +49,7 @@ impl FrameBuffer {
             width,
             height,
             display: vec![Vec4::ZERO; n],
+            base: vec![Vec4::ZERO; n],
             hdr: vec![Vec4::ZERO; n],
             rev: 0,
             layers: vec![],
@@ -67,6 +71,7 @@ impl FrameBuffer {
             let start = (y * self.width + x0) as usize;
             let n = drow.len().min((self.width - x0) as usize);
             self.display[start..start + n].copy_from_slice(&drow[..n]);
+            self.base[start..start + n].copy_from_slice(&drow[..n]);
             self.hdr[start..start + n].copy_from_slice(&hrow[..n]);
         }
         self.rev += 1;
@@ -96,12 +101,22 @@ impl FrameBuffer {
 
     /// Re-runs the compositor with new tone controls (no re-render).
     pub fn retone(&mut self, tone: &Tone) {
-        if !self.can_retone() {
-            return;
+        self.regrade(tone, &Grading::default());
+    }
+
+    /// Re-tonemaps (when the layers are kept) and re-grades the image, all
+    /// without re-rendering. Cycles images are graded from their pixels.
+    pub fn regrade(&mut self, tone: &Tone, g: &Grading) {
+        if self.base.len() != self.display.len() {
+            self.base = self.display.clone();
         }
-        for (d, l) in self.display.iter_mut().zip(&self.layers) {
-            *d = compose(l, tone, self.plain_bg, self.transparent);
+        if self.can_retone() {
+            for (d, l) in self.base.iter_mut().zip(&self.layers) {
+                *d = compose(l, tone, self.plain_bg, self.transparent);
+            }
         }
+        self.display.clone_from(&self.base);
+        grade(&mut self.display, self.width as usize, self.height as usize, g);
         self.rev += 1;
     }
 
@@ -165,7 +180,7 @@ impl FrameBuffer {
         let mut fb = Self::new(w, h);
         for (i, p) in rgba.pixels().enumerate() {
             let v = Vec4::from_array(p.0);
-            fb.display[i] = v;
+            (fb.display[i], fb.base[i]) = (v, v);
             let l = Vec3::from_array([v.x, v.y, v.z].map(crate::materials::shading::srgb_to_linear));
             fb.hdr[i] = l.extend(v.w);
         }

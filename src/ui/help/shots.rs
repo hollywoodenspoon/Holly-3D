@@ -26,14 +26,15 @@ pub const SHOTS: &[(&str, &[u8])] = &[
     ("paint", include_bytes!("../../../assets/help/paint.jpg")),
     ("sky", include_bytes!("../../../assets/help/sky.jpg")),
     ("render", include_bytes!("../../../assets/help/render.jpg")),
+    ("grading", include_bytes!("../../../assets/help/grading.jpg")),
     ("ghosttown", include_bytes!("../../../assets/help/ghosttown.jpg")),
     ("mech", include_bytes!("../../../assets/help/mech.jpg")),
     ("prefs", include_bytes!("../../../assets/help/prefs.jpg")),
 ];
 
 /// The ids `tools/help_shots.sh` captures.
-pub const IDS: [&str; 16] = [
-    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "ghosttown", "mech", "prefs",
+pub const IDS: [&str; 17] = [
+    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "grading", "ghosttown", "mech", "prefs",
 ];
 
 fn demo(ed: &mut Editor) {
@@ -156,6 +157,17 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
         "render" => {
             demo(ed);
             ed.rfw.setup_open = true;
+        }
+        "grading" => {
+            demo(ed);
+            ed.zoom_extents(true);
+            (ed.render.width, ed.render.height) = (480, 360);
+            let g = &mut ed.render.post.grade;
+            (g.temperature, g.shadows, g.vibrance, g.clarity, g.vignette) = (7600.0, 35.0, 30.0, 25.0, -45.0);
+            g.shadow_wheel = crate::render::grading::Wheel { hue: 205.0, amount: 0.45 };
+            g.highlight_wheel = crate::render::grading::Wheel { hue: 35.0, amount: 0.35 };
+            ed.rfw.grading_open = true;
+            ed.start_render();
         }
         "ghosttown" => {
             ed.create_world(WorldKind::Settlement(Era::Village), Vec3::ZERO);
