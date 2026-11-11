@@ -1,10 +1,10 @@
 //! Render Setup (F10): Common tab (output size, aspect lock, alpha, view)
-//! and Renderer tab (engine selector + per-engine quality settings) and the
+//! and Renderer tab (path tracer or classic raytracer settings) and the
 //! GI & Post-FX tab (see `render_fx`).
 
 use crate::editor::Editor;
 use crate::render::settings::{AA_LEVELS, RESOLUTIONS};
-use crate::render::{Engine, RenderSettings};
+use crate::render::{Integrator, RenderSettings};
 use crate::ui::widgets::{dim, max_spinner_range};
 use bevy_egui::egui::{self, RichText};
 
@@ -113,43 +113,6 @@ fn raytracer(ui: &mut egui::Ui, r: &mut RenderSettings) {
     ui.label(dim("Soft shadows, glossy reflections, crystal refraction, fog and tonemapping."));
 }
 
-fn cycles(ui: &mut egui::Ui, r: &mut RenderSettings) {
-    use crate::render::{CyclesDevice, CyclesVia};
-    grid(ui, "rs_cy", |ui| {
-        ui.label("Run Through");
-        egui::ComboBox::from_id_salt("rs_cy_via").selected_text(r.cycles_via.label()).show_ui(ui, |ui| {
-            for v in CyclesVia::ALL {
-                ui.selectable_value(&mut r.cycles_via, v, v.label());
-            }
-        });
-        ui.end_row();
-        let blender = r.cycles_via == CyclesVia::Blender;
-        ui.label(if blender { "Blender Executable" } else { "Cycles Executable" });
-        let exe = if blender { &mut r.blender_exe } else { &mut r.cycles_exe };
-        ui.add(egui::TextEdit::singleline(exe).desired_width(150.0));
-        ui.end_row();
-        ui.label("Device");
-        egui::ComboBox::from_id_salt("rs_cy_dev").selected_text(r.cycles_device.label()).show_ui(ui, |ui| {
-            for d in CyclesDevice::ALL {
-                ui.selectable_value(&mut r.cycles_device, d, d.label());
-            }
-        });
-        ui.end_row();
-        ui.label("Samples");
-        max_spinner_range(ui, &mut r.cycles_samples, 1.0, 64, 1..=4096);
-        ui.end_row();
-        ui.label("Max Bounces");
-        max_spinner_range(ui, &mut r.max_depth, 0.1, 4, 0..=16);
-        ui.end_row();
-    });
-    ui.add_enabled(r.cycles_device == CyclesDevice::Hip, egui::Checkbox::new(&mut r.hiprt, "HIP-RT hardware ray tracing"));
-    ui.add_enabled(r.cycles_via == CyclesVia::Blender, egui::Checkbox::new(&mut r.denoise, "Denoise (OpenImageDenoise)"));
-    ui.label(dim(match r.cycles_via {
-        CyclesVia::Blender => "Exports the evaluated scene and renders it with `blender --background -E CYCLES`; falls back to the CPU when the device is missing.",
-        CyclesVia::Standalone => "Exports the evaluated scene to Cycles XML and runs the standalone `cycles` CLI in the background.",
-    }));
-}
-
 pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
     if !ed.rfw.setup_open {
         return;
@@ -162,15 +125,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
         .default_width(330.0)
         .resizable(false)
         .show(ctx, |ui| {
-            grid(ui, "rs_engine", |ui| {
-                ui.label("Renderer");
-                egui::ComboBox::from_id_salt("rs_engine_combo").width(190.0).selected_text(ed.render.engine.label()).show_ui(ui, |ui| {
-                    for e in Engine::ALL {
-                        ui.selectable_value(&mut ed.render.engine, e, e.label());
-                    }
-                });
-                ui.end_row();
-            });
+            crate::ui::render_path::engine_rows(ui, &mut ed.render);
             ui.separator();
             ui.horizontal(|ui| {
                 for (t, label) in [(SetupTab::Common, "Common"), (SetupTab::Renderer, "Renderer"), (SetupTab::Effects, "GI & Post-FX")] {
@@ -182,9 +137,9 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
             ui.separator();
             match *tab {
                 SetupTab::Common => common(ui, ed),
-                SetupTab::Renderer => match ed.render.engine {
-                    Engine::Raytracer => raytracer(ui, &mut ed.render),
-                    Engine::Cycles => cycles(ui, &mut ed.render),
+                SetupTab::Renderer => match ed.render.path.integrator {
+                    Integrator::Classic => raytracer(ui, &mut ed.render),
+                    Integrator::PathTracer => crate::ui::render_path::tab(ui, &mut ed.render),
                 },
                 SetupTab::Effects => {
                     egui::ScrollArea::vertical().max_height(520.0).show(ui, |ui| crate::ui::render_fx::tab(ui, ed));

@@ -4,7 +4,7 @@
 use super::Editor;
 use crate::render::job::{Region, clamp_region};
 use crate::render::scene_build::RenderScene;
-use crate::render::{ChannelView, Engine, FrameBuffer, RenderJob};
+use crate::render::{ChannelView, Integrator, FrameBuffer, RenderJob};
 use crate::viewport::camera::ViewCamera;
 
 /// A cloned Rendered Frame Window (frozen copy for comparison).
@@ -72,17 +72,14 @@ impl Editor {
         }
         if let Some(fb) = self.rfw.fb.as_mut() {
             (fb.plain_bg, fb.transparent) = (rs.hdri.is_none(), self.render.transparent);
-            if self.render.engine == Engine::Cycles {
-                fb.layers.clear();
-            }
         }
         let mut cfg = self.render.clone();
         if let Some(d) = self.focus_object_distance() {
             cfg.post.focus_distance = d;
         }
-        self.rfw.job = Some(match cfg.engine {
-            Engine::Raytracer => RenderJob::raytrace(rs, cfg, region),
-            Engine::Cycles => RenderJob::cycles(rs, cfg),
+        self.rfw.job = Some(match cfg.path.integrator {
+            Integrator::Classic => RenderJob::raytrace(rs, cfg, region),
+            Integrator::PathTracer => RenderJob::pathtrace(rs, cfg, region),
         });
         self.rfw.rfw_open = true;
         self.rfw.message = format!("Rendering {} ({w}x{h})…", self.render_label());

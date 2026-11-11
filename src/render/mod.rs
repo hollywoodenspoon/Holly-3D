@@ -1,11 +1,11 @@
-//! Lighting, environment and the offline renderers (F9 / F10): the
-//! built-in CPU raytracer and the Cycles standalone bridge.
+//! Lighting, environment and the native offline renderers (F9 / F10): the
+//! progressive multi-bounce path tracer (CPU and wgpu GPU) and the classic
+//! raytracer.
 
-pub mod blender;
-pub mod blender_tex;
 pub mod bvh;
 mod bvh_wide;
-pub mod cycles;
+pub mod mis;
+pub mod pathtrace;
 pub mod emitters;
 pub mod environment;
 pub mod framebuffer;
@@ -26,8 +26,6 @@ mod sky_noise;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-mod tests_blender;
-#[cfg(test)]
 mod tests_bvh;
 #[cfg(test)]
 mod tests_gi;
@@ -43,4 +41,5 @@ pub use environment::{Environment, LightingPreset};
 pub use framebuffer::{ChannelView, FrameBuffer};
 pub use job::RenderJob;
 pub use lighting::{Light, LightKind};
-pub use settings::{CyclesDevice, CyclesVia, Engine, RenderSettings};
+pub use pathtrace::{ComputeDevice, Integrator, PathSettings};
+pub use settings::RenderSettings;

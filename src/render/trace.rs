@@ -85,11 +85,13 @@ impl<'a> Tracer<'a> {
         Self { rs, cfg, eps: (rs.radius * 2e-4).max(1e-4) }
     }
 
-    pub(super) fn interp(&self, h: &Hit, o: Vec3, d: Vec3) -> Shading {
+    pub(super) fn interp(&self, h: &Hit, _o: Vec3, d: Vec3) -> Shading {
         let t = &self.rs.bvh.tris[h.tri];
         let w = Vec3::new(1.0 - h.u - h.v, h.u, h.v);
         let bary3 = |a: [Vec3; 3]| a[0] * w.x + a[1] * w.y + a[2] * w.z;
-        let p = o + d * h.t;
+        // Barycentric hit point: exact on the triangle even for orthographic
+        // rays starting thousands of units away (o + d t loses precision).
+        let p = bary3(t.p);
         let geo = (t.p[1] - t.p[0]).cross(t.p[2] - t.p[0]).normalize_or(Vec3::Z);
         let entering = geo.dot(d) < 0.0;
         let ng = if entering { geo } else { -geo };
@@ -176,8 +178,15 @@ impl<'a> Tracer<'a> {
     }
 
     pub(super) fn direct(&self, sh: &Shading, rng: &mut Rng) -> Vec<LightIn> {
-        let o = sh.p + sh.ng * self.eps;
         let mut out = Vec::with_capacity(self.rs.lights.len());
+        self.punctual(sh, rng, &mut out);
+        self.emitter_lights(sh, rng, &mut out);
+        out
+    }
+
+    /// Shadowed omni / spot / directional lights reaching `sh`.
+    pub(super) fn punctual(&self, sh: &Shading, rng: &mut Rng, out: &mut Vec<LightIn>) {
+        let o = sh.p + sh.ng * self.eps;
         for l in &self.rs.lights {
             let (dir, dist, mut k) = match l.shape {
                 RShape::Directional { dir } => (-dir, f32::INFINITY, 1.0),
@@ -203,8 +212,6 @@ impl<'a> Tracer<'a> {
             }
             out.push(LightIn { dir, radiance });
         }
-        self.emitter_lights(sh, rng, &mut out);
-        out
     }
 
     /// Skylight with hemisphere occlusion.
@@ -251,7 +258,7 @@ impl<'a> Tracer<'a> {
     /// What a reflected / refracted ray leaving the scene sees: the background
     /// plus a soft studio dome (brighter overhead). Camera rays that miss
     /// return zero coverage and show the plain background.
-    fn environment(&self, d: Vec3) -> Vec3 {
+    pub(super) fn environment(&self, d: Vec3) -> Vec3 {
         if let Some(c) = self.rs.procedural.as_ref().map(|s| s.radiance(d)).or_else(|| self.rs.hdri.as_ref().and_then(|h| h.radiance(d))) {
             return c + self.rs.sky;
         }
@@ -268,7 +275,7 @@ impl<'a> Tracer<'a> {
         self.rs.hdri.as_ref().and_then(|h| h.radiance(d)).unwrap_or(self.rs.background)
     }
 
-    fn fog(&self, c: Vec3, t: f32) -> Vec3 {
+    pub(super) fn fog(&self, c: Vec3, t: f32) -> Vec3 {
         match self.rs.fog {
             Some((col, density)) => {
                 let f = (-density * t).exp();

@@ -3,7 +3,7 @@
 use super::reset_button;
 use crate::editor::Editor;
 use crate::prefs::{GeneralPrefs, RenderPrefs, Units, ViewportPrefs};
-use crate::render::Engine;
+use crate::render::{ComputeDevice, Integrator};
 use crate::ui::theme;
 use crate::ui::widgets::dim;
 use bevy_egui::egui::{self, RichText};
@@ -80,19 +80,13 @@ pub fn general(ui: &mut egui::Ui, ed: &mut Editor) {
 pub fn rendering(ui: &mut egui::Ui, ed: &mut Editor) {
     let r = &mut ed.prefs.render;
     heading(ui, "Defaults for new sessions");
-    egui::ComboBox::from_id_salt("pref_engine").width(260.0).selected_text(r.engine.label()).show_ui(ui, |ui| {
-        for e in Engine::ALL {
-            ui.selectable_value(&mut r.engine, e, e.label());
-        }
-    });
-    ui.horizontal(|ui| {
-        ui.label("Blender");
-        ui.add(egui::TextEdit::singleline(&mut r.blender_exe).desired_width(260.0));
-        if ui.button("Browse...").clicked()
-            && let Some(p) = rfd::FileDialog::new().set_title("Find Blender").pick_file()
-        {
-            r.blender_exe = p.display().to_string();
-        }
+    egui::Grid::new("pref_engine").num_columns(2).show(ui, |ui| {
+        ui.label("Renderer");
+        crate::ui::render_path::combo(ui, "pref_integrator", 260.0, &mut r.integrator, &Integrator::ALL, Integrator::label);
+        ui.end_row();
+        ui.label("Compute Device");
+        crate::ui::render_path::combo(ui, "pref_device", 260.0, &mut r.device, &ComputeDevice::ALL, ComputeDevice::label);
+        ui.end_row();
     });
     ui.horizontal_wrapped(|ui| {
         ui.label("Resolution");

@@ -86,10 +86,10 @@ mod tests {
         let mut p = Preferences::default();
         p.render.width = 1920;
         p.render.height = 1080;
-        p.render.blender_exe = "/opt/blender/blender".into();
+        p.render.device = crate::render::ComputeDevice::Cpu;
         ed.use_prefs(p);
         assert_eq!((ed.render.width, ed.render.height), (1920, 1080));
-        assert_eq!(ed.render.blender_exe, "/opt/blender/blender");
+        assert_eq!(ed.render.path.device, crate::render::ComputeDevice::Cpu);
     }
 
     #[test]
