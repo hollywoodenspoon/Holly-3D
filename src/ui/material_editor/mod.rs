@@ -251,6 +251,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
             } else {
                 egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
                     proc_rollout::rollout(ui, ed);
+                    params::mapping(ui, ed);
                     params::basic(ui, ed);
                     params::outline(ui, ed);
                     maps::rollout(ui, ed);

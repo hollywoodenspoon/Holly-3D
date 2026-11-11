@@ -5,6 +5,7 @@ pub mod align;
 pub mod array;
 #[cfg(test)]
 mod array_tests;
+pub mod assets;
 pub mod blast_zones;
 pub mod boolean;
 pub mod cameras;
@@ -22,6 +23,9 @@ pub mod mirror;
 pub mod modsub;
 pub mod normals;
 pub mod paint;
+pub mod paint_layers;
+#[cfg(test)]
+mod paint_tests;
 pub mod poly_tools;
 pub mod prefs;
 pub mod render;
@@ -47,18 +51,6 @@ use bevy::prelude::Resource;
 pub use interface::{InterfaceState, NavMode, ObjCategory};
 pub use types::*;
 use undo::History;
-
-#[derive(Clone, Debug)]
-pub struct Snapshot {
-    pub scene: Scene,
-    pub sub: SubObject,
-}
-
-/// Variant name of an op ("ExtrudePolygons", …) used as memory key.
-pub fn op_key(op: &PolyOp) -> String {
-    let d = format!("{op:?}");
-    d.split([' ', '{', '(']).next().unwrap_or("").to_string()
-}
 
 #[derive(Resource)]
 pub struct Editor {
@@ -135,6 +127,8 @@ pub struct Editor {
     pub iface: InterfaceState,
     /// Preferences (⚙): theme, hotkeys, viewport, general and render settings.
     pub prefs: crate::prefs::Preferences,
+    /// Running asset pack downloads (Preferences -> Assets).
+    pub downloads: std::collections::HashMap<crate::assets::Pack, crate::assets::download::Job>,
 }
 
 impl Default for Editor {
@@ -196,6 +190,7 @@ impl Default for Editor {
             joint_type: Default::default(),
             iface: InterfaceState::new(),
             prefs: Default::default(),
+            downloads: Default::default(),
         }
     }
 }

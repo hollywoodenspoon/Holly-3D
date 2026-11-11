@@ -32,8 +32,9 @@ pub fn split_by_id(tri: &TriMesh, mesh: &EditablePoly, ms: &MultiSub) -> Vec<(Op
 }
 
 struct Parts {
-    /// (mesh version, showing the end result, material revision, x-ray).
-    key: (u64, bool, u64, bool),
+    /// (mesh version, showing the end result, material revision, x-ray,
+    /// object scale when a sub-material is World / Triplanar mapped).
+    key: (u64, bool, u64, bool, (u32, u32, u32)),
     entities: Vec<Entity>,
 }
 
@@ -59,11 +60,14 @@ pub fn sync_multi_parts(
         let Some((rev, m, _)) = o.material.and_then(|m| cache.get(m)).filter(|(_, m, _)| m.show_in_viewport && !o.checker) else {
             continue;
         };
-        let Some(ms) = m.multi.as_ref() else { continue };
+        // A painted Multi/Sub-Object is drawn whole, with its layer composite.
+        let Some(ms) = m.multi.as_ref().filter(|_| m.paint.is_none()) else { continue };
         keep.push(id);
         let shown = editor.display_mesh(id);
-        let key = (o.version, std::ptr::eq(shown, &*o.evaluated_mesh), rev, o.see_through);
-        let p = parts.objs.entry(id).or_insert(Parts { key: (u64::MAX, false, 0, false), entities: vec![] });
+        let scale = super::triplanar_uv::scale_of(o);
+        let scale_key = if ms.subs.iter().any(|s| s.mat.projection.on()) { (scale.x.to_bits(), scale.y.to_bits(), scale.z.to_bits()) } else { (0, 0, 0) };
+        let key = (o.version, std::ptr::eq(shown, &*o.evaluated_mesh), rev, o.see_through, scale_key);
+        let p = parts.objs.entry(id).or_insert(Parts { key: (u64::MAX, false, 0, false, (0, 0, 0)), entities: vec![] });
         if p.key != key {
             p.key = key;
             p.entities.drain(..).for_each(|e| commands.entity(e).despawn());
@@ -77,6 +81,9 @@ pub fn sync_multi_parts(
                 };
                 let mut part = tri.clone();
                 part.indices = idx;
+                if sm.projection.on() {
+                    super::triplanar_uv::apply(&mut part, &sm.projection, scale);
+                }
                 let e = commands
                     .spawn((
                         Mesh3d(meshes.add(build_mesh(&part))),

@@ -225,6 +225,9 @@ pub const MATERIALS: Page = Page {
             "Maps rollout: image or procedural maps for colour, metal, roughness, bump, opacity and glow.",
             "Procedural maps include Bricks / Tiles, Stripes (road lines), Cracks and Grunge (dirt, rust, scratches).",
             "Material Library (📚 Library): over 300 ready-made materials in 16 categories. Click a swatch to load it into the active slot; ☆ marks a favourite.",
+            "Library filter: Procedural, Photo or Both. Photo materials appear after you download the Photo Textures pack (Preferences > Assets).",
+            "Mapping rollout: World / Triplanar projects the material from three sides, so it tiles on objects without UVs (GhostTown, Terrain, rocks).",
+            "Preserve Texture Appearance (under Emission Multiplier): the material still lights the scene, but the camera sees its own colours at Direct Camera Brightness.",
         ]),
         H("Procedural Pattern & Weathering"),
         Shot(
@@ -265,12 +268,31 @@ pub const PAINT: Page = Page {
     id: "paint",
     title: "8. Painting",
     blocks: &[
-        Shot("paint", &[m(1423.0, 41.0, "Viewport Paint on / off"), m(1015.0, 690.0, "Paint straight on the model")]),
+        Shot(
+            "paint",
+            &[
+                m(1543.0, 41.0, "Viewport Paint on / off"),
+                m(1013.0, 700.0, "Paint straight on the model"),
+                m(400.0, 713.0, "Layers: your material stays at the bottom, untouched"),
+                m(440.0, 475.0, "Damage stamps"),
+            ],
+        ),
         Steps(&[
             "Select an object and click Paint.",
             "PaintBox: brush size, opacity, falloff, colour, Fill Object and Blur.",
-            "Vertex mode needs no UVs. Texture mode paints a 2048 or 4096 image; Auto-Setup Paint Canvas unwraps the model for you.",
+            "Vertex mode needs no UVs. Texture mode paints in layers on top of the object's material.",
             "Right-click in the viewport to stop painting.",
+        ]),
+        H("Texture Paint layers"),
+        Steps(&[
+            "Your material stays as Layer 0: Base Material. Painting never changes it, and your UVs are kept. Only an object without UVs is unwrapped for you.",
+            "Paint on a Paint Layer. The Erase tool removes paint, so the base material shows again.",
+            "Add Paint Layers and Fill Layers. Each has a 👁 toggle, a blend mode (Normal, Multiply, Add / Glow, Screen, Height-Blend) and an opacity.",
+            "Paint with: a colour, or any Material Library preset. One stroke paints colour, relief, roughness, metallic and glow together.",
+            "Damage Stamps: Bullet Hole, Blast Star, Blood Splatter, Burn Patch, Ember Cracks, Scratch, Rivet. Click to place one, drag to scatter.",
+            "🔥 Bake Mesh Maps works out Curvature, Cavity AO, World Normal and Z-Height. The ✨ Smart buttons use them: Edge Wear, Metal Chipping, Cavity Dirt, Rust, Dust, Snow, Moss, Soot, Mud Splash.",
+            "💾 Export Textures writes base colour, ORM, normal and emission PNGs.",
+            "Ctrl+Z undoes one stroke. Only the 64 x 64 tiles a stroke touched are copied, so undo stays light.",
         ]),
         ShowMe("Start painting", Show::Act(Action::Paint)),
     ],

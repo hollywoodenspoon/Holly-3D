@@ -51,6 +51,9 @@ pub struct RLight {
 pub struct RenderScene {
     pub bvh: Bvh,
     pub materials: Vec<Material>,
+    /// Rotation and origin of every scene object (indexed by `Tri::obj`):
+    /// the projection space of World / Triplanar materials.
+    pub frames: Vec<(bevy::math::Quat, Vec3)>,
     pub lights: Vec<RLight>,
     pub ambient: Vec3,
     /// Skylight hemisphere radiance (sampled with occlusion).
@@ -84,7 +87,12 @@ fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
         let mut by_id: std::collections::HashMap<u16, usize> = Default::default();
         let mut mat_for = |id: u16| {
             *by_id.entry(if mat.is_multi() { id } else { 0 }).or_insert_with(|| {
-                materials.push(mat.for_id(id).clone());
+                let mut sub = mat.for_id(id).clone();
+                // Paint layers of a Multi/Sub-Object lie over all its sub-materials.
+                if mat.is_multi() {
+                    sub.paint = mat.paint.clone();
+                }
+                materials.push(sub);
                 materials.len() - 1
             })
         };
@@ -117,6 +125,14 @@ impl RenderScene {
     pub fn build(scene: &Scene, camera: ViewCamera, use_rig: bool) -> Self {
         let mut materials = vec![];
         let tris = gather_tris(scene, &mut materials);
+        let frames = scene
+            .objects
+            .values()
+            .map(|o| {
+                let (_, rot, origin) = o.world_matrix().to_scale_rotation_translation();
+                (rot, origin)
+            })
+            .collect();
         let env = &scene.environment;
         let mut lights = vec![];
         let mut sky = Vec3::ZERO;
@@ -184,6 +200,7 @@ impl RenderScene {
         Self {
             bvh,
             materials,
+            frames,
             lights,
             ambient: ambient * K_AMBIENT,
             sky,

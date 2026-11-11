@@ -2,8 +2,8 @@
 
 use super::edit;
 use crate::editor::Editor;
-use crate::materials::{Material, ShadingModel};
-use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
+use crate::materials::{Mapping, Material, ShadingModel};
+use crate::ui::widgets::{Track, dim, max_spinner_range, rollout, toggle_button};
 pub(super) use crate::ui::widgets::{color_row as color, num_row as num};
 use bevy_egui::egui;
 
@@ -15,6 +15,14 @@ fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
 fn emission(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     color(ui, t, "Luminance / Emission", &mut m.emissive);
     num(ui, t, "Emission Multiplier", &mut m.emissive_strength, 0.0..=100.0, 0.0);
+    t.r(ui.checkbox(&mut m.preserve_emission_texture, "Preserve Texture Appearance")).on_hover_text(
+        "Decouple Luminance: the Emission Multiplier still lights the scene, but the camera sees this material in its own colours, never washed out",
+    );
+    ui.label(dim("(Decouple Luminance)"));
+    ui.end_row();
+    ui.add_enabled_ui(m.preserve_emission_texture, |ui| ui.label("Direct Camera Brightness"));
+    ui.add_enabled_ui(m.preserve_emission_texture, |ui| t.r(max_spinner_range(ui, &mut m.direct_camera_brightness, 0.01, 1.0, 0.0..=2.0)));
+    ui.end_row();
 }
 
 fn physical(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
@@ -71,6 +79,33 @@ pub fn basic(ui: &mut egui::Ui, ed: &mut Editor) {
                 ShadingModel::Crystal => crystal(ui, t, m),
                 ShadingModel::Unlit => unlit(ui, t, m),
             });
+            None
+        });
+    });
+}
+
+/// Mapping: the mesh's UVs, or World / Triplanar projection for meshes
+/// without UVs (GhostTown, Terrain, GeoGen rocks, Battlefield rubble).
+pub fn mapping(ui: &mut egui::Ui, ed: &mut Editor) {
+    rollout(ui, "Mapping", ed.editing_material().projection.on(), |ui| {
+        edit(ed, |m, t| {
+            let p = &mut m.projection;
+            ui.horizontal(|ui| {
+                for mode in Mapping::ALL {
+                    if toggle_button(ui, p.mapping == mode, mode.label()).clicked() && p.mapping != mode {
+                        p.mapping = mode;
+                        t.started = true;
+                        t.changed = true;
+                    }
+                }
+            });
+            ui.add_enabled_ui(p.on(), |ui| {
+                grid(ui, "mat_mapping", |ui| {
+                    num(ui, t, "Tile Size (units)", &mut p.size, 0.01..=1000.0, 1.0);
+                    num(ui, t, "Edge Blend", &mut p.blend, 0.0..=1.0, 0.3);
+                });
+            });
+            ui.label(dim("World / Triplanar projects maps and patterns from three sides, so they tile seamlessly without UVs. Paint layers always use the UVs."));
             None
         });
     });

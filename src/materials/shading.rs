@@ -38,8 +38,101 @@ pub struct Surface {
     pub ao: f32,
 }
 
-/// Evaluates material parameters and maps; `vcol` is the vertex paint color.
+/// Evaluates material parameters, maps and paint layers; `vcol` is the
+/// vertex paint color.
 pub fn surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
+    let mut s = base_surface(m, uv, p, vcol);
+    if let Some(paint) = &m.paint {
+        paint.apply(uv, p, &mut s, || material_height(m, uv, p).unwrap_or(0.5));
+    }
+    s
+}
+
+/// [`surface`] for a point whose place and normal in the object's
+/// projection space (`tp`, `tn`) are known: World / Triplanar materials
+/// are projected from three sides; paint layers always use the UVs.
+pub fn surface_at(m: &Material, uv: Vec2, p: Vec3, tp: Vec3, tn: Vec3, vcol: Vec4) -> Surface {
+    if !m.projection.on() {
+        return surface(m, uv, p, vcol);
+    }
+    let mut s = base_surface_at(m, uv, tp, tn, vcol);
+    if let Some(paint) = &m.paint {
+        paint.apply(uv, p, &mut s, || m.projection.blend(tp, tn, |puv, _| material_height(m, puv, tp).unwrap_or(0.5)));
+    }
+    s
+}
+
+/// [`base_surface`], projected from three sides when the material uses
+/// World / Triplanar mapping (`tp` / `tn`: point and normal in projection space).
+pub fn base_surface_at(m: &Material, uv: Vec2, tp: Vec3, tn: Vec3, vcol: Vec4) -> Surface {
+    if m.projection.on() { m.projection.blend(tp, tn, |puv, _| Blend(base_surface(m, puv, tp, vcol))).0 } else { base_surface(m, uv, tp, vcol) }
+}
+
+/// A surface that can be weighted and summed (triplanar blending).
+struct Blend(Surface);
+
+impl std::ops::Mul<f32> for Blend {
+    type Output = Blend;
+    fn mul(self, k: f32) -> Blend {
+        let s = self.0;
+        Blend(Surface {
+            base: s.base * k,
+            alpha: s.alpha * k,
+            metallic: s.metallic * k,
+            roughness: s.roughness * k,
+            transmission: s.transmission * k,
+            ior: s.ior * k,
+            emissive: s.emissive * k,
+            ao: s.ao * k,
+        })
+    }
+}
+
+impl std::ops::Add for Blend {
+    type Output = Blend;
+    fn add(self, o: Blend) -> Blend {
+        let (a, b) = (self.0, o.0);
+        Blend(Surface {
+            base: a.base + b.base,
+            alpha: a.alpha + b.alpha,
+            metallic: a.metallic + b.metallic,
+            roughness: a.roughness + b.roughness,
+            transmission: a.transmission + b.transmission,
+            ior: a.ior + b.ior,
+            emissive: a.emissive + b.emissive,
+            ao: a.ao + b.ao,
+        })
+    }
+}
+
+/// The surface as a camera ray sees it. With "Preserve Texture
+/// Appearance" on, the glow is the surface's own colour at Direct Camera
+/// Brightness, however high the Emission Multiplier is; light sent into
+/// the scene (GI, emitter sampling, reflections) keeps the full emission.
+pub fn camera_view(m: &Material, s: &Surface) -> Surface {
+    let mut out = *s;
+    if m.decoupled() {
+        out.emissive = s.base * m.direct_camera_brightness.clamp(0.0, 2.0);
+    }
+    out
+}
+
+/// Height of the material's own relief at a point (0..1), when it has
+/// one: its procedural surface, else a height map on the Bump slot.
+pub fn material_height(m: &Material, uv: Vec2, p: Vec3) -> Option<f32> {
+    if let Some(pm) = super::proc_engine::surface::maps(&m.proc, m.roughness, m.metallic) {
+        return Some(pm.at(uv).height);
+    }
+    match m.active_map(MapChannel::Bump) {
+        Some((super::maps::MapNode::NormalFromHeight { .. }, _)) => None,
+        Some((super::maps::MapNode::Bitmap { path, .. }, _)) if super::relief::is_normal_map(path) => None,
+        Some((n, _)) => Some(n.sample_scalar(uv, p)),
+        _ => None,
+    }
+}
+
+/// The material without its paint layers ("Layer 0: Base Material").
+pub fn base_surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
     let mut base = Vec3::from_array(m.base_color);
     let mut alpha = m.opacity;
     let (mut metallic, mut roughness, mut ao) = (m.metallic, m.roughness, 1.0);

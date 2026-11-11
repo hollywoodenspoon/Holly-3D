@@ -1,14 +1,14 @@
 # MiniMax (Holly-3D): Project Status Report
 
-_Status as of 10 November 2026, measured against the spec in `CLAUDE.md`._
+_Status as of 11 November 2026, measured against the spec in `CLAUDE.md`._
 
 ## At a glance
 
 | | |
 |---|---|
 | Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
-| Source | 313 `.rs` files, about 48,300 lines; the largest is 350 lines (limit 350) |
-| Tests | 356 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 385 `.rs` files, about 58,900 lines; the largest is 347 lines (limit 350) |
+| Tests | 440 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
@@ -25,7 +25,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 |---|---|---|
 | 3ds Max conventions only | ✅ | Q/W/E/R, 1–5, M, F9, F10, Shift+Drag clone; no Blender-style modal keys |
 | Clean five-zone UI | ✅ | Slate `#222327` with amber `#E59C24` |
-| No `.rs` file over 350 lines | ✅ | Largest: `src/editor/mod.rs` at 350 lines |
+| No `.rs` file over 350 lines | ✅ | Largest: `src/mesh/ops/chamfer.rs` at 347 lines |
 | No `Rc<RefCell>` / `Arc<Mutex>` in topology | ✅ | `slotmap` arenas |
 | Headless tests for every mesh operation and modifier | ✅ | Counts plus normal and UV validity |
 
@@ -640,3 +640,69 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 - **Not done:**
   - **World / Triplanar mapping and the CC0 asset downloader (PR 5b).** The Poly Haven hosts are blocked in this session's network, so the downloader could not be tested.
   - The older Help screenshots were not re-captured with the new font.
+
+## 21. PR 5.6: layer painter, mesh map baker, damage stamps, Triplanar mapping, asset downloader, decoupled emission
+
+- **Texture Paint now works in layers (`src/paint/layers/`), following TextureCraft's design (MIT / Apache-2.0):**
+  - **Existing UVs are never overwritten.** UVs from a UVW Map, an Unwrap UVW or an imported / collapsed mesh are kept exactly. Only an object without a usable layout (a plain primitive, a generated mesh) gets a Smart UV Project.
+  - **The object's material becomes "Layer 0: Base Material"** and is never written to. This holds for bitmap, procedural (PR 5 / PR 5.5) and Multi/Sub-Object materials. A transparent Paint Layer is added on top.
+  - A material shared with other objects is copied first, so paint shows on one object only.
+  - **Erase** removes paint from the active layer; the layers and the base below show again.
+  - **Paint Layers and Fill Layers**, each with a 👁 toggle, an opacity and a blend mode: Normal, Multiply, Add / Glow, Screen, Height-Blend (fills low crevices first; the opacity is the fill level).
+  - Layers can be added, deleted and moved up or down. Every command is one undo step.
+- **Tiled copy-on-write texels (`src/paint/texel/`):**
+  - Layers are stored in 64 × 64 tiles. Each texel holds colour, roughness, metallic, height and emission, each with its own coverage.
+  - An undo snapshot copies pointers only; a stroke copies just the tiles it touches. Unpainted tiles use no memory.
+  - Scene files store only painted tiles, compressed.
+- **Brush engine (`src/paint/brush/`):**
+  - Paint with a colour (pick which of Color / Rough / Metal / Height / Glow it writes) or with **any Material Library preset**: one stroke paints colour, relief, roughness, metallic and glow.
+  - Stamps are projected on the brush's tangent plane and evaluated per texel in world space: strokes cross UV seams, skip faces that look away, and do not bleed onto surfaces behind.
+  - **Nine brush alphas and damage stamps:** Soft Round, Hard Round, Bullet Hole / Crater Impact (pit, raised lip, soot), Shell Scorch / Blast Star, Blood Smear / Splatter, Charred Burn Patch, Glowing Ember Cracks (emissive), Scratch / Slash, Rivet / Weld Seam.
+  - Painted height becomes a normal map in the viewport and tilts shading normals in F9.
+- **Mesh map baking (`src/paint/bake/`):**
+  - **🔥 Bake Mesh Maps** computes Curvature, Cavity AO (rays through the 4-wide SIMD BVH), World Normal and Z-Height in UV space.
+  - **1-click Smart Mask layers:** Edge Wear, Metal Chipping, Cavity Dirt, Rust, Dust, Snow, Moss, Soot, Mud Splash. Each has Amount, Contrast, Breakup, Noise Scale and Seed.
+  - **💾 Export Textures** writes base colour, ORM, normal and emission PNGs, plus the baked mesh maps.
+- **Rendering of painted materials:**
+  - **F9:** layers are folded over the base at every shading point, so the base keeps its full detail.
+  - **Viewport:** one composite (colour, ORM, normal, emission). A stroke re-composites and re-uploads only the tiles it changed. A painted Multi/Sub-Object is drawn whole.
+  - **Cycles via Blender:** the composite is exported, with its emission map.
+- **World / Triplanar mapping (PR 5b):**
+  - New **Mapping** rollout on every material and sub-material: UV Channel or World / Triplanar, with Tile Size (scene units) and Edge Blend.
+  - **F9:** three projections blended by the surface normal, including relief.
+  - **Viewport:** box-mapped UVs (one side per vertex), since the GPU material has one UV set. Seam-free on flat faces; the exact blend shows in F9.
+  - **Cycles via Blender:** box projection driven by exported projection-space positions.
+  - The projection space is the object's own space at world scale, so the texture stays put when the object moves or turns.
+  - The Medieval Castle, Modern City, Alpine Terrain and GhostTown packs now use it by default.
+- **CC0 asset downloader (PR 5b), Preferences → Assets:**
+  - Each pack has a checkbox, **Download / Resume / Update**, **Cancel**, **Remove** and a progress bar. Downloads run in the background into `~/.local/share/minimax/assets/`.
+  - **📷 Photo Textures (1K or 2K):** the most downloaded Poly Haven textures per shelf (ground, roads, walls, roofs, wood, stone, metal), found through Poly Haven's public API.
+  - **🏠 Low-poly Models:** Kenney's CC0 starter kits from GitHub (`.glb` models).
+  - **🗿 Realistic Models:** the most downloaded Poly Haven models (glTF).
+  - An interrupted download shows as partial and resumes without fetching files twice.
+  - **Material Library:** installed photos appear as 📷 materials on their shelves, with a **[ Procedural | Photo | Both ]** filter.
+  - A bitmap on the Bump slot whose file name says it is a normal map is now used as one (it was read as a height map before).
+- **Decoupled emission, per material and per sub-material:**
+  - Under Emission Multiplier: **[✓] Preserve Texture Appearance (Decouple Luminance)** and **Direct Camera Brightness (0–2)**.
+  - Checked: the material still lights the scene at the full multiplier (GI, emitter sampling, reflections), but camera rays, the sample sphere and the viewport show its own colours at Direct Camera Brightness.
+  - Blender: a Light Path "Is Camera Ray" mix does the same.
+- **Help and credits:** the Painting page covers layers, stamps, baking and Smart Masks, with a new screenshot. The Materials page covers Mapping, the library filter and the emission toggle. Credits list TextureCraft and the asset packs; licence texts are in `licenses/`.
+- **Tests (440 in total, 38 new):**
+  - tiles: nothing allocated until painted, snapshots share tiles, a write copies one tile, save / load round trip;
+  - layers: every blend mode, opacity, visibility, masks, Height-Blend filling low places first, emission and relief;
+  - the composite matches F9 shading and updates only changed tiles;
+  - strokes: projection through UVs, back-face and off-surface culling, per-stroke opacity, erase reveals the base, material brushes, all nine alphas, overlapping stamps, mask painting, blur, flood fill;
+  - baking: edges convex and faces flat on a box, occlusion next to a wall, smart masks follow the shape;
+  - editor: Layer 0 kept, UVs kept, shared materials copied, layer commands undo, bake / smart layers / export;
+  - Triplanar weights, seamless coordinates and box UVs;
+  - the downloader against a local HTTP server: pick by popularity, download, skip a missing optional map, resume, unzip, failure and cancel;
+  - the emission toggle.
+- **Checked in the running app:** Texture Paint on a wood box showed the base material under bullet hole, ember, blood and blast stamps, with Metal Chipping on the edges and Snow on top; the PaintBox listed the layers above "Layer 0: Base Material".
+- **Not verified, or limited:**
+  - **The live asset hosts were not reached.** Poly Haven and Kenney's zip host are blocked in this session, so the downloader was tested only against a local stand-in. The Poly Haven API reply format is taken from its documentation as I remember it; if a field name differs, the photo and realistic packs will fail with a clear message and need a small fix. The Kenney repositories were confirmed to exist.
+  - Blender output (Triplanar box projection, painted emission, camera-ray mix) was not run against a real Blender; the scene file and loader script are tested.
+  - TextureCraft's source could not be opened here (only its README), so the painter is written from its published design, not ported file by file.
+  - In the viewport, a painted material with a Triplanar base shows the base without its relief; F9 shows it.
+  - Painted glow is visible and bounces light in F9, but is not sampled as an area light unless the material's Emission Multiplier is above 0.
+  - Downloaded model packs are not yet used by any generator (that is PR 6's Prop Style selector).
+- **Build note:** this repository's `.cargo/config.toml` targets `znver3`. On an Intel machine, set `RUSTFLAGS="-C target-cpu=x86-64-v3"` (as this session did), or the build crashes.

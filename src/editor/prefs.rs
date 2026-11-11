@@ -12,6 +12,7 @@ impl Editor {
         self.prefs = prefs;
         self.prefs.render.apply(&mut self.render);
         self.apply_prefs();
+        crate::assets::photo::rescan(&self.prefs.assets.folder);
     }
 
     /// Settings that apply at once whenever Preferences change.

@@ -3,7 +3,7 @@
 //! active Material Editor slot (undoable).
 
 use crate::editor::Editor;
-use crate::materials::library::{self, Category, Item};
+use crate::materials::library::{self, Category, Item, Kind};
 use crate::materials::preview;
 use crate::ui::theme;
 use crate::ui::widgets::{dim, toggle_button};
@@ -29,14 +29,17 @@ pub enum Shelf {
 pub struct LibraryUi {
     pub shelf: Shelf,
     pub search: String,
+    /// `[ Procedural | Photo | Both ]`.
+    pub kind: Kind,
     swatches: HashMap<&'static str, egui::TextureHandle>,
 }
 
 /// The items a shelf and search text list, in browser order.
-pub fn listed(shelf: Shelf, search: &str, favourites: &[String]) -> Vec<(Category, Item)> {
+pub fn listed(shelf: Shelf, search: &str, favourites: &[String], kind: Kind) -> Vec<(Category, Item)> {
     let q = search.trim().to_lowercase();
     library::all()
         .into_iter()
+        .filter(|(_, i)| kind.shows(*i))
         .filter(|(c, i)| match shelf {
             Shelf::All => true,
             Shelf::Favourites => favourites.iter().any(|f| f == i.name()),
@@ -110,9 +113,14 @@ fn cell(ui: &mut egui::Ui, st: &mut LibraryUi, item: Item, fav: bool, budget: &m
 }
 
 fn grid(ui: &mut egui::Ui, ed: &mut Editor, st: &mut LibraryUi) {
-    let items = listed(st.shelf, &st.search, &ed.prefs.general.favourite_materials);
+    let items = listed(st.shelf, &st.search, &ed.prefs.general.favourite_materials, st.kind);
     if items.is_empty() {
-        ui.label(dim("Nothing matches. Clear the search or pick another category."));
+        let none_installed = st.kind == Kind::Photo && crate::assets::photo::all().is_empty();
+        ui.label(dim(if none_installed {
+            "No photo materials yet. Download the Photo Textures pack in Preferences > Assets."
+        } else {
+            "Nothing matches. Clear the search or pick another category."
+        }));
         return;
     }
     let (mut apply, mut star) = (None, None);
@@ -164,6 +172,12 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut LibraryUi) {
                     st.search.clear();
                 }
                 ui.separator();
+                for k in Kind::ALL {
+                    if toggle_button(ui, st.kind == k, k.label()).on_hover_text("Show procedural materials, photo materials, or both").clicked() {
+                        st.kind = k;
+                    }
+                }
+                ui.separator();
                 let slot = ed.mat_editor.slot + 1;
                 ui.label(dim(&format!("Loads into slot {slot}")));
                 if ui.button("⬇ Assign to Selection").on_hover_text("Assign the active slot's material to the selected objects").clicked() {
@@ -197,13 +211,13 @@ mod tests {
 
     #[test]
     fn shelves_and_search_filter_the_list() {
-        let all = listed(Shelf::All, "", &[]);
+        let all = listed(Shelf::All, "", &[], Kind::Both);
         assert_eq!(all.len(), library::all().len());
-        let roads = listed(Shelf::Cat(Category::ALL[2]), "", &[]);
+        let roads = listed(Shelf::Cat(Category::ALL[2]), "", &[], Kind::Both);
         assert!(!roads.is_empty() && roads.len() < all.len());
-        assert!(listed(Shelf::All, "ASPHALT", &[]).iter().all(|(_, i)| i.name().to_lowercase().contains("asphalt")));
-        assert!(listed(Shelf::Favourites, "", &[]).is_empty());
-        let favs = listed(Shelf::Favourites, "", &["Red Brick".into(), "Gold".into()]);
+        assert!(listed(Shelf::All, "ASPHALT", &[], Kind::Both).iter().all(|(_, i)| i.name().to_lowercase().contains("asphalt")));
+        assert!(listed(Shelf::Favourites, "", &[], Kind::Both).is_empty());
+        let favs = listed(Shelf::Favourites, "", &["Red Brick".into(), "Gold".into()], Kind::Both);
         assert_eq!(favs.len(), 2);
     }
 

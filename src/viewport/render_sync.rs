@@ -32,7 +32,7 @@ struct ObjRender {
     entity: Entity,
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
-    version: (u64, bool),
+    version: (u64, bool, u64),
     look: (u32, bool, bool, Option<u64>),
     overlay: Entity,
     overlay_mesh: Handle<Mesh>,
@@ -258,24 +258,30 @@ pub fn sync_meshes(
                 entity,
                 mesh,
                 material,
-                version: (o.version, true),
+                version: (o.version, true, 0),
                 look: (u32::MAX, false, false, None),
                 overlay,
                 overlay_mesh,
                 sel_version: (u64::MAX, SubObject::Object, false),
             }
         });
-        let shown_mesh = editor.display_mesh(id);
-        let version = (o.version, std::ptr::eq(shown_mesh, &*o.evaluated_mesh));
-        if r.version != version {
-            r.version = version;
-            if let Some(mut m) = meshes.get_mut(&r.mesh) {
-                *m = build_mesh(&shown_mesh.to_tri_mesh());
-            }
-        }
         // Assigned material (when "Show Shaded Material in Viewport" is on);
         // the UV checker overrides it while unwrapping.
         let shown = o.material.and_then(|m| cache.get(m)).filter(|(_, m, _)| m.show_in_viewport && !o.checker);
+        let shown_mesh = editor.display_mesh(id);
+        let box_key = super::triplanar_uv::key(o, shown.map(|(_, m, _)| m));
+        let version = (o.version, std::ptr::eq(shown_mesh, &*o.evaluated_mesh), box_key);
+        if r.version != version {
+            r.version = version;
+            if let Some(mut m) = meshes.get_mut(&r.mesh) {
+                let mut tri = shown_mesh.to_tri_mesh();
+                // World / Triplanar: box-mapped UVs stand in for the mesh's own.
+                if let Some((_, mat, _)) = shown.filter(|_| box_key != 0) {
+                    super::triplanar_uv::apply(&mut tri, &mat.projection, super::triplanar_uv::scale_of(o));
+                }
+                *m = build_mesh(&tri);
+            }
+        }
         let look = (color_key(o.wire_color), o.see_through, o.checker, shown.map(|(rev, _, _)| rev));
         if r.look != look {
             r.look = look;
@@ -297,7 +303,7 @@ pub fn sync_meshes(
         let world = Transform::from_matrix(o.world_matrix());
         let vis = if o.hidden { Visibility::Hidden } else { Visibility::Inherited };
         // Multi/Sub-Object: per-ID parts (multi_sync) draw the surface instead.
-        let multi = shown.is_some_and(|(_, m, _)| m.is_multi());
+        let multi = shown.is_some_and(|(_, m, _)| m.is_multi() && m.paint.is_none());
         for (e, vis) in [(r.entity, if multi { Visibility::Hidden } else { vis }), (r.overlay, vis)] {
             if let Ok((mut tf, mut v)) = tfs.get_mut(e) {
                 if *tf != world {

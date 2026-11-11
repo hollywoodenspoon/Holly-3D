@@ -217,12 +217,14 @@ pub struct AssetPrefs {
     pub photos: bool,
     pub lowpoly: bool,
     pub realistic: bool,
+    /// Hosts and sizes of the packs (1K / 2K photo textures).
+    pub sources: crate::assets::Sources,
 }
 
 impl Default for AssetPrefs {
     fn default() -> Self {
         let folder = data_dir().join("assets").display().to_string();
-        Self { folder, photos: true, lowpoly: true, realistic: false }
+        Self { folder, photos: true, lowpoly: true, realistic: false, sources: Default::default() }
     }
 }
 

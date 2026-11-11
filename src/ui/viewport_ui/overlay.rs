@@ -149,7 +149,7 @@ fn normal_lines(painter: &egui::Painter, ed: &Editor, vi: usize) {
 /// Brush ring at the surface point under the cursor (world-sized).
 fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
     let v = &ed.viewports.views[vi];
-    let Some(hit) = ed.paint_hit(vi, ptr) else {
+    let Some((hit, _)) = ed.paint_hit(vi, ptr) else {
         painter.circle_stroke(p(ptr), 4.0, Stroke::new(1.0, theme::text_dim()));
         return;
     };

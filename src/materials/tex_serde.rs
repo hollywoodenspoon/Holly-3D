@@ -5,7 +5,7 @@ use serde::de::{self, Deserializer, SeqAccess, Visitor};
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Byte buffer written with `serialize_bytes` (compact in RON).
-struct Bytes(Vec<u8>);
+pub(crate) struct Bytes(pub Vec<u8>);
 
 impl Serialize for Bytes {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {

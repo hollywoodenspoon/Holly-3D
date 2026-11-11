@@ -28,6 +28,8 @@ struct Entry {
     tex: MatTextures,
     /// Multi/Sub-Object: textures of each sub-material (list order).
     subs: Vec<MatTextures>,
+    /// Layer composite of a painted material.
+    paint: Option<super::paint_sync::PaintGpu>,
 }
 
 /// Per-material bake cache, refreshed when a material's value changes.
@@ -96,9 +98,18 @@ pub fn sync_material_cache(editor: Res<crate::editor::Editor>, mut cache: ResMut
         if !crate::materials::proc_engine::worker::ready(m) {
             continue;
         }
+        // Painted materials: one composite of all layers (and of all
+        // sub-materials), updated tile by tile while painting.
+        if let Some(stack) = &m.paint {
+            let mut gpu = cache.entries.remove(&id).and_then(|e| e.paint).unwrap_or_else(|| super::paint_sync::PaintGpu::new(stack.size));
+            let owner = editor.scene.objects.values().find(|o| o.material == Some(id));
+            let tex = gpu.sync(m, owner, &mut images);
+            cache.entries.insert(id, Entry { mat: m.clone(), rev: crate::scene::next_version(), tex, subs: vec![], paint: Some(gpu) });
+            continue;
+        }
         let tex = bake_all(m, &mut images);
         let subs = m.multi.as_ref().map_or(vec![], |ms| ms.subs.iter().map(|s| bake_all(&s.mat, &mut images)).collect());
-        cache.entries.insert(id, Entry { mat: m.clone(), rev: crate::scene::next_version(), tex, subs });
+        cache.entries.insert(id, Entry { mat: m.clone(), rev: crate::scene::next_version(), tex, subs, paint: None });
     }
 }
 
@@ -112,6 +123,12 @@ pub fn standard(m: &Material, tex: &MatTextures, see_through: bool) -> StandardM
     let opacity = m.opacity * if see_through { 0.35 } else { 1.0 };
     let base = if textured_base { color([1.0; 3], opacity) } else { color(m.base_color, opacity) };
     let (emissive, emissive_texture) = match &tex.emissive {
+        // Preserve Texture Appearance: glow with the surface's own colours.
+        _ if m.decoupled() => {
+            let k = m.direct_camera_brightness.clamp(0.0, 2.0);
+            let e = if textured_base { Vec3::splat(k) } else { lin3(m.base_color) * k };
+            (LinearRgba::rgb(e.x, e.y, e.z).with_alpha(0.0), tex.base.clone())
+        }
         Some((h, peak)) => (LinearRgba::rgb(*peak, *peak, *peak).with_alpha(0.0), Some(h.clone())),
         None => {
             let e = lin3(m.emissive) * m.emissive_strength;

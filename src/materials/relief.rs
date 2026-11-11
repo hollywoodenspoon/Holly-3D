@@ -15,6 +15,15 @@ const BUMP_SCALE: f32 = 1.0 / 32.0;
 /// The tangent-space normal at `uv` (`None` = smooth). `dpdu` / `dpdv` say
 /// how the object-space point moves with U and V, so 3D bump maps work.
 pub fn tangent_normal(m: &Material, uv: Vec2, p: Vec3, dpdu: Vec3, dpdv: Vec3) -> Option<Vec3> {
+    let base = base_tangent_normal(m, uv, p, dpdu, dpdv);
+    match &m.paint {
+        Some(paint) => paint.tangent_normal(uv, p, base),
+        None => base,
+    }
+}
+
+/// [`tangent_normal`] of the material alone, without its paint layers.
+pub fn base_tangent_normal(m: &Material, uv: Vec2, p: Vec3, dpdu: Vec3, dpdv: Vec3) -> Option<Vec3> {
     let mut n = None;
     if m.proc.auto_pbr && m.proc.relief > 0.0 {
         n = surface::maps(&m.proc, m.roughness, m.metallic).map(|pm| unpack_normal(pm.normal.sample(uv)));
@@ -23,6 +32,7 @@ pub fn tangent_normal(m: &Material, uv: Vec2, p: Vec3, dpdu: Vec3, dpdv: Vec3) -
         let t = match node {
             // Already a normal map.
             MapNode::NormalFromHeight { .. } => unpack_normal(node.sample(uv, p)),
+            MapNode::Bitmap { path, .. } if is_normal_map(path) => unpack_normal(node.sample(uv, p)),
             // A height map: central differences.
             _ => {
                 let e = 1.0 / 512.0;
@@ -38,6 +48,14 @@ pub fn tangent_normal(m: &Material, uv: Vec2, p: Vec3, dpdu: Vec3, dpdv: Vec3) -
     n
 }
 
+/// True when a bitmap's file name says it is a normal map ("nor.jpg",
+/// "wall_nor_gl_1k.jpg", "bricks_normal.png", "x_nrm.png"), not a height map.
+pub fn is_normal_map(path: &str) -> bool {
+    let name = path.rsplit(['/', '\\']).next().unwrap_or(path).to_lowercase();
+    let stem = name.rsplit_once('.').map_or(name.as_str(), |(s, _)| s);
+    stem.split(['_', '-', ' ', '.']).any(|w| matches!(w, "nor" | "nrm" | "normal" | "normalgl" | "normals"))
+}
+
 /// Tilts shading normal `n` by tangent-space normal `tn` in the frame
 /// spanned by `dpdu` and `dpdv`.
 pub fn perturb(n: Vec3, dpdu: Vec3, dpdv: Vec3, tn: Vec3) -> Vec3 {
@@ -47,6 +65,20 @@ pub fn perturb(n: Vec3, dpdu: Vec3, dpdv: Vec3, tn: Vec3) -> Vec3 {
     }
     let b = (dpdv - n * n.dot(dpdv) - t * t.dot(dpdv)).normalize_or(n.cross(t));
     (t * tn.x + b * tn.y + n * tn.z).normalize_or(n)
+}
+
+/// Shading normal of a World / Triplanar material: the relief of each
+/// projection tilts `n` in that projection's frame (turned to world space
+/// by `rot`), blended like the colours. `tp` / `tn` are the point and
+/// normal in projection space.
+pub fn triplanar_normal(m: &Material, tp: Vec3, tn: Vec3, n: Vec3, rot: bevy::math::Quat) -> Vec3 {
+    let frames = m.projection.frames();
+    m.projection
+        .blend(tp, tn, |uv, k| {
+            let (du, dv) = frames[k];
+            base_tangent_normal(m, uv, tp, du, dv).map_or(n, |t| perturb(n, rot * du, rot * dv, t))
+        })
+        .normalize_or(n)
 }
 
 /// How a triangle's points move with U and V (`None` without usable UVs).

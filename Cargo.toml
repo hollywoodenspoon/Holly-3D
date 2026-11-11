@@ -24,6 +24,7 @@ ufbx = "0.11.5"
 serde_json = "1.0.154"
 miniz_oxide = "0.8"
 half = "2.7"
+ureq = { version = "2.12", default-features = false, features = ["tls"] }
 
 
 [profile.dev]
