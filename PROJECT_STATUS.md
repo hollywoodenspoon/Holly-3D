@@ -706,3 +706,90 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - Painted glow is visible and bounces light in F9, but is not sampled as an area light unless the material's Emission Multiplier is above 0.
   - Downloaded model packs are not yet used by any generator (that is PR 6's Prop Style selector).
 - **Build note:** this repository's `.cargo/config.toml` targets `znver3`. On an Intel machine, set `RUSTFLAGS="-C target-cpu=x86-64-v3"` (as this session did), or the build crashes.
+
+## 22. Phase 11 PR A: F9 Color Grading & Camera RAW (LightCraft)
+
+The Rendered Frame Window has a collapsible **Color Grading & Camera RAW** sidebar (`🎨 Grading` on the RFW toolbar, or Rendering → Color Grading & Camera RAW). Every control re-grades the image at once without re-rendering, for the built-in raytracer and for Cycles images alike.
+
+- **Tone & Presence:** Highlights, Shadows, Whites, Blacks, Clarity (local contrast against a soft blur), Vibrance, Saturation.
+- **White Balance & Split Toning:** Temperature in Kelvin (6500 K neutral, higher is warmer, as in Camera RAW), Tint (green ↔ magenta), and Shadows / Midtones / Highlights colour wheels (angle = hue, distance = amount).
+- **Lens & Film FX:** Vignette with Midpoint, Chromatic Aberration (radial red / blue fringing), Film Grain with a `🎲 New Grain` seed.
+- Right-click resets any slider or wheel; `Reset All` and `Enable Grading` sit at the top.
+
+How it works:
+- `src/render/grading.rs` holds `Grading` (saved with the scene in `RenderSettings.post.grade`; older files load neutral) and `grade()`, which runs on the display image in this order: chromatic aberration → white balance (linear light) → clarity and tone curve → saturation / vibrance → split toning → vignette → grain.
+- `FrameBuffer.base` keeps the ungraded display image. `regrade()` re-tonemaps from the stored layers when it can, then grades a fresh copy of `base`, so grading never stacks. A finished render is graded automatically.
+- Saved PNG / JPG files include the grade; EXR keeps the ungraded linear light.
+- UI: `src/ui/render_grading.rs`.
+- Help: the Rendering page has a new section with a screenshot (`grading`). Help → Credits and `licenses/` credit LightCraft (MIT / Apache-2.0).
+- 12 headless tests are in `src/render/tests_grading.rs`.
+
+Known limits:
+- The code was written from LightCraft's published feature list; its repository was not inspected file by file, and no source files were copied.
+- Grading is per pixel on the CPU. A 1920×1080 image re-grades in a fraction of a second, but very large renders with Clarity on will lag a little while you drag.
+
+## 23. Phase 11 PR B: SolidCraft CAD tools
+
+Hard-surface CAD tools after SolidCraft (MIT / Apache-2.0).
+
+- **Threaded fasteners** (Create → Geometry → Mech → `Bolt`, `Nut`, `Threaded Hole`): ISO Metric M3–M24 and Imperial UNC #10–1" tables (`src/mech/fastener/table.rs`) set the pitch, hex across-flats, head and nut heights. Threads are real 60° helical profiles with crest and root flats, a run-out into the shank and a chamfered tip. A nut's internal thread fits the bolt of the same size. Every parameter stays live in the Fastener Parameters rollout: standard, size, length, thread length, block size, sides, thread detail, scale and `Model Threads` (off = plain, light cylinders). Bolts are closed solids (Euler 2); nuts and hole blocks are solid tori (Euler 0).
+- **Hole / Counterbore / Countersink** (Edit Poly → Polygon → Edit Polygons → `Hole` settings button): drills one round hole into the centre of every selected polygon along its normal with a manifold Boolean subtract. The caddy sets the kind, `Diameter`, `Depth` or `Through All`, `Top Diameter`, `Bore Depth`, `Sink Angle` and `Sides`. A mesh that is not closed is left unchanged, and the status bar says why. Code: `src/modifiers/cad/hole.rs`, `PolyOp::Hole`.
+- **Multi-profile Loft modifier** (Modifier List → Spline → Mesh → `Loft`): sits on the path spline. `Pick Shape` adds any shape object as a cross-section at `Next Section At %`. Sections are resampled to the same point count, lined up (winding and start point) and blended with smoothstep along the path on parallel-transport frames. Further controls are `Twist`, `Scale Start` / `Scale End` with `Scale Curve`, `Cap Start` / `Cap End`, `Flip Normals`, and `Path Steps` / `Shape Steps`. Each section's % can be edited in the list, and `Remove Section` deletes the highlighted one. With no sections, a 0.2 circle is used. Code: `src/modifiers/cad/loft.rs`, `src/editor/cad.rs`, `src/ui/rollouts/cad.rs`.
+- **Spline constraints** (Editable Spline Geometry rollout, and Tools → Spline Constraints): `Parallel`, `Perpendicular` and `Equal Length` at Segment level; `Tangent` at Vertex level (the curve leaves the vertex in the direction it arrived, using Bezier Corner handles); `Concentric` at Spline level. They are one-shot actions. The first selected item in spline order is the reference, and the rest move once to match it. A segment that shares a vertex with the reference pivots on that vertex, so the reference never moves. Code: `src/splines/constraints.rs`, `Action::Constrain`.
+- Help: there is a new page, "13. CAD tools", with a screenshot (`cad`). Help → Credits and `licenses/` (`SolidCraft-LICENSE-MIT.txt`, `SolidCraft-NOTICE.txt`) credit SolidCraft.
+- Tests:
+  - fasteners: 4 tests in `src/mech/tests.rs`;
+  - Loft and Hole: 6 tests in `src/modifiers/cad/tests.rs`, covering counts, Euler characteristic, volume, a hole removing material, a through hole adding a handle, and the op failing cleanly with nothing selected;
+  - constraints: 5 tests in `src/splines/tests_constraints.rs`.
+
+Known limits:
+- The tools were written from SolidCraft's published feature set; no source files were copied. SolidCraft's B-rep kernel and parametric timeline were not ported: these work on MiniMax's polygon meshes and splines.
+- Constraints are one-shot, not a live solver. Moving a segment later does not keep it parallel.
+- Holes drill straight along each polygon's normal from its centroid. There is no click-to-place point yet, and each hole is a separate Boolean (dozens of holes on a dense mesh take a moment).
+- Loft sections are taken flat from each shape's own XY plane, about its pivot.
+
+## 24. Phase 12: Black-box flight recorder, crash reporter and emergency scene recovery
+
+The code is in `src/diagnostics/` and `src/ui/crash_dialog.rs`.
+
+- **Readable backtraces in release:** `[profile.release]` now uses `debug = "line-tables-only"` and `strip = false`, so backtraces keep `file:line`. `build.rs` stamps the git commit (`MINIMAX_GIT_SHA`) into the build.
+- **Flight recorder** (`breadcrumbs.rs`): a ring buffer of the last 50 events, each timed in seconds since start. It records:
+  - every `Action` run from a button or menu;
+  - every hotkey (chord and action);
+  - every Edit Poly op;
+  - every added modifier;
+  - every stack evaluation, with identical repeats folded into one `×n` line.
+  The UI's `Observer` (`state.rs`) adds tool changes, sub-object level changes, caddy opens and dialog opens. It also keeps a Markdown summary of the scene and selection current (every 0.5 s), and a scene snapshot for the emergency save (on each new undo step, or every 5 s). The snapshot is cheap because meshes are `Arc`-shared.
+- **Crash triggers** (`hook.rs`):
+  - **Panic hook:** captures the message, `file:line:col`, the thread name and a forced `Backtrace`. It then calls the previous hook, so the usual message still prints.
+  - **Unix signal handlers** (`SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE`, `SIGABRT`): these write the same report from a fresh reporter thread. That thread is needed because a fault may arrive on an exhausted stack. The handler then restores the previous handler. A real fault simply happens again; a signal that was sent (by `kill` or `abort`) is raised again. Either way the process ends as it would have (exit 139 for a segfault).
+  - Only the first crash is written.
+  - Every lock is taken with `try_lock`, so a crash while the recorder is busy still produces a report, with that section marked as unavailable.
+- **Report** (`report.rs`): written to `~/.local/share/minimax/crashes/crash_<YYYYMMDD-HHMMSS>.md`. A header gives the version, git sha, OS, kernel and GPU adapter (from `RenderAdapterInfo`). The sections are:
+  1. Crash Summary & Location
+  2. Last 50 User Actions
+  3. Active Scene & Selection State: object count, selection, sub-object level, tool, caddy, tab, the modifier stack with the active level marked, mesh counts, the last undo step and the scene file
+  4. MiniMax Stack Frames: only `minimax::` frames, excluding the reporter itself
+  5. Full Backtrace
+- **Emergency save and next-launch detection** (`recovery.rs`): writes `crash_recovery.mmax` next to the report, plus a `.pending` marker. On the next start, `detect_pending` shows the **MiniMax closed unexpectedly** dialog, with:
+  - `Copy Crash Report for Claude`
+  - `Restore Unsaved Scene (crash_recovery.mmax)` (it opens unsaved)
+  - `Open Crash Reports Folder` (xdg-open)
+  - `Dismiss / Clear` (this keeps the files)
+- **Help → View Crash Reports...** (`Action::CrashReports`) opens a window listing the reports, newest first, with a preview. From there you can copy a report, restore the scene, open the folder, use `Simulate Test Crash Report` (writes a real report and emergency save without crashing) or `Delete All Reports`.
+- **Help:** there is a new page, "16. Crash reports and recovery", with a screenshot (`crash`).
+- **Tests:** 8 tests in `src/diagnostics/tests.rs`:
+  - the ring buffer (cap of 50, oldest dropped, repeat folding);
+  - UTC date formatting;
+  - backtrace frame filtering;
+  - the five report sections, in order and with balanced fences;
+  - the bundle writing a loadable `.mmax` without overwriting a report from the same second;
+  - pending detection, dismiss and clear;
+  - the observer's change crumbs;
+  - the scene summary.
+- **Checked by hand:** I ran the app under Xvfb and sent `SIGSEGV`. The report and emergency scene were written, the process exited with 139, and the next launch showed the dialog.
+
+Known limits:
+- After a fatal signal (rather than a panic), the crashing thread's backtrace is not available. The report says so, and the breadcrumbs and scene state are still there.
+- The emergency scene is the last snapshot. It can be up to 5 s behind an edit that is still being dragged.
+- The signal handlers are Unix-only. On other systems only panics are recorded.

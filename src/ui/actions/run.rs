@@ -14,6 +14,7 @@ use crate::viewport::layout::Shading;
 impl Action {
     pub fn run(self, ed: &mut Editor) {
         use Action::*;
+        crate::diagnostics::breadcrumbs::record("Action", self.label().to_string());
         let any = !ed.scene.selected().is_empty();
         match self {
             NewScene => ed.new_scene(),
@@ -73,6 +74,7 @@ impl Action {
             ConvertToPoly => ed.convert_to_editable_poly(),
             ConvertToSpline => ed.convert_to_editable_spline(),
             Measure => flip(&mut ed.iface.measure_open),
+            Constrain(c) => ed.constrain_spline(c),
             HideSelected => ed.hide_selected(),
             HideUnselected => ed.hide_unselected(),
             UnhideAll => ed.unhide_all(),
@@ -95,6 +97,10 @@ impl Action {
             Render => ed.start_render(),
             RenderSetup => flip(&mut ed.rfw.setup_open),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
+            ColorGrading => {
+                ed.rfw.grading_open = !(ed.rfw.grading_open && ed.rfw.rfw_open);
+                ed.rfw.rfw_open |= ed.rfw.grading_open;
+            }
             MaterialEditor => flip(&mut ed.mat_editor.open),
             MaterialLibrary => flip(&mut ed.mat_editor.library),
             Environment => flip(&mut ed.env_open),
@@ -110,6 +116,7 @@ impl Action {
             Tour => ed.iface.tour = Some(0),
             HotkeyList => flip(&mut ed.iface.hotkeys_open),
             About => flip(&mut ed.iface.about_open),
+            CrashReports => flip(&mut ed.iface.crash_open),
             Preferences => flip(&mut ed.iface.prefs_open),
             Array | Mirror => ed.status = "Select an object first".into(),
         }
@@ -146,6 +153,7 @@ impl Action {
             Nav(m) => ed.iface.nav_mode == Some(m),
             RenderSetup => ed.rfw.setup_open,
             FrameWindow => ed.rfw.rfw_open,
+            ColorGrading => ed.rfw.rfw_open && ed.rfw.grading_open,
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,
             Environment => ed.env_open,
@@ -155,6 +163,7 @@ impl Action {
             Tour => ed.iface.tour.is_some(),
             HotkeyList => ed.iface.hotkeys_open,
             About => ed.iface.about_open,
+            CrashReports => ed.iface.crash_open,
             Preferences => ed.iface.prefs_open,
             _ => return None,
         })
@@ -174,6 +183,7 @@ impl Action {
             SelectRing | SelectLoop => edge_like,
             RemoveSubObjects => matches!(ed.sub, SubObject::Vertex | SubObject::Edge | SubObject::Border) && ed.in_sub_object(),
             RepeatLast => ed.in_sub_object(),
+            Constrain(c) => ed.spline_level() == Some(c.level()),
             Sky(_) => ed.scene.environment.sky.mode != SkyMode::Off || self != Sky(SkyPreset::Off),
             _ => true,
         }

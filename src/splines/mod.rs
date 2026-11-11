@@ -3,6 +3,7 @@
 //! interpolation, the Rendering rollout sweep and spline edit operations.
 
 pub mod boolean;
+pub mod constraints;
 pub mod edit;
 pub mod shapes;
 mod spline_ops;
@@ -11,6 +12,8 @@ pub mod sweep;
 mod tests;
 #[cfg(test)]
 mod tests_bool;
+#[cfg(test)]
+mod tests_constraints;
 
 pub use shapes::{ShapeKind, ShapeParams};
 pub use sweep::SplineRender;

@@ -8,6 +8,7 @@ mod array_tests;
 pub mod assets;
 pub mod blast_zones;
 pub mod boolean;
+pub mod cad;
 pub mod cameras;
 pub mod create_drag;
 pub mod drag;

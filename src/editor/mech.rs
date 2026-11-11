@@ -69,6 +69,10 @@ impl Editor {
         let id = match kind {
             MechKind::Gear => self.scene.add(mech(MechPart::Gear(Gear::default())), at),
             MechKind::Hose => self.scene.add(mech(MechPart::Hose(Hose::default())), at),
+            MechKind::Bolt | MechKind::Nut | MechKind::TappedHole => {
+                let f = crate::mech::Fastener::new(kind.fastener().expect("a fastener kind"));
+                self.scene.add(mech(MechPart::Fastener(f)), at)
+            }
             MechKind::Piston => {
                 let (hp, rp) = (PistonPart::housing(), PistonPart::rod());
                 let reach = 1.2 * hp.eyelet + hp.length + 1.2 * rp.eyelet + 0.3 * rp.length;

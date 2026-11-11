@@ -125,6 +125,7 @@ pub fn polygons(ui: &mut egui::Ui, ed: &mut Editor) {
             caddy_cell(ui, ed, "Bridge", PolyOp::BridgePolygons { segments: 1, taper: 0.0, twist: 0 }, true);
             ui.end_row();
             op_cell(ui, ed, "Flip", PolyOp::Flip, true);
+            caddy_cell(ui, ed, "Hole", PolyOp::Hole { spec: Default::default() }, true);
             ui.end_row();
         });
         pick_cell(ui, ed, "Hinge From Edge", hinge_default(), Tool::PickHinge);

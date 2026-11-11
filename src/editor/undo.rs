@@ -35,6 +35,11 @@ impl<T> History<T> {
         self.pushes
     }
 
+    /// Name of the most recent undo step.
+    pub fn last_label(&self) -> Option<&str> {
+        self.undo.last().map(|(l, _)| l.as_str())
+    }
+
     /// Records the state *before* an edit.
     pub fn push(&mut self, label: impl Into<String>, before: T) {
         self.undo.push((label.into(), before));

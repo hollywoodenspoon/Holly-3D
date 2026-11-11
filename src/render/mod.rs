@@ -10,6 +10,7 @@ pub mod emitters;
 pub mod environment;
 pub mod framebuffer;
 pub mod gi;
+pub mod grading;
 pub mod hdri;
 pub mod job;
 pub mod lighting;
@@ -30,6 +31,8 @@ mod tests_blender;
 mod tests_bvh;
 #[cfg(test)]
 mod tests_gi;
+#[cfg(test)]
+mod tests_grading;
 #[cfg(test)]
 mod tests_render;
 #[cfg(test)]

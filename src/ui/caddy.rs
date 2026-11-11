@@ -37,6 +37,15 @@ pub fn params(ui: &mut egui::Ui, op: &mut PolyOp) -> bool {
                 }
             });
         }
+        Hole { spec } => {
+            ui.horizontal(|ui| {
+                for k in crate::modifiers::cad::HoleKind::ALL {
+                    if toggle_button(ui, spec.kind == k, k.label()).clicked() {
+                        spec.kind = k;
+                    }
+                }
+            });
+        }
         Tessellate { face_center } => {
             ui.horizontal(|ui| {
                 if toggle_button(ui, !*face_center, "Edge").clicked() {
@@ -101,6 +110,24 @@ pub fn params(ui: &mut egui::Ui, op: &mut PolyOp) -> bool {
             ui.label("Align to Face Normal");
             ui.checkbox(align, "");
             ui.end_row();
+        }
+        Hole { spec } => {
+            row(ui, "Diameter", &mut spec.diameter, 0.002, 0.1, 0.0001..=100.0);
+            ui.label("Through All");
+            ui.checkbox(&mut spec.through, "");
+            ui.end_row();
+            if !spec.through {
+                row(ui, "Depth", &mut spec.depth, 0.002, 0.2, 0.0001..=100.0);
+            }
+            if spec.kind != crate::modifiers::cad::HoleKind::Simple {
+                row(ui, "Top Diameter", &mut spec.top_diameter, 0.002, 0.18, 0.0001..=100.0);
+            }
+            match spec.kind {
+                crate::modifiers::cad::HoleKind::Counterbore => row(ui, "Bore Depth", &mut spec.counterbore_depth, 0.002, 0.06, 0.0001..=100.0),
+                crate::modifiers::cad::HoleKind::Countersink => row(ui, "Sink Angle", &mut spec.countersink_angle, 0.5, 90.0, 30.0..=150.0),
+                _ => {}
+            }
+            row(ui, "Sides", &mut spec.sides, 0.1, 24, 6..=128);
         }
         _ => any = false,
     });

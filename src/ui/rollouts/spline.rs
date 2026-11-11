@@ -215,6 +215,7 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             });
             super::spline_tools::refine_button(ui, ed);
+            super::spline_tools::constraint_buttons(ui, ed, level);
         }
         SplineLevel::Segment => {
             ui.horizontal(|ui| {
@@ -227,6 +228,7 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
             if action(ui, "Delete", true, CONTENT_W) {
                 ed.delete_selection();
             }
+            super::spline_tools::constraint_buttons(ui, ed, level);
         }
         SplineLevel::Spline => super::spline_tools::spline_level(ui, ed, &mut ui_st),
     });

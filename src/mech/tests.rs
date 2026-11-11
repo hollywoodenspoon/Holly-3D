@@ -112,3 +112,62 @@ fn piston_parts_have_an_eyelet_and_a_body() {
         let _ = Vec2::ZERO;
     }
 }
+
+mod fasteners {
+    use crate::mech::{Fastener, FastenerKind, ThreadStd};
+
+    fn closed(m: &crate::mesh::EditablePoly) -> bool {
+        m.euler() == 2 || m.euler() == 0
+    }
+
+    #[test]
+    fn bolt_is_a_closed_solid_with_a_thread() {
+        let f = Fastener::new(FastenerKind::Bolt);
+        let m = f.build();
+        let (v, e, p) = m.counts();
+        assert!(v > 1000 && e > v && p > 1000, "{v} {e} {p}");
+        assert_eq!(m.euler(), 2, "closed, genus 0");
+        assert!(m.signed_volume() > 0.0, "outward normals");
+        assert!(m.polygons.values().all(|p| p.corners.len() >= 3));
+        // The thread makes the shank radius vary between root and crest.
+        let k = 0.001 * f.scale;
+        let radii: Vec<f32> = m.vertices.values().filter(|v| v.position.z > (f.spec().head + 20.0) * k).map(|v| v.position.truncate().length() / k).filter(|r| *r > 1.0).collect();
+        let (lo, hi) = radii.iter().fold((f32::MAX, 0.0f32), |(a, b), &r| (a.min(r), b.max(r)));
+        assert!((hi - 5.0).abs() < 0.05, "crest at the M10 major radius ({hi})");
+        assert!((5.0 - lo - f.depth()).abs() < 0.05, "root one thread depth in ({lo})");
+    }
+
+    #[test]
+    fn nut_and_tapped_block_are_rings() {
+        for kind in [FastenerKind::Nut, FastenerKind::TappedHole] {
+            let m = Fastener::new(kind).build();
+            assert_eq!(m.euler(), 0, "{kind:?}: a solid with one hole through it");
+            assert!(m.signed_volume() > 0.0, "{kind:?}: outward normals");
+            assert!(closed(&m));
+            assert!(m.polygons.values().all(|p| p.corners.iter().all(|c| c.uv.is_finite())));
+        }
+    }
+
+    #[test]
+    fn nut_fits_the_bolt_and_sizes_follow_the_table() {
+        for (std, i) in [(ThreadStd::Metric, 0), (ThreadStd::Metric, 9), (ThreadStd::Imperial, 3)] {
+            let mut nut = Fastener::new(FastenerKind::Nut);
+            (nut.standard, nut.size) = (std, i);
+            let s = nut.spec();
+            let m = nut.build();
+            let k = 0.001 * nut.scale;
+            let inner = m.vertices.values().map(|v| v.position.truncate().length() / k).fold(f32::MAX, f32::min);
+            assert!(inner < s.d * 0.5 && inner > s.d * 0.5 - nut.depth() - 0.01, "{}: hole clears the bolt root", s.name);
+            let b = m.bounds().unwrap();
+            assert!(((b.max.z - b.min.z) / k - s.nut).abs() < 1e-3, "{}: nut height", s.name);
+        }
+    }
+
+    #[test]
+    fn plain_option_is_light_and_still_closed() {
+        let f = Fastener { threads: false, ..Fastener::new(FastenerKind::Bolt) };
+        let m = f.build();
+        assert!(m.counts().0 < 600, "no thread rows");
+        assert_eq!(m.euler(), 2);
+    }
+}

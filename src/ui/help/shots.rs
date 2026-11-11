@@ -26,14 +26,17 @@ pub const SHOTS: &[(&str, &[u8])] = &[
     ("paint", include_bytes!("../../../assets/help/paint.jpg")),
     ("sky", include_bytes!("../../../assets/help/sky.jpg")),
     ("render", include_bytes!("../../../assets/help/render.jpg")),
+    ("grading", include_bytes!("../../../assets/help/grading.jpg")),
     ("ghosttown", include_bytes!("../../../assets/help/ghosttown.jpg")),
     ("mech", include_bytes!("../../../assets/help/mech.jpg")),
+    ("cad", include_bytes!("../../../assets/help/cad.jpg")),
     ("prefs", include_bytes!("../../../assets/help/prefs.jpg")),
+    ("crash", include_bytes!("../../../assets/help/crash.jpg")),
 ];
 
 /// The ids `tools/help_shots.sh` captures.
-pub const IDS: [&str; 16] = [
-    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "ghosttown", "mech", "prefs",
+pub const IDS: [&str; 19] = [
+    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "grading", "ghosttown", "mech", "cad", "prefs", "crash",
 ];
 
 fn demo(ed: &mut Editor) {
@@ -157,6 +160,17 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             demo(ed);
             ed.rfw.setup_open = true;
         }
+        "grading" => {
+            demo(ed);
+            ed.zoom_extents(true);
+            (ed.render.width, ed.render.height) = (480, 360);
+            let g = &mut ed.render.post.grade;
+            (g.temperature, g.shadows, g.vibrance, g.clarity, g.vignette) = (7600.0, 35.0, 30.0, 25.0, -45.0);
+            g.shadow_wheel = crate::render::grading::Wheel { hue: 205.0, amount: 0.45 };
+            g.highlight_wheel = crate::render::grading::Wheel { hue: 35.0, amount: 0.35 };
+            ed.rfw.grading_open = true;
+            ed.start_render();
+        }
         "ghosttown" => {
             ed.create_world(WorldKind::Settlement(Era::Village), Vec3::ZERO);
             ed.zoom_extents(true);
@@ -166,14 +180,44 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             ed.create_mech(MechKind::Piston, Vec3::new(2.5, 0.0, 0.0));
             ed.zoom_extents(true);
         }
+        "cad" => {
+            ed.create_mech(MechKind::Nut, Vec3::new(-0.6, 0.0, 0.0));
+            ed.create_mech(MechKind::TappedHole, Vec3::new(0.8, 0.0, 0.0));
+            ed.create_mech(MechKind::Bolt, Vec3::ZERO);
+            ed.zoom_extents(true);
+            ed.tab = CommandTab::Modify;
+        }
         "prefs" => {
             demo(ed);
             ed.iface.prefs_open = true;
+        }
+        "crash" => {
+            demo(ed);
+            ed.iface.crash_pending = Some(sample_crash());
         }
         _ => return false,
     }
     ed.history = Default::default();
     true
+}
+
+/// A made-up crash for the recovery-dialog screenshot.
+fn sample_crash() -> crate::diagnostics::recovery::Pending {
+    use crate::diagnostics::report::{self, BuildInfo, CrashInfo};
+    let info = CrashInfo {
+        message: "index out of bounds: the len is 8 but the index is 12".into(),
+        location: Some("src/mesh/ops/extrude.rs:41:9".into()),
+        thread: "main".into(),
+        backtrace: String::new(),
+        unix_time: 1_794_000_000,
+        cause: "panic".into(),
+    };
+    let dir = std::path::PathBuf::from("~/.local/share/minimax/crashes");
+    crate::diagnostics::recovery::Pending {
+        report: dir.join(format!("crash_{}.md", report::file_stamp(info.unix_time))),
+        text: report::format(&info, &BuildInfo::current("GPU".into()), Some(&[]), None),
+        recovery: Some(dir.join(crate::diagnostics::recovery::RECOVERY_FILE)),
+    }
 }
 
 #[cfg(test)]
@@ -189,3 +233,4 @@ mod tests {
         assert!(!super::setup(&mut crate::editor::Editor::default(), "nope"));
     }
 }
+

@@ -13,6 +13,7 @@ mod tests;
 use crate::editor::NavMode;
 use crate::mesh::SubObject;
 use crate::render::sky_presets::SkyPreset;
+use crate::splines::constraints::SplineConstraint;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -62,6 +63,8 @@ pub enum Action {
     ConvertToPoly,
     ConvertToSpline,
     Measure,
+    /// One-shot Editable Spline sketch constraint.
+    Constrain(SplineConstraint),
     // Display
     HideSelected,
     HideUnselected,
@@ -84,6 +87,7 @@ pub enum Action {
     Render,
     RenderSetup,
     FrameWindow,
+    ColorGrading,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -94,6 +98,7 @@ pub enum Action {
     Tour,
     HotkeyList,
     About,
+    CrashReports,
     Preferences,
 }
 
@@ -116,10 +121,11 @@ impl Action {
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ToggleGrid,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
+        v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
-        v.extend([Render, RenderSetup, FrameWindow, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
+        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
-        v.extend([Help, Tour, HotkeyList, About, Preferences]);
+        v.extend([Help, Tour, HotkeyList, About, CrashReports, Preferences]);
         v
     }
 
@@ -169,6 +175,7 @@ impl Action {
             ConvertToPoly => "Convert to Editable Poly",
             ConvertToSpline => "Convert to Editable Spline",
             Measure => "Measure...",
+            Constrain(c) => return c.label().to_string(),
             HideSelected => "Hide Selected",
             HideUnselected => "Hide Unselected",
             UnhideAll => "Unhide All",
@@ -192,6 +199,7 @@ impl Action {
             Render => "Render",
             RenderSetup => "Render Setup...",
             FrameWindow => "Rendered Frame Window",
+            ColorGrading => "Color Grading & Camera RAW",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -201,6 +209,7 @@ impl Action {
             Tour => "Getting Started Tour",
             HotkeyList => "Hotkey List",
             About => "About MiniMax",
+            CrashReports => "View Crash Reports...",
             Preferences => "Preferences...",
         };
         s.to_string()
@@ -243,6 +252,7 @@ impl Action {
             Tour => "▶ Tour",
             HotkeyList => "⌨",
             About => "ℹ",
+            CrashReports => "Crash Reports",
             Preferences => "⚙",
             Nav(NavMode::Zoom) => "🔍",
             Nav(NavMode::ZoomAll) => "🔍⁴",
@@ -273,6 +283,7 @@ impl Action {
             ContactSets => "Contact Member parts push each other along their hinges and sliders",
             Paint => "Viewport Paint: VertexPaint / texture projection (PaintBox)",
             Measure => "Size, centre and counts of the selection",
+            Constrain(c) => c.tip(),
             SeeThrough => "Draw the selected objects semi-transparent",
             CameraView => "Look through the selected (or first) camera",
             Ribbon => "Big buttons for every Edit Poly tool under the toolbar",
@@ -281,12 +292,14 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",
             Render => "Render the active viewport into the Rendered Frame Window",
             RemoveSubObjects => "Remove the selected vertices or edges",
             RepeatLast => "Repeat the previous Edit Poly operation",
             Cancel => "Leave the current tool, caddy or menu",
             Help => "How MiniMax works, with screenshots (F1 opens the page for what is under the mouse)",
             Tour => "A short step-by-step tour of the screen",
+            CrashReports => "Crash reports MiniMax wrote after a crash: copy one for Claude, restore the unsaved scene, or simulate a test report",
             _ => "",
         }
     }

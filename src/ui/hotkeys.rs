@@ -60,6 +60,7 @@ pub fn handle(ctx: &egui::Context, ed: &mut Editor) {
             continue;
         }
         if let Some(action) = action_of(&map, chord).filter(|a| a.enabled(ed)) {
+            crate::diagnostics::breadcrumbs::record("Hotkey", format!("{} -> {}", chord.text(), action.label()));
             action.run(ed);
         }
     }

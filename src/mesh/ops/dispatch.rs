@@ -72,6 +72,8 @@ pub enum PolyOp {
         lip: f32,
         material_id: u16,
     },
+    /// Hole / Counterbore / Countersink drilled into each selected polygon.
+    Hole { spec: crate::modifiers::cad::HoleSpec },
     ConnectEdges {
         segments: u32,
         pinch: f32,
@@ -197,6 +199,7 @@ impl PolyOp {
             Outline { .. } => "Outline",
             ChamferVertices { .. } | ChamferEdges { .. } => "Chamfer",
             PanelGroove { .. } => "Panel Groove",
+            Hole { spec } => spec.kind.label(),
             ConnectEdges { .. } | ConnectVertices => "Connect",
             Weld { .. } => "Weld",
             TargetWeld { .. } => "Target Weld",
@@ -255,6 +258,7 @@ impl PolyOp {
             ChamferVertices { amount } => chamfer::chamfer_vertices(m, *amount),
             ChamferEdges { amount, segments, tension, open } => chamfer::chamfer_edges_ex(m, *amount, *segments, *tension, *open),
             PanelGroove { width, depth, lip, material_id } => return groove::panel_groove(m, *width, *depth, *lip, *material_id),
+            Hole { spec } => return crate::modifiers::cad::hole::drill(m, &m.selected_polygons(), spec).map(|r| *m = r).is_ok(),
             ConnectEdges { segments, pinch, slide } => connect::connect_edges(m, *segments, *pinch, *slide),
             ConnectVertices => connect::connect_vertices(m),
             Weld { level, threshold } => weld::weld(m, *level, *threshold),
