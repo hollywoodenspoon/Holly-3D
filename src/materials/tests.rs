@@ -156,3 +156,34 @@ fn cel_preview_draws_ink_ring() {
     let base = preview::render_preview(&plain, 64).iter().filter(|p| p[0] < 40 && p[1] < 40 && p[2] < 40).count();
     assert!(ink > base + 60, "ink ring pixels: {ink} vs {base}");
 }
+
+#[test]
+fn preserve_texture_appearance_decouples_what_the_camera_sees_from_the_light_sent_out() {
+    use super::shading::{camera_view, surface};
+    use bevy::math::{Vec2, Vec3, Vec4};
+    let mut m = Material { base_color: [0.2, 0.5, 0.8], emissive: [1.0, 1.0, 1.0], emissive_strength: 50.0, ..Default::default() };
+    assert!(!m.preserve_emission_texture && m.direct_camera_brightness == 1.0, "off by default");
+    let s = surface(&m, Vec2::splat(0.5), Vec3::ZERO, Vec4::ONE);
+    assert!(s.emissive.x > 49.0, "the light sent into the scene");
+    assert_eq!(camera_view(&m, &s), s, "unchecked: the camera sees the full emission as before");
+    m.preserve_emission_texture = true;
+    let seen = camera_view(&m, &s);
+    assert_eq!(seen.emissive, s.base, "checked: the surface glows in its own colour at 1.0x");
+    assert_eq!(surface(&m, Vec2::splat(0.5), Vec3::ZERO, Vec4::ONE).emissive, s.emissive, "GI and emitter rays keep the full multiplier");
+    m.direct_camera_brightness = 2.0;
+    assert_eq!(camera_view(&m, &s).emissive, s.base * 2.0);
+    m.direct_camera_brightness = 9.0;
+    assert_eq!(camera_view(&m, &s).emissive, s.base * 2.0, "clamped to 0..2");
+    // No emission, nothing to decouple; every sub-material has its own toggle.
+    m.emissive_strength = 0.0;
+    assert!(!m.decoupled());
+    let mut multi = Material::default();
+    multi.make_multi();
+    multi.target_mut(1).preserve_emission_texture = true;
+    let ms = multi.multi.as_ref().unwrap();
+    assert!(ms.subs[1].mat.preserve_emission_texture && !ms.subs[0].mat.preserve_emission_texture);
+    // Scenes saved before this setting load with it off.
+    let text = ron::to_string(&Material::default()).unwrap().replace("preserve_emission_texture:false,", "").replace("direct_camera_brightness:1.0,", "");
+    let old: Material = ron::from_str(&text).unwrap();
+    assert!(!old.preserve_emission_texture && old.direct_camera_brightness == 1.0);
+}

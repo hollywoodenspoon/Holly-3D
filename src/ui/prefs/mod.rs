@@ -2,6 +2,7 @@
 //! Viewports, General, Rendering and Assets. Changes apply at once and are
 //! saved to `~/.config/minimax/preferences.ron` when the mouse is released.
 
+mod assets_tab;
 mod hotkeys_tab;
 mod settings_tabs;
 mod theme_tab;
@@ -70,7 +71,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut PrefsUi) {
             PrefsTab::Viewports => settings_tabs::viewports(ui, ed),
             PrefsTab::General => settings_tabs::general(ui, ed),
             PrefsTab::Rendering => settings_tabs::rendering(ui, ed),
-            PrefsTab::Assets => settings_tabs::assets(ui, ed),
+            PrefsTab::Assets => assets_tab::assets(ui, ed),
         });
         ui.separator();
         ui.horizontal(|ui| {

@@ -40,8 +40,24 @@ def image_node(nt, path, colorspace):
     return node
 
 
+def box_project(nt, nodes, tri):
+    """World / Triplanar mapping: box projection driven by the mesh's
+    projection-space positions (the "mm_tpos" attribute)."""
+    attr = nt.nodes.new("ShaderNodeAttribute")
+    attr.attribute_name = "mm_tpos"
+    mapping = nt.nodes.new("ShaderNodeMapping")
+    k = 1.0 / max(tri["size"], 1e-4)
+    mapping.inputs["Scale"].default_value = (k, k, k)
+    nt.links.new(attr.outputs["Vector"], mapping.inputs["Vector"])
+    for node in nodes:
+        if node:
+            node.projection = "BOX"
+            node.projection_blend = min(max(tri["blend"], 0.0), 1.0)
+            nt.links.new(mapping.outputs["Vector"], node.inputs["Vector"])
+
+
 def link_textures(nt, sh, tex):
-    """Wires baked base colour, roughness / metallic and normal maps into the BSDF."""
+    """Wires baked base colour, roughness / metallic, normal and emission maps into the BSDF."""
     base = image_node(nt, tex.get("base"), "sRGB")
     if base:
         nt.links.new(base.outputs["Color"], sh.inputs["Base Color"])
@@ -58,6 +74,41 @@ def link_textures(nt, sh, tex):
         nm = nt.nodes.new("ShaderNodeNormalMap")
         nt.links.new(normal.outputs["Color"], nm.inputs["Color"])
         nt.links.new(nm.outputs["Normal"], sh.inputs["Normal"])
+    glow = image_node(nt, tex.get("emissive"), "sRGB")
+    if glow:
+        # Painted glow (ember cracks): the map is emission / peak.
+        for name in ("Emission Color", "Emission"):
+            if name in sh.inputs:
+                nt.links.new(glow.outputs["Color"], sh.inputs[name])
+                break
+        set_input(sh, ["Emission Strength"], tex.get("emissive_peak", 1.0))
+    if tex.get("triplanar"):
+        box_project(nt, [base, orm, normal], tex["triplanar"])
+
+
+def decouple_emission(nt, sh, out, m):
+    """Preserve Texture Appearance: bounce rays get the full emission, camera
+    rays a copy of the surface that glows with its own base colour."""
+    seen = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    for name in ("Base Color", "Metallic", "Roughness", "IOR", "Alpha", "Normal"):
+        if name not in sh.inputs or name not in seen.inputs:
+            continue
+        if sh.inputs[name].is_linked:
+            nt.links.new(sh.inputs[name].links[0].from_socket, seen.inputs[name])
+        else:
+            seen.inputs[name].default_value = sh.inputs[name].default_value
+    glow = "Emission Color" if "Emission Color" in seen.inputs else "Emission"
+    if sh.inputs["Base Color"].is_linked:
+        nt.links.new(sh.inputs["Base Color"].links[0].from_socket, seen.inputs[glow])
+    else:
+        seen.inputs[glow].default_value = sh.inputs["Base Color"].default_value
+    set_input(seen, ["Emission Strength"], m["camera_brightness"])
+    path = nt.nodes.new("ShaderNodeLightPath")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(path.outputs["Is Camera Ray"], mix.inputs["Fac"])
+    nt.links.new(sh.outputs["BSDF"], mix.inputs[1])
+    nt.links.new(seen.outputs["BSDF"], mix.inputs[2])
+    nt.links.new(mix.outputs["Shader"], out.inputs["Surface"])
 
 
 # --- Materials -------------------------------------------------------------
@@ -88,6 +139,11 @@ for i, m in enumerate(cfg["materials"]):
             link_textures(nt, sh, m.get("textures") or {})
         except Exception as e:  # a render without maps beats no render
             print("MiniMax: textures skipped:", e)
+        if m.get("camera_brightness") is not None:
+            try:
+                decouple_emission(nt, sh, out, m)
+            except Exception as e:
+                print("MiniMax: emission decoupling skipped:", e)
     mats.append(mat)
 
 # --- Meshes ----------------------------------------------------------------
@@ -110,6 +166,9 @@ for k, g in enumerate(cfg["meshes"]):
     uvs = g.get("uvs")
     if uvs and len(uvs) == len(faces) * 6:
         me.uv_layers.new(name="UVMap").data.foreach_set("uv", uvs)
+    tpos = g.get("tpos")
+    if tpos and len(tpos) == len(verts) * 3:
+        me.attributes.new("mm_tpos", "FLOAT_VECTOR", "POINT").data.foreach_set("vector", tpos)
     me.materials.append(mats[g["mat"]])
     ob = bpy.data.objects.new("obj%d_%d" % (g["obj"], k), me)
     scene.collection.objects.link(ob)

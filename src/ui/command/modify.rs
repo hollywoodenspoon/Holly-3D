@@ -74,7 +74,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::Ffd(_)) => return rollouts::modifiers::ffd(ui, ed),
         Some(ModifierKind::UvwMap(_)) => return rollouts::modifiers::uvw_map(ui, ed),
         Some(ModifierKind::Unwrap(_)) => return rollouts::modifiers::unwrap(ui, ed),
-        Some(ModifierKind::VertexPaint(_)) => return crate::ui::paint_box::modifier_rollout(ui, ed),
+        Some(ModifierKind::VertexPaint(_)) => return crate::ui::paintbox::modifier_rollout(ui, ed),
         Some(ModifierKind::Lathe(_)) => return rollouts::spline::lathe(ui, ed),
         Some(ModifierKind::Extrude(_)) => return rollouts::spline::extrude(ui, ed),
         Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),

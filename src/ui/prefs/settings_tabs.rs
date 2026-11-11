@@ -2,7 +2,7 @@
 
 use super::reset_button;
 use crate::editor::Editor;
-use crate::prefs::{AssetPrefs, GeneralPrefs, RenderPrefs, Units, ViewportPrefs};
+use crate::prefs::{GeneralPrefs, RenderPrefs, Units, ViewportPrefs};
 use crate::render::Engine;
 use crate::ui::theme;
 use crate::ui::widgets::dim;
@@ -114,35 +114,4 @@ pub fn rendering(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.prefs.render = RenderPrefs::default();
         }
     });
-}
-
-pub fn assets(ui: &mut egui::Ui, ed: &mut Editor) {
-    let a = &mut ed.prefs.assets;
-    heading(ui, "Download folder");
-    ui.horizontal(|ui| {
-        ui.add(egui::TextEdit::singleline(&mut a.folder).desired_width(320.0));
-        if ui.button("Browse...").clicked()
-            && let Some(p) = rfd::FileDialog::new().set_title("Asset folder").pick_folder()
-        {
-            a.folder = p.display().to_string();
-        }
-    });
-    heading(ui, "Packs (free, CC0)");
-    egui::Grid::new("asset_packs").num_columns(3).striped(true).spacing([10.0, 6.0]).show(ui, |ui| {
-        let rows: [(&str, &str, &str, &mut bool); 3] = [
-            ("📷 Photo Textures (1K)", "~60 ground, road, wall, roof, wood, stone and metal materials (Poly Haven)", "~150–250 MB", &mut a.photos),
-            ("🏠 Low-poly Models", "Cars, trees, street furniture, medieval props (Kenney, Quaternius)", "~70–180 MB", &mut a.lowpoly),
-            ("🗿 Realistic Models", "Barrels, crates, furniture, rocks, plants (Poly Haven)", "~100–300 MB", &mut a.realistic),
-        ];
-        for (name, what, size, on) in rows {
-            ui.checkbox(on, name).on_hover_text(what);
-            ui.label(dim(what));
-            ui.label(dim(size));
-            ui.end_row();
-        }
-    });
-    ui.label(dim("The Download and Remove buttons arrive with the material library update."));
-    if reset_button(ui, "asset settings") {
-        *a = AssetPrefs::default();
-    }
 }

@@ -121,6 +121,33 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             demo(ed);
             select_first(ed);
             Action::Paint.run(ed);
+            // Texture Paint on the box: its material stays as Layer 0,
+            // with damage stamps and smart weathering layers on top.
+            ed.paint.mode = crate::paint::PaintMode::Texture;
+            ed.paint.canvas_size = 1024;
+            ed.paint.bake.size = 256;
+            if let Some(id) = ed.current() {
+                let o = &ed.scene.objects[id];
+                let b = o.evaluated_mesh.bounds().expect("box");
+                let w = o.world_matrix();
+                ed.paint.brush.size = 0.28;
+                for (alpha, at, n) in [
+                    (crate::paint::Alpha::BulletHole, Vec3::new(b.max.x, -0.25, 0.55), Vec3::X),
+                    (crate::paint::Alpha::EmberCracks, Vec3::new(b.max.x, 0.3, 0.3), Vec3::X),
+                    (crate::paint::Alpha::BloodSplatter, Vec3::new(-0.2, b.min.y, 0.5), Vec3::NEG_Y),
+                    (crate::paint::Alpha::BlastStar, Vec3::new(0.25, b.min.y, 0.35), Vec3::NEG_Y),
+                ] {
+                    ed.paint.brush.alpha = alpha;
+                    let hit = w.transform_point3(at);
+                    if ed.begin_layer_stroke(id, hit, -n) {
+                        ed.stamp_at(hit, n, None);
+                        ed.paint_end();
+                    }
+                }
+                ed.add_smart_layer(crate::paint::SmartKind::EdgeWear, 1);
+                ed.add_smart_layer(crate::paint::SmartKind::TopDown, 1);
+                ed.history = Default::default();
+            }
         }
         "sky" => {
             demo(ed);

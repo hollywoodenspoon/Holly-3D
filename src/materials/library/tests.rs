@@ -26,6 +26,7 @@ fn every_material_is_valid_and_samples_in_range() {
             Item::Classic(_) => m.name.as_str(),
             Item::Lib(s) => s.name,
             Item::Proc(s) => s.name,
+            Item::Photo(_) => m.name.as_str(),
         });
         for v in [m.metallic, m.roughness, m.opacity, m.transmission] {
             assert!((0.0..=1.0).contains(&v), "{}: {v}", i.name());

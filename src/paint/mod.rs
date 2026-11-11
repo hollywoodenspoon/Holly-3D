@@ -2,19 +2,26 @@
 //! no UVs needed) and texture projection paint onto a Base Color canvas.
 //! Pure brush math lives here; the editor wires strokes to the viewport.
 
+pub mod bake;
+pub mod brush;
+pub mod layers;
+pub mod raster;
 #[cfg(test)]
 mod tests;
-pub mod texture;
+pub mod texel;
 pub mod vertex;
 
-pub use texture::{PaintTri, TextureStroke, paint_tris, uv_overlap};
+pub use bake::{BakeSettings, MeshMaps, SmartKind, SmartMask};
+pub use brush::{Alpha, LayerStroke, Stamp};
+pub use layers::{BlendMode, Flat, LayerKind, PaintLayer, PaintStack, Source};
+pub use raster::{PaintTri, has_uvs, paint_tris, uv_overlap};
 pub use vertex::VertexStroke;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PaintMode {
     /// VertexPaint modifier layer (no UVs required).
     Vertex,
-    /// Projection paint into the material's Base Color bitmap.
+    /// Projection paint into the material's paint layers.
     Texture,
 }
 
@@ -22,7 +29,7 @@ pub enum PaintMode {
 pub enum BrushTool {
     Paint,
     Blur,
-    /// Removes paint from the VertexPaint layer (vertex mode only).
+    /// Removes paint from the layer; what is below shows again.
     Erase,
 }
 
@@ -47,11 +54,14 @@ pub struct Brush {
     /// sRGB.
     pub color: [f32; 3],
     pub tool: BrushTool,
+    /// Brush alpha or damage stamp (texture paint).
+    #[serde(default)]
+    pub alpha: Alpha,
 }
 
 impl Default for Brush {
     fn default() -> Self {
-        Self { size: 0.35, opacity: 1.0, falloff: 0.5, color: [0.85, 0.18, 0.15], tool: BrushTool::Paint }
+        Self { size: 0.35, opacity: 1.0, falloff: 0.5, color: [0.85, 0.18, 0.15], tool: BrushTool::Paint, alpha: Alpha::SoftRound }
     }
 }
 
@@ -86,9 +96,35 @@ pub struct PaintSettings {
     pub brush: Brush,
     /// "Selected Faces Only" mask (selection passed up the stack).
     pub selected_only: bool,
-    /// Canvas resolution for Auto-Setup Paint Canvas.
+    /// Texture size of new paint layers.
     pub canvas_size: u32,
+    /// Folder `[ Export Textures ]` writes to.
     pub save_path: String,
+    /// Roughness, metallic, height and emission the colour brush paints,
+    /// and which channels it writes (its colour is `brush.color`).
+    #[serde(default)]
+    pub look: Flat,
+    /// Material preset the brush paints with instead of a flat colour.
+    #[serde(default)]
+    pub material: Option<Box<crate::materials::Material>>,
+    #[serde(default = "one")]
+    pub material_tiling: f32,
+    #[serde(default)]
+    pub bake: BakeSettings,
+}
+
+fn one() -> f32 {
+    1.0
+}
+
+impl PaintSettings {
+    /// What texture-paint strokes and new fill layers paint with.
+    pub fn source(&self) -> Source {
+        match &self.material {
+            Some(m) => Source::Material { mat: m.clone(), tiling: self.material_tiling },
+            None => Source::Flat(Flat { color: self.brush.color, ..self.look.clone() }),
+        }
+    }
 }
 
 impl Default for PaintSettings {
@@ -100,6 +136,10 @@ impl Default for PaintSettings {
             selected_only: false,
             canvas_size: 2048,
             save_path: String::new(),
+            look: Flat::default(),
+            material: None,
+            material_tiling: 1.0,
+            bake: BakeSettings::default(),
         }
     }
 }

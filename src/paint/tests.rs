@@ -1,7 +1,5 @@
-use super::texture::fill_texture;
 use super::vertex::fill;
 use super::*;
-use crate::materials::Texture;
 use crate::mesh::EditablePoly;
 use crate::modifiers::VertexPaintMod;
 use crate::primitives::{Primitive, PrimitiveKind};
@@ -30,7 +28,7 @@ fn vertex_stroke_paints_only_inside_brush_and_respects_opacity() {
     let mut layer = HashMap::new();
     let mut s = VertexStroke::new(&m, Mat4::IDENTITY, &layer, false);
     let center = m.vertices.values().map(|v| v.position).fold(Vec3::splat(f32::MAX), |a, b| a.min(b));
-    let brush = Brush { size: 0.1, opacity: 0.5, falloff: 0.0, color: [1.0, 0.0, 0.0], tool: BrushTool::Paint };
+    let brush = Brush { size: 0.1, opacity: 0.5, falloff: 0.0, color: [1.0, 0.0, 0.0], tool: BrushTool::Paint, ..Brush::default() };
     // Two stamps at the same point: per-stroke opacity does not accumulate.
     assert_eq!(s.stamp(&mut layer, center, &brush), 1);
     s.stamp(&mut layer, center, &brush);
@@ -80,26 +78,4 @@ fn uv_overlap_detects_stacked_box_faces() {
         p.corners.iter_mut().for_each(|c| c.uv = Vec2::ZERO);
     }
     assert_eq!(uv_overlap(&flat), 1.0, "no UVs at all");
-}
-
-#[test]
-fn texture_stamp_projects_through_uvs() {
-    let m = plane();
-    let tris = paint_tris(&m, Mat4::IDENTITY, false);
-    assert_eq!(tris.len(), m.polygons.len() * 2);
-    let mut tex = Texture::new(64, 64, [255; 4]);
-    let mut s = TextureStroke::new(tris, &tex);
-    let b = m.bounds().unwrap();
-    let brush = Brush { size: b.size().x * 0.1, opacity: 1.0, falloff: 0.0, color: [0.0, 0.0, 0.0], tool: BrushTool::Paint };
-    let hit = s.stamp(&mut tex, b.center(), Vec3::NEG_Z, &brush);
-    assert!(hit > 0);
-    // Plane center maps to UV (0.5, 0.5) -> texel (32, 32) is black.
-    assert_eq!(tex.texel(32, 32), [0, 0, 0, 255]);
-    assert_eq!(tex.texel(2, 2), [255; 4], "far texels untouched");
-    // Back-facing view paints nothing.
-    let mut t2 = Texture::new(64, 64, [255; 4]);
-    let mut s2 = TextureStroke::new(paint_tris(&m, Mat4::IDENTITY, false), &t2);
-    assert_eq!(s2.stamp(&mut t2, b.center(), Vec3::Z, &brush), 0);
-    fill_texture(&mut t2, [0.0, 1.0, 0.0], 1.0);
-    assert_eq!(t2.texel(5, 9), [0, 255, 0, 255]);
 }

@@ -17,13 +17,15 @@ pub mod shading;
 mod tests;
 #[cfg(test)]
 mod tests_multi;
-mod tex_serde;
+pub(crate) mod tex_serde;
 pub mod texture;
+pub mod triplanar;
 
 pub use maps::{MapChannel, MapNode, MapSlot};
 pub use multi::{MultiPreset, MultiSub, SubMaterial};
 pub use presets::Preset;
 pub use texture::{TexHandle, Texture};
+pub use triplanar::{Mapping, Projection};
 
 use slotmap::{SlotMap, new_key_type};
 
@@ -124,6 +126,21 @@ pub struct Material {
     /// "Procedural Pattern & Weathering" rollout (inactive with no pattern).
     #[serde(default)]
     pub proc: proc_engine::ProcSurface,
+    /// "Preserve Texture Appearance (Decouple Luminance)": the Emission
+    /// Multiplier still lights the scene, but the camera sees the surface
+    /// in its own colours at `direct_camera_brightness`.
+    #[serde(default)]
+    pub preserve_emission_texture: bool,
+    /// Brightness of the surface as the camera sees it (0..2) while
+    /// `preserve_emission_texture` is on.
+    #[serde(default = "one")]
+    pub direct_camera_brightness: f32,
+    /// UV channel or World / Triplanar mapping of the maps and patterns.
+    #[serde(default)]
+    pub projection: Projection,
+    /// Paint layers over this material (it stays "Layer 0: Base Material").
+    #[serde(default)]
+    pub paint: Option<crate::paint::PaintStack>,
 }
 
 impl Default for Material {
@@ -148,11 +165,25 @@ impl Default for Material {
             show_in_viewport: true,
             multi: None,
             proc: Default::default(),
+            preserve_emission_texture: false,
+            direct_camera_brightness: 1.0,
+            projection: Default::default(),
+            paint: None,
         }
     }
 }
 
+fn one() -> f32 {
+    1.0
+}
+
 impl Material {
+    /// True when the camera should see the unblown surface instead of the
+    /// material's full emission.
+    pub fn decoupled(&self) -> bool {
+        self.preserve_emission_texture && self.emissive_strength > 0.0
+    }
+
     pub fn named(name: impl Into<String>) -> Self {
         Self { name: name.into(), ..Self::default() }
     }

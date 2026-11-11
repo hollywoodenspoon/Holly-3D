@@ -232,3 +232,15 @@ impl Default for SplineUi {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct Snapshot {
+    pub scene: crate::scene::Scene,
+    pub sub: crate::mesh::SubObject,
+}
+
+/// Variant name of an op ("ExtrudePolygons", …) used as memory key.
+pub fn op_key(op: &crate::mesh::ops::PolyOp) -> String {
+    let d = format!("{op:?}");
+    d.split([' ', '{', '(']).next().unwrap_or("").to_string()
+}

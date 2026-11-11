@@ -52,23 +52,39 @@ fn materials(rs: &RenderScene) -> Value {
                 "transmission": if m.model == ShadingModel::Crystal { m.transmission } else { 0.0 },
                 "alpha": m.opacity,
                 "emission": v(lin3(m.emissive) * m.emissive_strength),
+                // Preserve Texture Appearance: camera rays see the base at this brightness.
+                "camera_brightness": m.decoupled().then_some(m.direct_camera_brightness.clamp(0.0, 2.0)),
             })
         })
         .collect()
 }
 
-/// One mesh per (object, material): unwelded triangles + corner normals and UVs.
+/// One mesh per (object, material): unwelded triangles + corner normals
+/// and UVs, plus projection-space positions for World / Triplanar materials.
 fn meshes(rs: &RenderScene) -> Value {
-    let mut groups: std::collections::BTreeMap<(u32, usize), [Vec<f32>; 3]> = Default::default();
+    let mut groups: std::collections::BTreeMap<(u32, usize), [Vec<f32>; 4]> = Default::default();
     for t in &rs.bvh.tris {
-        let [p, n, uv] = groups.entry((t.obj, t.mat)).or_default();
+        let [p, n, uv, tpos] = groups.entry((t.obj, t.mat)).or_default();
+        let frame = rs.materials[t.mat].projection.on().then(|| rs.frames.get(t.obj as usize).copied().unwrap_or_default());
         for k in 0..3 {
             p.extend(t.p[k].to_array());
             n.extend(t.n[k].to_array());
             uv.extend(t.uv[k].to_array());
+            if let Some((rot, origin)) = frame {
+                tpos.extend((rot.inverse() * (t.p[k] - origin)).to_array());
+            }
         }
     }
-    groups.into_iter().map(|((obj, mat), [p, n, uv])| json!({ "obj": obj, "mat": mat, "verts": p, "normals": n, "uvs": uv })).collect()
+    groups
+        .into_iter()
+        .map(|((obj, mat), [p, n, uv, tpos])| {
+            let mut mesh = json!({ "obj": obj, "mat": mat, "verts": p, "normals": n, "uvs": uv });
+            if !tpos.is_empty() {
+                mesh["tpos"] = json!(tpos);
+            }
+            mesh
+        })
+        .collect()
 }
 
 /// Lights in Blender units: our radiance is irradiance x d² for points

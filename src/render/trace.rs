@@ -100,16 +100,33 @@ impl<'a> Tracer<'a> {
         let uv: Vec2 = t.uv[0] * w.x + t.uv[1] * w.y + t.uv[2] * w.z;
         let col: Vec4 = t.col[0] * w.x + t.col[1] * w.y + t.col[2] * w.z;
         let m = &self.rs.materials[t.mat];
-        // Relief: tilt the shading normal by the material's normal map.
-        if let Some((dpdu, dpdv)) = relief::uv_frame(t.p, t.uv)
-            && let Some(tn) = relief::tangent_normal(m, uv, p, dpdu, dpdv)
-        {
-            let bumped = relief::perturb(n, dpdu, dpdv, tn);
+        let frame = relief::uv_frame(t.p, t.uv);
+        let s = if m.projection.on() {
+            // World / Triplanar: project in the object's own space.
+            let (rot, origin) = self.rs.frames.get(t.obj as usize).copied().unwrap_or_default();
+            let (tp, tn) = (rot.inverse() * (p - origin), rot.inverse() * ng);
+            let mut bumped = relief::triplanar_normal(m, tp, tn, n, rot);
+            if let (Some(paint), Some((dpdu, dpdv))) = (&m.paint, frame)
+                && let Some(t) = paint.tangent_normal(uv, p, None)
+            {
+                bumped = relief::perturb(bumped, dpdu, dpdv, t);
+            }
             if bumped.dot(ng) > 0.0 {
                 n = bumped;
             }
-        }
-        let s = surface(m, uv, p, col);
+            crate::materials::shading::surface_at(m, uv, p, tp, tn, col)
+        } else {
+            // Relief: tilt the shading normal by the material's normal map.
+            if let Some((dpdu, dpdv)) = frame
+                && let Some(tn) = relief::tangent_normal(m, uv, p, dpdu, dpdv)
+            {
+                let bumped = relief::perturb(n, dpdu, dpdv, tn);
+                if bumped.dot(ng) > 0.0 {
+                    n = bumped;
+                }
+            }
+            surface(m, uv, p, col)
+        };
         Shading { p, n, ng, entering, s, tri: h.tri }
     }
 
@@ -262,7 +279,10 @@ impl<'a> Tracer<'a> {
     }
 
     fn surface_color(&self, m: &crate::materials::Material, sh: &Shading, v: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> Vec3 {
-        let s = &sh.s;
+        // Camera rays of a "Preserve Texture Appearance" material see the
+        // unblown surface; deeper bounces carry the full emission.
+        let seen = if depth == 0 { crate::materials::shading::camera_view(m, &sh.s) } else { sh.s };
+        let s = &seen;
         if m.model == ShadingModel::Unlit {
             return s.base + s.emissive;
         }

@@ -6,6 +6,8 @@
 mod build;
 mod ground;
 mod hard;
+mod kind;
+pub use kind::Kind;
 mod soft;
 mod weathered;
 #[cfg(test)]
@@ -102,8 +104,24 @@ impl Category {
         match self {
             Category::Classic => Preset::ALL.into_iter().map(Item::Classic).collect(),
             Category::Weathered => weathered::WEATHERED.iter().map(Item::Proc).collect(),
-            c => c.specs().iter().map(Item::Lib).collect(),
+            c => c.specs().iter().map(Item::Lib).chain(c.photos()).collect(),
         }
+    }
+
+    /// 📷 Photo versions on this shelf (when the photo pack is installed).
+    fn photos(self) -> impl Iterator<Item = Item> {
+        use crate::assets::polyhaven::Group;
+        let group = match self {
+            Category::Ground => Some(Group::Ground),
+            Category::Roads => Some(Group::Roads),
+            Category::Walls => Some(Group::Walls),
+            Category::Roofs => Some(Group::Roofs),
+            Category::Metals => Some(Group::Metals),
+            Category::Wood => Some(Group::Wood),
+            Category::Stone => Some(Group::Stone),
+            _ => None,
+        };
+        crate::assets::photo::all().into_iter().filter(move |p| Some(p.group) == group).map(|p| Item::Photo(p.name))
     }
 }
 
@@ -115,6 +133,8 @@ pub enum Item {
     Lib(&'static Spec),
     /// A procedural pattern with weathering.
     Proc(&'static weathered::ProcSpec),
+    /// A photo texture from the installed photo pack, by name.
+    Photo(&'static str),
 }
 
 impl Item {
@@ -123,7 +143,12 @@ impl Item {
             Item::Classic(p) => p.label(),
             Item::Lib(s) => s.name,
             Item::Proc(s) => s.name,
+            Item::Photo(name) => name,
         }
+    }
+
+    pub fn is_photo(self) -> bool {
+        matches!(self, Item::Photo(_))
     }
 
     pub fn material(self) -> Material {
@@ -131,6 +156,7 @@ impl Item {
             Item::Classic(p) => p.material(),
             Item::Lib(s) => s.material(),
             Item::Proc(s) => s.material(),
+            Item::Photo(name) => crate::assets::photo::all().iter().find(|p| p.name == name).map_or_else(|| Material::named(name), |p| p.material()),
         }
     }
 }

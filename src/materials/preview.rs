@@ -44,7 +44,7 @@ fn trace(m: &Material, o: Vec3, d: Vec3) -> (Vec3, f32) {
         Some(tn) => super::relief::perturb(n, east, north, tn),
         None => n,
     };
-    let s = surface(m, uv, q, Vec4::ONE);
+    let s = super::shading::camera_view(m, &surface(m, uv, q, Vec4::ONE));
     let lights = [
         LightIn { dir: KEY.normalize(), radiance: Vec3::splat(3.2) },
         LightIn { dir: Vec3::new(0.7, -0.2, 0.68).normalize(), radiance: Vec3::new(0.7, 0.75, 0.9) },

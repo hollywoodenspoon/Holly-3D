@@ -232,7 +232,16 @@ impl MultiPreset {
                 pbr("Rusted Rebar", [0.42, 0.22, 0.12], 0.75, 0.7),
             ],
         };
-        MultiSub { subs: mats.into_iter().enumerate().map(|(i, m)| sub(i as u16 + 1, m)).collect() }
+        // Generated buildings and terrain have no UV layout: their packs
+        // use World / Triplanar mapping, so patterns and photos tile.
+        let triplanar = matches!(self, Self::MedievalCastle | Self::ModernCity | Self::AlpineTerrain | Self::GhostTown);
+        let place = |mut m: Material| {
+            if triplanar {
+                m.projection = super::Projection::triplanar(2.0);
+            }
+            m
+        };
+        MultiSub { subs: mats.into_iter().enumerate().map(|(i, m)| sub(i as u16 + 1, place(m))).collect() }
     }
 
     /// Turns `m` into this pack (keeps its name and viewport flag).
