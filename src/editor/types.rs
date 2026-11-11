@@ -93,6 +93,8 @@ pub enum Tool {
     RefineSpline,
     /// Editable Spline Boolean: click the second spline.
     PickSplineBoolean,
+    /// Loft: click shapes to add them as cross-sections (stays active).
+    PickLoftShape,
     /// Create a light; target lights take a second click for the target.
     CreateLight {
         kind: crate::render::LightKind,
@@ -141,6 +143,7 @@ impl Tool {
             Tool::Joint { .. } => Some("Assemble Joint: click the mount point on the parent part"),
             Tool::RefineSpline => Some("Refine: click on a segment to add a vertex (Esc to stop)"),
             Tool::PickSplineBoolean => Some("Boolean: click the other closed spline"),
+            Tool::PickLoftShape => Some("Loft: click shapes to add them as sections (Esc to stop)"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::PickFocus => Some("Depth of Field: click the object to keep in focus"),
             Tool::CreateLight { kind, first: None } if kind.has_target() => Some("Click to place the light"),

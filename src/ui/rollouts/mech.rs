@@ -4,7 +4,7 @@
 
 use super::spline::{grid, num_row, u_row};
 use crate::editor::{Editor, Tool};
-use crate::mech::{Gear, GearType, Hose, HoseCurve, MechPart, PistonPart};
+use crate::mech::{Fastener, FastenerKind, Gear, GearType, Hose, HoseCurve, MechPart, PistonPart, ThreadStd};
 use crate::ui::command::CONTENT_W;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy::math::Vec3;
@@ -41,6 +41,42 @@ fn piston(ui: &mut egui::Ui, t: &mut Track, p: &mut PistonPart) {
         num_row(ui, t, "Eyelet Radius:", &mut p.eyelet, 0.01..=100.0, d.eyelet);
         u_row(ui, t, "Sides:", &mut p.sides, d.sides, 6..=64);
     });
+}
+
+fn fastener(ui: &mut egui::Ui, t: &mut Track, f: &mut Fastener) {
+    ui.label(RichText::new(f.kind.label()).strong());
+    ui.horizontal(|ui| {
+        for std in [ThreadStd::Metric, ThreadStd::Imperial] {
+            if t.r(ui.radio_value(&mut f.standard, std, std.label())).changed() {
+                f.size = f.size.min(std.sizes().len() - 1);
+            }
+        }
+    });
+    egui::ComboBox::from_id_salt("fastener_size").width(CONTENT_W - 12.0).selected_text(f.spec().name).show_ui(ui, |ui| {
+        for (i, s) in f.standard.sizes().iter().enumerate() {
+            t.r(ui.selectable_value(&mut f.size, i, format!("{}  (pitch {:.2} mm)", s.name, s.pitch)));
+        }
+    });
+    let d = Fastener::new(f.kind);
+    grid(ui, "fastener_params", |ui| {
+        match f.kind {
+            FastenerKind::Bolt => {
+                num_row(ui, t, "Length (mm):", &mut f.length, 1.0..=500.0, d.length);
+                num_row(ui, t, "Thread Length:", &mut f.thread_length, 0.5..=500.0, d.thread_length);
+            }
+            FastenerKind::TappedHole => {
+                num_row(ui, t, "Depth (mm):", &mut f.length, 1.0..=500.0, d.length);
+                num_row(ui, t, "Block Width:", &mut f.block, 1.0..=1000.0, d.block);
+            }
+            FastenerKind::Nut => {}
+        }
+        u_row(ui, t, "Sides:", &mut f.sides, d.sides, 12..=192);
+        u_row(ui, t, "Thread Detail:", &mut f.detail, d.detail, 3..=24);
+        num_row(ui, t, "Scale:", &mut f.scale, 0.01..=1000.0, d.scale);
+    });
+    t.r(ui.checkbox(&mut f.threads, "Model Threads"));
+    let s = f.spec();
+    ui.label(dim(&format!("Ø {:.2} mm, pitch {:.3} mm, hex {:.2} mm across flats. Scale 1 = true size (1 unit = 1 m).", s.d, s.pitch, s.flats)));
 }
 
 fn vec_row(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut Vec3) {
@@ -113,11 +149,13 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         MechPart::Gear(_) => "Gear Parameters",
         MechPart::Piston(_) => "Piston Parameters",
         MechPart::Hose(_) => "Hose Parameters",
+        MechPart::Fastener(_) => "Fastener Parameters",
     };
     rollout(ui, title, true, |ui| match &mut p {
         MechPart::Gear(g) => gear(ui, &mut t, g),
         MechPart::Piston(pp) => piston(ui, &mut t, pp),
         MechPart::Hose(h) => hose(ui, &mut t, h),
+        MechPart::Fastener(f) => fastener(ui, &mut t, f),
     });
     if let MechPart::Hose(h) = &p {
         rollout(ui, "Hose Ends", true, |ui| hose_ends(ui, ed, h));

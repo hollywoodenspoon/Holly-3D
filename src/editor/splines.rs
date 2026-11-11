@@ -277,3 +277,22 @@ impl Editor {
         self.edit_shape(kind.label(), |s| s.set_type_selected(kind));
     }
 }
+
+impl Editor {
+    /// One-shot spline constraint on the current Editable Spline selection.
+    pub fn constrain_spline(&mut self, c: crate::splines::constraints::SplineConstraint) {
+        if self.spline_level() != Some(c.level()) {
+            self.status = format!("{}: {}", c.label(), c.tip());
+            return;
+        }
+        let mut n = 0;
+        self.edit_shape(c.label(), |s| n = s.constrain(c));
+        if n == 0 {
+            self.history.discard_last();
+        }
+        self.status = match n {
+            0 => format!("{}: select the reference and at least one item to change", c.label()),
+            n => format!("{}: changed {n} item(s)", c.label()),
+        };
+    }
+}

@@ -2,6 +2,7 @@
 
 pub mod battlefield;
 pub mod boolean;
+pub mod cad;
 pub mod catalog;
 pub mod chamfer;
 pub mod deformers;
@@ -90,6 +91,7 @@ pub enum ModifierKind {
     Settlement(crate::generators::SettlementMod),
     Architect(medieval::ArchitectMod),
     Battlefield(battlefield::BattlefieldMod),
+    Loft(cad::LoftMod),
 }
 
 /// Modifier sub-objects that are not mesh components (gizmos and lattices).
@@ -154,6 +156,7 @@ impl ModifierKind {
             ModifierKind::Settlement(_) => "GhostTown",
             ModifierKind::Architect(_) => "Medieval Architect",
             ModifierKind::Battlefield(_) => "Battlefield / Ruin",
+            ModifierKind::Loft(_) => "Loft",
         }
     }
 
@@ -231,19 +234,20 @@ impl ModifierEntry {
             ModifierKind::Architect(a) => a.apply(mesh),
             ModifierKind::Battlefield(b) => b.apply(mesh),
             // shape modifiers pass meshes through untouched
-            ModifierKind::Lathe(_) | ModifierKind::Extrude(_) => {}
+            ModifierKind::Lathe(_) | ModifierKind::Extrude(_) | ModifierKind::Loft(_) => {}
         }
     }
 
     /// Shape -> mesh modifiers (Lathe, Extrude) consume a shape flowing up the stack.
     pub fn consumes_shape(&self) -> bool {
-        matches!(self.kind, ModifierKind::Lathe(_) | ModifierKind::Extrude(_) | ModifierKind::Settlement(_) | ModifierKind::Architect(_))
+        matches!(self.kind, ModifierKind::Lathe(_) | ModifierKind::Extrude(_) | ModifierKind::Loft(_) | ModifierKind::Settlement(_) | ModifierKind::Architect(_))
     }
 
     pub fn build_from_shape(&self, shape: &crate::splines::Shape) -> EditablePoly {
         match &self.kind {
             ModifierKind::Lathe(l) => l.build(shape),
             ModifierKind::Extrude(e) => e.build(shape),
+            ModifierKind::Loft(l) => l.build(shape),
             ModifierKind::Settlement(g) => g.build_from_shape(shape),
             ModifierKind::Architect(a) => a.build_from_shape(shape),
             _ => EditablePoly::new(),
@@ -280,6 +284,7 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Panel Groove", available: true },
     ModifierListItem { name: "Lathe", available: true },
     ModifierListItem { name: "Extrude", available: true },
+    ModifierListItem { name: "Loft", available: true },
     ModifierListItem { name: "Edit Normals", available: true },
     ModifierListItem { name: "Boolean", available: true },
     ModifierListItem { name: "ProOptimizer", available: true },
@@ -299,6 +304,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "VertexPaint" => Some(ModifierEntry::new(ModifierKind::VertexPaint(VertexPaintMod::default()))),
         "Lathe" => Some(ModifierEntry::new(ModifierKind::Lathe(LatheMod::default()))),
         "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
+        "Loft" => Some(ModifierEntry::new(ModifierKind::Loft(Default::default()))),
         "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
         "Terrain" => Some(ModifierEntry::new(ModifierKind::Terrain(Default::default()))),
         "Ocean" => Some(ModifierEntry::new(ModifierKind::Ocean(Default::default()))),

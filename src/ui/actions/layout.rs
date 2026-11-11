@@ -7,6 +7,7 @@ use super::Action::*;
 use crate::editor::NavMode;
 use crate::mesh::SubObject;
 use crate::render::sky_presets::SkyPreset;
+use crate::splines::constraints::SplineConstraint;
 
 /// One menu row.
 pub enum Entry {
@@ -37,6 +38,15 @@ const SUB_LEVELS: &[Entry] = &[
 
 const DISPLAY: &[Entry] =
     &[A(HideSelected), A(HideUnselected), A(UnhideAll), Sep, A(FreezeSelected), A(UnfreezeAll), Sep, A(SeeThrough), A(Isolate)];
+
+const CONSTRAINTS: &[Entry] = &[
+    A(Constrain(SplineConstraint::Parallel)),
+    A(Constrain(SplineConstraint::Perpendicular)),
+    A(Constrain(SplineConstraint::EqualLength)),
+    Sep,
+    A(Constrain(SplineConstraint::Tangent)),
+    A(Constrain(SplineConstraint::Concentric)),
+];
 
 const NAVIGATION: &[Entry] = &[
     A(Nav(NavMode::Zoom)),
@@ -104,6 +114,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             Entry::Sub("Sub-Object Level", SUB_LEVELS),
             A(ConvertToPoly),
             A(ConvertToSpline),
+            Entry::Sub("Spline Constraints", CONSTRAINTS),
         ],
     ),
     (

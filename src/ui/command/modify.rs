@@ -77,6 +77,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         Some(ModifierKind::VertexPaint(_)) => return crate::ui::paintbox::modifier_rollout(ui, ed),
         Some(ModifierKind::Lathe(_)) => return rollouts::spline::lathe(ui, ed),
         Some(ModifierKind::Extrude(_)) => return rollouts::spline::extrude(ui, ed),
+        Some(ModifierKind::Loft(_)) => return rollouts::cad::loft(ui, ed),
         Some(ModifierKind::GeoGen(_)) => return rollouts::geogen::modifier(ui, ed),
         Some(ModifierKind::Terrain(_)) => return rollouts::worlds::terrain_modifier(ui, ed),
         Some(ModifierKind::Ocean(_)) => return rollouts::worlds::ocean_modifier(ui, ed),

@@ -54,7 +54,11 @@ pub const GROUPS: &[(&str, &[ModifierInfo])] = &[
     ("Paint", &[m("VertexPaint", "Paint colours straight onto the vertices (no UVs needed)")]),
     (
         "Spline → Mesh",
-        &[m("Lathe", "Spins a spline profile around an axis (vases, pillars)"), m("Extrude", "Pushes a closed spline into a solid")],
+        &[
+            m("Lathe", "Spins a spline profile around an axis (vases, pillars)"),
+            m("Extrude", "Pushes a closed spline into a solid"),
+            m("Loft", "Skins picked cross-section shapes along this path spline, with twist and scale"),
+        ],
     ),
     ("Booleans", &[m("Boolean", "Union, subtract or intersect with other objects")]),
     (
@@ -87,7 +91,7 @@ pub enum Fit {
 }
 
 /// Modifiers that build a mesh from a spline flowing up the stack.
-const SHAPE_ONLY: [&str; 2] = ["Lathe", "Extrude"];
+const SHAPE_ONLY: [&str; 3] = ["Lathe", "Extrude", "Loft"];
 /// Modifiers that accept either a spline or a mesh.
 const SHAPE_OR_MESH: [&str; 2] = ["GhostTown", "Medieval Architect"];
 
@@ -101,7 +105,7 @@ pub fn fit(name: &str, o: Option<&SceneObject>) -> Fit {
         return if spline { Fit::Yes } else { Fit::No("Needs a spline (Create → Shapes)") };
     }
     if spline && !SHAPE_OR_MESH.contains(&name) {
-        return Fit::Dim("Works on the spline's renderable mesh only: add Lathe or Extrude first");
+        return Fit::Dim("Works on the spline's renderable mesh only: add Lathe, Extrude or Loft first");
     }
     Fit::Yes
 }

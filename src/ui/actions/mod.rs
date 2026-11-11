@@ -13,6 +13,7 @@ mod tests;
 use crate::editor::NavMode;
 use crate::mesh::SubObject;
 use crate::render::sky_presets::SkyPreset;
+use crate::splines::constraints::SplineConstraint;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -62,6 +63,8 @@ pub enum Action {
     ConvertToPoly,
     ConvertToSpline,
     Measure,
+    /// One-shot Editable Spline sketch constraint.
+    Constrain(SplineConstraint),
     // Display
     HideSelected,
     HideUnselected,
@@ -117,6 +120,7 @@ impl Action {
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ToggleGrid,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
+        v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
         v.extend([Render, RenderSetup, FrameWindow, ColorGrading, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
@@ -170,6 +174,7 @@ impl Action {
             ConvertToPoly => "Convert to Editable Poly",
             ConvertToSpline => "Convert to Editable Spline",
             Measure => "Measure...",
+            Constrain(c) => return c.label().to_string(),
             HideSelected => "Hide Selected",
             HideUnselected => "Hide Unselected",
             UnhideAll => "Unhide All",
@@ -275,6 +280,7 @@ impl Action {
             ContactSets => "Contact Member parts push each other along their hinges and sliders",
             Paint => "Viewport Paint: VertexPaint / texture projection (PaintBox)",
             Measure => "Size, centre and counts of the selection",
+            Constrain(c) => c.tip(),
             SeeThrough => "Draw the selected objects semi-transparent",
             CameraView => "Look through the selected (or first) camera",
             Ribbon => "Big buttons for every Edit Poly tool under the toolbar",

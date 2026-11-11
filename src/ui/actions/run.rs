@@ -73,6 +73,7 @@ impl Action {
             ConvertToPoly => ed.convert_to_editable_poly(),
             ConvertToSpline => ed.convert_to_editable_spline(),
             Measure => flip(&mut ed.iface.measure_open),
+            Constrain(c) => ed.constrain_spline(c),
             HideSelected => ed.hide_selected(),
             HideUnselected => ed.hide_unselected(),
             UnhideAll => ed.unhide_all(),
@@ -179,6 +180,7 @@ impl Action {
             SelectRing | SelectLoop => edge_like,
             RemoveSubObjects => matches!(ed.sub, SubObject::Vertex | SubObject::Edge | SubObject::Border) && ed.in_sub_object(),
             RepeatLast => ed.in_sub_object(),
+            Constrain(c) => ed.spline_level() == Some(c.level()),
             Sky(_) => ed.scene.environment.sky.mode != SkyMode::Off || self != Sky(SkyPreset::Off),
             _ => true,
         }

@@ -62,4 +62,24 @@ pub fn spline_level(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SplineUi) {
     if action(ui, "Delete", true, CONTENT_W) {
         ed.delete_selection();
     }
+    constraint_buttons(ui, ed, crate::splines::edit::SplineLevel::Spline);
+}
+
+/// One-shot sketch constraints for the current spline level; the first
+/// selected item is the reference.
+pub fn constraint_buttons(ui: &mut egui::Ui, ed: &mut Editor, level: crate::splines::edit::SplineLevel) {
+    use crate::splines::constraints::SplineConstraint;
+    use crate::ui::actions::Action;
+    let list: Vec<SplineConstraint> = SplineConstraint::ALL.into_iter().filter(|c| c.level() == level).collect();
+    ui.separator();
+    ui.label(egui::RichText::new("Constraints").strong());
+    ui.horizontal_wrapped(|ui| {
+        let w = if list.len() == 1 { CONTENT_W } else { (CONTENT_W - 12.0) / list.len() as f32 };
+        for c in list {
+            if ui.add(egui::Button::new(c.label()).min_size(egui::vec2(w, 24.0))).on_hover_text(c.tip()).clicked() {
+                Action::Constrain(c).run(ed);
+            }
+        }
+    });
+    ui.label(dim("The reference is the first selected item in spline order."));
 }

@@ -727,3 +727,23 @@ How it works:
 Known limits:
 - The code was written from LightCraft's published feature list; its repository was not inspected file by file, and no source files were copied.
 - Grading is per pixel on the CPU. A 1920×1080 image re-grades in a fraction of a second, but very large renders with Clarity on will lag a little while you drag.
+
+## 23. Phase 11 PR B: SolidCraft CAD tools
+
+Hard-surface CAD tools after SolidCraft (MIT / Apache-2.0).
+
+- **Threaded fasteners** (Create → Geometry → Mech → `Bolt`, `Nut`, `Threaded Hole`): ISO Metric M3–M24 and Imperial UNC #10–1" tables (`src/mech/fastener/table.rs`) set the pitch, hex across-flats, head and nut heights. Threads are real 60° helical profiles with crest and root flats, a run-out into the shank and a chamfered tip. A nut's internal thread fits the bolt of the same size. Every parameter stays live in the Fastener Parameters rollout: standard, size, length, thread length, block size, sides, thread detail, scale and `Model Threads` (off = plain, light cylinders). Bolts are closed solids (Euler 2); nuts and hole blocks are solid tori (Euler 0).
+- **Hole / Counterbore / Countersink** (Edit Poly → Polygon → Edit Polygons → `Hole` settings button): drills one round hole into the centre of every selected polygon along its normal with a manifold Boolean subtract. The caddy sets the kind, `Diameter`, `Depth` or `Through All`, `Top Diameter`, `Bore Depth`, `Sink Angle` and `Sides`. A mesh that is not closed is left unchanged, and the status bar says why. Code: `src/modifiers/cad/hole.rs`, `PolyOp::Hole`.
+- **Multi-profile Loft modifier** (Modifier List → Spline → Mesh → `Loft`): sits on the path spline. `Pick Shape` adds any shape object as a cross-section at `Next Section At %`. Sections are resampled to the same point count, lined up (winding and start point) and blended with smoothstep along the path on parallel-transport frames. Further controls are `Twist`, `Scale Start` / `Scale End` with `Scale Curve`, `Cap Start` / `Cap End`, `Flip Normals`, and `Path Steps` / `Shape Steps`. Each section's % can be edited in the list, and `Remove Section` deletes the highlighted one. With no sections, a 0.2 circle is used. Code: `src/modifiers/cad/loft.rs`, `src/editor/cad.rs`, `src/ui/rollouts/cad.rs`.
+- **Spline constraints** (Editable Spline Geometry rollout, and Tools → Spline Constraints): `Parallel`, `Perpendicular` and `Equal Length` at Segment level; `Tangent` at Vertex level (the curve leaves the vertex in the direction it arrived, using Bezier Corner handles); `Concentric` at Spline level. They are one-shot actions. The first selected item in spline order is the reference, and the rest move once to match it. A segment that shares a vertex with the reference pivots on that vertex, so the reference never moves. Code: `src/splines/constraints.rs`, `Action::Constrain`.
+- Help: there is a new page, "13. CAD tools", with a screenshot (`cad`). Help → Credits and `licenses/` (`SolidCraft-LICENSE-MIT.txt`, `SolidCraft-NOTICE.txt`) credit SolidCraft.
+- Tests:
+  - fasteners: 4 tests in `src/mech/tests.rs`;
+  - Loft and Hole: 6 tests in `src/modifiers/cad/tests.rs`, covering counts, Euler characteristic, volume, a hole removing material, a through hole adding a handle, and the op failing cleanly with nothing selected;
+  - constraints: 5 tests in `src/splines/tests_constraints.rs`.
+
+Known limits:
+- The tools were written from SolidCraft's published feature set; no source files were copied. SolidCraft's B-rep kernel and parametric timeline were not ported: these work on MiniMax's polygon meshes and splines.
+- Constraints are one-shot, not a live solver. Moving a segment later does not keep it parallel.
+- Holes drill straight along each polygon's normal from its centroid. There is no click-to-place point yet, and each hole is a separate Boolean (dozens of holes on a dense mesh take a moment).
+- Loft sections are taken flat from each shape's own XY plane, about its pivot.

@@ -98,9 +98,36 @@ pub const MECH: Page = Page {
     ],
 };
 
+pub const CAD: Page = Page {
+    id: "cad",
+    title: "13. CAD tools: fasteners, holes, Loft, constraints",
+    blocks: &[
+        Shot("cad", &[m(1433.0, 600.0, "Fastener parameters: standard, size, lengths"), m(1020.0, 600.0, "Real helical threads")]),
+        H("Bolts, nuts and threaded holes"),
+        P("Create > Geometry > Mech has Bolt, Nut and Threaded Hole. Pick ISO Metric (M3 to M24) or Imperial UNC (#10 to 1\"), and the head, nut and thread sizes follow the standard tables. A nut fits the bolt of the same size. Untick Model Threads for light plain cylinders."),
+        H("Hole, Counterbore and Countersink"),
+        Steps(&[
+            "Edit Poly or Editable Poly, Polygon level (4): select the faces to drill.",
+            "Edit Polygons > the settings button next to Hole: choose Simple Hole, Counterbore or Countersink.",
+            "Set Diameter and Depth, or tick Through All; counterbores and countersinks also take a Top Diameter.",
+            "OK drills one hole in the centre of every selected polygon, straight in along its normal.",
+        ]),
+        Tip("The cut is a Boolean, so the mesh must be closed. If it is not, nothing changes and the status bar says why."),
+        H("Multi-profile Loft"),
+        Steps(&[
+            "Select the path spline and add the Loft modifier (Modifier List > Spline > Mesh).",
+            "Set Next Section At % and click Pick Shape, then click a shape in a viewport. Repeat for more sections.",
+            "Sections blend smoothly between their path percentages. Twist, Scale Start / End and Scale Curve shape the skin; Cap Start / End close it.",
+        ]),
+        H("Spline constraints"),
+        P("Select an Editable Spline and pick a level. Segment level (2) has Parallel, Perpendicular and Equal Length. Vertex level (1) has Tangent, which makes the curve leave a vertex in the direction it arrived. Spline level (3) has Concentric. Each one runs once: the first selected item in spline order is the reference, and the other selected items move to match it. The constraints are also in Tools > Spline Constraints."),
+        ShowMe("Open the Create tab", Show::Tab(CommandTab::Create)),
+    ],
+};
+
 pub const FILES: Page = Page {
     id: "files",
-    title: "13. Files",
+    title: "14. Files",
     blocks: &[Steps(&[
         "File > New, Open and Save use MiniMax scenes (.mmax).",
         "Import OBJ, glTF / GLB and FBX. Export everything or just the selection.",
@@ -111,7 +138,7 @@ pub const FILES: Page = Page {
 
 pub const PREFS: Page = Page {
     id: "prefs",
-    title: "14. Preferences and hotkeys",
+    title: "15. Preferences and hotkeys",
     blocks: &[
         Shot("prefs", &[m(836.0, 75.0, "Preferences (⚙)"), m(418.0, 68.0, "Tabs: Theme, Hotkeys, Viewports, General, Rendering, Assets")]),
         Steps(&[
@@ -141,6 +168,8 @@ pub const CREDITS: Page = Page {
         P("The texture painter follows the design of TextureCraft by the ArtCraft Team and the TextureCraft contributors: github.com/storytold/texturecraft. That covers the 64 x 64 copy-on-write texel tiles, the layer stack with blend modes and masks, mesh map baking, Smart Masks and the brush stamps. Licensed MIT / Apache-2.0."),
         H("LightCraft"),
         P("The F9 Color Grading & Camera RAW sidebar follows the develop pipeline of LightCraft by the ArtCraft Team and the LightCraft contributors: github.com/storytold/lightcraft. That covers the tone and presence controls, Kelvin white balance, split-toning wheels, vignette, chromatic aberration and film grain. Licensed MIT / Apache-2.0."),
+        H("SolidCraft"),
+        P("The CAD tools follow SolidCraft by the SolidCraft contributors: github.com/tangency-labs/solidcraft. That covers the ISO metric / UNC bolts, nuts and threaded holes, the Hole / Counterbore / Countersink cutter, the multi-profile Loft and the Parallel, Perpendicular, Tangent, Concentric and Equal Length sketch constraints. Licensed MIT / Apache-2.0; no SolidCraft brand or interface material is used."),
         H("Asset packs"),
         P("The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl)."),
         H("Fira Code"),
@@ -150,8 +179,8 @@ pub const CREDITS: Page = Page {
 };
 
 /// Every page, in topic order.
-pub const ALL: [Page; 16] =
-    [BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, FILES, PREFS, HOTKEYS, CREDITS];
+pub const ALL: [Page; 17] =
+    [BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, CAD, FILES, PREFS, HOTKEYS, CREDITS];
 
 pub fn index_of(id: &str) -> usize {
     ALL.iter().position(|p| p.id == id).unwrap_or(0)
