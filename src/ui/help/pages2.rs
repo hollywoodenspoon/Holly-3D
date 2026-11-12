@@ -44,7 +44,9 @@ pub const RENDER: Page = Page {
         ),
         Steps(&[
             "F10 Render Setup: resolution presets, alpha background, camera, anti-aliasing, AO, GI, denoiser, bloom, depth of field.",
-            "Pick the renderer: the built-in raytracer, or Cycles through Blender (set Blender's path in Preferences > Rendering).",
+            "Pick the renderer: the Path Tracer (default: multi-bounce light, MIS, Russian Roulette) or the fast Classic Raytracer.",
+            "Compute Device: Auto uses the GPU (wgpu Vulkan compute) and falls back to the CPU; HDRI skies, opacity, toon and texture maps render on the CPU.",
+            "Progressive Preview streams full-frame passes (1, 2, 4 ... samples). Adaptive Sampling stops pixels whose noise is below the Noise Threshold.",
             "F9 renders the active view into the Rendered Frame Window.",
             "In the Frame Window: save PNG / EXR / JPG, copy, clone the window to compare, and view R / G / B / A channels.",
         ]),
@@ -195,6 +197,7 @@ pub const CREDITS: Page = Page {
         P("The F9 Color Grading & Camera RAW sidebar follows the develop pipeline of LightCraft by the ArtCraft Team and the LightCraft contributors: github.com/storytold/lightcraft. That covers the tone and presence controls, Kelvin white balance, split-toning wheels, vignette, chromatic aberration and film grain. Licensed MIT / Apache-2.0."),
         H("SolidCraft"),
         P("The CAD tools follow SolidCraft by the SolidCraft contributors: github.com/tangency-labs/solidcraft. That covers the ISO metric / UNC bolts, nuts and threaded holes, the Hole / Counterbore / Countersink cutter, the multi-profile Loft and the Parallel, Perpendicular, Tangent, Concentric and Equal Length sketch constraints. Licensed MIT / Apache-2.0; no SolidCraft brand or interface material is used."),
+        P("The path tracer (CPU and the wgpu GPU kernel) follows the design of SolidCraft's GPU path tracer: its GGX / visible-normal sampling, lobe mix, power-heuristic MIS and storage-buffer BVH layout. MIT / Apache-2.0."),
         H("Asset packs"),
         P("The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl)."),
         H("Fira Code"),

@@ -793,3 +793,54 @@ Known limits:
 - After a fatal signal (rather than a panic), the crashing thread's backtrace is not available. The report says so, and the breadcrumbs and scene state are still there.
 - The emergency scene is the last snapshot. It can be up to 5 s behind an edit that is still being dragged.
 - The signal handlers are Unix-only. On other systems only panics are recorded.
+
+## 25. Phase 11.5A: Native GPU/CPU path tracer (Cycles bridge removed)
+
+**Removed:** the Cycles / Blender bridge: `blender.rs`, `blender_loader.py`, `blender_tex.rs`, `cycles.rs`, its tests, the F10 Cycles rollout, and the Preferences → Rendering Blender path. Scenes saved with `engine: Cycles` still load. Serde ignores the old fields, and they render with the native path tracer. A legacy-RON test covers this.
+
+**F10 Render Setup:**
+- `Renderer`: Path Tracer (default) or Classic Raytracer, which is the old fast tracer, unchanged.
+- `Compute Device`: Auto (wgpu GPU with CPU fallback), GPU (wgpu Vulkan Compute) or CPU (SIMD Multi-Thread).
+- `Stream Full-Frame Progressive Passes` (1 → 2 → 4 → … → final spp).
+- Samples, `Max Bounces` (1..8), and separate Diffuse / Glossy / Transmission bounce limits.
+- `Russian Roulette After` (default 2).
+- `Adaptive Sampling` with `Noise Threshold` (0.002..0.10) and `Min Samples` (4..32). All spinners reset with a right-click.
+- Preferences → Rendering sets the default Renderer and Compute Device. The Frame Window progress bar shows `Pass n/N · spp · % sampling`.
+
+**CPU path tracer (`src/render/pathtrace/`):**
+- `bsdf.rs`: Lambert + GGX with Heitz visible-normal sampling and separable Smith G, plus a smooth dielectric for glass and crystal. It uses SolidCraft's lobe mix, `0.5 (1 - metallic)`.
+- `integrator.rs`:
+  - Iterative paths with NEE on punctual lights.
+  - One MIS-weighted sample per bounce on emissive polygons. Emission found by BSDF sampling gets the matching power-heuristic weight, so the classic tracer's firefly clamps are not needed here.
+  - Stochastic opacity, fog, and Beer-Lambert crystal absorption.
+- `adaptive.rs`: Welford statistics with a 3×3 worst-neighbour relative error.
+- `progressive.rs`: row-parallel full-frame passes, with SplitMix-seeded streams.
+- `src/render/mis.rs`: power and balance heuristics, plus area-to-solid-angle conversion.
+
+**GPU path tracer (`src/render/gpu_pathtrace/`):**
+- A WGSL compute port of the same integrator (`kernel.wgsl`).
+- Triangles, the binary BVH, lights and the emitter CDF go up as storage buffers, with stack traversal.
+- Each dispatch traces at most 4 spp, so the driver watchdog never fires. RGB/coverage and luminance sums are read back each pass for the adaptive mask.
+- The G-buffer and background come from one CPU center ray, so outlines and the denoiser still work.
+- Without an adapter, or for HDRI/procedural skies, opacity, toon, texture/procedural maps or decoupled emission, it falls back to the CPU and the status line says why.
+
+**Fix:** hit points are now interpolated barycentrically instead of computed as `o + d t`. Orthographic rays start 2500 units out, and the lost precision made bounce rays re-hit their own surface. This helps the classic tracer too.
+
+**Tests (now 483):**
+- White furnace.
+- More bounces add interreflected light.
+- Russian Roulette leaves the mean unchanged.
+- MIS agrees with pure BSDF sampling on an area light.
+- Adaptive sampling stops early.
+- BSDF sampled albedo equals the integrated albedo.
+- Glass tint.
+- MIS weights, Welford statistics and convergence.
+- Legacy Cycles scenes load.
+- **GPU/CPU parity:** on llvmpipe Vulkan, image energy is 57.23 vs 57.26, with every 6×6 block matching. The test skips without an adapter; `MINIMAX_REQUIRE_GPU=1` makes that a failure.
+- CPU fallback.
+
+**Not done in 11.5A:**
+- The hardware ray-query path. The kernel always uses software BVH traversal; wgpu's ray-query feature isn't used yet.
+- Per-texel textures on the GPU. Textured scenes go to the CPU.
+
+Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
