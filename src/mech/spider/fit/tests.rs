@@ -154,8 +154,23 @@ fn fits_reference_obj() {
             println!("{k} {} {:?}", s.objects[i].name, adj[k]);
         }
     }
+    if std::env::var("REF_SAVE").is_ok() {
+        // Centre the mech on the origin, standing on the ground.
+        let bb = pick.iter().map(|&i| world_box(&s, i)).reduce(|a, b| a.union(&b)).unwrap();
+        let shift = Vec3::new(bb.center().x, bb.center().y, bb.min.z);
+        for &i in &pick {
+            s.objects[i].transform.translation -= shift;
+        }
+    }
     let t = std::time::Instant::now();
     let f = rig_selection(&mut s, &pick).unwrap();
+    if let Ok(out) = std::env::var("REF_SAVE") {
+        crate::io::scene_file::save(&s, std::path::Path::new(&out)).unwrap();
+        let back = crate::io::scene_file::load(std::path::Path::new(&out)).unwrap();
+        assert_eq!(back.assembly.joints.len(), s.assembly.joints.len());
+        assert_eq!(back.assembly.links.len(), 4);
+        println!("saved {out}: {} objects, {} joints", back.objects.len(), back.assembly.joints.len());
+    }
     println!("{} in {:?}; cut {:?}", f.summary(), t.elapsed(), f.cut);
     for (i, l) in f.rig.legs.iter().enumerate() {
         println!("leg {i}: {:?}", [l.drum, l.thigh, l.shin, l.foot].map(|id| s.objects[id].transform.translation));
