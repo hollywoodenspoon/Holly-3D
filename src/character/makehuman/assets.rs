@@ -23,6 +23,15 @@ asset!(eyes_low_mhclo, "eyes-low.mhclo.z");
 asset!(skeleton_json, "default.mhskel.z");
 asset!(weights_json, "default_weights.mhw.z");
 
+// The MakeHuman system asset pack (`tools/pack_makehuman.py`): the
+// `.obj` / `.mhclo` / `.mhmat` text of every proxy, zlib-compressed.
+asset!(system_pack, "system.mhp.z");
+
+/// The pack's downscaled diffuse textures (JPEG colour + PNG alpha).
+pub fn textures_pack() -> &'static [u8] {
+    include_bytes!("../../../assets/makehuman/textures.mhp")
+}
+
 fn inflate(z: &[u8]) -> Vec<u8> {
     miniz_oxide::inflate::decompress_to_vec_zlib(z).unwrap_or_default()
 }

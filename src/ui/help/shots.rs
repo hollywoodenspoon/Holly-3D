@@ -33,11 +33,12 @@ pub const SHOTS: &[(&str, &[u8])] = &[
     ("prefs", include_bytes!("../../../assets/help/prefs.jpg")),
     ("crash", include_bytes!("../../../assets/help/crash.jpg")),
     ("characters", include_bytes!("../../../assets/help/characters.jpg")),
+    ("wardrobe", include_bytes!("../../../assets/help/wardrobe.jpg")),
 ];
 
 /// The ids `tools/help_shots.sh` captures.
-pub const IDS: [&str; 20] = [
-    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "grading", "ghosttown", "mech", "cad", "prefs", "crash", "characters",
+pub const IDS: [&str; 21] = [
+    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "grading", "ghosttown", "mech", "cad", "prefs", "crash", "characters", "wardrobe",
 ];
 
 fn demo(ed: &mut Editor) {
@@ -209,6 +210,7 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             ed.scene.select_only(Some(id));
             ed.iface.character_studio_open = true;
         }
+        "wardrobe" => wardrobe(ed),
         "crash" => {
             demo(ed);
             ed.iface.crash_pending = Some(sample_crash());
@@ -217,6 +219,32 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
     }
     ed.history = Default::default();
     true
+}
+
+/// Two humans dressed from the MakeHuman system assets.
+fn wardrobe(ed: &mut Editor) {
+    use crate::character::params::Archetype;
+    use crate::character::wardrobe::MhAssets;
+    use crate::editor::characters::CharacterPick;
+    let looks = [
+        (0.0, -0.45, "ponytail01", ["female_casualsuit01", "shoes02"], "young_caucasian_female", "green"),
+        (1.0, 0.45, "short02", ["male_casualsuit03", "shoes01"], "middleage_african_male", "brown"),
+    ];
+    let mut last = None;
+    for (gender, x, hair, clothes, skin, eye) in looks {
+        let id = ed.create_pick(CharacterPick::Archetype(Archetype::Human), Vec3::new(x, 0.0, 0.0));
+        let Some((_, mut p)) = ed.character() else { continue };
+        p.macros.gender = gender;
+        let s = |v: &str| Some(v.to_string());
+        p.mh = MhAssets { hair: s(hair), clothes: clothes.map(String::from).to_vec(), skin: s(skin), eye_color: s(eye), ..MhAssets::face_kit() };
+        ed.set_character(id, p);
+        last = Some(id);
+    }
+    for o in ed.scene.objects.values_mut() {
+        o.selected = true;
+    }
+    ed.zoom_extents(true);
+    ed.scene.select_only(last);
 }
 
 /// A made-up crash for the recovery-dialog screenshot.

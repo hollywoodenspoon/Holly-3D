@@ -4,6 +4,7 @@
 
 pub mod params;
 pub mod pose;
+pub mod wardrobe;
 
 use crate::character::params::{Archetype, Creature};
 use crate::editor::characters::CharacterPick;

@@ -4,12 +4,13 @@
 //! pieces fitted to the morphed landmarks. Feet stand on Z = 0.
 
 use super::landmarks::Landmarks;
+use super::makehuman::library::{self, Category, Item};
 use super::makehuman::mhclo::Proxy;
 use super::makehuman::obj::{base, to_scene, BaseMesh, Part};
 use super::makehuman::target::pack;
 use super::makehuman::{assets, modifiers};
 use super::params::{ids, CharacterParams, Eyes, Outfit};
-use super::{anime, outfit};
+use super::{anime, outfit, wardrobe};
 use crate::mesh::EditablePoly;
 use bevy::math::{Vec2, Vec3};
 use std::sync::OnceLock;
@@ -67,11 +68,13 @@ impl Place {
 }
 
 /// Adds the faces of face group `group` (offset `push` dm along the normal).
+/// Faces whose vertices are flagged in `hide` (clothes cover them) are skipped.
 #[allow(clippy::too_many_arguments)]
-fn add_group(m: &mut EditablePoly, b: &BaseMesh, coords: &[Vec3], group: &str, mat: u16, push: f32, place: &Place, toon: Option<((Vec3, f32), f32)>) {
+fn add_group(m: &mut EditablePoly, b: &BaseMesh, coords: &[Vec3], group: &str, mat: u16, push: f32, place: &Place, toon: Option<((Vec3, f32), f32)>, hide: &[bool]) {
     let nrm = normals(b, coords, group);
     let mut map = vec![None; coords.len()];
-    for f in b.faces.iter().filter(|f| b.groups[f.group as usize] == group) {
+    let hidden = |f: &&super::makehuman::obj::Face| f.verts().iter().any(|&i| hide.get(i as usize).copied().unwrap_or(false));
+    for f in b.faces.iter().filter(|f| b.groups[f.group as usize] == group).filter(|f| !hidden(f)) {
         let ids: Vec<_> = f
             .verts()
             .iter()
@@ -96,19 +99,8 @@ fn add_eyes(m: &mut EditablePoly, coords: &[Vec3], eyes: Eyes, place: &Place) {
         Eyes::Low => (assets::eyes_low_mhclo(), assets::eyes_low_obj()),
         Eyes::High => (assets::eyes_high_mhclo(), assets::eyes_high_obj()),
     };
-    let proxy = Proxy::parse(assets::text(clo));
-    let mesh = BaseMesh::parse(assets::text(obj));
-    let fitted = proxy.fit(coords);
-    let ids: Vec<_> = fitted.iter().map(|p| m.add_vertex(place.at(*p))).collect();
-    for f in &mesh.faces {
-        let v: Vec<_> = f.verts().iter().filter_map(|&i| ids.get(i as usize).copied()).collect();
-        if v.len() != f.verts().len() {
-            continue;
-        }
-        let uvs: Vec<Vec2> = f.uvs().iter().map(|&t| mesh.uvs.get(t as usize).copied().unwrap_or(Vec2::ZERO)).collect();
-        let pid = m.add_polygon_uv(&v, &uvs);
-        (m.polygons[pid].material_id, m.polygons[pid].smoothing_group) = (ids::EYES, 1);
-    }
+    let it = Item { folder: String::new(), proxy: Proxy::parse(assets::text(clo)), mesh: BaseMesh::parse(assets::text(obj)), mat: Default::default() };
+    wardrobe::add_item(m, &it, coords, place, ids::EYES);
 }
 
 /// The full humanoid character mesh.
@@ -120,17 +112,26 @@ pub fn build_human(p: &CharacterParams) -> EditablePoly {
     let place = Place { lift: -min_y * 0.1 };
     let mut m = EditablePoly::new();
     let toon = (p.anime > 0.0).then_some((head, p.anime));
-    add_group(&mut m, b, &coords, "body", ids::SKIN, 0.0, &place, toon);
+    let topology = p.mh.topology.as_deref().and_then(|t| library::item(Category::Proxy, t));
+    match topology {
+        Some(it) => {
+            wardrobe::add_item(&mut m, &it, &coords, &place, ids::SKIN);
+        }
+        None => add_group(&mut m, b, &coords, "body", ids::SKIN, 0.0, &place, toon, &p.mh.hidden_body(coords.len())),
+    }
     if p.outfit != Outfit::None {
-        add_group(&mut m, b, &coords, "helper-tights", outfit::tights_material(p.outfit), 0.04, &place, None);
+        add_group(&mut m, b, &coords, "helper-tights", outfit::tights_material(p.outfit), 0.04, &place, None, &[]);
     }
     if outfit::wants_skirt(p.outfit) {
-        add_group(&mut m, b, &coords, "helper-skirt", ids::CLOTH, 0.06, &place, None);
+        add_group(&mut m, b, &coords, "helper-skirt", ids::CLOTH, 0.06, &place, None, &[]);
     }
     add_eyes(&mut m, &coords, p.eyes, &place);
+    wardrobe::add_pieces(&mut m, &p.mh, &coords, &place);
     let lm = Landmarks::of(&coords, head, (max_y - min_y) * 0.1, |q| place.at(q));
     let mut kit = crate::generators::kit::Kit::new();
-    super::hair::build(&mut kit, p, &lm);
+    if p.mh.hair.is_none() {
+        super::hair::build(&mut kit, p, &lm);
+    }
     outfit::build(&mut kit, p, &lm);
     kit.m.finalize();
     m.append(&kit.m, bevy::math::Mat4::IDENTITY);
