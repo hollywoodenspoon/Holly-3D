@@ -844,3 +844,48 @@ Known limits:
 - Per-texel textures on the GPU. Textured scenes go to the CPU.
 
 Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
+
+## 26. Phase 11.5B: Volumetrics, Principled BSDF, area lights and IES
+
+**1. Volumetric godrays and 3D height mist** (`src/render/volumetrics.rs`, `src/ui/volume_dialog.rs`, `src/viewport/volume_sync.rs`):
+- The `8` Environment dialog has a **Volumetric Godrays & Mist** rollout:
+  - Enable, Godray Intensity, Scattering Anisotropy g, Volumetric Steps and Fog Scatter Color.
+  - Mist Base Height, Height Falloff, and 3D Noise Wisps (density, scale, wind drift).
+  - Presets: Cathedral Shafts, Valley Mist, Dusty Hangar.
+- F9 (both renderers) ray-marches the medium with Henyey-Greenstein single scattering and shadow rays to every light, so geometry blocks the shafts.
+- The Perspective viewport shows live shafts through Bevy's `VolumetricFog` / `VolumetricLight` and a mist `FogVolume` fitted to the scene.
+
+**2. Principled BSDF** (`src/materials/principled.rs`, `src/render/bsdf/`, `src/render/pathtrace/subsurface.rs`):
+- A new **Principled BSDF** rollout on every Physical and Crystal material.
+- Subsurface Scattering: Weight, Scatter Color, per-channel Radius and Scale. Rendered as a Cycles-style random walk: exponential free flights, isotropic scattering, van de Hulst albedo inversion and Russian Roulette.
+- Anisotropic GGX with rotation and Heitz visible-normal sampling.
+- Clearcoat with its own roughness, layered over the base with Fresnel energy loss.
+- Cloth Sheen with Tint.
+- Glass and crystal: Beer-Lambert Absorption Color and Density, and Dispersion as an Abbe number. Dispersion uses Cauchy per-channel IOR, and each path follows one channel.
+- One-click looks: Skin, Marble / Jade, Car Paint, Brushed Metal, Velvet, Prism Glass.
+- The viewport previews clearcoat, anisotropy and diffuse transmission through Bevy's StandardMaterial.
+
+**3. Analytic area lights and IES profiles** (`src/render/area_lights.rs`):
+- Create → Lights gains **Rect Light**, **Disc Light**, **Sphere Light** and **Tube Light**, with an Area Light Shape rollout and a **Visible to Camera** toggle.
+- Each light sample picks a point on the facing part of the shape, so shadows soften with size.
+- A multiplier-1 area light gives the same on-axis power as a multiplier-1 Omni.
+- Spot and area lights take an **IES Light Profile**: None, Architectural Wall Scallop, Streetlamp Wide Throw, Double-Ring Tactical Flashlight, Industrial High-Bay, Stage Narrow Beam.
+- The viewport approximates Rect / Disc as wide spots and Sphere / Tube as soft point lights.
+
+**GPU fallback:** volumes, Principled lobes, area lights and IES profiles render on the CPU path tracer. The status line says why.
+
+**Tests (now 502):**
+- HG phase normalisation and sampling.
+- Mist falloff and wisps; godray occlusion.
+- Principled lobes sample their own density and never add energy.
+- SSS moves diffuse energy into the walk; thin slabs pass light while thick ones return it.
+- Anisotropy stretches the highlight; dispersion orders the channels; Beer-Lambert absorption.
+- Area lights match an Omni far away; panels are one-sided; bigger lights cast softer shadows.
+- Area shapes intersect rays; Visible to Camera works.
+- IES profile shapes.
+- The viewport previews Principled lobes.
+
+**Not done in 11.5B:**
+- The GPU kernel does not have these features yet.
+- IES profiles are analytic curves. Loading `.ies` files is not supported.
+- The viewport does not apply IES shaping.
