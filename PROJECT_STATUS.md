@@ -639,7 +639,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 - **Checked in the running app:** the rollout, the brick pattern with moss on a box in the viewport, the sample slot, and the Fira Code interface. A contact sheet of eight weathered presets showed relief, AO, puddles and rust as intended.
 - **Not done:**
   - **World / Triplanar mapping and the CC0 asset downloader (PR 5b).** The Poly Haven hosts are blocked in this session's network, so the downloader could not be tested.
-  - The older Help screenshots were not re-captured with the new font.
+  - ~~The older Help screenshots were not re-captured with the new font.~~ Done in Phase 10B: all 20 screenshots were re-captured with the Ilex names and the current font (§33).
 
 ## 21. PR 5.6: layer painter, mesh map baker, damage stamps, Triplanar mapping, asset downloader, decoupled emission
 
@@ -1228,4 +1228,5 @@ I also checked front and side silhouettes of all 11 presets.
 - **Angles** are measured in the rest-pose axes about each joint, not in a per-bone local frame, so big combined rotations can look odd.
 - **Procedural Kit pieces:** hair, armour, capes and weapons are placed from the posed joints but are not bent with the limbs, so a weapon does not follow a raised hand.
 - **Sit and Kneel** have no seat or ground contact solving.
-- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.
+- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.- **Help screenshots:** all 19 Help screenshots were re-captured (`tools/help_shots.sh`) so they show the Ilex names, the current font and toolbar. A new `characters` shot (an Elf in the Wave pose, a Dire Wolf and the Studio open) heads Help page 17.
+

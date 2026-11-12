@@ -10,6 +10,14 @@ pub const CHARACTERS: Page = Page {
     title: "17. Characters and creatures (MakeHuman)",
     blocks: &[
         P("The Character & Creature Studio builds RPG characters on the MakeHuman hm08 base body (CC0), so every human, elf, dwarf or anime hero starts from a real, clean-topology body."),
+        Shot(
+            "characters",
+            &[
+                m(960.0, 660.0, "An Elf in the Wave pose"),
+                m(1070.0, 790.0, "A Dire Wolf creature"),
+                m(560.0, 160.0, "Studio tiles: click one, then click or drag in a viewport"),
+            ],
+        ),
         H("Making a character"),
         Steps(&[
             "Click ♀♂ Characters on the toolbar (or Tools > Character & Creature Studio..., or Create > Geometry — Characters & Creatures).",
