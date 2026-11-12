@@ -13,7 +13,7 @@ pub const CHARACTERS: Page = Page {
         H("Making a character"),
         Steps(&[
             "Click ♀♂ Characters on the toolbar (or Tools > Character & Creature Studio..., or Create > Geometry — Characters & Creatures).",
-            "Click an archetype: Human, Elf, Dwarf, Goblin, Orc, Chibi, Anime Hero or Anime Heroine. It is placed at the origin, feet on the ground.",
+            "Click an archetype (Human, Elf, Dwarf, Goblin, Orc, Chibi, Anime Hero or Anime Heroine), then click in a viewport to place it, feet on the ground, or drag to set its height like a 3ds Max Biped. The tool stays armed; Place ... at Origin drops one at 0,0,0.",
             "Body (MakeHuman Macros): Gender, Age, Muscle, Weight, Height, Proportions, Breast size and firmness, and the African / Asian / Caucasian mix.",
             "Anime Ratio grows the head and eyes and slims the body toward a toon look; 0 keeps realistic proportions.",
             "Eyes, Hair (Bald, Crop, Long, Ponytail, Spiky, Bun, Beard), Outfit (Bodysuit, Tunic, Knight, Ranger, Robe) and Weapon (Sword, Axe, Staff, Shield).",
@@ -30,7 +30,7 @@ pub const CHARACTERS: Page = Page {
             "Copy L to R, Copy R to L, Mirror Pose, Reset Joint and Reset Pose. Save Pose... writes a .ilexpose file; Load Pose... opens .ilexpose and older .mmaxpose files.",
             "The body and eyes follow the pose and the feet stay on the ground. Every pose change is one undo step.",
         ]),
-        Tip("Not done yet: the photo face cloner, real MakeHuman hair and clothes assets (hair and outfits are built procedurally), and height / proportion targets for ages other than young adult. Characters are placed at the origin rather than dragged out. Posing is forward kinematics only (no IK, no fingers or face bones in Easy Pose, no animation), and the procedural hair, armour and weapons are placed from the posed joints but are not bent with the limbs."),
+        Tip("Not done yet: the photo face cloner, real MakeHuman hair and clothes assets (hair and outfits are built procedurally), and height / proportion targets for ages other than young adult. Posing is forward kinematics only (no IK, no fingers or face bones in Easy Pose, no animation), and the procedural hair, armour and weapons are placed from the posed joints but are not bent with the limbs."),
         ShowMe("Open the Character & Creature Studio", Show::Act(Action::CharacterStudio)),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
     ],

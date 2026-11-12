@@ -6,7 +6,8 @@ pub mod params;
 pub mod pose;
 
 use crate::character::params::{Archetype, Creature};
-use crate::editor::Editor;
+use crate::editor::characters::CharacterPick;
+use crate::editor::{Editor, Tool};
 use crate::ui::command::CONTENT_W;
 use crate::ui::widgets::{dim, rollout};
 use bevy::math::Vec3;
@@ -31,15 +32,25 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
     ed.iface.character_studio_open &= open;
 }
 
+/// One tile: arms the Create Character tool (click or drag in a viewport).
+fn tile(ui: &mut egui::Ui, ed: &mut Editor, w: f32, pick: CharacterPick) {
+    let active = ed.tool == Tool::CreateCharacter(pick);
+    let r = ui.add_sized([w, 26.0], egui::Button::new(pick.label()).selected(active));
+    if r.on_hover_text("Click, then click in a viewport to place it, or drag to set its height").clicked() {
+        ed.tool = if active { Tool::None } else { Tool::CreateCharacter(pick) };
+        if !active {
+            ed.status = format!("{}: click to place, or drag to set the height", pick.label());
+        }
+    }
+}
+
 /// Archetype + creature tile grids (`cols` per row).
 pub fn gallery(ui: &mut egui::Ui, ed: &mut Editor, cols: usize) {
     let w = CONTENT_W / cols as f32 - 6.0;
     ui.label(egui::RichText::new("Humanoids (MakeHuman hm08, CC0)").strong());
     egui::Grid::new("char_archetypes").num_columns(cols).show(ui, |ui| {
         for (i, &a) in Archetype::ALL.iter().enumerate() {
-            if ui.add_sized([w, 26.0], egui::Button::new(a.label())).on_hover_text("Place at the origin").clicked() {
-                ed.create_archetype(a, Vec3::ZERO);
-            }
+            tile(ui, ed, w, CharacterPick::Archetype(a));
             if i % cols == cols - 1 {
                 ui.end_row();
             }
@@ -48,14 +59,19 @@ pub fn gallery(ui: &mut egui::Ui, ed: &mut Editor, cols: usize) {
     ui.label(egui::RichText::new("Creatures").strong());
     egui::Grid::new("char_creatures").num_columns(cols).show(ui, |ui| {
         for (i, &c) in Creature::ALL.iter().skip(1).enumerate() {
-            if ui.add_sized([w, 26.0], egui::Button::new(c.label())).clicked() {
-                ed.create_creature(c, Vec3::ZERO);
-            }
+            tile(ui, ed, w, CharacterPick::Creature(c));
             if i % cols == cols - 1 {
                 ui.end_row();
             }
         }
     });
+    let armed = match ed.tool {
+        Tool::CreateCharacter(p) => p,
+        _ => CharacterPick::Archetype(Archetype::Human),
+    };
+    if ui.add_sized([CONTENT_W, 24.0], egui::Button::new(format!("Place {} at Origin", armed.label()))).clicked() {
+        ed.create_pick(armed, Vec3::ZERO);
+    }
 }
 
 /// Create tab rollout.

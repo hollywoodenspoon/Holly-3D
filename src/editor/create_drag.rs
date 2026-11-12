@@ -22,6 +22,8 @@ pub enum CreateKind {
     Geo(GeoMode),
     World(WorldKind),
     Mech(MechKind),
+    /// Drag sets the height (uniform scale), like 3ds Max Biped.
+    Character(super::characters::CharacterPick),
 }
 
 /// Creation Method rollout (Create tab).
@@ -59,6 +61,7 @@ impl CreateKind {
             Tool::CreateGeoGen(m) => Some(Self::Geo(m)),
             Tool::CreateWorld(k) => Some(Self::World(k)),
             Tool::CreateMech(MechKind::Gear) => Some(Self::Mech(MechKind::Gear)),
+            Tool::CreateCharacter(c) => Some(Self::Character(c)),
             _ => None,
         }
     }
@@ -85,6 +88,7 @@ impl CreateKind {
     /// Status-bar prompt for step `step`.
     pub fn prompt(self, step: u8) -> &'static str {
         match (step, self.is_rect(), self) {
+            (0, _, Self::Character(_)) => "Drag to set the character's height, right-click cancels",
             (0, true, _) => "Drag out the base (corner to corner), right-click cancels",
             (0, false, _) => "Drag out the radius, right-click cancels",
             (1, _, Self::Prim(PrimitiveKind::Torus)) => "Move to set the tube thickness, click to finish",
@@ -146,7 +150,7 @@ impl Editor {
                 d.vals[0] = local.x.abs().max(MIN);
                 d.vals[1] = local.y.abs().max(MIN);
                 d.center = d.start + d.rot * Vec3::new(local.x, local.y, 0.0) * 0.5;
-            } else if self.iface.create_method.edge {
+            } else if self.iface.create_method.edge && !matches!(d.kind, CreateKind::Character(_)) {
                 d.vals[0] = (local.length() * 0.5).max(MIN);
                 d.center = d.start + d.rot * local * 0.5;
             } else {
@@ -229,6 +233,9 @@ impl Editor {
             CreateKind::Geo(m) => self.create_geogen(m, at),
             CreateKind::World(k) => self.create_world(k, at),
             CreateKind::Mech(k) => self.create_mech(k, at),
+            CreateKind::Character(c) => {
+                self.create_pick(c, at);
+            }
         }
         let id = self.current().expect("just created");
         self.scene.objects[id].transform.rotation = rot;
@@ -240,6 +247,12 @@ impl Editor {
         let [a, b, c] = d.vals;
         let o = &mut self.scene.objects[id];
         o.transform.translation = d.center;
+        if let BaseObject::Character(_) = &o.base {
+            // Only the transform changes: no rebuild while dragging.
+            let h0 = o.evaluated_mesh.bounds().map_or(1.0, |b| (b.max.z - b.min.z).max(1e-3));
+            o.transform.scale = Vec3::splat(a.max(0.1) / h0);
+            return;
+        }
         match &mut o.base {
             BaseObject::Primitive(p) => match p {
                 Primitive::Box { length, width, height, .. } => (*width, *length, *height) = (a, b, c),

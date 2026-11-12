@@ -3673,6 +3673,7 @@ dependencies = [
  "ureq",
  "uvunwrap",
  "wgpu",
+ "winit",
 ]
 
 [[package]]

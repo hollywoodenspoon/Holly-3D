@@ -7,8 +7,8 @@ _Status as of 12 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
-| Source | 506 `.rs` files, about 76,100 lines; the largest is 350 lines (limit 350) |
-| Tests | 579 headless tests, all passing (`cargo test --lib`) |
+| Source | 507 `.rs` files, about 76,300 lines; the largest is 350 lines (limit 350) |
+| Tests | 581 headless tests, all passing (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs `/usr/bin/ilex` (with a `/usr/bin/minimax` symlink), the desktop entry, the white Holly tree icon and the `.ilex` / `.mmax` / `.ilexpose` file types (§32), plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
@@ -1129,7 +1129,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - The **face cloner** (photo pins, least-squares target fit, RBF warp, skin-tone match) is not started.
 - **Real MakeHuman hair and clothes assets** are not bundled. The community asset repositories need a login, so hair and outfits are procedural Kit geometry instead. Only the eyes use `.mhclo` fitting.
 - **Height and proportions** use only the young-adult targets, so they are approximate for child and old ages.
-- **Placement:** characters are placed at the origin; drag-to-create is not wired.
+- ~~**Placement:** characters are placed at the origin; drag-to-create is not wired.~~ Done after 10B: a gallery tile arms a Create Character tool. Click in a viewport to place the character, or drag to set its height like a Biped (a uniform scale, with no mesh rebuild while dragging). **Place ... at Origin** keeps the one-click route.
 - **Previews:** the Studio gallery shows text buttons, not rendered thumbnails.
 - The skeleton and weights are bundled; rigging and Easy Pose arrived in Phase 10B (§33).
 - **Not tested by hand:** none of this has been tried in the running app, only by unit tests.
@@ -1185,7 +1185,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - Crash frames from both crate names.
 
 **Not done in the rebrand:**
-- The window and taskbar icon inside the app is not set, so the holly logo only shows through the desktop entry.
+- ~~The window icon is not set~~ Done after the rebrand: the holly logo (`assets/icon/ilex-64.png`, rendered from `packaging/ilex.svg`) is set as the window / taskbar icon at start-up (`viewport/window_icon.rs`), checked on a live X11 window.
 - The help screenshots in `assets/help/` still show the old labels and need regenerating with `tools/help_shots.sh`.
 - Internal Rust identifiers (for example `KeySet::MiniMax`, `ModifierKind::Settlement`) keep their names so saved files still deserialize.
 - Not tested by hand in the running app or through pacman.

@@ -32,6 +32,11 @@ impl Editor {
                 self.create_mech(kind, p);
                 self.tool = Tool::CreateMech(kind);
             }
+            Tool::CreateCharacter(pick) => {
+                let p = self.snapped_point_pub(view, cursor);
+                self.create_pick(pick, p);
+                self.tool = Tool::CreateCharacter(pick);
+            }
             Tool::PickHoseEnd { top } => {
                 if let Some(obj) = self.pick_object(view, cursor) {
                     self.bind_hose(top, Some(obj));

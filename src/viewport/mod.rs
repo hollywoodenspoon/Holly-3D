@@ -9,6 +9,7 @@ pub mod light_icons;
 pub mod light_sync;
 pub mod volume_sync;
 pub mod weather_lines;
+pub mod window_icon;
 pub mod lines;
 pub mod mat_sync;
 pub mod mod_gizmos;

@@ -53,6 +53,8 @@ pub enum Tool {
     CreateWorld(crate::generators::WorldKind),
     /// Click-placed Mech primitive (Gear, Piston, Hose).
     CreateMech(crate::mech::MechKind),
+    /// Phase 10B: click-placed (or height-dragged) character or creature.
+    CreateCharacter(super::characters::CharacterPick),
     /// Hose: click the object its top (start) or bottom (end) binds to.
     PickHoseEnd {
         top: bool,
@@ -123,6 +125,7 @@ impl Tool {
             Tool::CreateGeoGen(_) => Some("Drag the base radius, then move for the height"),
             Tool::CreateWorld(_) => Some("Drag out the area or radius; click for a default one"),
             Tool::CreateMech(_) => Some("Click in a viewport to place the Mech part"),
+            Tool::CreateCharacter(_) => Some("Click to place the character, or drag to set its height"),
             Tool::PickHoseEnd { top: true } => Some("Hose: click the Top End Object (Esc to cancel)"),
             Tool::PickHoseEnd { .. } => Some("Hose: click the Bottom End Object (Esc to cancel)"),
             Tool::TargetWeld { first: None } => Some("Target Weld: click the vertex to weld"),

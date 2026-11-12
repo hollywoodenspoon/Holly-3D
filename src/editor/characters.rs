@@ -8,7 +8,31 @@ use crate::character::CharacterParams;
 use crate::materials::{Material, MultiPreset};
 use crate::scene::BaseObject;
 
+/// What the Create Character tool places.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CharacterPick {
+    Archetype(Archetype),
+    Creature(Creature),
+}
+
+impl CharacterPick {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Archetype(a) => a.label(),
+            Self::Creature(c) => c.label(),
+        }
+    }
+}
+
 impl Editor {
+    /// Places the picked archetype or creature at `at`.
+    pub fn create_pick(&mut self, pick: CharacterPick, at: Vec3) -> ObjId {
+        match pick {
+            CharacterPick::Archetype(a) => self.create_archetype(a, at),
+            CharacterPick::Creature(c) => self.create_creature(c, at),
+        }
+    }
+
     /// Places a character built from `p` at `at` and selects it.
     pub fn create_character(&mut self, p: CharacterParams, at: Vec3) -> ObjId {
         self.checkpoint("Create Character");
@@ -73,5 +97,35 @@ mod tests {
         assert!(ed.scene.objects[id].evaluated_mesh.counts().2 < 2000);
         ed.undo();
         assert!(ed.scene.objects[id].evaluated_mesh.counts().2 > 13000);
+    }
+
+    #[test]
+    fn click_places_and_drag_sets_the_height() {
+        use crate::viewport::layout::ScreenRect;
+        let mut ed = Editor::default();
+        (ed.viewports.maximized, ed.viewports.active) = (true, 0);
+        ed.viewports.layout(ScreenRect { min: Vec2::ZERO, max: Vec2::new(800.0, 600.0) }, 0.0);
+        let pick = CharacterPick::Creature(Creature::Slime);
+        ed.tool = Tool::CreateCharacter(pick);
+        let screen = |ed: &Editor, p: Vec3| ed.viewports.views[0].to_screen(p).unwrap();
+        // A plain click places a default-size creature where clicked.
+        let at = Vec3::new(2.0, 1.0, 0.0);
+        assert!(ed.tool_click(0, screen(&ed, at)));
+        let id = ed.current().unwrap();
+        assert!((ed.scene.objects[id].transform.translation - at).length() < 0.05);
+        assert_eq!(ed.tool, Tool::CreateCharacter(pick), "the tool stays armed");
+        // Dragging 3 units scales it to 3 units tall.
+        let (a, b) = (Vec3::new(-2.0, 0.0, 0.0), Vec3::new(-2.0, 3.0, 0.0));
+        assert!(ed.create_press(0, screen(&ed, a)));
+        ed.create_move(screen(&ed, b));
+        ed.create_release(screen(&ed, b));
+        assert!(ed.iface.create_drag.is_none(), "one step");
+        let id2 = ed.current().unwrap();
+        assert_ne!(id, id2);
+        let o = &ed.scene.objects[id2];
+        let bb = o.evaluated_mesh.bounds().unwrap();
+        let tall = (bb.max.z - bb.min.z) * o.transform.scale.z;
+        assert!((tall - 3.0).abs() < 0.1, "{tall}");
+        assert!((o.transform.translation - a).length() < 0.05);
     }
 }

@@ -11,6 +11,8 @@ pollster = "1.0.1"
 libc = "0.2"
 bevy = { version = "0.20.0", default-features = false, features = ["serialize", "default_app", "std", "bevy_winit", "multi_threaded", "x11", "default_font", "3d_bevy_render", "keyboard", "mouse"] }
 bevy_egui = "0.43.1"
+# Window icon (the same winit Bevy uses).
+winit = { version = "0.30.13", default-features = false }
 transform-gizmo-egui = "0.11"
 slotmap = { version = "1.0", features = ["serde"] }
 uvunwrap = "0.2.0"
