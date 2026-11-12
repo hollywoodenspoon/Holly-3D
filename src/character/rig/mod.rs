@@ -7,6 +7,7 @@
 //! rotates about its rest head, its children inherit the motion, and every
 //! vertex is moved by the weighted blend of its bones' transforms.
 
+pub mod hands;
 pub mod pose;
 pub mod pose_file;
 pub mod presets;

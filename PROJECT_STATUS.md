@@ -1222,11 +1222,12 @@ I also checked front and side silhouettes of all 11 presets.
 
 **Not done in 10B:**
 - **No IK:** there are no foot locks or hand targets.
-- **No fingers or face bones in Easy Pose:** they are in the rig but have no controls.
+- **No face bones in Easy Pose, and fingers only through the five hand shapes:** single finger joints have no sliders yet.
 - **No animation:** there are no keyframes or timeline.
 - **No viewport bone gizmo:** posing is done with sliders, not by dragging bones.
 - **Angles** are measured in the rest-pose axes about each joint, not in a per-bone local frame, so big combined rotations can look odd.
 - **Procedural Kit pieces:** hair, armour, capes and weapons are placed from the posed joints but are not bent with the limbs, so a weapon does not follow a raised hand.
 - **Sit and Kneel** have no seat or ground contact solving.
-- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.- **Help screenshots:** all 19 Help screenshots were re-captured (`tools/help_shots.sh`) so they show the Ilex names, the current font and toolbar. A new `characters` shot (an Elf in the Wave pose, a Dire Wolf and the Studio open) heads Help page 17.
+- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.- **Hand shapes:** `character/rig/hands.rs`. Open, Relaxed, Grip, Fist and Point buttons curl all 15 finger bones per hand. Each segment turns about the axis across its own direction and the palm normal (the thumb folds toward the little finger), stored as ordinary per-bone angles, so mirroring and `.ilexpose` files work unchanged. A test checks that the fist closes into the palm, the thumb crosses it, Point keeps the index straight and the two hands mirror.
+- **Help screenshots:** all 19 Help screenshots were re-captured (`tools/help_shots.sh`) so they show the Ilex names, the current font and toolbar. A new `characters` shot (an Elf in the Wave pose, a Dire Wolf and the Studio open) heads Help page 17.
 

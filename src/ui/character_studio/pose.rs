@@ -3,6 +3,7 @@
 //! and mirror buttons, and `.ilexpose` Save / Load (`.mmaxpose` opens too).
 
 use crate::character::params::CharacterParams;
+use crate::character::rig::hands::{set_hand, HandShape};
 use crate::character::rig::pose::{mirror, twin, CONTROLS};
 use crate::character::rig::presets::PosePreset;
 use crate::character::rig::{pose_file, Pose};
@@ -38,6 +39,17 @@ pub fn rollout_ui(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
                 }
                 if i % 2 == 1 {
                     ui.end_row();
+                }
+            }
+        });
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Hands:");
+            for shape in HandShape::ALL {
+                if ui.button(shape.label()).on_hover_text("Shape both hands (only the picked side with 'Pose this side only')").clicked() {
+                    let mut q = p.pose.clone();
+                    let one = st.unmirrored;
+                    set_hand(&mut q, shape, !one || !st.right, !one || st.right);
+                    set_pose(t, p, q);
                 }
             }
         });

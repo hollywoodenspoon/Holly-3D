@@ -125,3 +125,46 @@ fn pose_files_round_trip_with_legacy_headers() {
     assert_eq!(pose_file::load(&legacy).unwrap(), pose);
     assert_eq!(pose_file::load(&saved).unwrap(), pose);
 }
+
+#[test]
+fn hand_shapes_curl_the_fingers_into_the_palm() {
+    use super::hands::{set_hand, HandShape};
+    let tip = |pose: &Pose, f: &str| {
+        let rest = base().coords.clone();
+        let mut posed = rest.clone();
+        apply(pose, &mut posed);
+        let s = skeleton();
+        let (b, w) = (s.index[f], s.index[&f.replace("finger3-3", "wrist").replace("finger2-3", "wrist")]);
+        (s.tail(b, &rest).distance(s.head(w, &rest)), s.tail(b, &posed).distance(s.head(w, &posed)), s.tail(b, &rest), s.tail(b, &posed))
+    };
+    let mut fist = Pose::default();
+    set_hand(&mut fist, HandShape::Fist, true, true);
+    let (d0, d1, l0, l) = tip(&fist, "finger3-3.L");
+    assert!(d1 < d0 * 0.75, "the middle finger closes toward the wrist ({d0} -> {d1})");
+    // Into the palm, not backwards: measured across the finger direction.
+    let (c, s) = (&base().coords, skeleton());
+    let d = (s.tail(s.index["finger3-3.L"], c) - s.head(s.index["finger3-1.L"], c)).normalize();
+    let n = super::hands::palm_normal(c);
+    let across = (n - d * d.dot(n)).normalize();
+    let mut relaxed = Pose::default();
+    set_hand(&mut relaxed, HandShape::Relaxed, true, false);
+    let (.., l_relaxed) = tip(&relaxed, "finger3-3.L");
+    assert!((l_relaxed - l0).dot(across) > 0.15, "it curls into the palm ({})", (l_relaxed - l0).dot(across));
+    assert!((l - l0).dot(across) > 0.0);
+    // The thumb folds toward the little finger.
+    let (pinky, thumb) = (s.head(s.index["finger5-1.L"], c), s.index["finger1-3.L"]);
+    let mut posed = c.clone();
+    apply(&fist, &mut posed);
+    assert!(s.tail(thumb, &posed).distance(pinky) < s.tail(thumb, c).distance(pinky) - 0.1, "thumb across the palm");
+    let (_, _, _, r) = tip(&fist, "finger3-3.R");
+    assert!((l.x + r.x).abs() < 0.05 && (l.y - r.y).abs() < 0.05, "both hands mirror: {l} vs {r}");
+    // Point keeps the index finger straight while the others curl.
+    let mut point = Pose::default();
+    set_hand(&mut point, HandShape::Point, true, false);
+    let (i0, i1, ..) = tip(&point, "finger2-3.L");
+    assert!((i0 - i1).abs() < 0.05, "index stays out ({i0} -> {i1})");
+    assert!(point.joints.keys().all(|k| k.ends_with(".L")), "left hand only");
+    set_hand(&mut fist, HandShape::Open, true, true);
+    assert!(fist.is_rest(), "Open clears the finger rotations");
+}
+
