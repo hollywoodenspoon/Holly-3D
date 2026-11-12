@@ -101,9 +101,11 @@ fn status(ui: &mut egui::Ui, ed: &Editor) {
     if let Some(j) = &ed.rfw.job {
         let p = j.progress();
         ui.add(egui::ProgressBar::new(p).desired_width(ui.available_width()).text(format!(
-            "{:.0}% · {:.1}s",
+            "{:.0}% · {:.1}s{}{}",
             p * 100.0,
-            j.started.elapsed().as_secs_f32()
+            j.started.elapsed().as_secs_f32(),
+            if j.pass_label.is_empty() { "" } else { " · " },
+            j.pass_label
         )));
         ui.ctx().request_repaint();
     } else if !ed.rfw.message.is_empty() {

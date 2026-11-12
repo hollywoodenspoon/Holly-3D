@@ -5,6 +5,9 @@ edition = "2024"
 description = "MiniMax: a clean 3ds Max-style polygon modeler in Rust"
 
 [dependencies]
+# GPU path tracer (same wgpu as Bevy; features unify).
+wgpu = { version = "30.0.1", default-features = false, features = ["wgsl"] }
+pollster = "1.0.1"
 libc = "0.2"
 bevy = { version = "0.20.0", default-features = false, features = ["serialize", "default_app", "std", "bevy_winit", "multi_threaded", "x11", "default_font", "3d_bevy_render", "keyboard", "mouse"] }
 bevy_egui = "0.43.1"

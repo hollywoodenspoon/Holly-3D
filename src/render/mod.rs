@@ -10,6 +10,7 @@ pub mod emitters;
 pub mod environment;
 pub mod framebuffer;
 pub mod gi;
+pub mod gpu_pathtrace;
 pub mod grading;
 pub mod hdri;
 pub mod job;

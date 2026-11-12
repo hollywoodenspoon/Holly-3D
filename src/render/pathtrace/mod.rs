@@ -25,7 +25,23 @@ pub fn run(
     cancel: &AtomicBool,
     on_pass: impl FnMut(progressive::PassInfo, &[Pixel]),
 ) -> (Vec<Pixel>, String) {
-    (progressive::render(rs, cfg, region, cancel, on_pass), "CPU".into())
+    let mut on_pass = on_pass;
+    let gpu = match cfg.path.device {
+        ComputeDevice::Cpu => Err("CPU selected".to_string()),
+        _ => match crate::render::gpu_pathtrace::pack::unsupported(rs) {
+            Some(why) => Err(format!("{why} need the CPU tracer")),
+            None => crate::render::gpu_pathtrace::gpu(),
+        },
+    };
+    let fallback = match gpu {
+        Ok(g) => match crate::render::gpu_pathtrace::render(g, rs, cfg, region, cancel, &mut on_pass) {
+            Ok(px) => return (px, g.name.clone()),
+            Err(e) => e,
+        },
+        Err(e) => e,
+    };
+    let label = if cfg.path.device == ComputeDevice::Cpu { "CPU".to_string() } else { format!("CPU ({fallback})") };
+    (progressive::render(rs, cfg, region, cancel, on_pass), label)
 }
 #[cfg(test)]
 mod tests;

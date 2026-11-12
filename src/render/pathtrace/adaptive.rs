@@ -14,6 +14,15 @@ pub struct Welford {
 impl Welford {
     pub const ZERO: Welford = Welford { n: 0, mean: 0.0, m2: 0.0 };
 
+    /// From GPU running sums (`n`, Σx, Σx²).
+    pub fn from_sums(n: u32, sum: f64, sq: f64) -> Self {
+        if n == 0 {
+            return Self::ZERO;
+        }
+        let mean = sum / f64::from(n);
+        Self { n, mean, m2: (sq - sum * mean).max(0.0) }
+    }
+
     pub fn push(&mut self, x: f32) {
         let x = f64::from(x);
         self.n += 1;
