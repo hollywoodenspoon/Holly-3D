@@ -54,17 +54,8 @@ fn canonical_face_lands_on_the_hm08_head() {
     assert!(distinct.len() > 380, "most points should get their own vertex ({})", distinct.len());
 }
 
-/// A front view of the textured base head, centred between the eyes.
 pub fn head_view(yaw: f32) -> (super::render::View, image::RgbImage) {
-    use crate::character::makehuman::library;
-    let b = base();
-    let eyes = correspond::group_verts(b, "helper-l-eye").into_iter().chain(correspond::group_verts(b, "helper-r-eye"));
-    let (sum, n) = eyes.fold((Vec3::ZERO, 0.0), |(s, n), v| (s + b.coords[v as usize], n + 1.0));
-    let view = super::render::View { center: sum / n - Vec3::Y * 0.25, yaw, pitch: 0.0, scale: 170.0, size: 512 };
-    let mm = library::material("skins/young_caucasian_female/young_caucasian_female.mhmat").unwrap_or_default();
-    let tex = mm.diffuse_texture.and_then(|t| library::texture(&format!("skins/young_caucasian_female/{t}")));
-    let img = super::render::render(b, &b.coords, &view, tex.as_ref().map(|t| &*t.tex));
-    (view, img)
+    super::render::head_view(&base().coords, yaw)
 }
 
 #[test]
@@ -81,4 +72,31 @@ fn detector_finds_the_rendered_base_head_where_the_correspondence_says() {
     let err: f32 = (0..model::MESH_POINTS).map(|i| view.project(b.coords[cor.verts[i] as usize]).truncate().distance(det.points[i].truncate())).sum::<f32>() / model::MESH_POINTS as f32;
     eprintln!("score {} interocular {iod:.1}px mean error {err:.2}px ({:.1}% IOD)", det.score, err / iod * 100.0);
     assert!(err / iod < 0.12, "detected points should sit on the corresponding vertices ({err} px, IOD {iod})");
+}
+
+#[test]
+fn frames_measure_head_turn_and_sort_into_views() {
+    use super::frames::{analyse, pick, Picking, ViewBin};
+    let mut shots = Vec::new();
+    for (yaw, want) in [(0.0f32, ViewBin::Front), (0.6, ViewBin::ThreeQuarterLeft), (-0.6, ViewBin::ThreeQuarterRight)] {
+        let (_, img) = head_view(yaw);
+        let s = analyse(&format!("yaw{yaw}"), &img).expect("face found");
+        eprintln!("render yaw {:.1} deg -> measured {:.1} deg, pitch {:.1}, sharp {:.0}, mouth {:.2}", yaw.to_degrees(), s.yaw, s.pitch, s.sharpness, s.mouth_open);
+        assert!((s.yaw - yaw.to_degrees()).abs() < 12.0, "yaw {yaw}: measured {}", s.yaw);
+        assert_eq!(s.view, want);
+        shots.push(s);
+    }
+    // A blurred copy and an exact duplicate of the front shot are dropped.
+    let (_, img) = head_view(0.0);
+    let mut blur = analyse("blur", &image::imageops::blur(&img, 3.0)).expect("blurred face found");
+    blur.name = "blur".into();
+    let mut dup = shots[0].clone();
+    dup.name = "dup".into();
+    dup.sharpness *= 0.99;
+    shots.extend([blur, dup]);
+    pick(&mut shots, &Picking::default());
+    let used: Vec<_> = shots.iter().filter(|s| s.used).map(|s| s.name.as_str()).collect();
+    eprintln!("{:?}", shots.iter().map(|s| (&s.name, &s.note)).collect::<Vec<_>>());
+    assert_eq!(used.len(), 3, "{used:?}");
+    assert!(shots[3].note.contains("blurry") && shots[4].note.contains("duplicate"));
 }

@@ -21,6 +21,7 @@ pub fn morph(p: &CharacterParams) -> (Vec<Vec3>, (Vec3, f32)) {
     let mut c = b.coords.clone();
     p.macros.apply(pack(), &mut c);
     modifiers::apply(&anime::micro(p).micro, pack(), &mut c);
+    p.face.apply(&mut c);
     let head = anime::head_sphere(&c, body_mask());
     anime::grow_head(&mut c, head, p.anime);
     let head = anime::head_sphere(&c, body_mask());

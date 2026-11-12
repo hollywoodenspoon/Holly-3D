@@ -100,3 +100,17 @@ pub fn render(b: &BaseMesh, coords: &[Vec3], view: &View, skin: Option<&Texture>
     }
     img
 }
+
+/// The head of `coords` (hm08 vertex order) with the young female skin,
+/// seen from the front turned by `yaw`, centred just below the eyes.
+pub fn head_view(coords: &[Vec3], yaw: f32) -> (View, image::RgbImage) {
+    use crate::character::makehuman::{library, obj::base};
+    let b = base();
+    let eyes: Vec<u32> = ["helper-l-eye", "helper-r-eye"].iter().flat_map(|g| super::correspond::group_verts(b, g)).collect();
+    let mid = eyes.iter().map(|&v| coords[v as usize]).sum::<Vec3>() / eyes.len().max(1) as f32;
+    let view = View { center: mid - Vec3::Y * 0.25, yaw, pitch: 0.0, scale: 170.0, size: 512 };
+    let mm = library::material("skins/young_caucasian_female/young_caucasian_female.mhmat").unwrap_or_default();
+    let tex = mm.diffuse_texture.and_then(|t| library::texture(&format!("skins/young_caucasian_female/{t}")));
+    let img = render(b, coords, &view, tex.as_ref().map(|t| &*t.tex));
+    (view, img)
+}
