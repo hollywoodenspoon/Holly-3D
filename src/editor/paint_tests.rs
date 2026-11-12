@@ -187,7 +187,7 @@ fn fill_bake_smart_layers_and_export() {
     ed.undo();
     assert_eq!(ed.paint_stack().unwrap().layers.len(), 4, "a smart layer is one undo step");
     // Export: four material textures + four mesh maps.
-    let dir = std::env::temp_dir().join(format!("minimax_paint_export_{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("ilex_paint_export_{}", std::process::id()));
     ed.export_paint_textures(&dir.to_string_lossy());
     assert!(ed.status.contains("8 PNGs"), "{}", ed.status);
     let name = ed.scene.objects[id].name.replace(|c: char| !c.is_ascii_alphanumeric(), "_");

@@ -3,6 +3,7 @@
 
 pub mod pages;
 pub mod pages2;
+pub mod pages3;
 pub mod shots;
 mod tour;
 pub mod view;

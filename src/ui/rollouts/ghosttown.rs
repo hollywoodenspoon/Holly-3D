@@ -121,7 +121,7 @@ pub fn battle_params(ui: &mut egui::Ui, t: &mut Track, p: &mut BattleParams, sal
 
 /// GhostTown stack modifier.
 pub fn settlement_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "GhostTown Settlement", true, |ui| {
+    rollout(ui, "Demiurge GhostTown", true, |ui| {
         ui.label(dim("Fills a flat Plane / Editable Poly, or a closed spline's outline."));
         let mut out = super::ruin::Out::default();
         mod_params(ui, ed, |ui, k, t| {
@@ -135,7 +135,7 @@ pub fn settlement_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
 
 /// Medieval Architect stack modifier.
 pub fn architect_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "Medieval Architect", true, |ui| {
+    rollout(ui, "Demiurge Medieval Architect", true, |ui| {
         ui.label(dim("Bricks, merlons, floors and windows are recounted from the base size: resize it, details never stretch."));
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Architect(a) = k else { return };
@@ -185,7 +185,7 @@ fn architect_params(ui: &mut egui::Ui, t: &mut Track, a: &mut ArchitectMod) {
 
 /// Battlefield / Ruin stack modifier with its Blast Zones sub-object.
 pub fn battlefield_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "Battlefield / Ruin", true, |ui| {
+    rollout(ui, "Demiurge Battlefield & Ruin", true, |ui| {
         sub_buttons(ui, ed, &[ModSub::BlastZones]);
         ui.label(dim("No zones: seeded blasts hit the structures. Select zones, then move with W and scale with R."));
         let bounds = ed.current().and_then(|id| ed.scene.objects[id].level_mesh.bounds());

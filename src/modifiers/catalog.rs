@@ -66,19 +66,37 @@ pub const GROUPS: &[(&str, &[ModifierInfo])] = &[
         &[
             m("GeoGen", "Grows crystals, rocks or stalagmites on the surface"),
             m("Greeble", "Sci-fi panels and widgets over the surface"),
-            m("Terrain", "Noise-driven landscape with auto Material IDs"),
-            m("Ocean", "Gerstner waves with foam"),
         ],
     ),
     (
-        "Architecture & Destruction",
+        "Demiurge Worlds",
         &[
-            m("GhostTown", "A whole settlement on a plane or inside a closed spline"),
-            m("Medieval Architect", "Medieval buildings on a plane or along a spline"),
-            m("Battlefield / Ruin", "Craters, rubble and damage"),
+            m("Demiurge Terrain", "Noise-driven landscape with auto Material IDs"),
+            m("Demiurge Ocean", "Gerstner waves with foam"),
+        ],
+    ),
+    (
+        "Demiurge Settlements & Destruction",
+        &[
+            m("Demiurge GhostTown", "A whole settlement on a plane or inside a closed spline"),
+            m("Demiurge Medieval Architect", "Medieval buildings on a plane or along a spline"),
+            m("Demiurge Battlefield & Ruin", "Craters, rubble and damage"),
         ],
     ),
 ];
+
+/// Pre-Demiurge modifier names (saved modifier-button sets, scripts) to
+/// their current names; any other name passes through.
+pub fn current_name(name: &str) -> &str {
+    match name {
+        "Terrain" => "Demiurge Terrain",
+        "Ocean" => "Demiurge Ocean",
+        "GhostTown" => "Demiurge GhostTown",
+        "Medieval Architect" => "Demiurge Medieval Architect",
+        "Battlefield / Ruin" => "Demiurge Battlefield & Ruin",
+        n => n,
+    }
+}
 
 /// Whether a modifier fits the object it would be added to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,9 +111,10 @@ pub enum Fit {
 /// Modifiers that build a mesh from a spline flowing up the stack.
 const SHAPE_ONLY: [&str; 3] = ["Lathe", "Extrude", "Loft"];
 /// Modifiers that accept either a spline or a mesh.
-const SHAPE_OR_MESH: [&str; 2] = ["GhostTown", "Medieval Architect"];
+const SHAPE_OR_MESH: [&str; 2] = ["Demiurge GhostTown", "Demiurge Medieval Architect"];
 
 pub fn fit(name: &str, o: Option<&SceneObject>) -> Fit {
+    let name = current_name(name);
     let Some(o) = o else { return Fit::No("Select an object first") };
     if o.light().is_some() || o.camera().is_some() || o.is_helper() {
         return Fit::No("Lights, cameras and helpers take no modifiers");
@@ -148,7 +167,7 @@ mod tests {
                 (true, _) => assert!(matches!(fit("Bend", Some(o)), Fit::No(_))),
                 (false, true) => {
                     assert_eq!(fit("Lathe", Some(o)), Fit::Yes);
-                    assert_eq!(fit("GhostTown", Some(o)), Fit::Yes);
+                    assert_eq!(fit("Demiurge GhostTown", Some(o)), Fit::Yes);
                     assert!(matches!(fit("Bend", Some(o)), Fit::Dim(_)));
                 }
                 (false, false) => {

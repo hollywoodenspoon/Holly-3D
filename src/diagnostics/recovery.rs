@@ -1,12 +1,14 @@
 //! Where crash reports live and how the next launch finds them:
-//! `~/.local/share/minimax/crashes/crash_<stamp>.md`, the emergency scene
+//! `~/.local/share/ilex/crashes/crash_<stamp>.md`, the emergency scene
 //! `crash_recovery.mmax`, and a `.pending` marker naming the newest report
 //! until the user dismisses the startup dialog.
 
 use crate::scene::Scene;
 use std::path::{Path, PathBuf};
 
-pub const RECOVERY_FILE: &str = "crash_recovery.mmax";
+pub const RECOVERY_FILE: &str = "crash_recovery.ilex";
+/// Recovery scene written before the Ilex rename.
+pub const LEGACY_RECOVERY_FILE: &str = "crash_recovery.mmax";
 pub const PENDING_FILE: &str = ".pending";
 
 pub fn crash_dir() -> PathBuf {
@@ -54,7 +56,7 @@ pub fn detect_pending(dir: &Path) -> Option<Pending> {
     let name = name.trim();
     let report = if name.is_empty() { list_reports(dir).into_iter().next()? } else { dir.join(name) };
     let text = std::fs::read_to_string(&report).ok()?;
-    let recovery = Some(dir.join(RECOVERY_FILE)).filter(|p| p.is_file());
+    let recovery = [RECOVERY_FILE, LEGACY_RECOVERY_FILE].into_iter().map(|f| dir.join(f)).find(|p| p.is_file());
     Some(Pending { report, text, recovery })
 }
 
@@ -81,7 +83,7 @@ pub fn dismiss(dir: &Path) {
 /// many files went.
 pub fn clear(dir: &Path) -> usize {
     let mut n = list_reports(dir).into_iter().filter(|p| std::fs::remove_file(p).is_ok()).count();
-    n += usize::from(std::fs::remove_file(dir.join(RECOVERY_FILE)).is_ok());
+    n += [RECOVERY_FILE, LEGACY_RECOVERY_FILE].iter().filter(|f| std::fs::remove_file(dir.join(f)).is_ok()).count();
     dismiss(dir);
     n
 }

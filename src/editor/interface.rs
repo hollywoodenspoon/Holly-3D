@@ -116,6 +116,8 @@ pub struct InterfaceState {
     /// (shown once as the recovery dialog until dismissed).
     pub crash_open: bool,
     pub crash_pending: Option<crate::diagnostics::recovery::Pending>,
+    /// Phase 10A Character & Creature Studio window.
+    pub character_studio_open: bool,
 }
 
 /// The default Show Buttons set (the most used modifiers).

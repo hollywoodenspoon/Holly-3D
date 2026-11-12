@@ -68,6 +68,7 @@ pub fn type_name(b: &BaseObject) -> &'static str {
         BaseObject::GeoGen(_) => "GeoGen",
         BaseObject::Mech(_) => "Mech",
         BaseObject::World(_) => "World",
+        BaseObject::Character(_) => "Character",
     }
 }
 
@@ -136,7 +137,7 @@ fn dialogs(ed: &Editor) -> [(&'static str, bool); 9] {
     [
         ("Material Editor", ed.mat_editor.open),
         ("Render Setup", ed.rfw.setup_open),
-        ("Rendered Frame Window", ed.rfw.rfw_open),
+        ("Veach Rendered Frame Window", ed.rfw.rfw_open),
         ("Environment and Effects", ed.env_open),
         ("Preferences", ed.iface.prefs_open),
         ("Help", ed.iface.help_open),

@@ -150,7 +150,7 @@ fn capture(ui: &mut egui::Ui, ed: &mut Editor, st: &mut HotkeysUi, map: &mut Key
 }
 
 fn export(ed: &mut Editor, map: &Keymap, st: &mut HotkeysUi) {
-    let d = rfd::FileDialog::new().set_file_name("minimax-keys.ron").add_filter("Keymap (*.ron)", &["ron"]);
+    let d = rfd::FileDialog::new().set_file_name("ilex-keys.ron").add_filter("Keymap (*.ron)", &["ron"]);
     if let Some(p) = d.save_file() {
         st.note = match std::fs::write(&p, keymap::export_text(map)) {
             Ok(()) => format!("Saved {}", p.display()),

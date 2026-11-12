@@ -1,4 +1,4 @@
-# CLAUDE.md — MiniMax: Clean 3ds Max-Style Modeler, Painter & Renderer in Rust
+# CLAUDE.md — Ilex (formerly MiniMax): Clean 3ds Max-Style Modeler, Painter & Renderer in Rust
 
 ## 1. Core Philosophy & Rules
 This is a personal 3D polygon modeling, painting, and rendering application built in Rust.

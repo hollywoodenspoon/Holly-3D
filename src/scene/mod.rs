@@ -47,6 +47,8 @@ pub enum BaseObject {
     Mech(crate::mech::MechPart),
     /// Procedural world: Terrain, Ocean or Planet.
     World(crate::generators::WorldGen),
+    /// Phase 10A Character Studio humanoid (MakeHuman hm08) or creature.
+    Character(Box<crate::character::CharacterParams>),
 }
 
 impl BaseObject {
@@ -59,6 +61,7 @@ impl BaseObject {
             BaseObject::GeoGen(g) => g.build(),
             BaseObject::Mech(m) => m.build(),
             BaseObject::World(w) => w.build(),
+            BaseObject::Character(c) => c.build(),
         }
     }
     /// The shape flowing into the stack (shapes only).
@@ -79,6 +82,7 @@ impl BaseObject {
             BaseObject::GeoGen(g) => g.mode.short(),
             BaseObject::Mech(m) => m.name(),
             BaseObject::World(w) => w.short(),
+            BaseObject::Character(c) => c.short(),
         }
     }
 }

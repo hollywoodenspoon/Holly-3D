@@ -1,16 +1,16 @@
-# MiniMax (Holly-3D): Project Status Report
+# Ilex 3D (formerly MiniMax, Holly-3D): Project Status Report
 
-_Status as of 11 November 2026, measured against the spec in `CLAUDE.md`._
+_Status as of 12 November 2026, measured against the spec in `CLAUDE.md`._
 
 ## At a glance
 
 | | |
 |---|---|
 | Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
-| Source | 385 `.rs` files, about 58,900 lines; the largest is 347 lines (limit 350) |
-| Tests | 440 headless tests, all passing (1 ignored: needs a real Blender) (`cargo test --lib`) |
+| Source | 500 `.rs` files, about 75,400 lines; the largest is 350 lines (limit 350) |
+| Tests | 574 headless tests, all passing (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
-| Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs the binary, desktop entry, icon and `.mmax` file type, plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
+| Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs `/usr/bin/ilex` (with a `/usr/bin/minimax` symlink), the desktop entry, the white Holly tree icon and the `.ilex` / `.mmax` / `.ilexpose` file types (§32), plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
 **Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio. **Phase 8C done** (§13): GhostTown settlements in four eras, the scale-aware Medieval Architect, and period-accurate Battlefield & Ruin destruction with movable Blast Zones. **Packaging done** (§14): a pacman package and a local `[minimax]` repository, plus a fix for release builds, which did not compile before.
@@ -1090,3 +1090,103 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - Smoke is static meshes with vertex-alpha density, not a volumetric (voxel) medium. There is no fluid simulation.
 - Precipitation in F9 is a 2D overlay at seeded depths. Drops do not hit, splash on or wet surfaces, and snow does not settle.
 - Lightning is a single static bolt per seed and does not animate. The bolt is drawn in the sky and is not an actual light source in the scene.
+
+## 31. Phase 10A: MakeHuman Character & Creature Studio
+
+**Assets** (`assets/makehuman/`, CC0 1.0): the MakeHuman **hm08** base mesh, the full morph-target set (packed into one zlib-compressed `MHT1` file and decoded at 1/3000 precision), the modeling-modifier list, the high- and low-poly eyes with their `.mhclo` fitting, the default skeleton and skin weights. Everything is embedded with `include_bytes!` and decompressed once on first use, so characters work offline.
+
+**Loader** (`src/character/makehuman/`):
+- `obj.rs` parses the base mesh (19,158 vertices, 18,486 faces, 172 groups) and masks the body from the helper geometry (tights, skirt, hair and joint helpers).
+- `target.rs` reads `.target` morphs (ASCII and the packed format) and applies them.
+- `macros.rs` blends the macro targets (gender, age, muscle, weight, height, proportions, breast size and firmness, African / Asian / Caucasian) with MakeHuman's own weighting.
+- `modifiers.rs` turns `modeling_modifiers.json` into the Detail Sliders (one- and two-sided).
+- `mhclo.rs` fits `.mhclo` proxies (barycentric bindings, offsets, scales); the eyes use it.
+
+**Character base object** (`BaseObject::Character`, `src/character/`):
+- **Archetypes:** Human, Elf, Dwarf, Goblin, Orc, Chibi, Anime Hero and Anime Heroine. Each is a macro and micro recipe, for example pointed ears, a broad brow or a short stature.
+- **Anime Ratio:** grows the head and eyes and slims the body; toon normals soften the face.
+- **Built from Kit pieces:** procedural hair (Crop, Long, Ponytail, Spiky, Bun, Beard, with Hair Length), outfits (Bodysuit and Tunic use the MakeHuman tights and skirt helpers; Knight, Ranger and Robe add armour, belts, a cape or a robe), and weapons (Sword, Axe, Staff, Shield).
+- **Creatures:** six creature presets (Wolf, Dragon, Spider, Slime, Golem, Serpent) with Size and Seed.
+- **Materials:** IDs 1 Skin, 2 Eyes, 3 Hair, 4 Cloth, 5 Metal and 6 Leather, served by the new **Character Pack** Multi/Sub-Object preset (skin with subsurface scattering). Feet stand on Z = 0.
+
+**UI:**
+- **♀♂ Characters** toolbar button and Tools > **Character & Creature Studio...** (a gallery of archetypes and creatures, plus the parameters of the selected character).
+- A Create-tab rollout and the Modify-panel rollouts: Archetype, Body (MakeHuman Macros), Eyes / Hair / Outfit / Weapon, and Detail Sliders with Search and Mirror L/R.
+- Every change is one undo step.
+
+**Tests:** 13 new (574 in all), all passing:
+- base mesh counts and the body / helper split;
+- packed and ASCII targets decode the same;
+- targets apply, and macro weights sum correctly;
+- slider keys are unique;
+- the eyes fit into the head;
+- every archetype builds a valid mesh standing on the ground;
+- outfits and hair add Material IDs;
+- creatures build;
+- an undo test.
+
+**Not done in 10A:**
+- The **face cloner** (photo pins, least-squares target fit, RBF warp, skin-tone match) is not started.
+- **Real MakeHuman hair and clothes assets** are not bundled. The community asset repositories need a login, so hair and outfits are procedural Kit geometry instead. Only the eyes use `.mhclo` fitting.
+- **Height and proportions** use only the young-adult targets, so they are approximate for child and old ages.
+- **Placement:** characters are placed at the origin; drag-to-create is not wired.
+- **Previews:** the Studio gallery shows text buttons, not rendered thumbnails.
+- The skeleton and weights are bundled but **not used yet**. Rigging and Easy Pose are Phase 10B.
+- **Not tested by hand:** none of this has been tried in the running app, only by unit tests.
+
+## 32. Ilex / Veach / Luxon / Demiurge rebrand
+
+**Application → Ilex.**
+- **Names:** the crate and binary are now `ilex`. The window title is "Ilex — 3ds Max-style Modeler", the About dialog says "Ilex 3D", and the menu bar, welcome status, tour, help, crash reports and exporter headers (OBJ, glTF, FBX) all say Ilex.
+- **Logo:** a white Common Holly tree (*Ilex aquifolium*) with spiny leaf-edged tiers and cut-out berries, on a blue-green (`#127A72`) tile (`packaging/ilex.svg`).
+
+**Backward compatibility.** Old files and setups keep working:
+- **Scenes:** new scenes save as `.ilex` with a `format: "Ilex"` header. Open, the command line and autosave also accept `.mmax` files and the `"MiniMax"` header.
+  - Saving a scene opened from a `.mmax` file writes a `.ilex` beside it and leaves the original alone.
+  - The Open dialog lists both extensions together.
+- **Poses:** `.ilexpose` and `.mmaxpose` are both recognised (`scene_file::is_pose_path`), ready for Easy Pose in 10B.
+- **Folders:** preferences, assets, autosaves and crash reports move to `~/.config/ilex` and `~/.local/share/ilex`. An existing `minimax` folder is used until an `ilex` one exists.
+- **Crash recovery:** both `crash_recovery.ilex` and the older `crash_recovery.mmax` are found.
+- **glTF:** files write `extras.ilex` and still read `extras.minimax`.
+- **Crash reports:** frames from both `ilex::` and `minimax::` count as the app's own.
+- **Modifiers:** the old modifier names (Terrain, Ocean, GhostTown, Medieval Architect, Battlefield / Ruin) still resolve, so saved Show Buttons sets work.
+- **Keymap:** the "MiniMax" key set keeps its stored name and is now labelled "Ilex default".
+
+**Packaging:**
+- The PKGBUILD builds `pkgname=ilex` (`provides`, `conflicts` and `replaces` `minimax`, so an installed MiniMax upgrades in place).
+- It installs `/usr/bin/ilex` plus a `/usr/bin/minimax -> ilex` symlink, `ilex.desktop` ("Ilex 3D") and `ilex.xml`. The MIME file registers `application/x-ilex-scene` (`*.ilex`), the legacy `application/x-minimax-scene` (`*.mmax`) and `application/x-ilex-pose` (`*.ilexpose`, `*.mmaxpose`).
+- The local repository keeps its `[minimax]` name so an existing `pacman.conf` keeps working.
+- `ILEX_SRC` and `ILEX_TARGET_CPU` are new; the `MINIMAX_*` variables still work.
+
+**Veach** (the path tracer):
+- **Veach Path Tracer** in the F10 renderer selector.
+- **Veach MIS & Adaptive Sampling** settings.
+- **Veach À-Trous Wavelet Denoiser**.
+- The F9 **Veach Rendered Frame Window**.
+
+**Luxon** (light and optics):
+- **Luxon LightMix** (the F9 sidebar, its button and action).
+- **Luxon Photometric & Area Lights**, plus **Luxon Photometric: IES Light Profile**, on the light Modify panel.
+- **Luxon Volumetric Godrays & Mist** in the `8` dialog.
+- **Luxon Lens FX (Bokeh, Anamorphic & Glare)** in F10.
+
+**Demiurge** (world building):
+- **Create tab:** the rollouts are now **Demiurge Worlds: Terrain, Ocean, Planet, Smoke Plume** and **Demiurge Settlements: GhostTown, Buildings & Props**.
+- **Create menu:** Demiurge Worlds, Demiurge Settlements and Demiurge Buildings & Props.
+- **Modifier List:** new "Demiurge Worlds" and "Demiurge Settlements & Destruction" groups.
+- **Modifiers:** **Demiurge Terrain**, **Demiurge Ocean**, **Demiurge GhostTown**, **Demiurge Medieval Architect** and **Demiurge Battlefield & Ruin**.
+
+**Help:** new pages "17. Characters and creatures (MakeHuman)" and "18. Ilex, Veach, Luxon and Demiurge" (20 pages in all), the renamed labels in the render, sky and GhostTown pages, and a MakeHuman CC0 credit (also in `licenses/README.md`).
+
+**Tests:**
+- Scene extension and header detection, both new and legacy.
+- A legacy `.mmax` round trip: it opens, and saving writes a `.ilex`.
+- Legacy config folders are kept.
+- Crash frames from both crate names.
+
+**Not done in the rebrand:**
+- The window and taskbar icon inside the app is not set, so the holly logo only shows through the desktop entry.
+- The help screenshots in `assets/help/` still show the old labels and need regenerating with `tools/help_shots.sh`.
+- Internal Rust identifiers (for example `KeySet::MiniMax`, `ModifierKind::Settlement`) keep their names so saved files still deserialize.
+- Not tested by hand in the running app or through pacman.
+

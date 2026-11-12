@@ -20,7 +20,7 @@ impl Editor {
         self.history.set_limit(self.prefs.general.undo_steps.max(1) as usize);
     }
 
-    /// Where autosaves go: `~/.local/share/minimax/autosave/autosave.mmax`.
+    /// Where autosaves go: `~/.local/share/ilex/autosave/autosave.ilex`.
     pub fn autosave_path() -> PathBuf {
         crate::prefs::data_dir().join("autosave").join(format!("autosave.{}", scene_file::EXT))
     }
@@ -100,8 +100,8 @@ mod tests {
         ed.create_primitive(PrimitiveKind::Box, Vec3::ZERO);
         assert!(!ed.autosave_due(30.0), "a minute hasn't passed");
         assert!(ed.autosave_due(61.0));
-        let dir = std::env::temp_dir().join(format!("minimax_autosave_{}", std::process::id()));
-        let path = dir.join("autosave.mmax");
+        let dir = std::env::temp_dir().join(format!("ilex_autosave_{}", std::process::id()));
+        let path = dir.join("autosave.ilex");
         ed.autosave_to(&path, 61.0).unwrap();
         assert!(path.exists());
         assert!(ed.scene_path.is_none(), "autosave leaves the scene's own file alone");

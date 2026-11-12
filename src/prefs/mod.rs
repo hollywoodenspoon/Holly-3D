@@ -1,6 +1,6 @@
 //! User Preferences (toolbar ⚙ or Edit -> Preferences): theme, hotkeys,
 //! viewports, general, rendering and asset settings. Saved as RON to
-//! `~/.config/minimax/preferences.ron` and kept between sessions. Every
+//! `~/.config/ilex/preferences.ron` (a pre-rename `~/.config/minimax` is still used) and kept between sessions. Every
 //! field has a default, so older or hand-edited files still load.
 
 pub mod palette;
@@ -80,7 +80,7 @@ impl KeySet {
     pub const ALL: [KeySet; 2] = [KeySet::MiniMax, KeySet::Max];
     pub fn label(self) -> &'static str {
         match self {
-            KeySet::MiniMax => "MiniMax default",
+            KeySet::MiniMax => "Ilex default",
             KeySet::Max => "3ds Max standard",
         }
     }
@@ -234,16 +234,23 @@ fn home() -> PathBuf {
     std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).map(PathBuf::from).unwrap_or_else(|| ".".into())
 }
 
-/// `$XDG_CONFIG_HOME/minimax` (usually `~/.config/minimax`).
-pub fn config_dir() -> PathBuf {
-    let base = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from).filter(|p| p.is_absolute());
-    base.unwrap_or_else(|| home().join(".config")).join("minimax")
+/// `<base>/ilex`, or the pre-rename `<base>/minimax` while only that exists,
+/// so preferences, assets and crash reports carry over untouched.
+pub fn app_dir(base: &std::path::Path) -> PathBuf {
+    let (new, old) = (base.join("ilex"), base.join("minimax"));
+    if !new.exists() && old.is_dir() { old } else { new }
 }
 
-/// `$XDG_DATA_HOME/minimax` (usually `~/.local/share/minimax`).
+/// `$XDG_CONFIG_HOME/ilex` (usually `~/.config/ilex`).
+pub fn config_dir() -> PathBuf {
+    let base = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from).filter(|p| p.is_absolute());
+    app_dir(&base.unwrap_or_else(|| home().join(".config")))
+}
+
+/// `$XDG_DATA_HOME/ilex` (usually `~/.local/share/ilex`).
 pub fn data_dir() -> PathBuf {
     let base = std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).filter(|p| p.is_absolute());
-    base.unwrap_or_else(|| home().join(".local/share")).join("minimax")
+    app_dir(&base.unwrap_or_else(|| home().join(".local/share")))
 }
 
 impl Preferences {
@@ -295,7 +302,7 @@ mod tests {
 
     #[test]
     fn save_and_load_from_disk() {
-        let dir = std::env::temp_dir().join(format!("minimax_prefs_{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ilex_prefs_{}", std::process::id()));
         let path = dir.join("preferences.ron");
         let mut p = Preferences::default();
         p.general.autosave_minutes = 12;
@@ -303,6 +310,16 @@ mod tests {
         assert_eq!(Preferences::load_from(&path).unwrap(), p);
         assert_eq!(Preferences::load_from(&dir.join("missing.ron")).unwrap(), Preferences::default());
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn legacy_minimax_dirs_are_kept_until_ilex_exists() {
+        let base = std::env::temp_dir().join(format!("ilex_dirs_{}", std::process::id()));
+        std::fs::create_dir_all(base.join("minimax")).unwrap();
+        assert_eq!(app_dir(&base), base.join("minimax"));
+        std::fs::create_dir_all(base.join("ilex")).unwrap();
+        assert_eq!(app_dir(&base), base.join("ilex"));
+        std::fs::remove_dir_all(&base).ok();
     }
 
     #[test]

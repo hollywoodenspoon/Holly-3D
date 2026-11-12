@@ -75,7 +75,7 @@ fn pin_stack_keeps_the_modify_panel_on_the_pinned_object() {
 #[test]
 fn hdri_survives_save_and_open() {
     use crate::render::hdri::Hdri;
-    let dir = std::env::temp_dir().join(format!("minimax_hdri_test_{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("ilex_hdri_test_{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     // A 64x32 sky: blue above the horizon, warm ground, a bright sun at +X.
     let img = image::Rgb32FImage::from_fn(64, 32, |x, y| {
@@ -93,7 +93,7 @@ fn hdri_survives_save_and_open() {
     let mut ed = Editor::default();
     ed.scene.environment.hdri = Some(Hdri::open(&hdr).unwrap());
     ed.scene.environment.hdri.as_mut().unwrap().strength = 1.5;
-    let file = dir.join("hdri.mmax");
+    let file = dir.join("hdri.ilex");
     ed.save_scene(&file).unwrap();
     let mut ed2 = Editor::default();
     ed2.open_scene(&file).unwrap();

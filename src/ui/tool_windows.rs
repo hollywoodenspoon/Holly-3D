@@ -132,8 +132,8 @@ fn hotkey_list(ctx: &egui::Context, ed: &mut Editor) {
 
 fn about(ctx: &egui::Context, ed: &mut Editor) {
     let mut open = ed.iface.about_open;
-    egui::Window::new("About MiniMax").open(&mut open).resizable(false).collapsible(false).show(ctx, |ui| {
-        ui.label(RichText::new("MiniMax").color(theme::amber()).strong().size(20.0));
+    egui::Window::new("About Ilex 3D").open(&mut open).resizable(false).collapsible(false).show(ctx, |ui| {
+        ui.label(RichText::new("Ilex 3D").color(theme::amber()).strong().size(20.0));
         ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
         ui.label("A clean 3ds Max-style modeler, painter and renderer, written in Rust with Bevy and egui.");
         ui.label(dim("Every command has a button or a menu entry; hotkeys are shortcuts."));

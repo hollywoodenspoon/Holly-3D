@@ -52,7 +52,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             }
         });
     });
-    rollout(ui, "Geometry — Worlds", true, |ui| {
+    rollout(ui, "Demiurge Worlds: Terrain, Ocean, Planet, Smoke Plume", true, |ui| {
         ui.horizontal(|ui| {
             for kind in WorldKind::ALL {
                 let active = ed.tool == Tool::CreateWorld(kind);
@@ -68,7 +68,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.label(dim("Each world comes with its Multi/Sub-Object pack, so the generated Material IDs render right away."));
     });
-    rollout(ui, "Geometry — Settlement", true, |ui| {
+    rollout(ui, "Demiurge Settlements: GhostTown, Buildings & Props", true, |ui| {
         egui::Grid::new("create_settlement").num_columns(2).show(ui, |ui| {
             for (i, kind) in WorldKind::SETTLEMENTS.into_iter().enumerate() {
                 let active = ed.tool == Tool::CreateWorld(kind);
@@ -84,9 +84,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             }
         });
-        ui.label(dim("GhostTown: click to place a whole settlement with the GhostTown Material Pack."));
+        ui.label(dim("Demiurge GhostTown: click to place a whole settlement with the GhostTown Material Pack."));
     });
     crate::ui::buildings_browser::create_rollout(ui, ed);
+    crate::ui::character_studio::create_rollout(ui, ed);
     rollout(ui, "Geometry — Mech", true, |ui| {
         ui.horizontal(|ui| {
             for kind in MechKind::ALL {

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Ilex 3D
+GenericName=3D Modeler
+Comment=3ds Max-style polygon modeler, painter and renderer (formerly MiniMax)
+Exec=ilex %f
+Icon=ilex
+Terminal=false
+Categories=Graphics;3DGraphics;
+Keywords=3D;modeling;modelling;mesh;polygon;render;MiniMax;Ilex;
+MimeType=application/x-ilex-scene;application/x-minimax-scene;model/obj;model/gltf+json;model/gltf-binary;
+StartupNotify=true
+StartupWMClass=ilex

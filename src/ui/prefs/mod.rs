@@ -1,6 +1,6 @@
 //! Preferences window (toolbar ⚙ or Edit -> Preferences): Theme, Hotkeys,
 //! Viewports, General, Rendering and Assets. Changes apply at once and are
-//! saved to `~/.config/minimax/preferences.ron` when the mouse is released.
+//! saved to `~/.config/ilex/preferences.ron` when the mouse is released.
 
 mod assets_tab;
 mod hotkeys_tab;

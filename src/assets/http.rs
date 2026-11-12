@@ -15,7 +15,7 @@ fn is_local(url: &str) -> bool {
 
 /// A client that names only the program, never the user.
 pub fn agent(for_url: &str) -> ureq::Agent {
-    let b = ureq::AgentBuilder::new().user_agent("MiniMax-asset-downloader/0.1").timeout_connect(Duration::from_secs(20)).timeout_read(Duration::from_secs(60));
+    let b = ureq::AgentBuilder::new().user_agent("Ilex-asset-downloader/0.1").timeout_connect(Duration::from_secs(20)).timeout_read(Duration::from_secs(60));
     if is_local(for_url) { b.build() } else { b.try_proxy_from_env(true).build() }
 }
 

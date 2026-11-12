@@ -20,8 +20,8 @@ pub fn export(path: &Path, items: &[MeshItem]) -> Result<(), String> {
 
 /// OBJ and MTL text for `items`.
 pub fn write_strings(items: &[MeshItem], mtl_name: &str) -> (String, String) {
-    let mut o = format!("# MiniMax OBJ export\nmtllib {mtl_name}\n");
-    let mut mtl = String::from("# MiniMax MTL export\n");
+    let mut o = format!("# Ilex OBJ export\nmtllib {mtl_name}\n");
+    let mut mtl = String::from("# Ilex MTL export\n");
     let mut written: Vec<String> = vec![];
     let (mut nv, mut nt) = (0usize, 0usize);
     let yup = z_to_y_up();

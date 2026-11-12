@@ -28,7 +28,7 @@ pub fn set_current(map: Keymap) {
     *LIVE.write().unwrap_or_else(|e| e.into_inner()) = map;
 }
 
-/// A key set's keymap: MiniMax's, or one closer to 3ds Max's own defaults.
+/// A key set's keymap: Ilex's, or one closer to 3ds Max's own defaults.
 pub fn for_set(set: KeySet) -> Keymap {
     let mut map = default_keymap();
     if set == KeySet::Max {

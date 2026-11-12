@@ -1,6 +1,6 @@
 //! glTF 2.0 export (`.gltf` + `.bin`, or a single `.glb`). glTF only stores
 //! triangles, so every primitive also carries `extras.minimax` with the
-//! polygon sizes, smoothing groups and source vertex indices; the MiniMax
+//! polygon sizes, smoothing groups and source vertex indices; the Ilex
 //! importer uses them to rebuild the original quads / n-gons exactly.
 
 use super::{MatInfo, MeshItem, z_to_y_up};
@@ -105,7 +105,7 @@ fn primitive(b: &mut Builder, m: &EditablePoly, id: u16, mat: usize, yup: Mat4) 
         "indices": a_idx,
         "material": mat,
         "mode": 4,
-        "extras": {"minimax": {"faces": faces, "sg": sgs, "vid": vids, "mat_id": id}},
+        "extras": {"ilex": {"faces": faces, "sg": sgs, "vid": vids, "mat_id": id}},
     })
 }
 
@@ -134,7 +134,7 @@ pub fn build(items: &[MeshItem], bin_uri: Option<&str>) -> (Value, Vec<u8>) {
         buffer["uri"] = json!(uri);
     }
     let doc = json!({
-        "asset": {"version": "2.0", "generator": "MiniMax"},
+        "asset": {"version": "2.0", "generator": "Ilex"},
         "scene": 0,
         "scenes": [{"nodes": (0..nodes.len()).collect::<Vec<_>>()}],
         "nodes": nodes,

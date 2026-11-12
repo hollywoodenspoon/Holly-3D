@@ -318,7 +318,7 @@ impl SkySettings {
 /// The sky baked into an HDRI-like background (`w` x `w/2`), or None when Off.
 pub fn procedural_hdri(sky: &SkySettings, w: u32) -> Option<super::hdri::Hdri> {
     (sky.mode != SkyMode::Off).then(|| super::hdri::Hdri {
-        path: std::env::temp_dir().join(format!("minimax_sky_{:016x}_{w}.hdr", sky.key())),
+        path: std::env::temp_dir().join(format!("ilex_sky_{:016x}_{w}.hdr", sky.key())),
         strength: 1.0,
         rotation: 0.0,
         lighting: sky.lighting,

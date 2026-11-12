@@ -172,7 +172,7 @@ mod tests {
         let mut ed = Editor::default();
         ed.create_world(WorldKind::Planet, Vec3::ZERO);
         let id = ed.current().unwrap();
-        let dir = std::env::temp_dir().join(format!("minimax_planet_tex_{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ilex_planet_tex_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let png = dir.join("earth.png");
         image::RgbaImage::from_pixel(8, 4, image::Rgba([10, 80, 200, 255])).save(&png).unwrap();

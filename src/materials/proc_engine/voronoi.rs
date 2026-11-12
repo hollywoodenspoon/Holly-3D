@@ -6,7 +6,7 @@
 //! `noises_more.rs`, before the old procedural library was removed),
 //! copyright (c) 2026 ArtCraft Team and the MaterialCraft contributors,
 //! MIT OR Apache-2.0. Widths in pixels became fractions of a cell, since
-//! MiniMax evaluates per point.
+//! Ilex evaluates per point.
 
 use super::generators::Px;
 use super::lattice::{cellular, fbm, smoothstep};

@@ -1,17 +1,17 @@
-//! MiniMax — clean 3ds Max-style modeler, painter and renderer.
+//! Ilex — clean 3ds Max-style modeler, painter and renderer.
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
-use minimax::editor::Editor;
-use minimax::primitives::PrimitiveKind;
-use minimax::prefs::Preferences;
-use minimax::ui::UiPlugin;
-use minimax::ui::actions::keymap;
-use minimax::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox, volume_sync};
+use ilex::editor::Editor;
+use ilex::primitives::PrimitiveKind;
+use ilex::prefs::Preferences;
+use ilex::ui::UiPlugin;
+use ilex::ui::actions::keymap;
+use ilex::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox, volume_sync};
 
 fn main() {
     // Crash reporter first, so even a crash during start-up is recorded.
-    minimax::diagnostics::hook::install();
+    ilex::diagnostics::hook::install();
     let mut editor = Editor::default();
     if std::env::args().any(|a| a == "--demo") {
         editor.create_primitive(PrimitiveKind::Box, Vec3::ZERO);
@@ -26,13 +26,13 @@ fn main() {
         }
         editor.history = Default::default();
     }
-    // `minimax scene.mmax` / `minimax model.fbx`: open or import on start.
+    // `ilex scene.ilex` / `ilex old.mmax` / `ilex model.fbx`: open or import on start.
     if let Some(path) = std::env::args().skip(1).find(|a| !a.starts_with("--")) {
         let r = editor.open_any(std::path::Path::new(&path));
         editor.report(r);
         editor.history = Default::default();
     }
-    // Preferences (theme, hotkeys, undo steps, render defaults) from ~/.config/minimax.
+    // Preferences (theme, hotkeys, undo steps, render defaults) from ~/.config/ilex (or a pre-rename ~/.config/minimax).
     let path = Preferences::default_path();
     let prefs = Preferences::load_from(&path).unwrap_or_else(|e| {
         editor.status = format!("{e} (using defaults; fix or delete {})", path.display());
@@ -44,29 +44,29 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     if let Some(id) = args.iter().position(|a| a == "--help-shot").and_then(|i| args.get(i + 1)) {
         editor = Editor::default();
-        if !minimax::ui::help::shots::setup(&mut editor, id) {
-            eprintln!("unknown help shot {id}; known: {}", minimax::ui::help::shots::IDS.join(", "));
+        if !ilex::ui::help::shots::setup(&mut editor, id) {
+            eprintln!("unknown help shot {id}; known: {}", ilex::ui::help::shots::IDS.join(", "));
             std::process::exit(2);
         }
     } else {
         // A crash last time: show the recovery dialog.
-        editor.iface.crash_pending = minimax::diagnostics::recovery::detect_pending(&minimax::diagnostics::recovery::crash_dir());
+        editor.iface.crash_pending = ilex::diagnostics::recovery::detect_pending(&ilex::diagnostics::recovery::crash_dir());
     }
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "MiniMax — 3ds Max-style Modeler".into(),
+                    title: "Ilex — 3ds Max-style Modeler".into(),
                     // WM_CLASS / Wayland app ID: matches `StartupWMClass` in
-                    // packaging/minimax.desktop so the taskbar shows the icon.
-                    name: Some("minimax".into()),
+                    // packaging/ilex.desktop so the taskbar shows the icon.
+                    name: Some("ilex".into()),
                     resolution: (1600, 920).into(),
                     ..default()
                 }),
                 ..default()
             })
-            .set(minimax::viewport::gpu::render_plugin()),
+            .set(ilex::viewport::gpu::render_plugin()),
     )
     .add_plugins(EguiPlugin::default())
     .add_plugins(UiPlugin)
@@ -98,6 +98,6 @@ fn main() {
 /// The GPU name for crash reports.
 fn record_gpu_name(info: Option<Res<bevy::render::renderer::RenderAdapterInfo>>) {
     if let Some(i) = info {
-        minimax::diagnostics::state::set_gpu(format!("{} ({:?}, {})", i.name, i.backend, i.driver));
+        ilex::diagnostics::state::set_gpu(format!("{} ({:?}, {})", i.name, i.backend, i.driver));
     }
 }

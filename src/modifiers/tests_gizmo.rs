@@ -183,7 +183,7 @@ fn blast_zones_select_move_and_scale() {
     let id = ed.scene.add(BaseObject::Primitive(Primitive::default_of(PrimitiveKind::Box)), Vec3::new(2.0, 0.0, 0.0));
     ed.scene.objects[id].evaluate();
     ed.scene.select_only(Some(id));
-    ed.add_modifier("Battlefield / Ruin");
+    ed.add_modifier("Demiurge Battlefield & Ruin");
     ed.edit_active_modifier("Add Zone", |k, _| {
         if let ModifierKind::Battlefield(b) = k {
             b.add_zone(None);

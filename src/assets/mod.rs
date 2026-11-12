@@ -1,6 +1,6 @@
 //! CC0 asset packs (Preferences -> Assets): 1K photo textures and realistic
 //! models from Poly Haven, low-poly models from Kenney's starter kits.
-//! Packs are downloaded into the asset folder (`~/.local/share/minimax/assets/`
+//! Packs are downloaded into the asset folder (`~/.local/share/ilex/assets/`
 //! by default), never into the project, and can be removed again.
 
 pub mod download;

@@ -1,4 +1,4 @@
-//! File menu: New / Open / Save / Save As (`.mmax`), Import and Export
+//! File menu: New / Open / Save / Save As (`.ilex`; Open also reads legacy `.mmax`), Import and Export
 //! (All or Selected) through native file dialogs.
 
 use crate::editor::Editor;
@@ -9,8 +9,10 @@ type MenuItem = (&'static str, bool, fn(&mut Editor));
 
 const IMPORT_EXTS: [&str; 4] = ["obj", "gltf", "glb", "fbx"];
 
-fn scene_dialog(ed: &Editor) -> rfd::FileDialog {
-    let d = rfd::FileDialog::new().add_filter("MiniMax Scene (*.mmax)", &[scene_file::EXT]);
+/// Open lists `.ilex` and the pre-rename `.mmax` together; Save writes `.ilex`.
+fn scene_dialog(ed: &Editor, open: bool) -> rfd::FileDialog {
+    let d = rfd::FileDialog::new();
+    let d = if open { d.add_filter("Ilex Scene (*.ilex, *.mmax)", &scene_file::ALL_EXTS) } else { d.add_filter("Ilex Scene (*.ilex)", &[scene_file::EXT]) };
     match ed.scene_path.as_ref().and_then(|p| p.parent()) {
         Some(dir) => d.set_directory(dir),
         None => d,
@@ -19,7 +21,7 @@ fn scene_dialog(ed: &Editor) -> rfd::FileDialog {
 
 /// Open Scene (`Ctrl+O`).
 pub fn open(ed: &mut Editor) {
-    if let Some(p) = scene_dialog(ed).add_filter("Importable meshes", &IMPORT_EXTS).pick_file() {
+    if let Some(p) = scene_dialog(ed, true).add_filter("Importable meshes", &IMPORT_EXTS).pick_file() {
         let r = ed.open_any(&p);
         ed.report(r);
     }
@@ -37,7 +39,7 @@ pub fn save(ed: &mut Editor) {
 }
 
 pub fn save_as(ed: &mut Editor) {
-    if let Some(p) = scene_dialog(ed).set_file_name("Untitled.mmax").save_file() {
+    if let Some(p) = scene_dialog(ed, false).set_file_name("Untitled.ilex").save_file() {
         let r = ed.save_scene(&p);
         ed.report(r);
     }

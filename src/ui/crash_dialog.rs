@@ -37,8 +37,8 @@ fn copy_button(ui: &mut egui::Ui, text: &str) {
 
 /// Opens the emergency scene as an unsaved scene (Save As keeps it).
 fn restore_button(ui: &mut egui::Ui, ed: &mut Editor, path: Option<&Path>) -> bool {
-    let tip = "Opens the scene MiniMax saved when it crashed. It opens unsaved, so use Save As to keep it";
-    let b = ui.add_enabled(path.is_some(), egui::Button::new("🔄 Restore Unsaved Scene (crash_recovery.mmax)")).on_hover_text(tip);
+    let tip = "Opens the scene Ilex saved when it crashed. It opens unsaved, so use Save As to keep it";
+    let b = ui.add_enabled(path.is_some(), egui::Button::new("🔄 Restore Unsaved Scene (crash_recovery.ilex)")).on_hover_text(tip);
     let b = b.on_disabled_hover_text("No emergency scene was saved for this crash");
     if b.clicked()
         && let Some(p) = path
@@ -67,9 +67,9 @@ fn folder_button(ui: &mut egui::Ui, ed: &mut Editor) {
 fn startup(ctx: &egui::Context, ed: &mut Editor) {
     let Some(p) = ed.iface.crash_pending.clone() else { return };
     let mut done = false;
-    egui::Window::new("MiniMax closed unexpectedly").collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0]).show(ctx, |ui| {
+    egui::Window::new("Ilex closed unexpectedly").collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0]).show(ctx, |ui| {
         ui.set_max_width(520.0);
-        ui.label("MiniMax crashed last time. A report of what happened, and your scene as it was, were saved.");
+        ui.label("Ilex crashed last time. A report of what happened, and your scene as it was, were saved.");
         ui.add_space(4.0);
         ui.label(RichText::new(headline(&p.text)).monospace().color(theme::amber()));
         ui.label(dim(&p.report.display().to_string()));
@@ -125,7 +125,7 @@ fn reports(ctx: &egui::Context, ed: &mut Editor) {
         ui.label(dim(&dir.display().to_string()));
         ui.separator();
         if list.is_empty() && pick.is_none() {
-            ui.label("No crash reports. MiniMax writes one here automatically if it ever crashes.");
+            ui.label("No crash reports. Ilex writes one here automatically if it ever crashes.");
             return;
         }
         ui.horizontal_top(|ui| {

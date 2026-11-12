@@ -116,7 +116,7 @@ fn rings(ui: &mut egui::Ui, t: &mut Track, p: &mut PlanetParams) {
 /// All Planet Studio rollouts; returns a pending custom-texture request.
 pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut PlanetParams) -> Option<TexRequest> {
     let mut req = None;
-    rollout(ui, "Planet", true, |ui| {
+    rollout(ui, "Demiurge Planet", true, |ui| {
         grid(ui, "planet_main", |ui| {
             row(ui, t, "Radius:", &mut p.radius, 0.01..=1_000_000.0, 50.0, 0.2);
             row(ui, t, "Subdivisions:", &mut p.subdivisions, 4..=128, 32, 0.1);
