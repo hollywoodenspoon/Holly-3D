@@ -2,6 +2,7 @@
 //! progressive multi-bounce path tracer (CPU and wgpu GPU) and the classic
 //! raytracer.
 
+pub mod area_lights;
 pub mod bsdf;
 pub mod bvh;
 mod bvh_wide;
@@ -29,6 +30,8 @@ mod sky_noise;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_area;
+#[cfg(test)]
 mod tests_bvh;
 #[cfg(test)]
 mod tests_gi;
@@ -43,6 +46,7 @@ pub mod trace;
 pub use environment::{Environment, LightingPreset};
 pub use framebuffer::{ChannelView, FrameBuffer};
 pub use job::RenderJob;
+pub use area_lights::IesProfile;
 pub use lighting::{Light, LightKind};
 pub use pathtrace::{ComputeDevice, Integrator, PathSettings};
 pub use settings::RenderSettings;

@@ -74,6 +74,10 @@ impl<'a> PathTracer<'a> {
                 l += beta * v.inscatter;
                 beta *= v.transmittance;
             }
+            if camera && let Some(le) = self.t.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)) {
+                (l, alpha) = (l + beta * le, 1.0);
+                break;
+            }
             let Some(h) = hit else {
                 if !camera {
                     l += beta * self.t.environment(d);

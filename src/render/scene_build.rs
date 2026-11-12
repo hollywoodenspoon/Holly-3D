@@ -31,6 +31,8 @@ pub enum RShape {
     Directional {
         dir: Vec3,
     },
+    /// Rect / Disc / Sphere / Tube area light.
+    Area(super::area_lights::Area),
 }
 
 #[derive(Clone, Debug)]
@@ -46,6 +48,8 @@ pub struct RLight {
     pub softness: f32,
     /// Shadow tint factor: (1 - density) + density x shadow color.
     pub shadow_tint: Vec3,
+    /// Photometric profile around the emission axis.
+    pub ies: super::area_lights::IesProfile,
 }
 
 pub struct RenderScene {
@@ -149,6 +153,7 @@ impl RenderScene {
                     shadows: false,
                     softness: 0.0,
                     shadow_tint: Vec3::ZERO,
+                    ies: Default::default(),
                 });
             }
         } else {
@@ -164,6 +169,10 @@ impl RenderScene {
                         RShape::Spot { dir, cos_in: (l.hotspot * 0.5).to_radians().cos(), cos_out: (l.falloff * 0.5).to_radians().cos() },
                         K_POINT,
                     ),
+                    k if k.is_area() => {
+                        let shape = super::area_lights::AreaShape::of(k).expect("area kind");
+                        (RShape::Area(super::area_lights::Area::new(shape, o.transform.rotation, l.area_size, l.visible_to_camera)), K_POINT)
+                    }
                     _ => (RShape::Directional { dir }, K_DIRECT),
                 };
                 let d = l.shadow_density.clamp(0.0, 1.0);
@@ -174,8 +183,9 @@ impl RenderScene {
                     range: l.range(),
                     atten: l.atten(),
                     shadows: l.cast_shadows,
-                    softness: l.softness,
+                    softness: if l.kind.is_area() { 0.0 } else { l.softness },
                     shadow_tint: Vec3::splat(1.0 - d) + lin3(l.shadow_color) * d,
+                    ies: if l.kind.takes_ies() { l.ies } else { Default::default() },
                 });
             }
         }

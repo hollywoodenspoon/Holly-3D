@@ -126,20 +126,39 @@ impl Medium {
 
 /// Direction to the light, distance and the falloff factor (distance, spot
 /// cone, attenuation) of light `l` arriving at `p`; `None` outside it.
-pub(super) fn incident(l: &RLight, p: Vec3) -> Option<(Vec3, f32, f32)> {
+/// Direction to, distance to and intensity factor of light `l` at `p`;
+/// area lights draw one point on their surface per call.
+pub(super) fn incident(l: &RLight, p: Vec3, rng: &mut Rng) -> Option<(Vec3, f32, f32)> {
+    let window = |d: f32| (1.0 - (d / l.range.max(1e-3)).powi(4)).clamp(0.0, 1.0).powi(2) * l.atten.factor(d);
     let (dir, dist, mut k) = match l.shape {
         RShape::Directional { dir } => (-dir, f32::INFINITY, 1.0),
         RShape::Point | RShape::Spot { .. } => {
             let v = l.pos - p;
             let d = v.length().max(1e-4);
-            let window = (1.0 - (d / l.range.max(1e-3)).powi(4)).clamp(0.0, 1.0).powi(2);
-            (v / d, d, window * l.atten.factor(d) / (d * d))
+            (v / d, d, window(d) / (d * d))
+        }
+        RShape::Area(a) => {
+            let (q, nq, scale) = a.sample(l.pos, p, rng);
+            let v = q - p;
+            let d = v.length().max(1e-4);
+            let cos_l = nq.dot(-v / d);
+            if cos_l <= 0.0 {
+                return None;
+            }
+            (v / d, d, scale * cos_l * window(l.pos.distance(p)) / (d * d).max(1e-4))
         }
     };
-    if let RShape::Spot { dir: axis, cos_in, cos_out } = l.shape {
-        let c = (-dir).dot(axis);
-        let t = ((c - cos_out) / (cos_in - cos_out).max(1e-4)).clamp(0.0, 1.0);
-        k *= t * t * (3.0 - 2.0 * t);
+    let axis = match l.shape {
+        RShape::Spot { dir: axis, cos_in, cos_out } => {
+            let t = (((-dir).dot(axis) - cos_out) / (cos_in - cos_out).max(1e-4)).clamp(0.0, 1.0);
+            k *= t * t * (3.0 - 2.0 * t);
+            axis
+        }
+        RShape::Area(a) => a.n,
+        _ => Vec3::ZERO,
+    };
+    if l.ies != super::area_lights::IesProfile::None && axis != Vec3::ZERO {
+        k *= l.ies.factor((-dir).dot(axis));
     }
     (k > 0.0).then_some((dir, dist, k))
 }
@@ -171,7 +190,7 @@ impl Tracer<'_> {
             let weight = tr * (1.0 - step_tr);
             let mut li = Vec3::ZERO;
             for l in &self.rs.lights {
-                let Some((dir, dist, k)) = incident(l, p) else { continue };
+                let Some((dir, dist, k)) = incident(l, p, rng) else { continue };
                 let vis = if self.cfg.shadows && l.shadows { self.transmittance(p, dir, (dist - self.eps).min(1e30)) } else { 1.0 };
                 if vis > 0.0 {
                     li += l.radiance * (k * vis * hg_phase(d.dot(dir), m.g));

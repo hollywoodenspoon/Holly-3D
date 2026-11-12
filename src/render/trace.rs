@@ -3,7 +3,7 @@
 //! stratified anti-aliasing. Produces linear radiance + a G-buffer per pixel.
 
 use super::bvh::Hit;
-use super::scene_build::RenderScene;
+use super::scene_build::{RShape, RenderScene};
 use super::settings::RenderSettings;
 use crate::materials::{ShadingModel, relief};
 use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface};
@@ -188,16 +188,20 @@ impl<'a> Tracer<'a> {
     pub(super) fn punctual(&self, sh: &Shading, rng: &mut Rng, out: &mut Vec<LightIn>) {
         let o = sh.p + sh.ng * self.eps;
         for l in &self.rs.lights {
-            let Some((dir, dist, k)) = super::volumetrics::incident(l, sh.p) else { continue };
-            if sh.n.dot(dir) <= 0.0 {
-                continue;
+            // Area lights: one shadow ray per point drawn on the surface.
+            let n = if matches!(l.shape, RShape::Area(_)) { self.cfg.shadow_samples.max(1) } else { 1 };
+            for _ in 0..n {
+                let Some((dir, dist, k)) = super::volumetrics::incident(l, sh.p, rng) else { continue };
+                if sh.n.dot(dir) <= 0.0 {
+                    continue;
+                }
+                let mut radiance = l.radiance * k / n as f32;
+                if self.cfg.shadows && l.shadows {
+                    let vis = self.visibility(o, dir, dist, l.softness, rng);
+                    radiance *= l.shadow_tint + (Vec3::ONE - l.shadow_tint) * vis;
+                }
+                out.push(LightIn { dir, radiance });
             }
-            let mut radiance = l.radiance * k;
-            if self.cfg.shadows && l.shadows {
-                let vis = self.visibility(o, dir, dist, l.softness, rng);
-                radiance *= l.shadow_tint + (Vec3::ONE - l.shadow_tint) * vis;
-            }
-            out.push(LightIn { dir, radiance });
         }
     }
 
@@ -226,7 +230,11 @@ impl<'a> Tracer<'a> {
     }
 
     fn trace_surface(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
-        let Some(h) = self.rs.bvh.closest(o, d, f32::INFINITY) else {
+        let hit = self.rs.bvh.closest(o, d, f32::INFINITY);
+        if let Some(le) = self.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).filter(|_| depth == 0) {
+            return (le, 1.0, None);
+        }
+        let Some(h) = hit else {
             return (if depth == 0 { Vec3::ZERO } else { self.environment(d) }, 0.0, None);
         };
         let tri = &self.rs.bvh.tris[h.tri];

@@ -43,6 +43,12 @@ pub fn unsupported(rs: &RenderScene) -> Option<&'static str> {
     if rs.volume.is_some() {
         return Some("volumetric godrays / mist");
     }
+    if rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))) {
+        return Some("area lights");
+    }
+    if rs.lights.iter().any(|l| l.ies != crate::render::IesProfile::None) {
+        return Some("IES light profiles");
+    }
     if rs.translucent {
         return Some("see-through (opacity) surfaces");
     }
@@ -105,6 +111,8 @@ pub fn pack(rs: &RenderScene) -> Packed {
             RShape::Point => (0.0, Vec3::Z, 1.0, 0.0),
             RShape::Spot { dir, cos_in, cos_out } => (1.0, dir, cos_in, cos_out),
             RShape::Directional { dir } => (2.0, dir, 1.0, 0.0),
+            // Never packed: `unsupported` sends area lights to the CPU.
+            RShape::Area(_) => (0.0, Vec3::Z, 1.0, 0.0),
         };
         lights.v3(l.pos, kind);
         lights.v3(axis, cin);

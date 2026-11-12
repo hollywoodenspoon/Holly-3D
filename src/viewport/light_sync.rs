@@ -38,6 +38,10 @@ fn shape(k: LightKind) -> Option<Shape> {
         LightKind::TargetSpot | LightKind::FreeSpot => Some(Shape::Spot),
         LightKind::TargetDirect | LightKind::FreeDirect => Some(Shape::Directional),
         LightKind::Skylight => None,
+        // Viewport approximations: one-sided panels as wide spots, sphere
+        // and tube as soft point lights (F9 renders the true shapes).
+        LightKind::RectArea | LightKind::DiscArea => Some(Shape::Spot),
+        LightKind::SphereArea | LightKind::TubeArea => Some(Shape::Point),
     }
 }
 
@@ -112,7 +116,7 @@ pub fn sync_lights(
                 color: col,
                 intensity: POINT_LM * l.multiplier,
                 range: l.range(),
-                radius: l.softness,
+                radius: if l.kind.is_area() { l.area_size[0] } else { l.softness },
                 shadow_maps_enabled: l.cast_shadows,
                 shadow_depth_bias: l.shadow_bias * 4.0,
                 ..default()
@@ -131,11 +135,11 @@ pub fn sync_lights(
                 color: col,
                 intensity: POINT_LM * l.multiplier,
                 range: l.range(),
-                radius: l.softness,
+                radius: if l.kind.is_area() { l.area_size[0].min(l.area_size[1]) * 0.5 } else { l.softness },
                 shadow_maps_enabled: l.cast_shadows,
                 shadow_depth_bias: l.shadow_bias * 4.0,
-                outer_angle: (l.falloff * 0.5).to_radians(),
-                inner_angle: (l.hotspot * 0.5).to_radians(),
+                outer_angle: if l.kind.is_area() { 1.5 } else { (l.falloff * 0.5).to_radians() },
+                inner_angle: if l.kind.is_area() { 0.4 } else { (l.hotspot * 0.5).to_radians() },
                 ..default()
             };
             set_if(&mut p, v, |a, b| {

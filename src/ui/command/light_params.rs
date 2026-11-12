@@ -1,10 +1,10 @@
 //! Modify panel for lights: General, Intensity / Color / Attenuation,
-//! Spotlight / Directional, and Shadow Parameters rollouts.
+//! Spotlight / Directional / Area Shape, IES Profile and Shadow Parameters rollouts.
 
 use super::CONTENT_W;
 use crate::editor::Editor;
 use crate::render::lighting::{KELVIN_PRESETS, kelvin_to_rgb};
-use crate::render::{Light, LightKind};
+use crate::render::{IesProfile, Light, LightKind};
 use crate::ui::widgets::{Track, color_row, dim, num_row, rollout};
 use bevy_egui::egui;
 
@@ -116,9 +116,48 @@ fn shape(ui: &mut egui::Ui, ed: &mut Editor) {
             edit(ed, |l, t| grid(ui, "light_dir", |ui| num_row(ui, t, "Beam Radius", &mut l.beam_radius, 0.01..=500.0, 2.0)));
             ui.label(dim("Parallel rays: only the direction matters for shading."));
         });
+    } else if kind.is_area() {
+        rollout(ui, "Area Light Shape", true, |ui| {
+            edit(ed, |l, t| {
+                grid(ui, "light_area", |ui| match kind {
+                    LightKind::RectArea => {
+                        num_row(ui, t, "Width", &mut l.area_size[0], 0.01..=100.0, 2.0);
+                        num_row(ui, t, "Length", &mut l.area_size[1], 0.01..=100.0, 1.2);
+                    }
+                    LightKind::TubeArea => {
+                        num_row(ui, t, "Radius", &mut l.area_size[0], 0.005..=10.0, 0.06);
+                        num_row(ui, t, "Length", &mut l.area_size[1], 0.01..=100.0, 2.0);
+                    }
+                    _ => num_row(ui, t, "Radius", &mut l.area_size[0], 0.01..=50.0, if kind == LightKind::DiscArea { 0.6 } else { 0.25 }),
+                });
+                t.r(ui.checkbox(&mut l.visible_to_camera, "Visible to Camera"));
+            });
+            ui.label(dim("Soft shadows grow with the light's size. Rotate (E) to aim Rect / Disc panels; F9 renders the true shape."));
+        });
     } else if kind == LightKind::Skylight {
         ui.label(dim("Skylight adds soft hemisphere light to every surface (ambient in the viewport, sky dome in F9)."));
     }
+}
+
+fn ies(ui: &mut egui::Ui, ed: &mut Editor) {
+    let Some(l) = ed.current_obj().and_then(|o| o.light()) else { return };
+    if !l.kind.takes_ies() {
+        return;
+    }
+    let open = l.ies != IesProfile::None;
+    rollout(ui, "IES Light Profile", open, |ui| {
+        edit(ed, |l, t| {
+            egui::ComboBox::from_id_salt("light_ies").width(240.0).selected_text(l.ies.label()).show_ui(ui, |ui| {
+                for p in IesProfile::ALL {
+                    if ui.selectable_label(l.ies == p, p.label()).clicked() && l.ies != p {
+                        l.ies = p;
+                        (t.started, t.changed) = (true, true);
+                    }
+                }
+            });
+        });
+        ui.label(dim("Photometric web: shapes intensity by angle like a real luminaire. Rendered in F9."));
+    });
 }
 
 fn shadows(ui: &mut egui::Ui, ed: &mut Editor) {
@@ -143,6 +182,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     general(ui, ed);
     intensity(ui, ed);
     shape(ui, ed);
+    ies(ui, ed);
     shadows(ui, ed);
     if ed.uses_default_lights() {
         let why = if ed.default_lights { "Default Lights are forced on (Ctrl+L)" } else { "no scene light is on" };
