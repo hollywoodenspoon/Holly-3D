@@ -1,5 +1,5 @@
 //! 3ds Max-style light objects (Omni, Target / Free Spot, Target / Free
-//! Directional, Skylight) and the Default Modeling Lights headlight rig.
+//! Directional, Skylight, Rect / Disc / Sphere / Tube area lights) and the Default Modeling Lights headlight rig.
 //! Pure data + math; the Bevy side lives in `viewport::light_sync`.
 
 use crate::scene::ObjId;
@@ -13,10 +13,25 @@ pub enum LightKind {
     TargetDirect,
     FreeDirect,
     Skylight,
+    RectArea,
+    DiscArea,
+    SphereArea,
+    TubeArea,
 }
 
 impl LightKind {
-    pub const ALL: [LightKind; 6] = [Self::Omni, Self::TargetSpot, Self::FreeSpot, Self::TargetDirect, Self::FreeDirect, Self::Skylight];
+    pub const ALL: [LightKind; 10] = [
+        Self::Omni,
+        Self::TargetSpot,
+        Self::FreeSpot,
+        Self::TargetDirect,
+        Self::FreeDirect,
+        Self::Skylight,
+        Self::RectArea,
+        Self::DiscArea,
+        Self::SphereArea,
+        Self::TubeArea,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
@@ -26,6 +41,10 @@ impl LightKind {
             Self::TargetDirect => "Target Direct",
             Self::FreeDirect => "Free Direct",
             Self::Skylight => "Skylight",
+            Self::RectArea => "Rect Light",
+            Self::DiscArea => "Disc Light",
+            Self::SphereArea => "Sphere Light",
+            Self::TubeArea => "Tube Light",
         }
     }
     pub fn has_target(self) -> bool {
@@ -37,9 +56,16 @@ impl LightKind {
     pub fn is_directional(self) -> bool {
         matches!(self, Self::TargetDirect | Self::FreeDirect)
     }
-    /// Omni and spots fall off with distance.
+    /// Omni, spots and area lights fall off with distance.
     pub fn has_range(self) -> bool {
-        matches!(self, Self::Omni | Self::TargetSpot | Self::FreeSpot)
+        matches!(self, Self::Omni | Self::TargetSpot | Self::FreeSpot) || self.is_area()
+    }
+    pub fn is_area(self) -> bool {
+        matches!(self, Self::RectArea | Self::DiscArea | Self::SphereArea | Self::TubeArea)
+    }
+    /// Spots and area lights take an IES profile.
+    pub fn takes_ies(self) -> bool {
+        self.is_spot() || self.is_area()
     }
 }
 
@@ -107,6 +133,15 @@ pub struct Light {
     pub target: Option<ObjId>,
     /// Created by an Environment lighting preset (replaced by the next one).
     pub from_preset: bool,
+    /// Area lights: Rect width × length; Disc / Sphere radius; Tube radius × length.
+    #[serde(default)]
+    pub area_size: [f32; 2],
+    /// Area lights: the emitting surface shows in F9 renders.
+    #[serde(default)]
+    pub visible_to_camera: bool,
+    /// Photometric web shaping a spot or area light.
+    #[serde(default)]
+    pub ies: crate::render::area_lights::IesProfile,
 }
 
 impl Light {
@@ -133,6 +168,15 @@ impl Light {
             shadow_density: 1.0,
             target: None,
             from_preset: false,
+            area_size: match kind {
+                LightKind::RectArea => [2.0, 1.2],
+                LightKind::DiscArea => [0.6, 0.6],
+                LightKind::SphereArea => [0.25, 0.25],
+                LightKind::TubeArea => [0.06, 2.0],
+                _ => [0.0; 2],
+            },
+            visible_to_camera: kind.is_area(),
+            ies: Default::default(),
         }
     }
 

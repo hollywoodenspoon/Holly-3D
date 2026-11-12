@@ -1,8 +1,7 @@
-//! Background render jobs: the raytracer runs on worker threads pulling
-//! 32x32 tiles from a shared counter and streams finished tiles to the UI; the
-//! Cycles bridge runs the external CLI and streams back the whole image.
+//! Background render jobs: the classic raytracer runs on worker threads
+//! pulling 32x32 tiles from a shared counter and streams finished tiles to the
+//! UI; the path tracer streams whole progressive passes (CPU or wgpu GPU).
 
-use super::cycles;
 use super::framebuffer::FrameBuffer;
 use super::post::PixelLayers;
 use super::scene_build::RenderScene;
@@ -27,8 +26,12 @@ pub enum Msg {
         hdr: Vec<Vec4>,
         layers: Vec<PixelLayers>,
     },
-    /// Cycles: a whole new image.
-    Image(FrameBuffer),
+    /// Progress text of the running pass ("Pass 3/7 · 4 spp").
+    Pass(String),
+    /// Per-light-group buffers of the finished path-traced image.
+    LightMix(Box<super::lightmix::Buffers>),
+    /// AOV passes of the finished path-traced image.
+    Aovs(Box<super::aov::AovBuffers>),
     Done(Result<String, String>),
 }
 
@@ -38,6 +41,11 @@ pub struct RenderJob {
     pub started: Instant,
     pub px_done: u64,
     pub px_total: u64,
+    /// Latest progressive pass report (empty for the classic tracer).
+    pub pass_label: String,
+    /// LightMix buffers once a path-traced render finished on the CPU.
+    pub lightmix: Option<Box<super::lightmix::Buffers>>,
+    pub aovs: Option<Box<super::aov::AovBuffers>>,
 }
 
 impl Drop for RenderJob {
@@ -136,7 +144,7 @@ impl RenderJob {
     fn new(px_total: u64) -> (Self, Sender<Msg>, Arc<AtomicBool>) {
         let (tx, rx) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
-        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total };
+        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new(), lightmix: None, aovs: None };
         (job, tx, cancel)
     }
 
@@ -159,15 +167,32 @@ impl RenderJob {
         job
     }
 
-    /// Exports the scene and runs the Cycles CLI on a background thread.
-    pub fn cycles(rs: RenderScene, cfg: RenderSettings) -> Self {
-        let (job, tx, cancel) = Self::new(u64::from(cfg.width) * u64::from(cfg.height));
+    /// Starts the progressive path tracer: the wgpu GPU kernel when the
+    /// Compute Device allows and an adapter exists, else the CPU tracer.
+    pub fn pathtrace(rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+        let passes = cfg.path.schedule().len() as u64;
+        let px = u64::from(region[2] - region[0]) * u64::from(region[3] - region[1]);
+        let (job, tx, cancel) = Self::new(px * passes);
         std::thread::spawn(move || {
-            let r = cycles::run(&rs, &cfg, &cancel).map(|fb| {
-                let _ = tx.send(Msg::Image(fb));
-                format!("Cycles finished ({} samples)", cfg.cycles_samples)
+            let t0 = Instant::now();
+            let w = region[2] - region[0];
+            let (px, device, mix) = super::pathtrace::run_mix(&rs, &cfg, region, &cancel, |info, img| {
+                let _ = tx.send(Msg::Pass(format!("Pass {}/{passes} · {} spp · {:.0}% sampling", info.pass + 1, info.spp, info.active * 100.0)));
+                let _ = tx.send(block(region[0], region[1], w, img));
             });
-            let _ = tx.send(Msg::Done(r));
+            if cancel.load(Ordering::Relaxed) {
+                let _ = tx.send(Msg::Done(Err("Render cancelled".into())));
+                return;
+            }
+            let _ = tx.send(block(region[0], region[1], w, &px));
+            if let Some(m) = mix.lightmix {
+                let _ = tx.send(Msg::LightMix(Box::new(m)));
+            }
+            if let Some(a) = mix.aovs {
+                let _ = tx.send(Msg::Aovs(Box::new(a)));
+            }
+            let secs = t0.elapsed().as_secs_f32();
+            let _ = tx.send(Msg::Done(Ok(format!("Rendered {}x{} (path traced on {device}) in {secs:.1}s", cfg.width, cfg.height))));
         });
         job
     }
@@ -187,12 +212,9 @@ impl RenderJob {
                     fb.put_block(x0, y0, w, &display, &hdr);
                     fb.put_layers(x0, y0, w, &layers);
                 }
-                Msg::Image(img) => {
-                    let rev = fb.rev + 1;
-                    *fb = img;
-                    fb.rev = rev;
-                    self.px_done = self.px_total;
-                }
+                Msg::Pass(p) => self.pass_label = p,
+                Msg::LightMix(m) => self.lightmix = Some(m),
+                Msg::Aovs(a) => self.aovs = Some(a),
                 Msg::Done(r) => done = Some(r),
             }
         }

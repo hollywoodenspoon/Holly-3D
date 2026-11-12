@@ -5,7 +5,7 @@
 
 pub mod palette;
 
-use crate::render::{Engine, RenderSettings};
+use crate::render::{ComputeDevice, Integrator, RenderSettings};
 pub use palette::{Palette, Rgb, ThemePreset};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -186,8 +186,10 @@ impl Default for GeneralPrefs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RenderPrefs {
-    pub engine: Engine,
-    pub blender_exe: String,
+    /// Renderer for new scenes (old `engine` / `blender_exe` keys from the
+    /// removed Cycles bridge are ignored on load).
+    pub integrator: Integrator,
+    pub device: ComputeDevice,
     pub width: u32,
     pub height: u32,
 }
@@ -195,15 +197,15 @@ pub struct RenderPrefs {
 impl Default for RenderPrefs {
     fn default() -> Self {
         let r = RenderSettings::default();
-        Self { engine: r.engine, blender_exe: r.blender_exe, width: r.width, height: r.height }
+        Self { integrator: r.path.integrator, device: r.path.device, width: r.width, height: r.height }
     }
 }
 
 impl RenderPrefs {
     /// Copies the defaults into a scene's Render Setup.
     pub fn apply(&self, r: &mut RenderSettings) {
-        r.engine = self.engine;
-        r.blender_exe = self.blender_exe.clone();
+        r.path.integrator = self.integrator;
+        r.path.device = self.device;
         r.width = self.width.max(1);
         r.height = self.height.max(1);
     }

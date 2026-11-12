@@ -7,7 +7,7 @@ use minimax::primitives::PrimitiveKind;
 use minimax::prefs::Preferences;
 use minimax::ui::UiPlugin;
 use minimax::ui::actions::keymap;
-use minimax::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox};
+use minimax::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox, volume_sync};
 
 fn main() {
     // Crash reporter first, so even a crash during start-up is recorded.
@@ -90,6 +90,7 @@ fn main() {
     lines::register(&mut app);
     outline::register(&mut app);
     light_sync::register(&mut app);
+    volume_sync::register(&mut app);
     skybox::register(&mut app);
     app.run();
 }

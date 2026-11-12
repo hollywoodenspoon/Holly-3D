@@ -38,7 +38,8 @@ pub(super) struct Node {
 
 pub struct Bvh {
     pub tris: Vec<Tri>,
-    #[cfg(test)]
+    /// Binary nodes (depth-first; inner: count 0, left child next, right at
+    /// `start`): the layout the GPU path tracer traverses.
     nodes: Vec<Node>,
     wide: Vec<super::bvh_wide::Node4>,
 }
@@ -92,10 +93,13 @@ impl Bvh {
         let wide = super::bvh_wide::collapse(&nodes);
         Self {
             tris,
-            #[cfg(test)]
             nodes,
             wide,
         }
+    }
+
+    pub(super) fn nodes(&self) -> &[Node] {
+        &self.nodes
     }
 
     fn bounds(tris: &[Tri]) -> (Vec3, Vec3) {

@@ -4104,6 +4104,7 @@ dependencies = [
  "meshopt",
  "miniz_oxide 0.8.9",
  "noise",
+ "pollster",
  "rand 0.8.8",
  "rand_chacha",
  "rfd",
@@ -4115,6 +4116,7 @@ dependencies = [
  "ufbx",
  "ureq",
  "uvunwrap",
+ "wgpu",
 ]
 
 [[package]]

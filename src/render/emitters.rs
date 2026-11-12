@@ -52,6 +52,19 @@ impl Emitters {
         self.cdf.last().copied().unwrap_or(0.0)
     }
 
+    /// Probability [`Emitters::pick`] chooses triangle `tri` (0 if it does
+    /// not emit): the light-sampling density MIS weighs BSDF hits against.
+    pub fn prob_of(&self, tri: usize) -> f32 {
+        self.lookup(tri).map_or(0.0, |(_, p)| p)
+    }
+
+    /// The emitter on triangle `tri` and its pick probability.
+    pub fn lookup(&self, tri: usize) -> Option<(&Emitter, f32)> {
+        let i = self.list.binary_search_by_key(&tri, |e| e.tri).ok()?;
+        let prev = if i == 0 { 0.0 } else { self.cdf[i - 1] };
+        Some((&self.list[i], (self.cdf[i] - prev) / self.total_power().max(1e-12)))
+    }
+
     /// Picks an emitter in proportion to its power: (emitter, probability).
     pub fn pick(&self, rng: &mut Rng) -> Option<(&Emitter, f32)> {
         let total = self.total_power();

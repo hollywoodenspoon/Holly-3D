@@ -118,17 +118,16 @@ fn ink_outline_on_any_material() {
 }
 
 #[test]
-fn cycles_xml_describes_the_scene() {
-    let mut s = scene_with(PrimitiveKind::Box, None);
-    s.add_light(Light::new(LightKind::Omni), None, Vec3::new(2.0, 2.0, 3.0), Vec3::ZERO);
-    let rs = RenderScene::build(&s, top_cam(), false);
-    let xml = cycles::scene_xml(&rs, &small());
-    assert!(xml.starts_with("<cycles>") && xml.trim_end().ends_with("</cycles>"));
-    assert!(xml.contains("<camera width=\"32\" height=\"32\" />"));
-    assert!(xml.contains("camera type=\"orthographic\""));
-    assert!(xml.contains("principled_bsdf") && xml.contains("light_type=\"point\""));
-    let nverts = xml.split("nverts=\"").nth(1).unwrap().split('"').next().unwrap();
-    assert_eq!(nverts.split(' ').count(), rs.bvh.tris.len(), "every triangle exported");
+fn scenes_saved_with_the_cycles_bridge_load_as_the_path_tracer() {
+    // Render Setup as written before Phase 11.5 (Cycles via Blender, HIP).
+    let legacy = r#"(width: 640, height: 480, engine: Cycles, cycles_exe: "cycles", cycles_samples: 128,
+        cycles_via: Blender, blender_exe: "/opt/blender/blender", cycles_device: Hip, hiprt: true, denoise: true, aa: 3)"#;
+    let r: RenderSettings = ron::from_str(legacy).expect("old Render Setup still loads");
+    assert_eq!((r.width, r.height, r.aa), (640, 480, 3));
+    assert_eq!(r.path.integrator, crate::render::Integrator::PathTracer, "native path tracer replaces Cycles");
+    assert_eq!(r.path.device, crate::render::ComputeDevice::Auto);
+    let again: RenderSettings = ron::from_str(&ron::to_string(&r).unwrap()).unwrap();
+    assert_eq!(again, r);
 }
 
 #[test]

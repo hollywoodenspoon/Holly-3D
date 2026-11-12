@@ -97,6 +97,10 @@ impl Action {
             Render => ed.start_render(),
             RenderSetup => flip(&mut ed.rfw.setup_open),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
+            LightMix => {
+                ed.rfw.lightmix_open = !(ed.rfw.lightmix_open && ed.rfw.rfw_open);
+                ed.rfw.rfw_open |= ed.rfw.lightmix_open;
+            }
             ColorGrading => {
                 ed.rfw.grading_open = !(ed.rfw.grading_open && ed.rfw.rfw_open);
                 ed.rfw.rfw_open |= ed.rfw.grading_open;
@@ -154,6 +158,7 @@ impl Action {
             RenderSetup => ed.rfw.setup_open,
             FrameWindow => ed.rfw.rfw_open,
             ColorGrading => ed.rfw.rfw_open && ed.rfw.grading_open,
+            LightMix => ed.rfw.rfw_open && ed.rfw.lightmix_open,
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,
             Environment => ed.env_open,

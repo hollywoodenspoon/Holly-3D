@@ -11,28 +11,58 @@ use bevy::math::{Vec3, Vec4};
 
 /// Runs every enabled pass over `px` (`w` x `h`, row-major).
 pub fn run(px: &mut [Pixel], w: usize, h: usize, rs: &RenderScene, cfg: &RenderSettings) {
+    run_ctx(px, w, h, &PostCtx::of(rs, cfg), cfg);
+}
+
+/// What the post chain needs from the scene, so the Light-Mixer can re-run
+/// it on a finished render without the BVH.
+#[derive(Clone, Copy, Debug)]
+pub struct PostCtx<'a> {
+    /// GI / AO / emitters make the image worth denoising.
+    pub noisy: bool,
+    /// Depth-of-field CoC scale (perspective cameras only).
+    pub coc: Option<f32>,
+    pub materials: &'a [crate::materials::Material],
+    pub plain_bg: bool,
+    /// Albedo / roughness / variance guides: use the À-Trous denoiser.
+    pub aux: Option<&'a [super::denoise_atrous::Aux]>,
+}
+
+impl<'a> PostCtx<'a> {
+    pub fn of(rs: &'a RenderScene, cfg: &RenderSettings) -> Self {
+        Self {
+            noisy: cfg.gi.gi || cfg.gi.ao || !rs.emitters.is_empty(),
+            coc: (!rs.camera.is_ortho()).then(|| coc_scale(rs, cfg)),
+            materials: &rs.materials,
+            plain_bg: rs.hdri.is_none(),
+            aux: None,
+        }
+    }
+}
+
+pub fn run_ctx(px: &mut [Pixel], w: usize, h: usize, ctx: &PostCtx, cfg: &RenderSettings) {
     if w == 0 || h == 0 {
         return;
     }
-    let noisy = cfg.gi.gi || cfg.gi.ao || !rs.emitters.is_empty();
-    if cfg.gi.denoise && noisy {
-        denoise(px, w, h);
+    match ctx.aux {
+        Some(aux) if cfg.gi.denoise => super::denoise_atrous::denoise(px, aux, w, h),
+        _ if cfg.gi.denoise && ctx.noisy => denoise(px, w, h),
+        _ => {}
     }
     let p = &cfg.post;
-    if p.dof && !rs.camera.is_ortho() {
-        dof(px, w, h, coc_scale(rs, cfg), p.focus_distance.max(1e-3));
+    if let Some(coc) = ctx.coc.filter(|_| p.dof) {
+        dof(px, w, h, coc, p.focus_distance.max(1e-3));
     }
     if cfg.outlines {
         let g: Vec<_> = px.iter().map(|p| p.g).collect();
         let mut ink = vec![Vec4::ZERO; px.len()];
-        outline::apply(&g, w, h, &rs.materials, &mut ink);
+        outline::apply(&g, w, h, ctx.materials, &mut ink);
         px.iter_mut().zip(ink).for_each(|(p, k)| p.layers.ink = k);
     }
     if p.bloom {
         bloom(px, w, h, cfg);
     }
-    let plain = rs.hdri.is_none();
-    px.iter_mut().for_each(|p| p.finish(&cfg.post.tone, plain, cfg.transparent));
+    px.iter_mut().for_each(|p| p.finish(&cfg.post.tone, ctx.plain_bg, cfg.transparent));
 }
 
 /// Bilateral weights: same object, similar normal, depth and color.

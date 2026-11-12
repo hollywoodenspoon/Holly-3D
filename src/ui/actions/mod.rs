@@ -88,6 +88,7 @@ pub enum Action {
     RenderSetup,
     FrameWindow,
     ColorGrading,
+    LightMix,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -123,7 +124,7 @@ impl Action {
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
-        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
+        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, LightMix, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
         v.extend([Help, Tour, HotkeyList, About, CrashReports, Preferences]);
         v
@@ -200,6 +201,7 @@ impl Action {
             RenderSetup => "Render Setup...",
             FrameWindow => "Rendered Frame Window",
             ColorGrading => "Color Grading & Camera RAW",
+            LightMix => "LightMix (Relight Render)",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -292,6 +294,7 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",
             ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",
             Render => "Render the active viewport into the Rendered Frame Window",
             RemoveSubObjects => "Remove the selected vertices or edges",

@@ -135,7 +135,7 @@ fn f9_render_uses_the_sky_background() {
 }
 
 #[test]
-fn baked_sky_is_written_for_cycles() {
+fn baked_sky_round_trips_through_a_hdr_file() {
     let mut s = earth(9.0);
     s.time_of_day = 9.123; // unique key for this test
     let h = procedural_hdri(&s, 32).unwrap();

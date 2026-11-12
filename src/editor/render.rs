@@ -4,7 +4,7 @@
 use super::Editor;
 use crate::render::job::{Region, clamp_region};
 use crate::render::scene_build::RenderScene;
-use crate::render::{ChannelView, Engine, FrameBuffer, RenderJob};
+use crate::render::{ChannelView, Integrator, FrameBuffer, RenderJob};
 use crate::viewport::camera::ViewCamera;
 
 /// A cloned Rendered Frame Window (frozen copy for comparison).
@@ -32,6 +32,13 @@ pub struct RenderUi {
     pub message: String,
     /// The Color Grading & Camera RAW sidebar is shown.
     pub grading_open: bool,
+    /// Per-light-group buffers of the last path-traced render.
+    pub lightmix: Option<Box<crate::render::lightmix::Buffers>>,
+    /// The LightMix sidebar is shown.
+    pub lightmix_open: bool,
+    /// AOV passes of the last path-traced render and the one shown.
+    pub aovs: Option<Box<crate::render::aov::AovBuffers>>,
+    pub aov: crate::render::aov::Aov,
 }
 
 impl Editor {
@@ -63,6 +70,7 @@ impl Editor {
     /// F9 / Render button: opens the RFW and starts rendering.
     pub fn start_render(&mut self) {
         self.cancel_render();
+        (self.rfw.lightmix, self.rfw.aovs) = (None, None);
         let (w, h) = (self.render.width, self.render.height);
         let rs = RenderScene::build(&self.scene, self.render_camera(), self.uses_default_lights());
         let fb_ok = self.rfw.fb.as_ref().is_some_and(|f| f.width == w && f.height == h);
@@ -72,17 +80,14 @@ impl Editor {
         }
         if let Some(fb) = self.rfw.fb.as_mut() {
             (fb.plain_bg, fb.transparent) = (rs.hdri.is_none(), self.render.transparent);
-            if self.render.engine == Engine::Cycles {
-                fb.layers.clear();
-            }
         }
         let mut cfg = self.render.clone();
         if let Some(d) = self.focus_object_distance() {
             cfg.post.focus_distance = d;
         }
-        self.rfw.job = Some(match cfg.engine {
-            Engine::Raytracer => RenderJob::raytrace(rs, cfg, region),
-            Engine::Cycles => RenderJob::cycles(rs, cfg),
+        self.rfw.job = Some(match cfg.path.integrator {
+            Integrator::Classic => RenderJob::raytrace(rs, cfg, region),
+            Integrator::PathTracer => RenderJob::pathtrace(rs, cfg, region),
         });
         self.rfw.rfw_open = true;
         self.rfw.message = format!("Rendering {} ({w}x{h})…", self.render_label());
@@ -120,6 +125,7 @@ impl Editor {
         if let Some(r) = job.poll(fb) {
             self.rfw.message = r.unwrap_or_else(|e| e);
             self.status = self.rfw.message.clone();
+            (self.rfw.lightmix, self.rfw.aovs) = (job.lightmix.take(), job.aovs.take());
             self.rfw.job = None;
             // The finished image gets the Color Grading.
             if !self.render.post.grade.is_neutral() {

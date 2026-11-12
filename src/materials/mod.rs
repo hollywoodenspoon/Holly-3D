@@ -9,6 +9,7 @@ pub mod maps;
 pub mod multi;
 pub mod patterns;
 pub mod presets;
+pub mod principled;
 pub mod proc_engine;
 pub mod relief;
 pub mod preview;
@@ -141,6 +142,9 @@ pub struct Material {
     /// Paint layers over this material (it stays "Layer 0: Base Material").
     #[serde(default)]
     pub paint: Option<crate::paint::PaintStack>,
+    /// Principled extras: SSS, anisotropy, clearcoat, sheen, absorption, dispersion.
+    #[serde(default)]
+    pub principled: principled::Principled,
 }
 
 impl Default for Material {
@@ -169,6 +173,7 @@ impl Default for Material {
             direct_camera_brightness: 1.0,
             projection: Default::default(),
             paint: None,
+            principled: Default::default(),
         }
     }
 }

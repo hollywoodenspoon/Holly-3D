@@ -6,6 +6,7 @@ use super::layout::ViewState;
 use super::lines::{Vp0Lines, Vp1Lines, Vp2Lines, Vp3Lines};
 use crate::editor::Editor;
 use crate::render::lighting::emit_dir;
+use crate::render::area_lights::{Area, AreaShape};
 use crate::render::{Light, LightKind};
 use crate::scene::{BaseObject, SceneObject};
 use bevy::gizmos::config::GizmoConfigGroup;
@@ -62,7 +63,25 @@ fn cylinder<G: GizmoConfigGroup>(g: &mut Gizmos<G>, a: Vec3, dir: Vec3, len: f32
     }
 }
 
-fn icon<G: GizmoConfigGroup>(g: &mut Gizmos<G>, l: &Light, p: Vec3, dir: Vec3, s: f32, color: Color) {
+/// Area lights draw at their true size, with a short emission arrow.
+fn area<G: GizmoConfigGroup>(g: &mut Gizmos<G>, l: &Light, p: Vec3, rot: Quat, color: Color) {
+    let a = Area::new(AreaShape::of(l.kind).expect("area kind"), rot, l.area_size, false);
+    match a.shape {
+        AreaShape::Rect => {
+            let c = [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0), (-1.0, -1.0)];
+            g.linestrip(c.map(|(x, y)| p + a.u * a.hw * x + a.v * a.hl * y), color);
+            g.line(p - a.u * a.hw - a.v * a.hl, p + a.u * a.hw + a.v * a.hl, color);
+        }
+        AreaShape::Disc => ring(g, p, a.n, a.hw, color),
+        AreaShape::Sphere => sphere(g, p, a.hw, color),
+        AreaShape::Tube => cylinder(g, p - a.u * a.hl, a.u, a.hl * 2.0, a.hw, color),
+    }
+    if a.shape != AreaShape::Sphere {
+        g.arrow(p, p + a.n * (a.hw.max(a.hl) * 0.8).max(0.3), color);
+    }
+}
+
+fn icon<G: GizmoConfigGroup>(g: &mut Gizmos<G>, l: &Light, p: Vec3, dir: Vec3, rot: Quat, s: f32, color: Color) {
     match l.kind {
         LightKind::Omni => {
             sphere(g, p, s * 0.45, color);
@@ -78,6 +97,7 @@ fn icon<G: GizmoConfigGroup>(g: &mut Gizmos<G>, l: &Light, p: Vec3, dir: Vec3, s
             cylinder(g, p - dir * s * 0.3, dir, s * 0.6, s * 0.45, color);
             g.arrow(p, p + dir * s * 1.6, color);
         }
+        LightKind::RectArea | LightKind::DiscArea | LightKind::SphereArea | LightKind::TubeArea => area(g, l, p, rot, color),
         LightKind::Skylight => {
             // Dome: horizon ring and two half arcs.
             ring(g, p, Vec3::Z, s * 0.8, color);
@@ -99,7 +119,7 @@ fn draw_light<G: GizmoConfigGroup>(g: &mut Gizmos<G>, ed: &Editor, o: &SceneObje
     let dir = emit_dir(o.transform.rotation);
     let base = if l.on { LIGHT_YELLOW } else { OFF_GRAY };
     let color = if o.selected { Color::WHITE } else { base };
-    icon(g, l, p, dir, ICON_PX * upp(p), color);
+    icon(g, l, p, dir, o.transform.rotation, ICON_PX * upp(p), color);
     let target = l.target.and_then(|t| ed.scene.objects.get(t)).map(|t| t.transform.translation);
     if let Some(t) = target {
         g.line(p, t, base.with_alpha(0.6));

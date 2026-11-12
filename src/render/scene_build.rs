@@ -31,6 +31,8 @@ pub enum RShape {
     Directional {
         dir: Vec3,
     },
+    /// Rect / Disc / Sphere / Tube area light.
+    Area(super::area_lights::Area),
 }
 
 #[derive(Clone, Debug)]
@@ -46,6 +48,10 @@ pub struct RLight {
     pub softness: f32,
     /// Shadow tint factor: (1 - density) + density x shadow color.
     pub shadow_tint: Vec3,
+    /// Photometric profile around the emission axis.
+    pub ies: super::area_lights::IesProfile,
+    /// LightMix group this light renders into.
+    pub group: u8,
 }
 
 pub struct RenderScene {
@@ -65,6 +71,8 @@ pub struct RenderScene {
     /// holds its bake for ambient and the Cycles world.
     pub procedural: Option<super::sky::SkySettings>,
     pub fog: Option<(Vec3, f32)>,
+    /// Volumetric godrays / height mist medium (Environment `8`).
+    pub volume: Option<super::volumetrics::Medium>,
     pub camera: ViewCamera,
     /// Scene bounding radius (AO ray length, epsilons).
     pub radius: f32,
@@ -73,6 +81,8 @@ pub struct RenderScene {
     /// Any see-through surface (opacity, opacity map or vertex alpha): shadow
     /// rays then pass through it, dimmed by its alpha (cloud shells).
     pub translucent: bool,
+    /// LightMix groups (fixed four, then the scene lights).
+    pub groups: Vec<super::lightmix::GroupInfo>,
 }
 
 fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
@@ -136,7 +146,9 @@ impl RenderScene {
         let env = &scene.environment;
         let mut lights = vec![];
         let mut sky = Vec3::ZERO;
+        let mut groups = super::lightmix::fixed_groups();
         if use_rig {
+            let group = super::lightmix::light_group(&mut groups, None, "Default Lights");
             for rl in headlight_rig(camera.forward(), camera.right(), camera.up()) {
                 lights.push(RLight {
                     shape: RShape::Directional { dir: rl.dir.normalize() },
@@ -147,10 +159,12 @@ impl RenderScene {
                     shadows: false,
                     softness: 0.0,
                     shadow_tint: Vec3::ZERO,
+                    ies: Default::default(),
+                    group,
                 });
             }
         } else {
-            for (_, o, l) in scene.active_lights() {
+            for (id, o, l) in scene.active_lights() {
                 if l.kind == LightKind::Skylight {
                     sky += l.radiance();
                     continue;
@@ -162,9 +176,18 @@ impl RenderScene {
                         RShape::Spot { dir, cos_in: (l.hotspot * 0.5).to_radians().cos(), cos_out: (l.falloff * 0.5).to_radians().cos() },
                         K_POINT,
                     ),
+                    k if k.is_area() => {
+                        let shape = super::area_lights::AreaShape::of(k).expect("area kind");
+                        (RShape::Area(super::area_lights::Area::new(shape, o.transform.rotation, l.area_size, l.visible_to_camera)), K_POINT)
+                    }
                     _ => (RShape::Directional { dir }, K_DIRECT),
                 };
                 let d = l.shadow_density.clamp(0.0, 1.0);
+                let sun = matches!(shape, RShape::Directional { .. }) && o.name.starts_with("Sun");
+                let group = if sun { super::lightmix::SUN_SKY } else { super::lightmix::light_group(&mut groups, Some(id), &o.name) };
+                if sun {
+                    groups[0].lights.push(id);
+                }
                 lights.push(RLight {
                     shape,
                     pos: o.transform.translation,
@@ -172,8 +195,10 @@ impl RenderScene {
                     range: l.range(),
                     atten: l.atten(),
                     shadows: l.cast_shadows,
-                    softness: l.softness,
+                    softness: if l.kind.is_area() { 0.0 } else { l.softness },
                     shadow_tint: Vec3::splat(1.0 - d) + lin3(l.shadow_color) * d,
+                    ies: if l.kind.takes_ies() { l.ies } else { Default::default() },
+                    group,
                 });
             }
         }
@@ -208,10 +233,12 @@ impl RenderScene {
             hdri,
             procedural,
             fog: env.fog.then(|| (lin3(env.fog_color), env.fog_density)),
+            volume: super::volumetrics::Medium::new(&env.volume),
             camera,
             radius,
             emitters,
             translucent,
+            groups,
         }
     }
 }

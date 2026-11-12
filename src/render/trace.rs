@@ -3,7 +3,7 @@
 //! stratified anti-aliasing. Produces linear radiance + a G-buffer per pixel.
 
 use super::bvh::Hit;
-use super::scene_build::{RShape, RenderScene};
+use super::scene_build::RenderScene;
 use super::settings::RenderSettings;
 use crate::materials::{ShadingModel, relief};
 use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface};
@@ -85,11 +85,13 @@ impl<'a> Tracer<'a> {
         Self { rs, cfg, eps: (rs.radius * 2e-4).max(1e-4) }
     }
 
-    pub(super) fn interp(&self, h: &Hit, o: Vec3, d: Vec3) -> Shading {
+    pub(super) fn interp(&self, h: &Hit, _o: Vec3, d: Vec3) -> Shading {
         let t = &self.rs.bvh.tris[h.tri];
         let w = Vec3::new(1.0 - h.u - h.v, h.u, h.v);
         let bary3 = |a: [Vec3; 3]| a[0] * w.x + a[1] * w.y + a[2] * w.z;
-        let p = o + d * h.t;
+        // Barycentric hit point: exact on the triangle even for orthographic
+        // rays starting thousands of units away (o + d t loses precision).
+        let p = bary3(t.p);
         let geo = (t.p[1] - t.p[0]).cross(t.p[2] - t.p[0]).normalize_or(Vec3::Z);
         let entering = geo.dot(d) < 0.0;
         let ng = if entering { geo } else { -geo };
@@ -131,7 +133,7 @@ impl<'a> Tracer<'a> {
     }
 
     /// Fraction of the light reaching `p` (0..1), with soft jitter.
-    fn visibility(&self, p: Vec3, to_light: Vec3, dist: f32, soft: f32, rng: &mut Rng) -> f32 {
+    pub(super) fn visibility(&self, p: Vec3, to_light: Vec3, dist: f32, soft: f32, rng: &mut Rng) -> f32 {
         let n = if soft > 0.0 { self.cfg.shadow_samples.max(1) } else { 1 };
         let mut lit = 0.0;
         for _ in 0..n {
@@ -176,35 +178,15 @@ impl<'a> Tracer<'a> {
     }
 
     pub(super) fn direct(&self, sh: &Shading, rng: &mut Rng) -> Vec<LightIn> {
-        let o = sh.p + sh.ng * self.eps;
         let mut out = Vec::with_capacity(self.rs.lights.len());
-        for l in &self.rs.lights {
-            let (dir, dist, mut k) = match l.shape {
-                RShape::Directional { dir } => (-dir, f32::INFINITY, 1.0),
-                RShape::Point | RShape::Spot { .. } => {
-                    let v = l.pos - sh.p;
-                    let d = v.length().max(1e-4);
-                    let window = (1.0 - (d / l.range.max(1e-3)).powi(4)).clamp(0.0, 1.0).powi(2);
-                    (v / d, d, window * l.atten.factor(d) / (d * d))
-                }
-            };
-            if let RShape::Spot { dir: axis, cos_in, cos_out } = l.shape {
-                let c = (-dir).dot(axis);
-                let t = ((c - cos_out) / (cos_in - cos_out).max(1e-4)).clamp(0.0, 1.0);
-                k *= t * t * (3.0 - 2.0 * t);
-            }
-            if k <= 0.0 || sh.n.dot(dir) <= 0.0 {
-                continue;
-            }
-            let mut radiance = l.radiance * k;
-            if self.cfg.shadows && l.shadows {
-                let vis = self.visibility(o, dir, dist, l.softness, rng);
-                radiance *= l.shadow_tint + (Vec3::ONE - l.shadow_tint) * vis;
-            }
-            out.push(LightIn { dir, radiance });
-        }
+        self.punctual(sh, rng, &mut out);
         self.emitter_lights(sh, rng, &mut out);
         out
+    }
+
+    /// Shadowed omni / spot / directional / area lights reaching `sh`.
+    pub(super) fn punctual(&self, sh: &Shading, rng: &mut Rng, out: &mut Vec<LightIn>) {
+        self.punctual_each(sh, rng, |_, li| out.push(li));
     }
 
     /// Skylight with hemisphere occlusion.
@@ -218,9 +200,25 @@ impl<'a> Tracer<'a> {
         self.rs.sky * (open as f32 / n as f32)
     }
 
-    /// Radiance + coverage along a ray.
+    /// Radiance + coverage along a ray; camera rays also march the
+    /// volumetric godray medium up to the surface.
     pub fn trace(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
-        let Some(h) = self.rs.bvh.closest(o, d, f32::INFINITY) else {
+        let (c, a, g) = self.trace_surface(o, d, depth, rng);
+        match self.rs.volume.as_ref().filter(|_| depth == 0) {
+            Some(m) => {
+                let v = self.march(m, o, d, g.map_or(f32::INFINITY, |g| g.depth), rng);
+                (c * v.transmittance + v.inscatter, a, g)
+            }
+            None => (c, a, g),
+        }
+    }
+
+    fn trace_surface(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
+        let hit = self.rs.bvh.closest(o, d, f32::INFINITY);
+        if let Some((le, _)) = self.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).filter(|_| depth == 0) {
+            return (le, 1.0, None);
+        }
+        let Some(h) = hit else {
             return (if depth == 0 { Vec3::ZERO } else { self.environment(d) }, 0.0, None);
         };
         let tri = &self.rs.bvh.tris[h.tri];
@@ -251,7 +249,7 @@ impl<'a> Tracer<'a> {
     /// What a reflected / refracted ray leaving the scene sees: the background
     /// plus a soft studio dome (brighter overhead). Camera rays that miss
     /// return zero coverage and show the plain background.
-    fn environment(&self, d: Vec3) -> Vec3 {
+    pub(super) fn environment(&self, d: Vec3) -> Vec3 {
         if let Some(c) = self.rs.procedural.as_ref().map(|s| s.radiance(d)).or_else(|| self.rs.hdri.as_ref().and_then(|h| h.radiance(d))) {
             return c + self.rs.sky;
         }
@@ -268,7 +266,7 @@ impl<'a> Tracer<'a> {
         self.rs.hdri.as_ref().and_then(|h| h.radiance(d)).unwrap_or(self.rs.background)
     }
 
-    fn fog(&self, c: Vec3, t: f32) -> Vec3 {
+    pub(super) fn fog(&self, c: Vec3, t: f32) -> Vec3 {
         match self.rs.fog {
             Some((col, density)) => {
                 let f = (-density * t).exp();
