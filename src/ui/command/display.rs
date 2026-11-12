@@ -46,7 +46,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.label(dim("Frozen objects stay visible but cannot be selected."));
     });
     rollout(ui, "Display Properties", true, |ui| {
-        pairs(ui, ed, "disp_props", &[Action::SeeThrough, Action::EdgedFaces, Action::Wireframe, Action::ToggleGrid]);
-        ui.label(dim("See-Through applies to the selection; the others to the active viewport."));
+        pairs(ui, ed, "disp_props", &[Action::SeeThrough, Action::ShadowCatcher, Action::EdgedFaces, Action::Wireframe, Action::ToggleGrid]);
+        ui.label(dim("See-Through and Shadow Catcher apply to the selection; the others to the active viewport. Catchers render with the CPU Path Tracer."));
     });
 }

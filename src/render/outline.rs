@@ -25,7 +25,18 @@ fn edge(a: &GSample, b: &GSample, mats: &[Material]) -> Option<(f32, [f32; 3])> 
         return Some((o.width * 0.5, o.color));
     }
     let crease = o.crease_lines && a.obj != u32::MAX && a.normal.dot(b.normal) < o.crease_angle.to_radians().cos();
-    crease.then_some((o.width * 0.25, o.color))
+    // Pen line on a material seam inside one object (Panel Groove floors).
+    let seam = o.pen_lines && a.obj != u32::MAX && a.mat != b.mat;
+    (crease || seam).then_some((o.width * 0.25, o.color))
+}
+
+/// Interior curvature pen line through `c`: the normals two pixels apart
+/// (`a`, `b`) turn by more than half the crease angle on one smooth surface.
+fn curvature(a: &GSample, c: &GSample, b: &GSample, mats: &[Material]) -> Option<(f32, [f32; 3])> {
+    let o = &mats.get(c.mat as usize).filter(|m| m.outline.enabled && m.outline.pen_lines)?.outline;
+    let one = |s: &GSample| s.obj == c.obj && s.mat == c.mat && !silhouette(s, c);
+    let bend = a.normal.dot(b.normal) < (o.crease_angle * 0.5).to_radians().cos();
+    (c.obj != u32::MAX && one(a) && one(b) && bend).then_some((o.width * 0.15, o.color))
 }
 
 /// Ink coverage per pixel (0..1) + its sRGB color.
@@ -60,6 +71,11 @@ pub fn ink(g: &[GSample], w: usize, h: usize, mats: &[Material]) -> Vec<(f32, [f
             {
                 splat(p + Vec2::new(0.0, 0.5), half, col);
             }
+            let bent = (x > 0 && x + 1 < w).then(|| curvature(&g[y * w + x - 1], a, &g[y * w + x + 1], mats)).flatten();
+            let bent = bent.or_else(|| (y > 0 && y + 1 < h).then(|| curvature(&g[(y - 1) * w + x], a, &g[(y + 1) * w + x], mats)).flatten());
+            if let Some((half, col)) = bent {
+                splat(p, half, col);
+            }
         }
     }
     cov
@@ -74,5 +90,43 @@ pub fn apply(g: &[GSample], w: usize, h: usize, mats: &[Material], ink_out: &mut
         if c > 0.0 {
             ink_out[i] = Vec3::from_array(col).extend(c);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mats(pen: bool) -> Vec<Material> {
+        let mut m = Material::default();
+        m.outline.enabled = true;
+        m.outline.pen_lines = pen;
+        vec![m.clone(), m]
+    }
+
+    /// One object: a smooth fold at x = 8 (normals swing 60° over 4 px) and
+    /// a material seam (Panel Groove floor) at x = 24.
+    fn panel(w: usize) -> Vec<GSample> {
+        (0..w * 4)
+            .map(|i| {
+                let x = (i % w) as f32;
+                let a = ((x - 6.0) / 4.0).clamp(0.0, 1.0) * 1.05;
+                GSample { obj: 0, mat: u32::from(x >= 24.0), depth: 4.0, normal: Vec3::new(a.sin(), 0.0, a.cos()) }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn pen_lines_draw_folds_and_groove_seams() {
+        let w = 32;
+        let g = panel(w);
+        let on = ink(&g, w, 4, &mats(true));
+        let off = ink(&g, w, 4, &mats(false));
+        let row = |c: &[(f32, [f32; 3])]| (0..w).filter(|x| c[w + x].0 > 0.0).collect::<Vec<_>>();
+        assert!(row(&off).is_empty(), "no silhouettes, no hard creases: {:?}", row(&off));
+        let lines = row(&on);
+        assert!(lines.iter().any(|x| (6..=10).contains(x)), "fold line: {lines:?}");
+        assert!(lines.iter().any(|x| (23..=24).contains(x)), "groove seam: {lines:?}");
+        assert!(!lines.iter().any(|x| (13..=20).contains(x)), "flat area stays clean: {lines:?}");
     }
 }

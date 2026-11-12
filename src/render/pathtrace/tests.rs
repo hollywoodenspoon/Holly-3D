@@ -167,3 +167,27 @@ fn glass_refracts_and_tints_entering_light() {
     assert!(samples.iter().filter(|s| s.dir.z < 0.0).all(|s| s.delta && s.pdf == 0.0 && s.weight.y > s.weight.x), "green tint");
 }
 
+
+#[test]
+fn shadow_catcher_is_clear_except_in_shadow() {
+    use crate::render::lighting::{Light, LightKind};
+    let mut s = Scene::default();
+    add(&mut s, PrimitiveKind::Plane, Vec3::ZERO, Vec3::splat(3.0), matte(0.8));
+    add(&mut s, PrimitiveKind::Box, Vec3::new(0.0, 0.0, 0.5), Vec3::ONE, matte(0.8));
+    let mut l = Light::new(LightKind::FreeDirect);
+    l.cast_shadows = true;
+    s.add_light(l, None, Vec3::new(3.0, 0.0, 3.0), Vec3::ZERO);
+    let plane = s.objects.keys().next().unwrap();
+    let alphas = |s: &Scene| {
+        let mut c = cfg(16);
+        c.gi.ao = false;
+        let (px, _) = run(&build(s, 0.2), &c);
+        px.iter().filter(|p| p.g.obj == 0).map(|p| p.layers.geom.w).collect::<Vec<f32>>()
+    };
+    assert!(alphas(&s).iter().all(|a| *a > 0.99), "a normal ground is opaque");
+    s.objects[plane].shadow_catcher = true;
+    let a = alphas(&s);
+    let clear = a.iter().filter(|a| **a < 0.05).count();
+    let shadow = a.iter().filter(|a| **a > 0.8).count();
+    assert!(clear > a.len() / 3 && shadow > 4, "{clear} clear, {shadow} shadowed of {}", a.len());
+}

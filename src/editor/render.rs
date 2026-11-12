@@ -39,6 +39,8 @@ pub struct RenderUi {
     /// AOV passes of the last path-traced render and the one shown.
     pub aovs: Option<Box<crate::render::aov::AovBuffers>>,
     pub aov: crate::render::aov::Aov,
+    /// Turntable / Sprite-Sheet dialog and its background job.
+    pub sheet: super::turntable::SheetUi,
 }
 
 impl Editor {

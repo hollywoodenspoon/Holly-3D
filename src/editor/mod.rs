@@ -39,6 +39,7 @@ pub mod snap;
 pub mod spline_tools;
 pub mod splines;
 pub mod tools;
+pub mod turntable;
 pub mod types;
 pub mod undo;
 pub mod worlds;

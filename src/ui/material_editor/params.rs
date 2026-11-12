@@ -30,6 +30,10 @@ fn physical(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     num(ui, t, "Metallic", &mut m.metallic, 0.0..=1.0, 0.0);
     num(ui, t, "Roughness", &mut m.roughness, 0.0..=1.0, 0.6);
     num(ui, t, "Opacity", &mut m.opacity, 0.0..=1.0, 1.0);
+    ui.label("Catcher");
+    t.r(ui.checkbox(&mut m.shadow_catcher, "Shadow & Reflection Catcher"))
+        .on_hover_text("Transparent in the render's alpha except for shadows, AO and reflections (CPU Path Tracer)");
+    ui.end_row();
     emission(ui, t, m);
 }
 
@@ -42,6 +46,10 @@ fn toon(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     num(ui, t, "Rim Highlight", &mut m.toon.rim, 0.0..=1.0, 0.0);
     color(ui, t, "Rim Color", &mut m.toon.rim_color);
     num(ui, t, "Specular", &mut m.toon.specular, 0.0..=1.0, 0.0);
+    ui.label("Screentone");
+    t.r(ui.checkbox(&mut m.toon.screentone, "Manga Halftone Shadows"));
+    ui.end_row();
+    num(ui, t, "Screentone Cell (px)", &mut m.toon.screentone_scale, 2.0..=32.0, 6.0);
     num(ui, t, "Highlight Size", &mut m.roughness, 0.02..=1.0, 0.5);
     num(ui, t, "Opacity", &mut m.opacity, 0.0..=1.0, 1.0);
     emission(ui, t, m);
@@ -125,6 +133,7 @@ pub fn outline(ui: &mut egui::Ui, ed: &mut Editor) {
                 ui.add_enabled_ui(o.crease_lines, |ui| {
                     grid(ui, "mat_crease", |ui| num(ui, t, "Crease Angle", &mut o.crease_angle, 1.0..=179.0, 40.0));
                 });
+                t.r(ui.checkbox(&mut o.pen_lines, "Interior Pen Lines (Curvature + Panel Grooves)"));
             });
             ui.label(dim("Inverted-hull outline + sharp-edge lines; works on every shading model."));
             None

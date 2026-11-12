@@ -21,6 +21,8 @@ pub mod paintbox;
 pub mod prefs;
 pub mod quad_menu;
 pub mod render_fx;
+pub mod render_lens;
+pub mod render_sheet;
 pub mod render_grading;
 pub mod render_lightmix;
 pub mod render_path;
