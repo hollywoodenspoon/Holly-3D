@@ -102,6 +102,7 @@ fn posed_characters_are_valid_and_stand_on_the_ground() {
         assert!(m.vertices.values().all(|v| v.position.is_finite()));
         assert_ne!(m.vertices.values().map(|v| v.position).collect::<Vec<_>>(), rest.vertices.values().map(|v| v.position).collect::<Vec<_>>());
     }
+    assert_ne!(PosePreset::Fight.pose().get("finger3-2.R"), [0.0; 3], "the fighting stance makes fists");
     for preset in PosePreset::ALL {
         assert!(preset == PosePreset::APose || !preset.pose().is_rest(), "{preset:?} poses something");
     }

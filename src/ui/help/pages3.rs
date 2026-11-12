@@ -33,7 +33,7 @@ pub const CHARACTERS: Page = Page {
         H("Easy Pose (the rig)"),
         Steps(&[
             "Every humanoid carries the MakeHuman default skeleton (163 bones), fitted to its own body shape, with MakeHuman's skin weights.",
-            "Character — Easy Pose: click a preset (A-Pose, T-Pose, Relaxed, Walk, Run, Sit, Kneel, Wave, Fighting Stance, Victory, Spell Cast).",
+            "Character — Easy Pose: click a preset (A-Pose, T-Pose, Relaxed, Walk, Run, Sit, Kneel, Wave, Fighting Stance, Victory, Spell Cast). Presets shape the hands too: fists for Fighting Stance and Victory, a loose grip for Run.",
             "Or pick a Joint (Whole Body, Spine, Chest, Neck, Head, Jaw, Clavicle, Upper Arm, Elbow, Wrist, Thigh, Knee, Foot) and drag Bend, Twist and Side. Left and right move together unless 'Pose this side only' is on.",
             "Hands: Open, Relaxed, Grip, Fist or Point curl every finger (both hands, or only the picked side with 'Pose this side only').",
             "Copy L to R, Copy R to L, Mirror Pose, Reset Joint and Reset Pose. Save Pose... writes a .ilexpose file; Load Pose... opens .ilexpose and older .mmaxpose files.",

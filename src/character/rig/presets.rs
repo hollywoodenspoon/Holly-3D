@@ -1,6 +1,7 @@
 //! One-click Easy Pose presets. Values are written for the character's
 //! left side; `both` mirrors them onto the right.
 
+use super::hands::HandShape;
 use super::pose::{mirror, Pose};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -115,6 +116,19 @@ impl PosePreset {
                 right(&mut p, "upperleg01", [10.0, 0.0, 0.0]);
             }
         }
+        if let Some(h) = self.hands() {
+            super::hands::set_hand(&mut p, h, true, true);
+        }
         p
+    }
+
+    /// The hand shape that goes with the preset (None keeps the rest hands).
+    pub fn hands(self) -> Option<HandShape> {
+        match self {
+            Self::Relaxed | Self::Walk | Self::Sit | Self::Kneel => Some(HandShape::Relaxed),
+            Self::Run => Some(HandShape::Grip),
+            Self::Fight | Self::Victory => Some(HandShape::Fist),
+            Self::APose | Self::TPose | Self::Wave | Self::Cast => None,
+        }
     }
 }
