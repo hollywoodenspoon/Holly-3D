@@ -232,6 +232,7 @@ pub const CREDITS: Page = Page {
     id: "credits",
     title: "Credits",
     blocks: &[
+        P("Ilex is free software under the GNU General Public License, version 3 or later (see the LICENSE file)."),
         P("Ilex is built with Bevy, egui, transform-gizmo, slotmap, boolmesh, meshopt, uvunwrap, noise and image."),
         P("Free CC0 assets: Poly Haven (photo textures and realistic models), Kenney and Quaternius (low-poly models). Thank you!"),
         H("MaterialCraft"),

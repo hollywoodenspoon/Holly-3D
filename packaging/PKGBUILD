@@ -18,7 +18,7 @@ pkgrel=1
 pkgdesc='Clean 3ds Max-style polygon modeler, painter and renderer'
 arch=('x86_64')
 url='https://github.com/hollywoodenspoon/Holly-3D'
-license=('LicenseRef-custom')
+license=('GPL-3.0-or-later')
 # Upgrades an installed MiniMax package in place; /usr/bin/minimax stays as a symlink.
 provides=('minimax')
 conflicts=('minimax')
@@ -87,4 +87,5 @@ package() {
   install -Dm644 ilex.svg "$pkgdir/usr/share/icons/hicolor/scalable/mimetypes/application-x-ilex-scene.svg"
   install -Dm644 ilex.xml "$pkgdir/usr/share/mime/packages/ilex.xml"
   install -Dm644 "$pkgname/README.md" "$pkgdir/usr/share/doc/ilex/README.md"
+  install -Dm644 "$pkgname/LICENSE" "$pkgdir/usr/share/licenses/ilex/LICENSE"
 }

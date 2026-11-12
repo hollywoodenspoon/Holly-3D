@@ -1,6 +1,6 @@
 # Third-party licences
 
-Ilex includes work from these projects. Their licence texts are in this folder.
+Ilex itself is licensed under the GNU GPL, version 3 or later (`../LICENSE`). It includes work from these projects; their licence texts are in this folder, and every one is compatible with GPLv3.
 
 | What | Where it is used | Licence |
 |---|---|---|
