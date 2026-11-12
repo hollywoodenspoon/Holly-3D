@@ -251,7 +251,7 @@ fn fit_ui(ui: &mut egui::Ui, ed: &mut Editor, st: &mut FaceUi, busy: bool) {
         st.start_fit(ed);
     }
     if let Some(r) = &st.report {
-        ui.label(format!("{} view(s) · landmark error {:.2} → {:.2} (sliders) → {:.2} mm (warp) · {} sliders moved", r.views, r.before_mm, r.sliders_mm, r.warp_mm, r.moved.len()));
+        ui.label(format!("{} view(s) · landmark error {:.2} -> {:.2} (sliders) -> {:.2} mm (warp) · {} sliders moved", r.views, r.before_mm, r.sliders_mm, r.warp_mm, r.moved.len()));
     }
     ui.label(dim("Reshapes the MakeHuman head (same topology, UVs and rig; eyes, teeth, hair and clothes follow). The head keeps the body's scale. Ears and the back of the head are guessed. The result is a starting point: the Detail Sliders and Warp Strength refine it."));
 }
