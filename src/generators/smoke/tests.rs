@@ -32,7 +32,7 @@ fn fire_base_glows_and_smoke_is_translucent() {
     assert!(low(1) < low(2) + 1.0, "fire at the base");
     // Density lives in the vertex alpha: below 1 in the smoke, 0 on the card rims.
     let alphas: Vec<f32> = m.vertices.values().map(|v| v.color.w).collect();
-    assert!(alphas.iter().any(|&a| a == 0.0) && alphas.iter().any(|&a| a > 0.3 && a < 1.0));
+    assert!(alphas.contains(&0.0) && alphas.iter().any(|&a| a > 0.3 && a < 1.0));
     let none = SmokeParams { fire: 0.0, ..Default::default() }.build();
     assert!(!ids(&none).contains(&1), "Fire Base 0 % = smoke only");
 }
