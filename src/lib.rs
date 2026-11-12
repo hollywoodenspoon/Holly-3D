@@ -2,6 +2,7 @@
 
 pub mod assembly;
 pub mod assets;
+pub mod character;
 pub mod diagnostics;
 pub mod editor;
 pub mod generators;

@@ -43,8 +43,12 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     if o.active_level.is_none() && o.shape_object().is_some() {
         return rollouts::spline::shape_base(ui, ed);
     }
-    if o.active_level.is_none() && matches!(o.base, crate::scene::BaseObject::World(_)) {
-        rollouts::worlds::base(ui, ed);
+    if o.active_level.is_none() && matches!(o.base, crate::scene::BaseObject::World(_) | crate::scene::BaseObject::Character(_)) {
+        if matches!(o.base, crate::scene::BaseObject::Character(_)) {
+            crate::ui::character_studio::params::base(ui, ed);
+        } else {
+            rollouts::worlds::base(ui, ed);
+        }
         if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
             ed.convert_to_editable_poly();
         }

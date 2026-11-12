@@ -141,6 +141,8 @@ pub enum MultiPreset {
     GhostTownPhoto,
     /// PR 8 Smoke & Fire plumes: fire core, smoke, wisps.
     SmokeFire,
+    /// Phase 10A Character Pack: skin, eyes, hair, cloth, metal, leather.
+    Character,
 }
 
 fn pbr(name: &str, rgb: [f32; 3], metallic: f32, roughness: f32) -> Material {
@@ -159,7 +161,7 @@ fn glass(name: &str, tint: [f32; 3], attenuation: [f32; 3], roughness: f32) -> M
 }
 
 impl MultiPreset {
-    pub const ALL: [MultiPreset; 8] = [
+    pub const ALL: [MultiPreset; 9] = [
         Self::MedievalCastle,
         Self::ModernCity,
         Self::AlpineTerrain,
@@ -168,6 +170,7 @@ impl MultiPreset {
         Self::GhostTown,
         Self::GhostTownPhoto,
         Self::SmokeFire,
+        Self::Character,
     ];
 
     pub fn label(self) -> &'static str {
@@ -180,6 +183,7 @@ impl MultiPreset {
             Self::GhostTown => "GhostTown Settlement Pack",
             Self::GhostTownPhoto => "GhostTown Pack (Photo Textures)",
             Self::SmokeFire => "Smoke & Fire Pack",
+            Self::Character => "Character Pack",
         }
     }
 
@@ -240,6 +244,15 @@ impl MultiPreset {
                 Material { opacity: 0.999, ..pbr("Smoke", [1.0, 1.0, 1.0], 0.0, 1.0) },
                 Material { opacity: 0.999, ..pbr("Smoke Wisps", [1.0, 1.0, 1.0], 0.0, 1.0) },
             ],
+            // `character::params::ids`.
+            Self::Character => vec![
+                skin(),
+                pbr("Eyes", [0.32, 0.22, 0.14], 0.0, 0.08),
+                pbr("Hair", [0.18, 0.11, 0.06], 0.0, 0.55),
+                pbr("Cloth", [0.3, 0.34, 0.45], 0.0, 0.85),
+                Material { name: "Armor Steel".into(), ..Preset::BrushedSteel.material() },
+                pbr("Leather", [0.36, 0.22, 0.12], 0.0, 0.7),
+            ],
         };
         // Generated buildings and terrain have no UV layout: their packs
         // use World / Triplanar mapping, so patterns and photos tile.
@@ -260,4 +273,12 @@ impl MultiPreset {
         (m.name, m.show_in_viewport) = (name, show);
         m.multi = Some(self.build());
     }
+}
+
+fn skin() -> Material {
+    let mut m = pbr("Skin", [0.86, 0.66, 0.55], 0.0, 0.5);
+    m.principled.sss_weight = 0.35;
+    m.principled.sss_color = [0.9, 0.35, 0.25];
+    m.principled.sss_scale = 0.01;
+    m
 }

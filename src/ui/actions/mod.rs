@@ -92,6 +92,7 @@ pub enum Action {
     LightMix,
     Turntable,
     BuildingsBrowser,
+    CharacterStudio,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -121,7 +122,7 @@ impl Action {
         ];
         v.extend(SUBS.map(Sub));
         v.extend([
-            SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, ConvertToPoly,
+            SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, ConvertToPoly,
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
@@ -208,6 +209,7 @@ impl Action {
             LightMix => "LightMix (Relight Render)",
             Turntable => "Render Turntable / Sprite Sheet...",
             BuildingsBrowser => "Buildings & Props Browser...",
+            CharacterStudio => "Character & Creature Studio...",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -247,6 +249,7 @@ impl Action {
             Paint => "🖊 Paint",
             ContactSets => "Contact",
             BuildingsBrowser => "🏠 Buildings",
+            CharacterStudio => "🧍 Characters",
             Isolate => "◎",
             SceneExplorer => "🗄",
             Ribbon => "🛠 Ribbon",
@@ -302,6 +305,7 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            CharacterStudio => "MakeHuman-based RPG characters (Elf, Dwarf, Orc, anime...) with hair, outfits, weapons, plus creatures",
             BuildingsBrowser => "Visual browser of the 43 standalone buildings, bridges and street props: click a tile, then drag in a viewport",
             Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",
             LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",

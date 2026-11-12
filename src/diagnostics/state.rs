@@ -68,6 +68,7 @@ pub fn type_name(b: &BaseObject) -> &'static str {
         BaseObject::GeoGen(_) => "GeoGen",
         BaseObject::Mech(_) => "Mech",
         BaseObject::World(_) => "World",
+        BaseObject::Character(_) => "Character",
     }
 }
 

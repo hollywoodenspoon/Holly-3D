@@ -10,6 +10,7 @@ pub mod blast_zones;
 pub mod boolean;
 pub mod cad;
 pub mod cameras;
+pub mod characters;
 pub mod create_drag;
 pub mod drag;
 pub mod file;
@@ -44,8 +45,7 @@ pub mod types;
 pub mod undo;
 pub mod worlds;
 
-use crate::mesh::SubObject;
-use crate::mesh::ops::PolyOp;
+use crate::mesh::{SubObject, ops::PolyOp};
 use crate::primitives::PrimitiveKind;
 use crate::scene::{CloneKind, ObjId, Scene, SceneObject, Xform};
 use crate::viewport::layout::Viewports;
