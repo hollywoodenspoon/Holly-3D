@@ -1,5 +1,6 @@
 //! Background work for the Face Cloner window: reading and analysing a
-//! batch of photos / frames, and running the fit, off the UI thread.
+//! batch of photos / frames, running the fit, and downloading MobileSAM,
+//! off the UI thread.
 
 use super::clone::{clone_face, Options, Report};
 use super::frames::{analyse, Shot};
@@ -16,6 +17,8 @@ pub enum Msg {
     /// One file analysed: its shot, or why it has none.
     Shot(Result<Shot, String>),
     Fitted(Box<Result<(CharacterParams, Report), String>>),
+    /// MobileSAM was downloaded (or installed from a file) and checked.
+    Sam(Result<(), String>),
 }
 
 pub struct Job {
@@ -92,6 +95,19 @@ pub fn load(paths: Vec<PathBuf>) -> Job {
 pub fn fit(p: CharacterParams, shots: Vec<Shot>, opt: Options) -> Job {
     spawn(1, move |send, _, done| {
         send(Msg::Fitted(Box::new(clone_face(&p, &shots, &opt))));
+        done.store(1, Ordering::Relaxed);
+    })
+}
+
+/// Downloads MobileSAM; progress counts kilobytes.
+pub fn download_sam() -> Job {
+    spawn((effectcraft_segment::MOBILE_SAM.size / 1024) as u32, |send, cancel, done| send(Msg::Sam(super::sam::download(cancel, done))))
+}
+
+/// Checks and installs MobileSAM weights from a file.
+pub fn install_sam(path: PathBuf) -> Job {
+    spawn(1, move |send, _, done| {
+        send(Msg::Sam(std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display())).and_then(|b| super::sam::install(&b))));
         done.store(1, Ordering::Relaxed);
     })
 }

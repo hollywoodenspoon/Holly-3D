@@ -41,7 +41,7 @@ impl Editor {
         let mut m = Material::named(format!("{} Skin", self.scene.objects[id].name));
         MultiPreset::Character.apply(&mut m);
         if let (Some(ms), BaseObject::Character(c)) = (m.multi.as_mut(), &self.scene.objects[id].base) {
-            wardrobe::materials::sync(&c.mh, ms);
+            wardrobe::materials::sync(&c.mh, c.face.skin(), ms);
         }
         self.scene.objects[id].material = Some(self.scene.materials.mats.insert(m));
         self.scene.select_only(Some(id));
@@ -74,7 +74,7 @@ impl Editor {
     /// Replaces the character's parameters (the caller records the undo
     /// step) and re-evaluates it.
     pub fn set_character(&mut self, id: ObjId, p: CharacterParams) {
-        self.sync_character_materials(id, &p.mh);
+        self.sync_character_materials(id, &p);
         let o = &mut self.scene.objects[id];
         if let BaseObject::Character(cur) = &mut o.base {
             **cur = p;
@@ -85,12 +85,13 @@ impl Editor {
 }
 
 impl Editor {
-    /// Textures the character's Character Pack for its MakeHuman assets.
+    /// Textures the character's Character Pack for its MakeHuman assets
+    /// and Face Cloner photo skin.
     /// A plain (non Multi/Sub-Object) material is left as the user set it.
-    pub fn sync_character_materials(&mut self, id: ObjId, mh: &MhAssets) {
+    pub fn sync_character_materials(&mut self, id: ObjId, p: &CharacterParams) {
         let Some(mid) = self.scene.objects.get(id).and_then(|o| o.material) else { return };
         if let Some(ms) = self.scene.materials.mats.get_mut(mid).and_then(|m| m.multi.as_mut()) {
-            wardrobe::materials::sync(mh, ms);
+            wardrobe::materials::sync(&p.mh, p.face.skin(), ms);
         }
     }
 }

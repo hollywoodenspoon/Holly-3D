@@ -4,7 +4,9 @@
 //! then fit the selected character's head to them.
 
 pub mod pins;
+pub mod presets;
 pub mod rollout;
+pub mod sam_ui;
 
 use crate::character::face_cloner::clone::{Options, Report};
 use crate::character::face_cloner::frames::{pick, Picking, Shot, ViewBin};
@@ -31,11 +33,12 @@ pub struct FaceUi {
     pub skipped: Vec<String>,
     pub report: Option<Report>,
     pub pins: pins::PinEditor,
+    pub sam: sam_ui::SamUi,
 }
 
 impl Default for FaceUi {
     fn default() -> Self {
-        Self { shots: Vec::new(), picking: Picking::default(), neutral_only: true, stride: 1, options: Options::default(), job: None, loading: false, fit_for: None, message: String::new(), skipped: Vec::new(), report: None, pins: Default::default() }
+        Self { shots: Vec::new(), picking: Picking::default(), neutral_only: true, stride: 1, options: Options::default(), job: None, loading: false, fit_for: None, message: String::new(), skipped: Vec::new(), report: None, pins: Default::default(), sam: Default::default() }
     }
 }
 
@@ -81,6 +84,7 @@ impl FaceUi {
                 Msg::Fitted(r) => self.fitted(ed, *r),
                 Msg::Shot(Ok(s)) => self.shots.push(s),
                 Msg::Shot(Err(e)) => self.skipped.push(e),
+                Msg::Sam(_) => {}
             }
         }
         if finished {
@@ -129,7 +133,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut FaceUi) {
     if !ed.iface.face_cloner_open {
         return;
     }
-    if st.job.is_some() {
+    if st.job.is_some() || st.sam.busy() {
         ctx.request_repaint_after(std::time::Duration::from_millis(150));
     }
     let mut open = true;
@@ -193,6 +197,7 @@ fn body(ui: &mut egui::Ui, ed: &mut Editor, st: &mut FaceUi) {
         views(ui, st);
     });
     card(ui, "3. Clone onto the Selected Character", true, |ui| fit_ui(ui, ed, st, busy));
+    sam_ui::show(ui, &mut st.sam);
 }
 
 fn views(ui: &mut egui::Ui, st: &mut FaceUi) {
@@ -233,6 +238,7 @@ fn views(ui: &mut egui::Ui, st: &mut FaceUi) {
 fn fit_ui(ui: &mut egui::Ui, ed: &mut Editor, st: &mut FaceUi, busy: bool) {
     let o = &mut st.options;
     ui.checkbox(&mut o.fine_warp, "Fine warp (detail the sliders cannot reach)");
+    ui.checkbox(&mut o.texture, "Bake the photos into the skin").on_hover_text("De-lit photo skin on the head, the rest of the body tinted to match (Material ID 1)");
     ui.horizontal(|ui| {
         ui.label("Render-and-check passes:");
         ui.add(egui::DragValue::new(&mut o.refine).range(0..=4));
@@ -252,6 +258,9 @@ fn fit_ui(ui: &mut egui::Ui, ed: &mut Editor, st: &mut FaceUi, busy: bool) {
     }
     if let Some(r) = &st.report {
         ui.label(format!("{} view(s) · landmark error {:.2} -> {:.2} (sliders) -> {:.2} mm (warp) · {} sliders moved", r.views, r.before_mm, r.sliders_mm, r.warp_mm, r.moved.len()));
+        if let Some(k) = &r.skin {
+            ui.label(format!("Skin: {} photo(s) baked ({} masked by MobileSAM), {:.0} texels covered", k.photos, k.sam_masks, k.baked.covered));
+        }
     }
-    ui.label(dim("Reshapes the MakeHuman head (same topology, UVs and rig; eyes, teeth, hair and clothes follow). The head keeps the body's scale. Ears and the back of the head are guessed. The result is a starting point: the Detail Sliders and Warp Strength refine it."));
+    ui.label(dim("Reshapes the MakeHuman head (same topology, UVs and rig; eyes, teeth, hair and clothes follow). The head keeps the body's scale. Ears and the back of the head are guessed. The photo skin takes the photos' brightness: even, soft light gives the cleanest skin. The result is a starting point: the Detail Sliders and Warp Strength refine it."));
 }

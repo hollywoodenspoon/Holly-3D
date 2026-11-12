@@ -1,6 +1,6 @@
 //! "📸 Clone Face from Photos / Videos" rollout on a selected character:
 //! the way into the Face Cloner window, plus the cloned face's own
-//! controls (warp strength, reset).
+//! controls (warp strength, photo skin, reset, presets).
 
 use crate::character::face_cloner::clone::reset;
 use crate::character::params::CharacterParams;
@@ -20,6 +20,7 @@ pub fn show(ui: &mut egui::Ui, iface: &mut InterfaceState, t: &mut Track, p: &mu
         }
         if p.face.views == 0 {
             ui.label(dim("No cloned face yet. Load a few sharp photos (front, three-quarter, profile) or a folder of frames from a slow head turn."));
+            super::presets::presets(ui, t, p);
             return;
         }
         ui.label(format!("Cloned from {} picture(s).", p.face.views));
@@ -32,10 +33,12 @@ pub fn show(ui: &mut egui::Ui, iface: &mut InterfaceState, t: &mut Track, p: &mu
             }
         });
         ui.label(dim("The fitted slider values are in Detail Sliders (head, nose, mouth, eyes…)."));
-        if ui.add_sized([CONTENT_W, 22.0], egui::Button::new("Reset Cloned Face")).on_hover_text("Clears the face sliders and the fine warp").clicked() {
+        if ui.add_sized([CONTENT_W, 22.0], egui::Button::new("Reset Cloned Face")).on_hover_text("Clears the face sliders, the fine warp and the photo skin").clicked() {
             *p = reset(p);
             t.started = true;
             t.changed = true;
         }
+        super::presets::skin(ui, t, p);
+        super::presets::presets(ui, t, p);
     });
 }

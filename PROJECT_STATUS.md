@@ -1292,7 +1292,43 @@ I also checked front and side silhouettes of all 11 presets.
 **Not done (honest notes):**
 - **Accuracy is detector-limited.** MediaPipe follows real shape changes only partly (gain about 0.5–0.7, correlation about 0.8). On renders, the landmark error drops by about 60–70%, but the true 3D shape gap closes only about 25–40%. The result is a strong starting point, not a likeness scan.
 - **Ears and the back of the head are guessed** (MediaPipe has no landmarks there).
-- Hair and background masks (MobileSAM), the de-lit 360° skin texture, skin-tone match and Save Cloned Face Preset are **PR B**.
+- Skin masks, the photo skin, skin-tone match and Cloned Face Presets came in part B (§36).
 - Video files are not decoded.
 - Real photos were not tried in the running app; only unit tests on renders and exact projections, plus `cargo check` of the UI.
 - Strong expressions, glasses, heavy make-up and very wide-angle selfies are not handled beyond the neutral-expression filter.
+
+## 36. Face Cloner, part B: photo skin, masks and Cloned Face Presets
+
+**What it does:** the clone also bakes the photos into the character's skin texture (hm08 UVs), tints the rest of the body to match, and puts it on the Character Pack's Material ID 1. A cloned face can be saved under a name and loaded onto any humanoid.
+
+**Code** (`src/character/face_cloner/`):
+- `mask.rs`: a soft skin mask per photo. The MediaPipe face oval minus the eyes and mouth opening (grown 1.35x), feathered by 6% of the eye span, times a skin colour model learnt on the cheeks, nose and chin (chromaticity mean and spread, brightness 0.35–2.2x). With MobileSAM installed, it is prompted with those skin points, forehead and temple points of skin colour as foreground, the ones that are not (hair) and a point above the head as background, plus the face box; a SAM mask that drops more than 55% of the face is ignored.
+- `sam.rs`: optional MobileSAM weights in `~/.local/share/ilex/models/` (download, install from file, SHA-256 check through `effectcraft-segment`, notice file, remove; loaded once per run).
+- `delight.rs`: per photo, a 9-coefficient spherical-harmonic fit of skin brightness against the head normal is divided out (Ramamoorthi & Hanrahan), then each photo is scaled to the same mean; colour and fine detail stay.
+- `bake.rs`: every head texel (within 1.9 head radii) is put on the fitted head, projected through each photo's fitted camera, z-buffer tested, weighted by mask x facing² x view weight, and blended in linear light. The mean photo colour against the base skin under it gives a per-channel tint (0.4–2.5x) for the whole base skin; the photo is feathered in by its coverage.
+- `skin.rs`: the base is the character's MakeHuman skin texture, else a 1024² texture of the plain pack skin colour. Pictures are read again from their files at the analysed size.
+- `preset.rs`: `FacePreset` (the cloner's own micro sliders plus `FaceClone`) as RON in `~/.local/share/ilex/faces/`; loading replaces only the face sliders and warp.
+- `FaceClone` gained `texture` and `use_texture` (serde defaults, so older scenes load). `wardrobe::materials::sync` takes the photo skin: ID 1 becomes "Skin: Cloned Face"; a re-bake only swaps the bitmap, so Material Editor edits survive.
+- `Cargo.toml`: the `image` crate now decodes BMP, WebP and TIFF too. Part A offered those files in the picker but could not read them.
+
+**UI:** Face Cloner card 3 has "Bake the photos into the skin" and a skin line in the report. A new card 4, MobileSAM Masks, has Download (41 MB) with progress and Cancel, Install from File..., Remove and status. The character rollout has Use Photo Skin, Remove Photo Skin, and Cloned Face Presets (name, Save, a list, Load onto Character, Delete). Help page 17 and the Credits are updated, and `licenses/README.md` has a MobileSAM row.
+
+**Tests:**
+- A render projects onto the head through its camera.
+- The landmark mask covers the face but not the eyes.
+- A bake from three renders matches the true skin texture to 0.038 mean linear error, against 0.158 for a flat colour, and tints the rest toward skin.
+- A painted dark fringe is cut off the forehead (0.98 -> 0.00) with the cheek kept, with and without MobileSAM.
+- With MobileSAM installed, a clean face keeps 85–95% of its mask (1.3–2.5 s a photo on CPU). This test is skipped when MobileSAM is not installed.
+- Lit, even samples come out even after de-lighting.
+- Photos on disk -> clone -> ID 1 is "Skin: Cloned Face", and switching it off brings the MakeHuman skin back.
+- A re-bake keeps Material Editor edits.
+- A preset round-trips (texture included), loads onto another character without touching its other sliders, and deletes.
+
+**Not done (honest notes):**
+- **Not a full 360° scan.** The photo skin covers what the photos see (face, sides, neck). The back of the head and the body keep the base skin, tinted.
+- **Absolute skin brightness is unknown from photos.** The bake follows the photos' exposure. Hard shadows, shine and coloured light that the low-order shading model cannot explain stay in the texture.
+- Gaps between views are not inpainted; they fade to the tinted base skin.
+- Only the colour map is made (no normal, roughness or SSS maps from the photos).
+- Eyebrows and stubble in the photos are partly masked out by the colour model, so the MakeHuman eyebrow asset stays the brows.
+- MobileSAM was only checked on renders here (with a painted fringe), not on real photos in the running app. Its download was not tried from inside the app, only through the same code in tests with the file already present.
+- Presets store the texture inside the RON file (PNG-compressed bytes), so one preset is a few MB.

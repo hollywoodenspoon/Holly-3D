@@ -1,6 +1,7 @@
 //! Keeps a character's Character Pack in step with its MakeHuman assets:
 //! each fitted piece gets a textured sub-material at its Material ID, the
-//! picked skin and eye colour texture IDs 1 and 2. A sub-material whose
+//! picked skin (or the Face Cloner's photo skin) and eye colour texture
+//! IDs 1 and 2. A sub-material whose
 //! name already matches is left alone, so edits made in the Material
 //! Editor survive later slider changes.
 
@@ -62,8 +63,25 @@ fn put(ms: &mut MultiSub, id: u16, name: &str, make: impl FnOnce() -> Material) 
     }
 }
 
-/// Brings the Character Pack `ms` up to date with `mh`.
-pub fn sync(mh: &MhAssets, ms: &mut MultiSub) {
+/// Name of the skin sub-material that carries a Face Cloner photo skin.
+pub const CLONED_SKIN: &str = "Skin: Cloned Face";
+
+/// Puts the photo skin `tex` on ID 1. A re-bake only swaps the bitmap, so
+/// edits made to the material in the Material Editor survive.
+fn put_cloned_skin(ms: &mut MultiSub, tex: &TexHandle) {
+    put(ms, ids::SKIN, CLONED_SKIN, skin_material);
+    if let Some(cur) = ms.subs.iter_mut().find(|s| s.id == ids::SKIN) {
+        let same = matches!(&cur.mat.map_mut(MapChannel::BaseColor).node, Some(MapNode::Bitmap { tex: Some(t), .. }) if t == tex);
+        if !same {
+            set_base_map(&mut cur.mat, "", tex.clone());
+            cur.mat.map_mut(MapChannel::BaseColor).node = Some(MapNode::Bitmap { path: "face-cloner:photo skin".into(), tex: Some(tex.clone()) });
+        }
+    }
+}
+
+/// Brings the Character Pack `ms` up to date with `mh` and, when the
+/// character has one, its Face Cloner photo skin `face_skin`.
+pub fn sync(mh: &MhAssets, face_skin: Option<&TexHandle>, ms: &mut MultiSub) {
     let pieces = mh.pieces();
     // Drop pieces that were taken off (only the ones this module made).
     ms.subs.retain(|s| s.id < ids::EYEBROWS || !PREFIXES.iter().any(|p| s.name.starts_with(p)) || pieces.iter().any(|(_, _, id)| *id == s.id));
@@ -74,6 +92,7 @@ pub fn sync(mh: &MhAssets, ms: &mut MultiSub) {
         put(ms, id, &label, || from_mhmat(label.clone(), &it.mat, &key, it.texture()));
     }
     match &mh.skin {
+        _ if face_skin.is_some() => put_cloned_skin(ms, face_skin.unwrap()),
         Some(s) => {
             let label = format!("Skin: {}", library::pretty(s));
             put(ms, ids::SKIN, &label, || {

@@ -269,6 +269,9 @@ pub const CREDITS: Page = Page {
         P(
             "The Face Cloner's landmark model (assets/face/face_landmarker.task, 478 points with depth) is the MediaPipe Face Landmarker by Google: github.com/google-ai-edge/mediapipe. Licensed Apache-2.0.",
         ),
+        P(
+            "The Face Cloner's optional hair and background masks use MobileSAM by Chaoning Zhang et al. (github.com/ChaoningZhang/MobileSAM), run by EffectCraft's pure-Rust port. Licensed Apache-2.0. The weights are not shipped: you download them from the Face Cloner window.",
+        ),
         H("Asset packs"),
         P(
             "The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl).",

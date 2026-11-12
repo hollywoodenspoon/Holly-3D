@@ -24,11 +24,13 @@ pub struct Options {
     pub rounds: usize,
     /// Render-detect-refit passes after the first fit (0 = none).
     pub refine: usize,
+    /// Bake the photos into the skin texture.
+    pub texture: bool,
 }
 
 impl Default for Options {
     fn default() -> Self {
-        Self { calibrate: true, fine_warp: true, ridge: 0.002, rounds: 5, refine: 2 }
+        Self { calibrate: true, fine_warp: true, ridge: 0.002, rounds: 5, refine: 2, texture: true }
     }
 }
 
@@ -42,6 +44,8 @@ pub struct Report {
     pub warp_mm: f32,
     /// Sliders the fit moved (key, value).
     pub moved: Vec<(String, f32)>,
+    /// The skin bake, when it ran.
+    pub skin: Option<super::skin::SkinReport>,
 }
 
 /// Every micro slider key the cloner owns (both mirror halves).
@@ -112,18 +116,27 @@ pub fn clone_face(p: &CharacterParams, shots: &[Shot], opt: &Options) -> Result<
     }
     let mm = |dm: f32| dm * 100.0;
     let moved = f.values.iter().filter(|e| e.1.abs() > 0.01).cloned().collect();
-    let mut report = Report { views: obs.len(), before_mm: mm(before), sliders_mm: mm(f.after), warp_mm: mm(f.after), moved };
+    let mut report = Report { views: obs.len(), before_mm: mm(before), sliders_mm: mm(f.after), warp_mm: mm(f.after), moved, skin: None };
     if opt.fine_warp {
         let views: Vec<_> = f.cams.iter().copied().zip(&obs).collect();
         let offsets = warp::point_offsets(&f.model, &views, &w, head.0);
         let (fitted, _) = morph(&q);
-        q.face = FaceClone { deltas: warp::spread(&fitted, &cor.verts, &offsets, head), strength: 1.0, views: obs.len() };
-        let (warped, _) = morph(&q);
-        let model: Vec<Vec3> = cor.verts.iter().map(|&v| warped[v as usize]).collect();
-        let cams: Vec<_> = obs.iter().map(|o| fit::camera(&model, o, &w)).collect();
-        report.warp_mm = mm(fit::rms(&model, &cams.into_iter().zip(&obs).collect::<Vec<_>>(), &w, head.0));
+        q.face = FaceClone { deltas: warp::spread(&fitted, &cor.verts, &offsets, head), views: obs.len(), ..FaceClone::default() };
     } else {
         q.face.views = obs.len();
+    }
+    // The cameras of the final head (also what the skin is projected with).
+    let (fin, _) = morph(&q);
+    let model: Vec<Vec3> = cor.verts.iter().map(|&v| fin[v as usize]).collect();
+    let cams: Vec<_> = obs.iter().map(|o| fit::camera(&model, o, &w)).collect();
+    if opt.fine_warp {
+        report.warp_mm = mm(fit::rms(&model, &cams.iter().copied().zip(&obs).collect::<Vec<_>>(), &w, head.0));
+    }
+    if opt.texture
+        && let Some((tex, rep)) = super::skin::bake_shots(&q, &fin, head, &used, &cams)
+    {
+        q.face.texture = Some(tex);
+        report.skin = Some(rep);
     }
     (q.pose, q.anime) = (pose, anime);
     Ok((q, report))
