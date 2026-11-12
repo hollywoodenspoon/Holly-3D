@@ -19,6 +19,7 @@ impl Editor {
     pub fn link_sun_to_sky(&mut self) -> bool {
         let sky = &self.scene.environment.sky;
         let Some((dir, color, mult)) = sky.key_light().filter(|_| sky.link_sun) else { return false };
+        let soft = sky.weather.sun_dimming.then(|| sky.weather.sun_softness(sky));
         let id = match self.main_sun() {
             Some(id) => id,
             None => {
@@ -33,12 +34,15 @@ impl Editor {
         let col = color.to_array();
         let o = &self.scene.objects[id];
         let same = o.transform.translation.distance(pos) < 1e-4
-            && o.light().is_some_and(|l| l.on && l.color == col && (l.multiplier - mult).abs() < 1e-5);
+            && o.light().is_some_and(|l| l.on && l.color == col && (l.multiplier - mult).abs() < 1e-5 && soft.is_none_or(|s| (l.softness - s).abs() < 1e-5));
         if same {
             return false;
         }
         let l = self.scene.objects[id].light_mut().expect("directional light");
         (l.color, l.multiplier, l.on) = (col, mult, true);
+        if let Some(s) = soft {
+            l.softness = s;
+        }
         let o = &mut self.scene.objects[id];
         (o.transform.translation, o.transform.rotation) = (pos, rot);
         o.version = crate::scene::next_version();

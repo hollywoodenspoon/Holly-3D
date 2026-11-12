@@ -173,3 +173,28 @@ fn pr7_building_destruction_wrecks_each_building() {
     let off = run(DestructionMode::Modern, |p| p.intensity = 0.0);
     assert_eq!(off.counts(), intact.counts(), "Intact + 0 % leaves the input alone");
 }
+
+#[test]
+fn pr8_spawns_rising_smoke_plumes_from_the_wrecks() {
+    let ids_of = |m: &EditablePoly| m.polygons.values().map(|p| p.material_id).collect::<std::collections::HashSet<_>>();
+    let mut off = town();
+    BattlefieldMod::default().apply(&mut off);
+    assert!(!ids_of(&off).contains(&ids::SMOKE), "off by default");
+    let p = BattleParams { plumes: true, plume_count: 2, ..BattleParams::default() };
+    let run = || {
+        let mut m = town();
+        BattlefieldMod { params: p.clone(), zones: vec![] }.apply(&mut m);
+        m
+    };
+    let m = run();
+    m.validate().unwrap();
+    assert!(ids_of(&m).contains(&ids::SMOKE) && ids_of(&m).contains(&ids::EMBERS));
+    assert!(m.bounds().unwrap().max.z > off.bounds().unwrap().max.z + 20.0, "columns rise into the sky");
+    assert_eq!(run().counts(), m.counts(), "deterministic");
+    let more = {
+        let mut m = town();
+        BattlefieldMod { params: BattleParams { plume_count: 5, ..p.clone() }, zones: vec![] }.apply(&mut m);
+        m.polygons.len()
+    };
+    assert!(more > m.polygons.len(), "Smoke Plume Count");
+}

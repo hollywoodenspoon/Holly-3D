@@ -194,6 +194,6 @@ fn building_footprint_follows_the_drag_and_gets_its_pack() {
     assert!(near(b.width, 12.0) && near(b.length, 8.0), "{} × {}", b.width, b.length);
     let o = &ed.scene.objects[id];
     let m = &ed.scene.materials.mats[o.material.unwrap()];
-    assert_eq!(m.multi.as_ref().map(|x| x.subs.len()), Some(28), "28-ID GhostTown pack");
+    assert_eq!(m.multi.as_ref().map(|x| x.subs.len()), Some(29), "29-ID GhostTown pack");
     assert!(o.evaluated_mesh.polygons.len() > 50);
 }

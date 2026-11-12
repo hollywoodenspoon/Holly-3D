@@ -13,6 +13,7 @@ mod planet_layers;
 mod planet_surface;
 pub mod ruin;
 pub mod settlement;
+pub mod smoke;
 mod sphere;
 mod terrain;
 mod terrain_ids;
@@ -44,6 +45,8 @@ pub enum WorldGen {
     Settlement(Box<SettlementParams>),
     /// One building / prop (Create -> Geometry -> Buildings & Props).
     Building(Box<buildings::BuildingParams>),
+    /// PR 8 Smoke & Fire Plume (Create -> Geometry -> Worlds / FX).
+    Smoke(Box<smoke::SmokeParams>),
 }
 
 /// Create-tab buttons.
@@ -54,10 +57,11 @@ pub enum WorldKind {
     Planet,
     Settlement(Era),
     Building(buildings::BuildingKind),
+    Smoke,
 }
 
 impl WorldKind {
-    pub const ALL: [WorldKind; 3] = [Self::Terrain, Self::Ocean, Self::Planet];
+    pub const ALL: [WorldKind; 4] = [Self::Terrain, Self::Ocean, Self::Planet, Self::Smoke];
     /// Create -> Geometry -> Settlement buttons.
     pub const SETTLEMENTS: [WorldKind; 14] = {
         let mut out = [Self::Terrain; 14];
@@ -75,6 +79,7 @@ impl WorldKind {
             Self::Planet => "Planet",
             Self::Settlement(e) => e.short(),
             Self::Building(k) => k.label(),
+            Self::Smoke => "Smoke Plume",
         }
     }
     pub fn tip(self) -> &'static str {
@@ -84,6 +89,7 @@ impl WorldKind {
             Self::Planet => "Planet Studio: surface, clouds, atmosphere and rings",
             Self::Settlement(e) => e.label(),
             Self::Building(k) => k.category().label(),
+            Self::Smoke => "Billowing smoke & fire plume: wind lean, mushroom cap, rise phase",
         }
     }
 }
@@ -96,6 +102,7 @@ impl WorldGen {
             WorldKind::Planet => Self::Planet(Box::default()),
             WorldKind::Settlement(e) => Self::Settlement(Box::new(SettlementParams::of(e))),
             WorldKind::Building(k) => Self::Building(Box::new(buildings::BuildingParams::of(k))),
+            WorldKind::Smoke => Self::Smoke(Box::default()),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -105,6 +112,7 @@ impl WorldGen {
             Self::Planet(_) => WorldKind::Planet,
             Self::Settlement(p) => WorldKind::Settlement(p.era),
             Self::Building(p) => WorldKind::Building(p.kind),
+            Self::Smoke(_) => WorldKind::Smoke,
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -114,6 +122,7 @@ impl WorldGen {
             Self::Planet(p) => p.build(),
             Self::Settlement(p) => p.build(),
             Self::Building(p) => p.build(),
+            Self::Smoke(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
@@ -129,6 +138,7 @@ impl WorldGen {
             Self::Planet(_) => MultiPreset::PlanetStudio,
             Self::Settlement(_) => MultiPreset::GhostTown,
             Self::Building(p) => p.style.pack(),
+            Self::Smoke(_) => MultiPreset::SmokeFire,
         }
     }
 }

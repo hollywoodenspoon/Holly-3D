@@ -15,6 +15,7 @@ mod clusters;
 mod craters;
 pub(crate) mod debris;
 mod field;
+mod plumes;
 mod weather;
 mod wreck;
 
@@ -24,6 +25,7 @@ mod tests;
 pub use field::Zone;
 
 use crate::generators::kit::Kit;
+use crate::generators::smoke::{SmokeParams, SmokeStyle};
 use crate::mesh::EditablePoly;
 use bevy::math::Vec3;
 
@@ -62,6 +64,11 @@ pub struct BattleParams {
     pub soot: f32,
     /// PR 7 Building Destruction applied per building (Intact = off).
     pub buildings: crate::generators::ruin::RuinParams,
+    /// PR 8 `[✓] Spawn Rising Smoke Plumes` + Smoke Plume Count.
+    pub plumes: bool,
+    pub plume_count: u32,
+    /// The look of the spawned plumes.
+    pub plume: crate::generators::smoke::SmokeParams,
 }
 
 impl Default for BattleParams {
@@ -82,14 +89,19 @@ impl BattleParams {
             rubble: 0.6,
             soot: 0.6,
             buildings: Default::default(),
+            plumes: false,
+            plume_count: 3,
+            plume: crate::generators::smoke::SmokeParams { height: 45.0, base_radius: 3.0, ..Default::default() },
         };
         match mode {
             DestructionMode::Modern => base,
             DestructionMode::MedievalSiege => {
-                Self { intensity: 55.0, crater_count: 3, crater_radius: 3.5, crater_depth: 1.2, soot: 0.5, ..base }
+                let plume = SmokeParams { style: SmokeStyle::Chimney, height: 30.0, base_radius: 2.0, ..base.plume.clone() };
+                Self { intensity: 55.0, crater_count: 3, crater_radius: 3.5, crater_depth: 1.2, soot: 0.5, plume, ..base }
             }
             DestructionMode::AncientRuins => {
-                Self { intensity: 65.0, crater_count: 2, crater_radius: 4.0, crater_depth: 3.0, rubble: 0.4, soot: 0.2, ..base }
+                let plume = SmokeParams { style: SmokeStyle::Chimney, fire: 20.0, height: 25.0, base_radius: 2.0, ..base.plume.clone() };
+                Self { intensity: 65.0, crater_count: 2, crater_radius: 4.0, crater_depth: 3.0, rubble: 0.4, soot: 0.2, plume, ..base }
             }
         }
     }
@@ -129,6 +141,13 @@ impl BattlefieldMod {
             return;
         }
         clusters::run(mesh, p);
+        self.blast(mesh);
+        // Plumes last, so they rise from the finished wrecks.
+        plumes::run(mesh, p, &self.zones);
+    }
+
+    fn blast(&self, mesh: &mut EditablePoly) {
+        let p = &self.params;
         if p.strength() <= 0.0 {
             return;
         }

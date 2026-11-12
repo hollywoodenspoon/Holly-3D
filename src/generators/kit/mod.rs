@@ -330,8 +330,11 @@ pub mod ids {
     pub const SCAR: u16 = 26;
     pub const DUST: u16 = 27;
     pub const BLOOD: u16 = 28;
+    /// PR 8 rising smoke plumes (translucent; tint and density in the
+    /// vertex colours).
+    pub const SMOKE: u16 = 29;
     /// Highest GhostTown ID.
-    pub const MAX: u16 = 28;
+    pub const MAX: u16 = 29;
 }
 
 #[cfg(test)]

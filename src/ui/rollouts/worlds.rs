@@ -121,6 +121,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
             rollout(ui, "GhostTown Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
         }
         WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
+        WorldGen::Smoke(p) => rollout(ui, "Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
     }
     if let WorldGen::Settlement(_) | WorldGen::Building(_) = &w {
         super::ghosttown::pack_button(ui, ed);

@@ -32,6 +32,8 @@ pub mod scene_build;
 pub mod settings;
 pub mod sky;
 pub mod sky_presets;
+pub mod weather;
+pub mod precip;
 mod sky_noise;
 #[cfg(test)]
 mod tests;
@@ -47,6 +49,8 @@ mod tests_grading;
 mod tests_render;
 #[cfg(test)]
 mod tests_sky;
+#[cfg(test)]
+mod tests_weather;
 pub mod trace;
 
 pub use environment::{Environment, LightingPreset};

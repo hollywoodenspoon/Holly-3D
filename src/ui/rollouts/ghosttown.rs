@@ -25,10 +25,10 @@ pub fn pack_button(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.assign_pack(MultiPreset::GhostTownPhoto);
         }
     });
-    ui.collapsing("Material ID legend (28 IDs)", |ui| {
+    ui.collapsing("Material ID legend (29 IDs)", |ui| {
         ui.label(dim("1 Road · 2 Lot/Dirt · 3 Facade/Stone · 4 Timber/Trim · 5 Roof · 6 Glass · 7 Lit Windows · 8 Foliage · 9 Charred · 10 Iron · 11 Plaster · 12 Rebar"));
         ui.label(dim("13 Asphalt · 14 Lane Lines · 15 Sidewalk Slabs · 16 Curbs · 17 Cobbles · 18 River Water · 19 Brick · 20 Stucco · 21 Slate/Metal Roof · 22 Rusted Metal · 23 Broken Glass · 24 Neon/Lantern Glow"));
-        ui.label(dim("25 Glowing Embers · 26 Bullet Scars / Soot · 27 Rubble Dust / Ash · 28 Blood Smears"));
+        ui.label(dim("25 Glowing Embers · 26 Bullet Scars / Soot · 27 Rubble Dust / Ash · 28 Blood Smears · 29 Battlefield Smoke"));
     });
 }
 
@@ -112,6 +112,11 @@ pub fn battle_params(ui: &mut egui::Ui, t: &mut Track, p: &mut BattleParams, sal
         DestructionMode::MedievalSiege => "V-breaches, fallen merlons, charred rafters (ID 9), impact pits and ruts. No rebar.",
         DestructionMode::AncientRuins => "Eroded walls, caved roofs, snapped pillars, sinkholes, moss (ID 8).",
     }));
+    t.r(ui.checkbox(&mut p.plumes, "Spawn Rising Smoke Plumes")).on_hover_text("Columns of smoke (ID 29) rise from the tallest wrecks, with fire (ID 25) at the base");
+    if p.plumes {
+        grid(ui, &format!("battle_plumes_{salt}"), |ui| row(ui, t, "Smoke Plume Count:", &mut p.plume_count, 0..=40, 3, 0.05));
+        ui.collapsing("Plume Look", |ui| super::smoke::params(ui, t, &mut p.plume, &format!("battle_{salt}")));
+    }
 }
 
 /// GhostTown stack modifier.

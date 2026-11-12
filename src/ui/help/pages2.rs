@@ -22,6 +22,9 @@ pub const SKY: Page = Page {
             "Click the Sky menu on the toolbar and pick a preset; that is all it takes.",
             "For more control press 8: time of day, sun, clouds, fog, stars, nebula and HDRI images.",
             "Deep Space turns the sky black with stars and nebulae; add a Planet from Create > Worlds.",
+            "Weather & Storm Clouds (in the 8 dialog): pick a Weather Preset, from Clear Sky to Thunderstorm, Ash Haze, Heavy Fog, Rainstorm or Blizzard.",
+            "Cloud Thickness darkens storm cloud bases. Overcast Sun Dimming dims the linked sun and softens its shadows. Lightning Flash adds a bolt.",
+            "Precipitation (Rain, Snow, or Ash with glowing cinders) falls in the viewport and in F9, hidden behind nearer objects.",
         ]),
         H("Lights and cameras"),
         Steps(&[
@@ -113,6 +116,8 @@ pub const GHOSTTOWN: Page = Page {
             "Destruction Level (on a building, the town and the Battlefield modifier): Intact, Light Damage, Heavy Damage, Warzone Collapse, Apocalyptic Ruin or Pure Rubble. Each building in a town varies by one step.",
             "Rubble Density, Era (Modern concrete and rebar, Medieval stone and charred timber, Ancient stone and moss), Glowing Embers with Ember Glow (ID 25) and Gore / Blood Smears (ID 28) dress the rubble mounds.",
             "The Rubble Pile type places a mound on its own: Width and Length set the spread, Pile Height its height.",
+            "Smoke Plume (Create > Worlds): drag the source radius, then the height. Style (black battlefield, grey chimney, white steam), Wind Lean, Turbulence, Rise Phase and Fire Base Intensity shape it.",
+            "Spawn Rising Smoke Plumes (damaged town or Battlefield modifier) raises plumes from the tallest wrecks and the blast zones.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
         ShowMe("Open the Buildings & Props Browser", Show::Act(Action::BuildingsBrowser)),

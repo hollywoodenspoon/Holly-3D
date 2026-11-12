@@ -18,15 +18,20 @@ fn find(p: &mut [usize], i: usize) -> usize {
     i
 }
 
-/// Buildings of `m`: unions of non-flat elements with overlapping footprints.
+/// Buildings of `m`: unions of non-flat elements with overlapping footprints
+/// (an element covering a large share of the whole input, such as a cratered
+/// ground, is not a building).
 pub fn buildings(m: &EditablePoly) -> Vec<Vec<PolyId>> {
+    let Some(all) = m.bounds() else { return vec![] };
+    let span = (all.max - all.min).truncate().max(bevy::math::Vec2::splat(1e-3));
     let adj = Adjacency::build(m);
     let els: Vec<(Vec<PolyId>, Aabb)> = adj
         .elements(m)
         .into_iter()
         .filter_map(|e| {
             let b = Aabb::from_points(e.iter().flat_map(|&p| m.polygons[p].vertex_ids()).map(|v| m.pos(v)))?;
-            (b.max.z - b.min.z > 0.5).then_some((e, b))
+            let s = (b.max - b.min).truncate() / span;
+            (b.max.z - b.min.z > 0.5 && s.x * s.y < 0.4).then_some((e, b))
         })
         .collect();
     let mut parent: Vec<usize> = (0..els.len()).collect();

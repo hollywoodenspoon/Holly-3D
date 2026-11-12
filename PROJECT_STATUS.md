@@ -1049,3 +1049,44 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - Destruction is generated geometry; there is no rigid-body simulation or animation of the fall.
 - Wrecked buildings are not split into separate objects; a town stays one mesh.
 - Embers glow through the material's emission only; there are no particle sparks or smoke yet (smoke is planned for PR 8).
+
+## 30. PR 8: Procedural smoke & fire plumes + dynamic weather & storm clouds
+
+**1. Smoke Plume generator** (`src/generators/smoke/`; Create > Worlds > Smoke Plume, or the Worlds menu). Drag out the source radius, then the height.
+- **Shape:** the plume is a stack of noise-displaced lobe shells (soft, metaball-like puffs). Alpha-eroded **Turbulence Cards** (fans whose rim fades to zero alpha) and a **Mushroom Cap** ring vortex at the top can be turned on or off. Density is stored in the vertex alpha and the tint in the vertex colour. The new **Battlefield Smoke** material (GhostTown ID 29) and the **Smoke & Fire Pack** (Multi/Sub-Object preset) are translucent, so plumes cast soft partial shadows in F9.
+- **Styles:** Oily Battlefield Smoke (black, thick), Chimney Smoke (grey) and Steam (white, thin).
+- **Parameters:** Seed, Plume Height, Base Radius, Top Spread, Billow Turbulence, Wind Lean Angle and Direction, Lobes, Time / Rise Phase (scrubs the puffs up the column and loops) and **Fire Base Intensity %**. The fire setting adds glowing flame tongues and a burning base (emissive Fire Core / Embers) with an orange under-glow on the smoke above. At 0% the plume is smoke only.
+- **Plume physics** (`smoke/column.rs`) is written natively from classic closed-form plume theory:
+  - **Entrainment** (Morton-Taylor-Turner): the radius grows almost linearly with height.
+  - **Buoyant slowdown:** vertical speed falls as z^(-1/3), so puffs bunch up into the cap (z ~ t^(3/4)).
+  - **Briggs bent-over rise:** in wind the drift grows as z^(3/2).
+  - **Karman vortex shedding:** a Strouhal-0.2 side-to-side sway that travels up with the Rise Phase.
+- **FieldCraft was not inspected.** This is not a CFD, LBM or particle-simulation solver, and no external fluid code is used. The plume is static geometry shaped by those laws.
+
+**2. Battlefield auto-spawn.** `[✓] Spawn Rising Smoke Plumes`, a **Smoke Plume Count** and a **Plume Look** sub-rollout were added to the GhostTown Damaged / Battlefield mode and to the Battlefield & Ruin modifier. Plumes rise from the tallest wrecks (a coarse height grid) and from the user's blast zones, standing on the local ground. The defaults depend on the era: Modern uses black battlefield smoke; Medieval and Ancient use grey chimney smoke, with less fire for Ancient. The GhostTown pack grows to **29 IDs**.
+
+**3. Weather & Storm Clouds** (`src/render/weather.rs`; the `8` dialog, Dynamic Sky, then the **Weather & Storm Clouds** rollout):
+- **Weather Preset** dropdown: Clear Sky, Partly Cloudy, Heavy Overcast, Dark Gathering Storm, Thunderstorm, Battlefield Ash & Smoke Haze, Heavy Fog / Mist, Rainstorm and Blizzard / Snow. A preset sets the cloud coverage, density and altitude, the thickness, the precipitation and the exponential fog in one click.
+- **Cloud Thickness % (optical depth):** cloud bases darken by Beer-Lambert extinction, `T = exp(-tau * depth)`, toward a slate storm grey. Looking straight up at the base shows the most attenuation.
+- **Overcast Sun Dimming:** the linked main sun's Multiplier is attenuated through the deck, and its shadow softness grows as the sun dims.
+- **Lightning Flash:** a seeded, jagged bolt below the deck plus a broad flash that lights the surrounding clouds. It is baked into the sky, so it also lights reflections and the sky ambient.
+- **Precipitation:** Rain Streaks, Snowflakes, or Ash & Glowing Cinders, with Amount, Wind Slant and Seed.
+  - **Viewport:** animated overlay lines in a box around the scene (`src/viewport/weather_lines.rs`).
+  - **F9:** a depth-aware overlay (`src/render/precip.rs`). Particles sit at seeded depths, nearer ones are bigger, and each is drawn only where it is in front of the geometry. Cinders are emissive, so Bloom picks them up.
+
+**Tests (now 559):**
+- **Plumes:** they are valid, deterministic and tall, and widen with height. Fire sits at the base, and the smoke is translucent with zero-alpha card rims. Height, wind, cards, cap, phase and style all change the plume. Town plumes use the GhostTown IDs.
+- **Plume physics:** the column widens, slows and bends downwind, and the vortex sway alternates and travels with the phase.
+- **Battlefield:** the modifier spawns rising plumes.
+- **Weather:**
+  - Every preset applies.
+  - Beer-Lambert darkening is monotonic, and storm skies are less than half as bright overhead.
+  - Sun dimming lowers and softens the sun, and turning it off restores the clear sun.
+  - Lightning brightens the storm.
+  - Old scenes load without weather settings.
+- **Precipitation:** rain, snow and ash are drawn but hidden behind near geometry. Rain brightens, snow whitens and ash darkens, cinders glow, and Amount scales the count. The viewport particles fall inside their box.
+
+**Not done in PR 8:**
+- Smoke is static meshes with vertex-alpha density, not a volumetric (voxel) medium. There is no fluid simulation.
+- Precipitation in F9 is a 2D overlay at seeded depths. Drops do not hit, splash on or wet surfaces, and snow does not settle.
+- Lightning is a single static bolt per seed and does not animate. The bolt is drawn in the sky and is not an actual light source in the scene.
