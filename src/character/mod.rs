@@ -7,6 +7,7 @@ pub mod anime;
 pub mod archetypes;
 pub mod body;
 pub mod creature;
+pub mod face_cloner;
 pub mod hair;
 pub mod landmarks;
 pub mod makehuman;
