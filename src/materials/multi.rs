@@ -139,6 +139,8 @@ pub enum MultiPreset {
     GhostTown,
     /// GhostTown with installed photo textures where available.
     GhostTownPhoto,
+    /// PR 8 Smoke & Fire plumes: fire core, smoke, wisps.
+    SmokeFire,
 }
 
 fn pbr(name: &str, rgb: [f32; 3], metallic: f32, roughness: f32) -> Material {
@@ -157,8 +159,16 @@ fn glass(name: &str, tint: [f32; 3], attenuation: [f32; 3], roughness: f32) -> M
 }
 
 impl MultiPreset {
-    pub const ALL: [MultiPreset; 7] =
-        [Self::MedievalCastle, Self::ModernCity, Self::AlpineTerrain, Self::OceanWater, Self::PlanetStudio, Self::GhostTown, Self::GhostTownPhoto];
+    pub const ALL: [MultiPreset; 8] = [
+        Self::MedievalCastle,
+        Self::ModernCity,
+        Self::AlpineTerrain,
+        Self::OceanWater,
+        Self::PlanetStudio,
+        Self::GhostTown,
+        Self::GhostTownPhoto,
+        Self::SmokeFire,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
@@ -169,6 +179,7 @@ impl MultiPreset {
             Self::PlanetStudio => "Planet Studio Pack",
             Self::GhostTown => "GhostTown Settlement Pack",
             Self::GhostTownPhoto => "GhostTown Pack (Photo Textures)",
+            Self::SmokeFire => "Smoke & Fire Pack",
         }
     }
 
@@ -223,6 +234,12 @@ impl MultiPreset {
             // `generators::kit::ids`: GhostTown, Medieval Architect, Battlefield.
             Self::GhostTown => super::ghost_pack::materials(false),
             Self::GhostTownPhoto => super::ghost_pack::materials(true),
+            // Plume tint and density live in the vertex colours.
+            Self::SmokeFire => vec![
+                glow("Fire Core / Embers", [1.0, 0.5, 0.15], 8.0),
+                Material { opacity: 0.999, ..pbr("Smoke", [1.0, 1.0, 1.0], 0.0, 1.0) },
+                Material { opacity: 0.999, ..pbr("Smoke Wisps", [1.0, 1.0, 1.0], 0.0, 1.0) },
+            ],
         };
         // Generated buildings and terrain have no UV layout: their packs
         // use World / Triplanar mapping, so patterns and photos tile.

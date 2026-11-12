@@ -9,8 +9,9 @@ use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui::{self, RichText};
 
 /// Building Parameters. Returns the new material style when the user
-/// switched it (the caller reassigns the matching pack).
-pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> Option<MatStyle> {
+/// switched it (the caller reassigns the matching pack) and the Destruction
+/// rollout's ember-glow request.
+pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Option<MatStyle>, super::ruin::Out) {
     ui.label(RichText::new("Building / Prop Type").strong());
     kind_combo(ui, t, p);
     ui.label(dim(p.kind.category().label()));
@@ -28,7 +29,8 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> Optio
             row(ui, t, label, &mut p.floors, 1..=200, p.kind.defaults().2, 0.05);
         }
     });
-    t.r(ui.checkbox(&mut p.emissive, "Emissive Lights")).on_hover_text("Lit windows, lamps, lanterns, neon signs and forge fires glow; off = dark glass");
+    t.r(ui.checkbox(&mut p.emissive, "Emissive Lights"))
+        .on_hover_text("Lit windows, lamps, lanterns, neon signs and forge fires glow; off = dark glass");
     ui.horizontal(|ui| {
         ui.label("Stairs:");
         egui::ComboBox::from_id_salt("building_stairs").selected_text(p.stairs.label()).show_ui(ui, |ui| {
@@ -50,6 +52,10 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> Optio
         }
     });
     ui.label(dim("Parts only appear on the types that have them (a kiosk has no fire escape)."));
+    ui.separator();
+    let pile = p.kind == BuildingKind::RubblePile;
+    let out = super::ruin::destruction(ui, t, &mut p.ruin, "building", pile);
+    ui.separator();
     let mut style = None;
     ui.horizontal(|ui| {
         ui.label("Material Style:");
@@ -61,7 +67,7 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> Optio
             }
         }
     });
-    style
+    (style, out)
 }
 
 fn style_tip(s: MatStyle) -> &'static str {
@@ -79,7 +85,15 @@ fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
             ui.label(RichText::new(c.label()).strong());
             for k in c.kinds() {
                 if ui.selectable_label(p.kind == k, format!("   {}", k.label())).clicked() && p.kind != k {
-                    *p = BuildingParams { seed: p.seed, parts: p.parts, emissive: p.emissive, style: p.style, stairs: p.stairs, ..BuildingParams::of(k) };
+                    *p = BuildingParams {
+                        seed: p.seed,
+                        parts: p.parts,
+                        emissive: p.emissive,
+                        style: p.style,
+                        stairs: p.stairs,
+                        ruin: p.ruin.clone(),
+                        ..BuildingParams::of(k)
+                    };
                     (t.started, t.changed) = (true, true);
                 }
             }

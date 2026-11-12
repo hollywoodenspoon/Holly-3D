@@ -22,6 +22,9 @@ pub const SKY: Page = Page {
             "Click the Sky menu on the toolbar and pick a preset; that is all it takes.",
             "For more control press 8: time of day, sun, clouds, fog, stars, nebula and HDRI images.",
             "Deep Space turns the sky black with stars and nebulae; add a Planet from Create > Worlds.",
+            "Weather & Storm Clouds (in the 8 dialog): pick a Weather Preset, from Clear Sky to Thunderstorm, Ash Haze, Heavy Fog, Rainstorm or Blizzard.",
+            "Cloud Thickness darkens storm cloud bases. Overcast Sun Dimming dims the linked sun and softens its shadows. Lightning Flash adds a bolt.",
+            "Precipitation (Rain, Snow, or Ash with glowing cinders) falls in the viewport and in F9, hidden behind nearer objects.",
         ]),
         H("Lights and cameras"),
         Steps(&[
@@ -45,10 +48,7 @@ pub const RENDER: Page = Page {
     id: "render",
     title: "10. Rendering",
     blocks: &[
-        Shot(
-            "render",
-            &[m(627.0, 75.0, "Render Setup (F10)"), m(680.0, 75.0, "Rendered Frame Window"), m(735.0, 75.0, "Render (F9)")],
-        ),
+        Shot("render", &[m(627.0, 75.0, "Render Setup (F10)"), m(680.0, 75.0, "Rendered Frame Window"), m(735.0, 75.0, "Render (F9)")]),
         Steps(&[
             "F10 Render Setup: resolution presets, alpha background, camera, anti-aliasing, AO, GI, denoiser, bloom, depth of field.",
             "Pick the renderer: the Path Tracer (default: multi-bounce light, MIS, Russian Roulette) or the fast Classic Raytracer.",
@@ -58,7 +58,13 @@ pub const RENDER: Page = Page {
             "In the Frame Window: save PNG / EXR / JPG, copy, clone the window to compare, and view R / G / B / A channels.",
         ]),
         H("Color Grading & Camera RAW"),
-        Shot("grading", &[m(950.0, 153.0, "🎨 Grading: show or hide the sidebar"), m(975.0, 273.0, "Color Grading sidebar: every slider re-grades at once, no re-render")]),
+        Shot(
+            "grading",
+            &[
+                m(950.0, 153.0, "🎨 Grading: show or hide the sidebar"),
+                m(975.0, 273.0, "Color Grading sidebar: every slider re-grades at once, no re-render"),
+            ],
+        ),
         Steps(&[
             "Click 🎨 Grading on the Frame Window toolbar (or Rendering > Color Grading & Camera RAW).",
             "Tone & Presence: Highlights, Shadows, Whites, Blacks, Clarity, Vibrance and Saturation.",
@@ -106,7 +112,12 @@ pub const GHOSTTOWN: Page = Page {
             "New presets: River City, Harbour Town, Industrial, Old Town + Modern Sprawl, Square Walled City, River Town, Castle & Town, Star Fort, Crossroads Hamlet and Monastery.",
             "Buildings: uncheck any type to leave it out. Building Parts, Town Features (river, bridges, walls, moat, rail...), Emissive Lights and Prop Style (Generated / Low-poly / Realistic) shape the town.",
             "Damaged / Battlefield Mode, or the Battlefield & Ruin modifier, wrecks the buildings. Blast Zones aim the damage.",
-            "Buildings & Props Browser (Tools menu or the 🏠 toolbar button): click a thumbnail, then drag a footprint to place one of 43 buildings or props on its own.",
+            "Buildings & Props Browser (Tools menu or the 🏠 toolbar button): click a thumbnail, then drag a footprint to place one of 44 buildings or props on its own.",
+            "Destruction Level (on a building, the town and the Battlefield modifier): Intact, Light Damage, Heavy Damage, Warzone Collapse, Apocalyptic Ruin or Pure Rubble. Each building in a town varies by one step.",
+            "Rubble Density, Era (Modern concrete and rebar, Medieval stone and charred timber, Ancient stone and moss), Glowing Embers with Ember Glow (ID 25) and Gore / Blood Smears (ID 28) dress the rubble mounds.",
+            "The Rubble Pile type places a mound on its own: Width and Length set the spread, Pile Height its height.",
+            "Smoke Plume (Create > Worlds): drag the source radius, then the height. Style (black battlefield, grey chimney, white steam), Wind Lean, Turbulence, Rise Phase and Fire Base Intensity shape it.",
+            "Spawn Rising Smoke Plumes (damaged town or Battlefield modifier) raises plumes from the tallest wrecks and the blast zones.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
         ShowMe("Open the Buildings & Props Browser", Show::Act(Action::BuildingsBrowser)),
@@ -134,7 +145,9 @@ pub const CAD: Page = Page {
     blocks: &[
         Shot("cad", &[m(1433.0, 600.0, "Fastener parameters: standard, size, lengths"), m(1020.0, 600.0, "Real helical threads")]),
         H("Bolts, nuts and threaded holes"),
-        P("Create > Geometry > Mech has Bolt, Nut and Threaded Hole. Pick ISO Metric (M3 to M24) or Imperial UNC (#10 to 1\"), and the head, nut and thread sizes follow the standard tables. A nut fits the bolt of the same size. Untick Model Threads for light plain cylinders."),
+        P(
+            "Create > Geometry > Mech has Bolt, Nut and Threaded Hole. Pick ISO Metric (M3 to M24) or Imperial UNC (#10 to 1\"), and the head, nut and thread sizes follow the standard tables. A nut fits the bolt of the same size. Untick Model Threads for light plain cylinders.",
+        ),
         H("Hole, Counterbore and Countersink"),
         Steps(&[
             "Edit Poly or Editable Poly, Polygon level (4): select the faces to drill.",
@@ -150,7 +163,9 @@ pub const CAD: Page = Page {
             "Sections blend smoothly between their path percentages. Twist, Scale Start / End and Scale Curve shape the skin; Cap Start / End close it.",
         ]),
         H("Spline constraints"),
-        P("Select an Editable Spline and pick a level. Segment level (2) has Parallel, Perpendicular and Equal Length. Vertex level (1) has Tangent, which makes the curve leave a vertex in the direction it arrived. Spline level (3) has Concentric. Each one runs once: the first selected item in spline order is the reference, and the other selected items move to match it. The constraints are also in Tools > Spline Constraints."),
+        P(
+            "Select an Editable Spline and pick a level. Segment level (2) has Parallel, Perpendicular and Equal Length. Vertex level (1) has Tangent, which makes the curve leave a vertex in the direction it arrived. Spline level (3) has Concentric. Each one runs once: the first selected item in spline order is the reference, and the other selected items move to match it. The constraints are also in Tools > Spline Constraints.",
+        ),
         ShowMe("Open the Create tab", Show::Tab(CommandTab::Create)),
     ],
 };
@@ -184,7 +199,9 @@ pub const CRASH: Page = Page {
     id: "crash",
     title: "16. Crash reports and recovery",
     blocks: &[
-        P("If MiniMax ever crashes, it writes a report of what happened and saves your scene first. Next time it starts, this dialog appears."),
+        P(
+            "If MiniMax ever crashes, it writes a report of what happened and saves your scene first. Next time it starts, this dialog appears.",
+        ),
         Shot(
             "crash",
             &[
@@ -200,16 +217,15 @@ pub const CRASH: Page = Page {
             "Restore Unsaved Scene opens crash_recovery.mmax. It opens unsaved, so use File > Save As to keep it.",
             "Reports live in ~/.local/share/minimax/crashes.",
         ]),
-        Tip("Help > View Crash Reports... lists every report. Simulate Test Crash Report writes a sample one without crashing, so you can check it works."),
+        Tip(
+            "Help > View Crash Reports... lists every report. Simulate Test Crash Report writes a sample one without crashing, so you can check it works.",
+        ),
         ShowMe("View Crash Reports", Show::Act(Action::CrashReports)),
     ],
 };
 
-pub const HOTKEYS: Page = Page {
-    id: "hotkeys",
-    title: "Hotkey cheat sheet",
-    blocks: &[P("Your current keys (change them in Preferences > Hotkeys)."), Keys],
-};
+pub const HOTKEYS: Page =
+    Page { id: "hotkeys", title: "Hotkey cheat sheet", blocks: &[P("Your current keys (change them in Preferences > Hotkeys)."), Keys] };
 
 pub const CREDITS: Page = Page {
     id: "credits",
@@ -218,29 +234,49 @@ pub const CREDITS: Page = Page {
         P("MiniMax is built with Bevy, egui, transform-gizmo, slotmap, boolmesh, meshopt, uvunwrap, noise and image."),
         P("Free CC0 assets: Poly Haven (photo textures and realistic models), Kenney and Quaternius (low-poly models). Thank you!"),
         H("MaterialCraft"),
-        P("The procedural texture engine (tileable lattice noise, brick, Voronoi crack, wood, weave and scratch generators, Levels, Height Blend, Slope Blur, Normal From Height, cavity AO, weathering masks and the content-addressed cache) is ported from MaterialCraft by the ArtCraft Team and the MaterialCraft contributors: github.com/storytold/materialcraft. Licensed MIT / Apache-2.0."),
+        P(
+            "The procedural texture engine (tileable lattice noise, brick, Voronoi crack, wood, weave and scratch generators, Levels, Height Blend, Slope Blur, Normal From Height, cavity AO, weathering masks and the content-addressed cache) is ported from MaterialCraft by the ArtCraft Team and the MaterialCraft contributors: github.com/storytold/materialcraft. Licensed MIT / Apache-2.0.",
+        ),
         H("TextureCraft"),
-        P("The texture painter follows the design of TextureCraft by the ArtCraft Team and the TextureCraft contributors: github.com/storytold/texturecraft. That covers the 64 x 64 copy-on-write texel tiles, the layer stack with blend modes and masks, mesh map baking, Smart Masks and the brush stamps. Licensed MIT / Apache-2.0."),
+        P(
+            "The texture painter follows the design of TextureCraft by the ArtCraft Team and the TextureCraft contributors: github.com/storytold/texturecraft. That covers the 64 x 64 copy-on-write texel tiles, the layer stack with blend modes and masks, mesh map baking, Smart Masks and the brush stamps. Licensed MIT / Apache-2.0.",
+        ),
         H("LightCraft"),
-        P("The F9 Color Grading & Camera RAW sidebar follows the develop pipeline of LightCraft by the ArtCraft Team and the LightCraft contributors: github.com/storytold/lightcraft. That covers the tone and presence controls, Kelvin white balance, split-toning wheels, vignette, chromatic aberration and film grain. Licensed MIT / Apache-2.0."),
+        P(
+            "The F9 Color Grading & Camera RAW sidebar follows the develop pipeline of LightCraft by the ArtCraft Team and the LightCraft contributors: github.com/storytold/lightcraft. That covers the tone and presence controls, Kelvin white balance, split-toning wheels, vignette, chromatic aberration and film grain. Licensed MIT / Apache-2.0.",
+        ),
         H("SolidCraft"),
-        P("The CAD tools follow SolidCraft by the SolidCraft contributors: github.com/tangency-labs/solidcraft. That covers the ISO metric / UNC bolts, nuts and threaded holes, the Hole / Counterbore / Countersink cutter, the multi-profile Loft and the Parallel, Perpendicular, Tangent, Concentric and Equal Length sketch constraints. Licensed MIT / Apache-2.0; no SolidCraft brand or interface material is used."),
-        P("The path tracer (CPU and the wgpu GPU kernel) follows the design of SolidCraft's GPU path tracer: its GGX / visible-normal sampling, lobe mix, power-heuristic MIS and storage-buffer BVH layout, plus the Principled BSDF lobes (random-walk SSS, anisotropic GGX, clearcoat, sheen, dispersion). MIT / Apache-2.0."),
+        P(
+            "The CAD tools follow SolidCraft by the SolidCraft contributors: github.com/tangency-labs/solidcraft. That covers the ISO metric / UNC bolts, nuts and threaded holes, the Hole / Counterbore / Countersink cutter, the multi-profile Loft and the Parallel, Perpendicular, Tangent, Concentric and Equal Length sketch constraints. Licensed MIT / Apache-2.0; no SolidCraft brand or interface material is used.",
+        ),
+        P(
+            "The path tracer (CPU and the wgpu GPU kernel) follows the design of SolidCraft's GPU path tracer: its GGX / visible-normal sampling, lobe mix, power-heuristic MIS and storage-buffer BVH layout, plus the Principled BSDF lobes (random-walk SSS, anisotropic GGX, clearcoat, sheen, dispersion). MIT / Apache-2.0.",
+        ),
         H("Strolle"),
-        P("The albedo-demodulated A-Trous denoiser follows the SVGF / A-Trous wavelet filter in Strolle by Patryk Wychowaniec and the Strolle contributors: github.com/Patryk27/strolle. Licensed MIT."),
+        P(
+            "The albedo-demodulated A-Trous denoiser follows the SVGF / A-Trous wavelet filter in Strolle by Patryk Wychowaniec and the Strolle contributors: github.com/Patryk27/strolle. Licensed MIT.",
+        ),
         H("EffectCraft"),
-        P("The lens effects (polygonal aperture bokeh, cat's-eye vignetting, anamorphic streaks and starburst glare) follow EffectCraft by the ArtCraft Team and the EffectCraft contributors. Licensed MIT / Apache-2.0."),
+        P(
+            "The lens effects (polygonal aperture bokeh, cat's-eye vignetting, anamorphic streaks and starburst glare) follow EffectCraft by the ArtCraft Team and the EffectCraft contributors. Licensed MIT / Apache-2.0.",
+        ),
         H("Asset packs"),
-        P("The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl)."),
+        P(
+            "The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl).",
+        ),
         H("Fira Code"),
-        P("The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. Licensed under the SIL Open Font License 1.1."),
+        P(
+            "The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. Licensed under the SIL Open Font License 1.1.",
+        ),
         P("The licence texts ship with MiniMax in the licenses folder."),
     ],
 };
 
 /// Every page, in topic order.
-pub const ALL: [Page; 18] =
-    [BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, CAD, FILES, PREFS, CRASH, HOTKEYS, CREDITS];
+pub const ALL: [Page; 18] = [
+    BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, CAD, FILES, PREFS, CRASH,
+    HOTKEYS, CREDITS,
+];
 
 pub fn index_of(id: &str) -> usize {
     ALL.iter().position(|p| p.id == id).unwrap_or(0)

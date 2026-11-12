@@ -11,6 +11,8 @@ pub mod ghosttown;
 pub mod mech;
 pub mod modifiers;
 pub mod planet;
+pub mod ruin;
+pub mod smoke;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;

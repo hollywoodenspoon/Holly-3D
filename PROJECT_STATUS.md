@@ -1004,3 +1004,89 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 - Prop Style "Realistic" reuses the standalone doodads; there is no imported asset pack.
 - Castle & Town's houses on the hillside stand on flat footings, without stepped foundations.
 - River and harbour water is a flat surface (Material ID 18), not the Ocean generator.
+
+## 29. PR 7: 5-state building destruction, rubble mounds & battlefield textures
+
+**1. Destruction levels** (`src/generators/ruin/`). Six states, offered on every building (Buildings & Props), on the GhostTown settlement (base object and modifier) and in the Battlefield & Ruin modifier's new **Building Destruction** section:
+- **Intact**: untouched.
+- **Light Damage**: cracked or missing glass with shards below, soot above the windows, bullet-scar decals and a little debris. Lit windows go dark when their glass breaks.
+- **Heavy Damage**: a blown-out corner (the mesh is sliced and the corner removed), shell holes, exposed slabs with rebar or joists, a caved-in roof (sagging slab or broken rafters), a slight lean, and barricades (sandbags and tank traps for Modern, carts and barrels for Medieval).
+- **Warzone Collapse**: the failed storey gives way. The upper block either topples (it is detached, rotated about the edge it falls toward and laid on the ground) or pancakes into stacked slabs. A rubble mound forms underneath.
+- **Apocalyptic Ruin**: a jagged stump of the lower floors (cut by three tilted planes), with broken rebar and I-beams, charred timbers or moss along the top, over a large mound.
+- **Pure Rubble**: nothing stands; only the mound is left.
+
+In a town or on the battlefield, each building gets the chosen level or one step either side (seeded per building), so a street has a mix of states. Bridges, quays and street props are never wrecked.
+
+**2. Load-path stress model** (`ruin/stress.rs`). Blasts are scattered over the building's columns, and each blast takes capacity from the columns near it. Lower storeys carry more load. The lowest storey whose remaining capacity cannot carry the floors above it fails. The model also gives the building a lean or fall direction toward the side that lost the most support, and an asymmetry value that decides between toppling and pancaking. A block can only topple if it is taller than it is deep along the fall; otherwise it pancakes.
+- The prompt named FieldCraft as a source. **FieldCraft was not inspected.** The stress, fracture and collapse math is written natively for this project, and no FieldCraft code is used. It is a simple heuristic, not a physics or finite-element solver.
+
+**3. Rubble mounds** (`ruin/mound.rs`):
+- A layered dust heap (ID 27) with a rough, noisy edge, plus ash patches (ID 26).
+- Era debris on the surface:
+  - **Modern**: concrete chunks, bricks, rubble clusters and girders.
+  - **Medieval**: stone blocks, roof tiles and charred timbers.
+  - **Ancient**: big weathered stones, column drums and moss.
+  - Medieval and Ancient never get rebar or girders.
+- `[✓] Glowing Embers` (ID 25) in the crevices, with an **Ember Glow** spinner and an `[ Apply Glow ]` button that sets the object's own ID 25 emission.
+- `[✓] Gore / Blood Smears` (ID 28) with an **Amount** slider: blood pools and drag smears on the rubble and the ground.
+- **Rubble Pile** is a new standalone Buildings & Props type (now 44 types). Width and Length set the spread, and Pile Height sets the height.
+
+**4. Battlefield textures.** The GhostTown Material Pack grows to **28 IDs**: 25 Glowing Embers (emissive), 26 Bullet Scars / Soot, 27 Rubble Dust / Ash, 28 Blood Smears. Objects that still carry an older 24-ID pack get ID 25 added when the Ember Glow is applied.
+
+**5. Battlefield & Ruin modifier.** The modifier now finds each building in its input mesh (connected elements whose footprints overlap, ignoring flat ground) and wrecks each one with the Building Destruction settings, before its existing blast-zone pass.
+
+**Tests (now 544):**
+- Every level on five building types builds valid, deterministic meshes with UVs, using IDs within the pack.
+- Intact leaves the building unchanged. The height drops with the level, Light adds scars and Heavy adds rubble.
+- Debris is period-accurate, including the Ancient override.
+- The Embers and Gore toggles add or remove their IDs.
+- The Rubble Pile follows its spread, height and density.
+- The stress model fails lower storeys harder.
+- Wrecked towns are lower, have rubble and are deterministic, and walled towns get no rebar.
+- The Battlefield modifier wrecks each building.
+
+**Not done in PR 7:**
+- Destruction is generated geometry; there is no rigid-body simulation or animation of the fall.
+- Wrecked buildings are not split into separate objects; a town stays one mesh.
+- Embers glow through the material's emission only; there are no particle sparks or smoke yet (smoke is planned for PR 8).
+
+## 30. PR 8: Procedural smoke & fire plumes + dynamic weather & storm clouds
+
+**1. Smoke Plume generator** (`src/generators/smoke/`; Create > Worlds > Smoke Plume, or the Worlds menu). Drag out the source radius, then the height.
+- **Shape:** the plume is a stack of noise-displaced lobe shells (soft, metaball-like puffs). Alpha-eroded **Turbulence Cards** (fans whose rim fades to zero alpha) and a **Mushroom Cap** ring vortex at the top can be turned on or off. Density is stored in the vertex alpha and the tint in the vertex colour. The new **Battlefield Smoke** material (GhostTown ID 29) and the **Smoke & Fire Pack** (Multi/Sub-Object preset) are translucent, so plumes cast soft partial shadows in F9.
+- **Styles:** Oily Battlefield Smoke (black, thick), Chimney Smoke (grey) and Steam (white, thin).
+- **Parameters:** Seed, Plume Height, Base Radius, Top Spread, Billow Turbulence, Wind Lean Angle and Direction, Lobes, Time / Rise Phase (scrubs the puffs up the column and loops) and **Fire Base Intensity %**. The fire setting adds glowing flame tongues and a burning base (emissive Fire Core / Embers) with an orange under-glow on the smoke above. At 0% the plume is smoke only.
+- **Plume physics** (`smoke/column.rs`) is written natively from classic closed-form plume theory:
+  - **Entrainment** (Morton-Taylor-Turner): the radius grows almost linearly with height.
+  - **Buoyant slowdown:** vertical speed falls as z^(-1/3), so puffs bunch up into the cap (z ~ t^(3/4)).
+  - **Briggs bent-over rise:** in wind the drift grows as z^(3/2).
+  - **Karman vortex shedding:** a Strouhal-0.2 side-to-side sway that travels up with the Rise Phase.
+- **FieldCraft was not inspected.** This is not a CFD, LBM or particle-simulation solver, and no external fluid code is used. The plume is static geometry shaped by those laws.
+
+**2. Battlefield auto-spawn.** `[✓] Spawn Rising Smoke Plumes`, a **Smoke Plume Count** and a **Plume Look** sub-rollout were added to the GhostTown Damaged / Battlefield mode and to the Battlefield & Ruin modifier. Plumes rise from the tallest wrecks (a coarse height grid) and from the user's blast zones, standing on the local ground. The defaults depend on the era: Modern uses black battlefield smoke; Medieval and Ancient use grey chimney smoke, with less fire for Ancient. The GhostTown pack grows to **29 IDs**.
+
+**3. Weather & Storm Clouds** (`src/render/weather.rs`; the `8` dialog, Dynamic Sky, then the **Weather & Storm Clouds** rollout):
+- **Weather Preset** dropdown: Clear Sky, Partly Cloudy, Heavy Overcast, Dark Gathering Storm, Thunderstorm, Battlefield Ash & Smoke Haze, Heavy Fog / Mist, Rainstorm and Blizzard / Snow. A preset sets the cloud coverage, density and altitude, the thickness, the precipitation and the exponential fog in one click.
+- **Cloud Thickness % (optical depth):** cloud bases darken by Beer-Lambert extinction, `T = exp(-tau * depth)`, toward a slate storm grey. Looking straight up at the base shows the most attenuation.
+- **Overcast Sun Dimming:** the linked main sun's Multiplier is attenuated through the deck, and its shadow softness grows as the sun dims.
+- **Lightning Flash:** a seeded, jagged bolt below the deck plus a broad flash that lights the surrounding clouds. It is baked into the sky, so it also lights reflections and the sky ambient.
+- **Precipitation:** Rain Streaks, Snowflakes, or Ash & Glowing Cinders, with Amount, Wind Slant and Seed.
+  - **Viewport:** animated overlay lines in a box around the scene (`src/viewport/weather_lines.rs`).
+  - **F9:** a depth-aware overlay (`src/render/precip.rs`). Particles sit at seeded depths, nearer ones are bigger, and each is drawn only where it is in front of the geometry. Cinders are emissive, so Bloom picks them up.
+
+**Tests (now 559):**
+- **Plumes:** they are valid, deterministic and tall, and widen with height. Fire sits at the base, and the smoke is translucent with zero-alpha card rims. Height, wind, cards, cap, phase and style all change the plume. Town plumes use the GhostTown IDs.
+- **Plume physics:** the column widens, slows and bends downwind, and the vortex sway alternates and travels with the phase.
+- **Battlefield:** the modifier spawns rising plumes.
+- **Weather:**
+  - Every preset applies.
+  - Beer-Lambert darkening is monotonic, and storm skies are less than half as bright overhead.
+  - Sun dimming lowers and softens the sun, and turning it off restores the clear sun.
+  - Lightning brightens the storm.
+  - Old scenes load without weather settings.
+- **Precipitation:** rain, snow and ash are drawn but hidden behind near geometry. Rain brightens, snow whitens and ash darkens, cinders glow, and Amount scales the count. The viewport particles fall inside their box.
+
+**Not done in PR 8:**
+- Smoke is static meshes with vertex-alpha density, not a volumetric (voxel) medium. There is no fluid simulation.
+- Precipitation in F9 is a 2D overlay at seeded depths. Drops do not hit, splash on or wet surfaces, and snow does not settle.
+- Lightning is a single static bolt per seed and does not animate. The bolt is drawn in the sky and is not an actual light source in the scene.

@@ -41,6 +41,7 @@ fn earth(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
         });
         ui.label(dim("Clouds pick up the sunset glow and moonlight automatically."));
     });
+    crate::ui::weather_rollout::rows(ui, env, t);
 }
 
 fn space(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {

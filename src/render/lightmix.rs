@@ -107,6 +107,7 @@ pub struct Buffers {
     pub plain_bg: bool,
     /// À-Trous denoiser guides (empty: the bilateral denoiser).
     pub aux: Vec<super::denoise_atrous::Aux>,
+    pub weather: Option<super::weather::Weather>,
 }
 
 impl Buffers {
@@ -132,6 +133,7 @@ impl Buffers {
             coc: None,
             plain_bg: true,
             aux: vec![],
+            weather: None,
         }
     }
 
@@ -146,7 +148,7 @@ impl Buffers {
                 Pixel { g: self.g[i], layers, ..Pixel::EMPTY }
             })
             .collect();
-        let ctx = PostCtx { noisy: self.noisy, coc: self.coc, materials: &self.materials, plain_bg: self.plain_bg, aux: (!self.aux.is_empty()).then_some(&self.aux[..]) };
+        let ctx = PostCtx { noisy: self.noisy, coc: self.coc, materials: &self.materials, plain_bg: self.plain_bg, aux: (!self.aux.is_empty()).then_some(&self.aux[..]), weather: self.weather };
         run_ctx(&mut px, w, h, &ctx, &self.cfg);
         px
     }

@@ -61,8 +61,7 @@ pub fn build(plan: &mut Plan) {
                     let core_t = (1.0 - c.distance(centre) / reach.max(1.0)).clamp(0.0, 1.0);
                     let t = (core_t.powf(1.3) * plan.rng.gen_range(0.55..1.0)).clamp(0.0, 1.0);
                     let floors = p.min_floors.max(1) + ((p.max_floors.max(p.min_floors) - p.min_floors.max(1)) as f32 * t).round() as u32;
-                    let (kit, r) = (&mut plan.kit, &mut plan.rng);
-                    kit.at(lot.frame(0.15), |k| tower(k, lot.half, floors, r));
+                    plan.wrecked(lot, 0.15, false, |k, r| tower(k, lot.half, floors, r));
                 }
             }
         }

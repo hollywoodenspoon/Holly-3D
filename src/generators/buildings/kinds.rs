@@ -1,4 +1,4 @@
-//! The 43 standalone building / bridge / doodad types and their defaults.
+//! The 44 standalone building / bridge / doodad types and their defaults.
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum BuildingKind {
@@ -37,7 +37,7 @@ pub enum BuildingKind {
     Drawbridge,
     Quay,
     Crane,
-    // Doodads & street props (12)
+    // Doodads & street props (13)
     Streetlamp,
     LanternPost,
     Car,
@@ -50,6 +50,7 @@ pub enum BuildingKind {
     BarbedWire,
     Bench,
     Fountain,
+    RubblePile,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -76,13 +77,53 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 43] = {
+    pub const ALL: [BuildingKind; 44] = {
         use BuildingKind::*;
         [
-            GlassSkyscraper, OfficeBlock, BrickTenement, ApartmentBlock, Shop, GasStation, Warehouse, SawtoothFactory, ParkingGarage, School,
-            Hospital, ModernChurch, WaterTower, Kiosk, CastleKeep, GuildHall, MarketHall, Tavern, StoneChapel, Windmill, Watermill, Forge,
-            Stable, Granary, Gatehouse, WellHouse, ArchBridge, TrussBridge, Drawbridge, Quay, Crane, Streetlamp, LanternPost, Car, Cart,
-            MarketStall, BarrelCrates, Dumpster, SandbagWall, TankTrap, BarbedWire, Bench, Fountain,
+            GlassSkyscraper,
+            OfficeBlock,
+            BrickTenement,
+            ApartmentBlock,
+            Shop,
+            GasStation,
+            Warehouse,
+            SawtoothFactory,
+            ParkingGarage,
+            School,
+            Hospital,
+            ModernChurch,
+            WaterTower,
+            Kiosk,
+            CastleKeep,
+            GuildHall,
+            MarketHall,
+            Tavern,
+            StoneChapel,
+            Windmill,
+            Watermill,
+            Forge,
+            Stable,
+            Granary,
+            Gatehouse,
+            WellHouse,
+            ArchBridge,
+            TrussBridge,
+            Drawbridge,
+            Quay,
+            Crane,
+            Streetlamp,
+            LanternPost,
+            Car,
+            Cart,
+            MarketStall,
+            BarrelCrates,
+            Dumpster,
+            SandbagWall,
+            TankTrap,
+            BarbedWire,
+            Bench,
+            Fountain,
+            RubblePile,
         ]
     };
 
@@ -98,7 +139,8 @@ impl BuildingKind {
 
     pub fn is_medieval(self) -> bool {
         use BuildingKind::*;
-        self.category() == Category::Medieval || matches!(self, ArchBridge | Drawbridge | LanternPost | Cart | MarketStall | BarrelCrates | Fountain)
+        self.category() == Category::Medieval
+            || matches!(self, ArchBridge | Drawbridge | LanternPost | Cart | MarketStall | BarrelCrates | Fountain)
     }
 
     pub fn label(self) -> &'static str {
@@ -147,6 +189,7 @@ impl BuildingKind {
             BarbedWire => "Barbed Wire Coil",
             Bench => "Park Bench",
             Fountain => "Fountain / Well",
+            RubblePile => "Rubble Pile",
         }
     }
 
@@ -197,6 +240,7 @@ impl BuildingKind {
             BarbedWire => (0.9, 6.0, 1),
             Bench => (1.8, 0.6, 1),
             Fountain => (4.0, 4.0, 1),
+            RubblePile => (10.0, 8.0, 1),
         }
     }
 

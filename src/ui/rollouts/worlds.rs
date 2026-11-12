@@ -12,7 +12,15 @@ use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
 
 /// Spinner row with an explicit drag speed.
-pub(crate) fn row<T: egui::emath::Numeric>(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut T, range: std::ops::RangeInclusive<T>, default: T, speed: f64) {
+pub(crate) fn row<T: egui::emath::Numeric>(
+    ui: &mut egui::Ui,
+    t: &mut Track,
+    label: &str,
+    v: &mut T,
+    range: std::ops::RangeInclusive<T>,
+    default: T,
+    speed: f64,
+) {
     ui.label(label);
     t.r(max_spinner_range(ui, v, speed, default, range));
     ui.end_row();
@@ -104,12 +112,16 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let BaseObject::World(w) = &ed.scene.objects[id].base else { return };
     let mut w = w.clone();
     let (mut t, mut tex, mut style) = (Track::default(), None, None);
+    let mut ruin = super::ruin::Out::default();
     match &mut w {
         WorldGen::Terrain(p) => rollout(ui, "Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
         WorldGen::Ocean(p) => rollout(ui, "Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
         WorldGen::Planet(p) => tex = super::planet::params(ui, &mut t, p),
-        WorldGen::Settlement(p) => rollout(ui, "GhostTown Settlement", true, |ui| super::ghosttown::settlement_params(ui, &mut t, p, true)),
-        WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| style = super::buildings::params(ui, &mut t, p)),
+        WorldGen::Settlement(p) => {
+            rollout(ui, "GhostTown Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
+        }
+        WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
+        WorldGen::Smoke(p) => rollout(ui, "Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
     }
     if let WorldGen::Settlement(_) | WorldGen::Building(_) = &w {
         super::ghosttown::pack_button(ui, ed);
@@ -122,6 +134,9 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     }
     if let Some(s) = style {
         ed.assign_pack(s.pack());
+    }
+    if let Some(g) = ruin.glow {
+        ed.set_ember_glow(id, g);
     }
     if let Some((part, path)) = tex {
         ed.planet_custom_texture(id, part, path.as_deref());

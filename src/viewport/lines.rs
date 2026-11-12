@@ -26,7 +26,7 @@ pub fn register(app: &mut App) {
         .init_gizmo_group::<Vp3Lines>()
         .init_gizmo_group::<OverlayLines>()
         .add_systems(Startup, configure)
-        .add_systems(Update, (draw_lines, super::spline_lines::draw));
+        .add_systems(Update, (draw_lines, super::spline_lines::draw, super::weather_lines::draw));
 }
 
 fn configure(mut store: ResMut<GizmoConfigStore>) {

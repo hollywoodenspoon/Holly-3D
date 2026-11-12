@@ -26,6 +26,8 @@ pub struct PostCtx<'a> {
     pub plain_bg: bool,
     /// Albedo / roughness / variance guides: use the À-Trous denoiser.
     pub aux: Option<&'a [super::denoise_atrous::Aux]>,
+    /// Precipitation overlay (PR 8 weather), None when there is none.
+    pub weather: Option<super::weather::Weather>,
 }
 
 impl<'a> PostCtx<'a> {
@@ -36,8 +38,15 @@ impl<'a> PostCtx<'a> {
             materials: &rs.materials,
             plain_bg: rs.hdri.is_none(),
             aux: None,
+            weather: weather_of(rs),
         }
     }
+}
+
+/// The sky's weather when it has precipitation to draw.
+pub fn weather_of(rs: &RenderScene) -> Option<super::weather::Weather> {
+    let s = rs.procedural.as_ref().filter(|s| s.mode == super::sky::SkyMode::Earth)?;
+    (s.weather.precip != super::weather::Precip::None).then_some(s.weather)
 }
 
 pub fn run_ctx(px: &mut [Pixel], w: usize, h: usize, ctx: &PostCtx, cfg: &RenderSettings) {
@@ -59,6 +68,9 @@ pub fn run_ctx(px: &mut [Pixel], w: usize, h: usize, ctx: &PostCtx, cfg: &Render
         let mut ink = vec![Vec4::ZERO; px.len()];
         outline::apply(&g, w, h, ctx.materials, &mut ink);
         px.iter_mut().zip(ink).for_each(|(p, k)| p.layers.ink = k);
+    }
+    if let Some(wx) = &ctx.weather {
+        super::precip::overlay(px, w, h, wx);
     }
     if p.bloom {
         bloom(px, w, h, cfg);

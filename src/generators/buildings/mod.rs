@@ -1,6 +1,6 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
 //! 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
-//! and 12 street doodads, each its own parametric object with Width,
+//! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
 //! GhostTown Material IDs (`kit::ids`).
@@ -22,6 +22,7 @@ pub use kinds::{BuildingKind, Category};
 pub use parts::Parts;
 
 use super::kit::{Kit, ids, rng};
+use super::ruin::{self, RuinParams};
 use crate::mesh::EditablePoly;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
@@ -64,6 +65,9 @@ pub struct BuildingParams {
     pub style: MatStyle,
     /// Staircase form (porches, stair turrets, fire escapes, quays).
     pub stairs: StairKind,
+    /// PR 7 Destruction: level, era, rubble, embers and gore (also the
+    /// Rubble Pile's density, height and era).
+    pub ruin: RuinParams,
 }
 
 impl Default for BuildingParams {
@@ -76,11 +80,33 @@ impl BuildingParams {
     /// The type's default size and floor count.
     pub fn of(kind: BuildingKind) -> Self {
         let (width, length, floors) = kind.defaults();
-        Self { kind, width, length, floors, seed: 1, parts: Parts::default(), emissive: true, style: MatStyle::Procedural, stairs: StairKind::Straight }
+        Self {
+            kind,
+            width,
+            length,
+            floors,
+            seed: 1,
+            parts: Parts::default(),
+            emissive: true,
+            style: MatStyle::Procedural,
+            stairs: StairKind::Straight,
+            ruin: RuinParams::default(),
+        }
     }
 
     /// Builds the object centred on the origin, standing on z = 0.
     pub fn build(&self) -> EditablePoly {
+        if self.kind == BuildingKind::RubblePile {
+            let half = bevy::math::Vec2::new(self.width, self.length) * 0.5;
+            return ruin::rubble_pile(half, &self.ruin, false);
+        }
+        let mut m = self.build_intact();
+        ruin::apply(&mut m, &self.ruin, self.kind.is_medieval());
+        m
+    }
+
+    /// The undamaged object.
+    fn build_intact(&self) -> EditablePoly {
         let mut b = Ctx { kit: Kit::new(), p: self.clone(), r: rng(self.seed, 0xB01D + self.kind as u64) };
         b.kit.sg = 0;
         let hx = (self.width.max(0.2)) * 0.5;
@@ -89,7 +115,10 @@ impl BuildingParams {
         use BuildingKind as K;
         match self.kind.category() {
             Category::Modern => {
-                if matches!(self.kind, K::GlassSkyscraper | K::OfficeBlock | K::BrickTenement | K::ApartmentBlock | K::ParkingGarage | K::School | K::Hospital) {
+                if matches!(
+                    self.kind,
+                    K::GlassSkyscraper | K::OfficeBlock | K::BrickTenement | K::ApartmentBlock | K::ParkingGarage | K::School | K::Hospital
+                ) {
                     modern_a::build(&mut b, hx, hy, floors)
                 } else {
                     modern_b::build(&mut b, hx, hy, floors)

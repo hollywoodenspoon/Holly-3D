@@ -98,6 +98,8 @@ pub struct SkySettings {
     pub show_in_viewport: bool,
     pub clouds: Clouds,
     pub space: Space,
+    /// PR 8 weather: storm thickness, sun dimming, lightning, precipitation.
+    pub weather: super::weather::Weather,
 }
 
 impl Default for SkySettings {
@@ -112,6 +114,7 @@ impl Default for SkySettings {
             show_in_viewport: true,
             clouds: Clouds::default(),
             space: Space::default(),
+            weather: Default::default(),
         }
     }
 }
@@ -145,6 +148,11 @@ impl SkySettings {
     /// toward the light, linear color and Multiplier. Night switches to cool
     /// moonlight.
     pub fn key_light(&self) -> Option<(Vec3, Vec3, f32)> {
+        let dim = self.weather.sun_transmittance(self);
+        self.key_light_clear().map(|(d, c, m)| (d, c, m * dim))
+    }
+
+    fn key_light_clear(&self) -> Option<(Vec3, Vec3, f32)> {
         match self.mode {
             SkyMode::Off => None,
             SkyMode::Space => Some((self.star_dir(), Vec3::from_array(self.space.star_color), 1.6)),
@@ -221,7 +229,8 @@ impl SkySettings {
         let lit = Vec3::ONE.lerp(Vec3::new(1.0, 0.55, 0.3), low) * (0.25 + 1.6 * day);
         let moon = Vec3::new(0.05, 0.06, 0.09) * (1.0 - day);
         let silver = d.dot(sun).max(0.0).powi(6) * day;
-        Some((a, (lit + Vec3::splat(silver)) * (1.15 - 0.5 * n) + moon))
+        let col = (lit + Vec3::splat(silver)) * (1.15 - 0.5 * n) + moon;
+        Some((a, self.weather.shade_cloud(col, n, d.z)))
     }
 
     fn earth(&self, d: Vec3) -> Vec3 {
@@ -251,6 +260,7 @@ impl SkySettings {
         if let Some((a, col)) = self.clouds(d, sun, day) {
             c = c.lerp(col * (horizon + zenith).max_element().max(0.04), a);
         }
+        c += self.weather.lightning(d);
         if d.z < 0.0 {
             // Ground: dim earth tone fading into the horizon haze.
             let ground = Vec3::new(0.09, 0.085, 0.075) * (0.08 + day);

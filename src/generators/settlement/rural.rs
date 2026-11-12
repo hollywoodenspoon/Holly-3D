@@ -25,8 +25,7 @@ fn cottage(plan: &mut Plan, lot: Lot) {
         return;
     }
     let pitch = plan.p.roof_pitch;
-    let (kit, r) = (&mut plan.kit, &mut plan.rng);
-    kit.at(lot.frame(0.0), |k| townhouse::cottage(k, lot.half, pitch, r));
+    plan.wrecked(lot, 0.0, true, |k, r| townhouse::cottage(k, lot.half, pitch, r));
 }
 
 /// Lot of size `half` beside a street `a`-`b` at `t` along it, facing it.
@@ -40,7 +39,10 @@ pub fn crossroads(plan: &mut Plan) {
     let (sw, size, c) = (plan.p.street_width.max(2.0), plan.max - plan.min, (plan.min + plan.max) * 0.5);
     plan.ground(6.0);
     // Two dirt roads crossing at a slight angle.
-    let (ew, ns) = ((Vec2::new(plan.min.x, c.y - 3.0), Vec2::new(plan.max.x, c.y + 3.0)), (Vec2::new(c.x + 4.0, plan.min.y), Vec2::new(c.x - 4.0, plan.max.y)));
+    let (ew, ns) = (
+        (Vec2::new(plan.min.x, c.y - 3.0), Vec2::new(plan.max.x, c.y + 3.0)),
+        (Vec2::new(c.x + 4.0, plan.min.y), Vec2::new(c.x - 4.0, plan.max.y)),
+    );
     plan.road(ew.0, ew.1, sw, 0.04, ids::ROAD);
     plan.road(ns.0, ns.1, sw, 0.04, ids::ROAD);
     if plan.p.features.market {
@@ -113,7 +115,9 @@ pub fn monastery(plan: &mut Plan) {
     let (dw, dl, _) = GuildHall.defaults();
     let fl = plan.floors().min(3);
     plan.building(Lot::new(c + Vec2::new(g + 3.5 + dl * 0.5, 0.0), Vec2::new(dw, dl) * 0.5, FRAC_PI_2), GuildHall, Some(fl));
-    for (k, off) in [(Granary, Vec2::new(-g - 9.0, -g * 0.4)), (WellHouse, Vec2::new(-g - 7.0, g * 0.6)), (Stable, Vec2::new(g + 6.0, -s * 0.7))] {
+    for (k, off) in
+        [(Granary, Vec2::new(-g - 9.0, -g * 0.4)), (WellHouse, Vec2::new(-g - 7.0, g * 0.6)), (Stable, Vec2::new(g + 6.0, -s * 0.7))]
+    {
         let (w, l, _) = k.defaults();
         plan.building(Lot::new(c + off, Vec2::new(w, l) * 0.5, -FRAC_PI_2), k, None);
     }
@@ -146,7 +150,12 @@ fn arcade(plan: &mut Plan, c: Vec2, g: f32) {
         }
     }
     k.mat(ids::ROOF);
-    for (lo, hi) in [(Vec2::new(-o, -o), Vec2::new(o, -g)), (Vec2::new(-o, g), Vec2::new(o, o)), (Vec2::new(-o, -g), Vec2::new(-g, g)), (Vec2::new(g, -g), Vec2::new(o, g))] {
+    for (lo, hi) in [
+        (Vec2::new(-o, -o), Vec2::new(o, -g)),
+        (Vec2::new(-o, g), Vec2::new(o, o)),
+        (Vec2::new(-o, -g), Vec2::new(-g, g)),
+        (Vec2::new(g, -g), Vec2::new(o, g)),
+    ] {
         k.block((c + lo).extend(h), (c + hi).extend(h + 0.3));
     }
 }

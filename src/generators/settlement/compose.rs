@@ -5,8 +5,9 @@
 
 use super::PropStyle;
 use super::layout::{Lot, Plan};
-use crate::generators::buildings::{BuildingKind, BuildingParams, infra::DECK};
+use crate::generators::buildings::{BuildingKind, BuildingParams, Category, infra::DECK};
 use crate::generators::kit::ids;
+use crate::generators::ruin::{DestructionLevel, RuinParams};
 use crate::mesh::EditablePoly;
 use bevy::math::{Quat, Vec2, Vec3};
 use rand::Rng;
@@ -33,6 +34,45 @@ impl Plan {
         self.rng.gen_range(lo..=self.p.max_floors.max(lo))
     }
 
+    /// The destruction of one building: the town's level, one step either
+    /// way (seeded by `key`, so the layout RNG is untouched).
+    pub fn ruin_for(&self, key: u32) -> RuinParams {
+        let base = &self.p.ruin;
+        if base.level == DestructionLevel::Intact {
+            return base.clone();
+        }
+        let mut r = crate::generators::kit::rng(base.seed ^ key, 0xDE57);
+        let d = match r.gen_range(0..4) {
+            0 => -1,
+            3 => 1,
+            _ => 0,
+        };
+        RuinParams { level: base.level.step(d).max(DestructionLevel::Light), seed: base.seed.wrapping_add(key), ..base.clone() }
+    }
+
+    /// Draws a piece with `f` in its own frame, wrecks it per the town's
+    /// destruction level, then places it on `lot` at height `z`.
+    pub fn wrecked(
+        &mut self,
+        lot: Lot,
+        z: f32,
+        medieval: bool,
+        f: impl FnOnce(&mut crate::generators::kit::Kit, &mut rand_chacha::ChaCha8Rng),
+    ) {
+        if self.p.ruin.level == DestructionLevel::Intact {
+            let (kit, r) = (&mut self.kit, &mut self.rng);
+            kit.at(lot.frame(z), |k| f(k, r));
+            return;
+        }
+        let mut k = crate::generators::kit::Kit::new();
+        f(&mut k, &mut self.rng);
+        let mut m = k.finish();
+        let key = (lot.c.x.to_bits() ^ lot.c.y.to_bits().rotate_left(13)) % 100_000;
+        crate::generators::ruin::apply(&mut m, &self.ruin_for(key), medieval);
+        m.transform(lot.frame(z));
+        self.kit.append(&m);
+    }
+
     /// Claims `lot` and fills it with a Buildings & Props piece (front to
     /// the lot's -Y). False when the type is off or the lot is taken.
     pub fn building(&mut self, lot: Lot, kind: BuildingKind, floors: Option<u32>) -> bool {
@@ -54,6 +94,9 @@ impl Plan {
             emissive: self.p.emissive,
             ..BuildingParams::of(kind)
         };
+        // Bridges, quays and street props are left standing.
+        let house = matches!(kind.category(), Category::Modern | Category::Medieval);
+        let bp = if house { BuildingParams { ruin: self.ruin_for(bp.seed), ..bp } } else { bp };
         let z = z.unwrap_or_else(|| lot.corners().iter().chain([&lot.c]).map(|q| self.h(*q)).fold(f32::MAX, f32::min));
         let mut m = bp.build();
         m.transform(lot.frame(z));
@@ -138,7 +181,8 @@ pub fn dress(plan: &mut Plan) {
         return;
     }
     use BuildingKind::*;
-    let kinds: &[BuildingKind] = if plan.p.era.is_medieval() { &[LanternPost, Cart, BarrelCrates, MarketStall] } else { &[Streetlamp, Car, Bench, Dumpster] };
+    let kinds: &[BuildingKind] =
+        if plan.p.era.is_medieval() { &[LanternPost, Cart, BarrelCrates, MarketStall] } else { &[Streetlamp, Car, Bench, Dumpster] };
     let step = 24.0 / plan.p.prop_density.clamp(0.1, 1.0);
     for (a, b, w) in plan.roads.clone() {
         let len = a.distance(b);
@@ -150,7 +194,8 @@ pub fn dress(plan: &mut Plan) {
             let side = if plan.rng.gen_bool(0.5) { 1.0 } else { -1.0 };
             let n = dir.perp() * side;
             // Long props run along the street; lamps face it.
-            let (half, yaw) = (Vec2::new(kl.max(kw) * 0.5, kl.min(kw) * 0.5), dir.y.atan2(dir.x) + if side < 0.0 { std::f32::consts::PI } else { 0.0 });
+            let (half, yaw) =
+                (Vec2::new(kl.max(kw) * 0.5, kl.min(kw) * 0.5), dir.y.atan2(dir.x) + if side < 0.0 { std::f32::consts::PI } else { 0.0 });
             let lot = Lot::new(a + dir * s + n * (w * 0.5 + half.y + 0.3), half, yaw);
             if plan.claim(lot) {
                 if style == PropStyle::Realistic {
@@ -180,7 +225,8 @@ fn stand_in(plan: &mut Plan, lot: Lot, kind: BuildingKind) {
             k.mat(ids::GLASS).block(Vec3::new(-h.x * 0.5, -h.y * 0.9, 0.9), Vec3::new(h.x * 0.4, h.y * 0.9, 1.4));
         }
         _ => {
-            k.mat(if kind == BuildingKind::Dumpster { ids::IRON } else { ids::TRIM }).block(Vec3::new(-h.x, -h.y, 0.0), Vec3::new(h.x, h.y, 1.1));
+            k.mat(if kind == BuildingKind::Dumpster { ids::IRON } else { ids::TRIM })
+                .block(Vec3::new(-h.x, -h.y, 0.0), Vec3::new(h.x, h.y, 1.1));
         }
     });
 }

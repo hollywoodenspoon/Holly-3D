@@ -72,5 +72,6 @@ pub fn lightmix(rs: &RenderScene, cfg: &RenderSettings, region: Region, acc: &[A
         coc: ctx.coc,
         plain_bg: ctx.plain_bg,
         aux,
+        weather: ctx.weather,
     }
 }

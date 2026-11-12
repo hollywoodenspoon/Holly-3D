@@ -272,6 +272,12 @@ impl Editor {
                 WorldGen::Planet(p) => p.radius = a,
                 WorldGen::Settlement(s) => (s.width, s.length) = (a.max(4.0), b.max(4.0)),
                 WorldGen::Building(s) => (s.width, s.length) = (a.max(1.0), b.max(1.0)),
+                WorldGen::Smoke(s) => {
+                    s.base_radius = a.max(0.1);
+                    if d.step > 0 {
+                        s.height = c.max(1.0);
+                    }
+                }
             },
             BaseObject::Mech(MechPart::Gear(g)) => g.module = (2.0 * a / g.teeth.max(1) as f32).max(MIN),
             _ => {}

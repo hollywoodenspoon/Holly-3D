@@ -56,7 +56,9 @@ fn box_base_then_height_in_top_view() {
     lift_and_click(&mut ed, 50.0);
     assert!(ed.iface.create_drag.is_none(), "finished");
     let Primitive::Box { height, .. } = prim(&ed, id) else { panic!() };
-    let per_px = ed.viewports.views[0].construction_point(Vec2::new(400.0, 301.0)).distance(ed.viewports.views[0].construction_point(Vec2::new(400.0, 300.0)));
+    let per_px = ed.viewports.views[0]
+        .construction_point(Vec2::new(400.0, 301.0))
+        .distance(ed.viewports.views[0].construction_point(Vec2::new(400.0, 300.0)));
     assert!(near(height, 50.0 * per_px), "height {height}");
     let t = ed.scene.objects[id].transform.translation;
     assert!(t.distance(Vec3::new(1.0, -1.0, 0.0)) < 0.1, "base centre {t}");
@@ -143,7 +145,8 @@ fn front_view_stands_objects_on_its_plane() {
     ed.tool = Tool::Create(PrimitiveKind::Plane);
     let id = drag(&mut ed, 1, Vec3::ZERO, Vec3::new(2.0, 0.0, 1.0)).unwrap();
     let o = &ed.scene.objects[id];
-    let b = crate::mesh::Aabb::from_points(o.evaluated_mesh.vertices.values().map(|v| o.world_matrix().transform_point3(v.position))).unwrap();
+    let b =
+        crate::mesh::Aabb::from_points(o.evaluated_mesh.vertices.values().map(|v| o.world_matrix().transform_point3(v.position))).unwrap();
     let size = b.max - b.min;
     assert!(near(size.x, 2.0) && near(size.z, 1.0) && size.y < 0.01, "upright in XZ: {size}");
 }
@@ -191,6 +194,6 @@ fn building_footprint_follows_the_drag_and_gets_its_pack() {
     assert!(near(b.width, 12.0) && near(b.length, 8.0), "{} × {}", b.width, b.length);
     let o = &ed.scene.objects[id];
     let m = &ed.scene.materials.mats[o.material.unwrap()];
-    assert_eq!(m.multi.as_ref().map(|x| x.subs.len()), Some(24), "24-ID GhostTown pack");
+    assert_eq!(m.multi.as_ref().map(|x| x.subs.len()), Some(29), "29-ID GhostTown pack");
     assert!(o.evaluated_mesh.polygons.len() > 50);
 }
