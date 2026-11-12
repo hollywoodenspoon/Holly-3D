@@ -75,6 +75,21 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }
     });
+    ui.menu_button("Buildings & Props", |ui| {
+        if ui.button("Buildings & Props Browser...").clicked() {
+            ed.buildings_browser_open = true;
+            ui.close();
+        }
+        ui.separator();
+        for c in crate::generators::buildings::Category::ALL {
+            ui.menu_button(c.label(), |ui| {
+                for k in c.kinds() {
+                    let k = WorldKind::Building(k);
+                    pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
+                }
+            });
+        }
+    });
     ui.menu_button("Mech", |ui| {
         for k in MechKind::ALL {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateMech(k));

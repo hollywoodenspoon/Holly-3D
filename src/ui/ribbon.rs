@@ -86,6 +86,7 @@ fn groups(sub: SubObject) -> Vec<Group> {
         SubObject::Object => ("Object", vec![("Isolate", Act(Action::Isolate)), ("Clone", Act(Action::Clone)), ("Align", Act(Action::Align))]),
     };
     g.push(level);
+    g.push(("Populate", vec![("Buildings & Props", Act(Action::BuildingsBrowser))]));
     if sub != SubObject::Object {
         g.push((
             "Geometry (All)",

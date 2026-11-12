@@ -3,6 +3,7 @@
 pub mod action_ui;
 pub mod actions;
 pub mod align_dialog;
+pub mod buildings_browser;
 pub mod array_dialog;
 pub mod caddy;
 pub mod clone_dialog;
@@ -118,6 +119,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     material_editor::show(&ctx, ed, &mut st.mat);
     material_editor::library::show(&ctx, ed, &mut st.mat.library);
     env_dialog::show(&ctx, ed);
+    buildings_browser::show(&ctx, ed);
     paintbox::show(&ctx, ed);
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);

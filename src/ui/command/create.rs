@@ -86,6 +86,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.label(dim("GhostTown: click to place a whole settlement with the GhostTown Material Pack."));
     });
+    crate::ui::buildings_browser::create_rollout(ui, ed);
     rollout(ui, "Geometry — Mech", true, |ui| {
         ui.horizontal(|ui| {
             for kind in MechKind::ALL {

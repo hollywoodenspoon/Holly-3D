@@ -1,6 +1,7 @@
 //! Edit Poly rollouts for the Modify tab.
 
 pub mod adv_mods;
+pub mod buildings;
 pub mod cad;
 pub mod deformers;
 pub mod edit_geometry;
@@ -15,6 +16,7 @@ pub mod smoothing;
 pub mod spline;
 pub mod spline_tools;
 pub mod stack_mods;
+pub mod town_toggles;
 pub mod worlds;
 
 use crate::editor::Editor;

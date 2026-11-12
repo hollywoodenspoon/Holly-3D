@@ -99,6 +99,7 @@ impl Action {
             RenderSetup => flip(&mut ed.rfw.setup_open),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
             Turntable => flip(&mut ed.rfw.sheet.open),
+            BuildingsBrowser => flip(&mut ed.buildings_browser_open),
             LightMix => {
                 ed.rfw.lightmix_open = !(ed.rfw.lightmix_open && ed.rfw.rfw_open);
                 ed.rfw.rfw_open |= ed.rfw.lightmix_open;
@@ -162,6 +163,7 @@ impl Action {
             ColorGrading => ed.rfw.rfw_open && ed.rfw.grading_open,
             LightMix => ed.rfw.rfw_open && ed.rfw.lightmix_open,
             Turntable => ed.rfw.sheet.open,
+            BuildingsBrowser => ed.buildings_browser_open,
             ShadowCatcher => { let sel = ed.scene.selected(); !sel.is_empty() && sel.iter().all(|id| ed.scene.objects[*id].shadow_catcher) }
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,

@@ -95,7 +95,7 @@ pub const GHOSTTOWN: Page = Page {
         Shot(
             "ghosttown",
             &[
-                m(1356.0, 464.0, "Settlement preset: downtown, suburbs, walled city, village"),
+                m(1356.0, 464.0, "Settlement preset: 14 towns, from downtown to star fort"),
                 m(1486.0, 518.0, "New Seed: a different town"),
                 m(1396.0, 864.0, "Assign the GhostTown Material Pack"),
             ],
@@ -103,9 +103,13 @@ pub const GHOSTTOWN: Page = Page {
         Steps(&[
             "Create > Settlement, then drag out the town area in a viewport.",
             "Change the seed, the block and street sizes, floors and density on the Modify tab.",
+            "New presets: River City, Harbour Town, Industrial, Old Town + Modern Sprawl, Square Walled City, River Town, Castle & Town, Star Fort, Crossroads Hamlet and Monastery.",
+            "Buildings: uncheck any type to leave it out. Building Parts, Town Features (river, bridges, walls, moat, rail...), Emissive Lights and Prop Style (Generated / Low-poly / Realistic) shape the town.",
             "Damaged / Battlefield Mode, or the Battlefield & Ruin modifier, wrecks the buildings. Blast Zones aim the damage.",
+            "Buildings & Props Browser (Tools menu or the 🏠 toolbar button): click a thumbnail, then drag a footprint to place one of 43 buildings or props on its own.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
+        ShowMe("Open the Buildings & Props Browser", Show::Act(Action::BuildingsBrowser)),
     ],
 };
 

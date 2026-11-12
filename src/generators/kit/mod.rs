@@ -308,6 +308,20 @@ pub mod ids {
     pub const IRON: u16 = 10;
     pub const PLASTER: u16 = 11;
     pub const REBAR: u16 = 12;
+    pub const ASPHALT: u16 = 13;
+    pub const LANE: u16 = 14;
+    pub const SIDEWALK: u16 = 15;
+    pub const CURB: u16 = 16;
+    pub const COBBLE: u16 = 17;
+    pub const WATER: u16 = 18;
+    pub const BRICK: u16 = 19;
+    pub const STUCCO: u16 = 20;
+    pub const SLATE: u16 = 21;
+    pub const RUST: u16 = 22;
+    pub const BROKEN_GLASS: u16 = 23;
+    pub const NEON: u16 = 24;
+    /// Highest GhostTown ID.
+    pub const MAX: u16 = 24;
 }
 
 #[cfg(test)]

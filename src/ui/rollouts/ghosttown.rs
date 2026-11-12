@@ -17,10 +17,18 @@ use bevy_egui::egui::{self, RichText};
 
 /// `[ Assign GhostTown Material Pack ]` + the ID legend.
 pub fn pack_button(ui: &mut egui::Ui, ed: &mut Editor) {
-    if action(ui, "Assign GhostTown Material Pack", true, CONTENT_W) {
-        ed.assign_pack(MultiPreset::GhostTown);
-    }
-    ui.label(dim("IDs: 1 Road · 2 Lot/Dirt · 3 Facade · 4 Timber/Brick · 5 Roof · 6 Glass · 7 Lit · 8 Foliage · 9 Charred · 10 Iron · 11 Plaster · 12 Rebar"));
+    ui.horizontal(|ui| {
+        if action(ui, "Assign GhostTown Pack", true, CONTENT_W * 0.5 - 4.0) {
+            ed.assign_pack(MultiPreset::GhostTown);
+        }
+        if action(ui, "Assign Photo Pack", true, CONTENT_W * 0.5 - 4.0) {
+            ed.assign_pack(MultiPreset::GhostTownPhoto);
+        }
+    });
+    ui.collapsing("Material ID legend (24 IDs)", |ui| {
+        ui.label(dim("1 Road · 2 Lot/Dirt · 3 Facade/Stone · 4 Timber/Trim · 5 Roof · 6 Glass · 7 Lit Windows · 8 Foliage · 9 Charred · 10 Iron · 11 Plaster · 12 Rebar"));
+        ui.label(dim("13 Asphalt · 14 Lane Lines · 15 Sidewalk Slabs · 16 Curbs · 17 Cobbles · 18 River Water · 19 Brick · 20 Stucco · 21 Slate/Metal Roof · 22 Rusted Metal · 23 Broken Glass · 24 Neon/Lantern Glow"));
+    });
 }
 
 /// Settlement Parameters (`sized` shows Area Width / Length; the modifier
@@ -52,6 +60,7 @@ pub fn settlement_params(ui: &mut egui::Ui, t: &mut Track, p: &mut SettlementPar
         row(ui, t, "Tree / Prop Density:", &mut p.prop_density, 0.0..=1.0, 0.5, 0.005);
     });
     p.max_floors = p.max_floors.max(p.min_floors);
+    super::town_toggles::toggles(ui, t, p);
     damaged(ui, t, &mut p.damaged, &mut p.damage, "ghosttown");
 }
 

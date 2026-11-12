@@ -180,3 +180,17 @@ fn settlement_area_follows_the_drag() {
     let BaseObject::World(WorldGen::Settlement(s)) = &ed.scene.objects[id].base else { panic!() };
     assert!(near(s.width, 40.0) && near(s.length, 30.0), "{} × {}", s.width, s.length);
 }
+
+#[test]
+fn building_footprint_follows_the_drag_and_gets_its_pack() {
+    use crate::generators::buildings::BuildingKind;
+    let mut ed = editor(0);
+    ed.tool = Tool::CreateWorld(WorldKind::Building(BuildingKind::Tavern));
+    let id = drag(&mut ed, 0, Vec3::new(-6.0, -4.0, 0.0), Vec3::new(6.0, 4.0, 0.0)).unwrap();
+    let BaseObject::World(WorldGen::Building(b)) = &ed.scene.objects[id].base else { panic!() };
+    assert!(near(b.width, 12.0) && near(b.length, 8.0), "{} × {}", b.width, b.length);
+    let o = &ed.scene.objects[id];
+    let m = &ed.scene.materials.mats[o.material.unwrap()];
+    assert_eq!(m.multi.as_ref().map(|x| x.subs.len()), Some(24), "24-ID GhostTown pack");
+    assert!(o.evaluated_mesh.polygons.len() > 50);
+}

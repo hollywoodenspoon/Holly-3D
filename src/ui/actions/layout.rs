@@ -110,6 +110,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(Paint),
             A(JointTool),
             A(ContactSets),
+            A(BuildingsBrowser),
             Sep,
             Entry::Sub("Sub-Object Level", SUB_LEVELS),
             A(ConvertToPoly),
@@ -205,6 +206,7 @@ pub const TOOLBAR_LEFT: &[Slot] = &[
     Slot::Sep,
     Slot::A(Paint),
     Slot::A(ContactSets),
+    Slot::A(BuildingsBrowser),
 ];
 
 /// Right-aligned toolbar slots, listed left to right.

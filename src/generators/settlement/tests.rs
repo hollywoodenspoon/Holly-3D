@@ -21,10 +21,15 @@ fn every_era_builds_a_valid_deterministic_settlement() {
         assert_eq!(p.build().counts(), (v, e, f), "{era:?} deterministic");
         assert_ne!(SettlementParams { seed: 42, ..p.clone() }.build().counts(), (v, e, f), "{era:?} seed");
         let ids = mat_ids(&m);
-        for id in [ids::ROAD, ids::LOT, ids::FACADE, ids::ROOF, ids::FOLIAGE] {
+        assert!([ids::ROAD, ids::ASPHALT, ids::COBBLE].iter().any(|i| ids.contains(i)), "{era:?} has streets");
+        let roofs = [ids::ROOF, ids::SLATE, ids::IRON, ids::RUST];
+        assert!(roofs.iter().any(|i| ids.contains(i)), "{era:?} has roofs");
+        let walls = [ids::FACADE, ids::BRICK, ids::STUCCO, ids::PLASTER];
+        assert!(walls.iter().any(|i| ids.contains(i)), "{era:?} has walls");
+        for id in [ids::LOT, ids::FOLIAGE] {
             assert!(ids.contains(&id), "{era:?} has ID {id}");
         }
-        assert!(ids.iter().all(|&i| (1..=12).contains(&i)), "{era:?} IDs in the GhostTown pack");
+        assert!(ids.iter().all(|&i| (1..=ids::MAX).contains(&i)), "{era:?} IDs in the GhostTown pack");
         assert!(!ids.contains(&ids::CHARRED) && !ids.contains(&ids::REBAR), "{era:?} undamaged");
         // Fits its area (props may overhang a little).
         let b = m.bounds().unwrap();
@@ -105,4 +110,27 @@ fn damaged_mode_is_period_accurate() {
         }
         assert!(m.bounds().unwrap().min.z < -0.3, "{era:?}: craters");
     }
+}
+
+#[test]
+fn pr6_toggles_shape_the_town() {
+    let lit = |m: &EditablePoly| mat_ids(m).iter().any(|&i| i == ids::LIT || i == ids::NEON);
+    for era in [Era::RiverCity, Era::Downtown, Era::CastleTown] {
+        let dark = SettlementParams { emissive: false, ..small(era) }.build();
+        assert!(!lit(&dark), "{era:?}: Emissive Lights off");
+    }
+    let rc = small(Era::RiverCity);
+    assert!(mat_ids(&rc.build()).contains(&ids::WATER), "river");
+    let mut dry = rc.clone();
+    dry.features.river = false;
+    assert!(!mat_ids(&dry.build()).contains(&ids::WATER), "River off");
+    let all = rc.build().polygons.len();
+    let fewer = SettlementParams { skip: Era::RiverCity.palette()[..4].to_vec(), ..rc.clone() }.build().polygons.len();
+    assert_ne!(all, fewer, "unchecked building types are left out");
+    let real = SettlementParams { prop_style: PropStyle::Realistic, ..rc.clone() }.build().polygons.len();
+    let low = SettlementParams { prop_style: PropStyle::LowPoly, ..rc.clone() }.build().polygons.len();
+    assert!(real > low && low > all, "prop styles: {all} {low} {real}");
+    let mut open = small(Era::StarFort);
+    open.features.walls = false;
+    assert!(open.build().polygons.len() < small(Era::StarFort).build().polygons.len(), "Town Walls off");
 }
