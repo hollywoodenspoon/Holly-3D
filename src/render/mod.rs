@@ -2,6 +2,7 @@
 //! progressive multi-bounce path tracer (CPU and wgpu GPU) and the classic
 //! raytracer.
 
+pub mod bsdf;
 pub mod bvh;
 mod bvh_wide;
 pub mod mis;

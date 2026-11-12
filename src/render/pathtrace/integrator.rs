@@ -65,6 +65,8 @@ impl<'a> PathTracer<'a> {
         let (mut alpha, mut g, mut camera) = (0.0, None, true);
         let (mut prev_pdf, mut prev_delta, mut passes) = (0.0f32, true, 0);
         let mut depth = Depths::default();
+        // Dispersion: the color channel this path follows once split.
+        let mut channel = None;
         loop {
             let hit = rs.bvh.closest(o, d, f32::INFINITY);
             if let Some(m) = &rs.volume {
@@ -101,6 +103,9 @@ impl<'a> PathTracer<'a> {
                 let k = h.t / m.thickness.max(1e-3);
                 beta *= Vec3::new(att.x.powf(k), att.y.powf(k), att.z.powf(k));
             }
+            if !sh.entering && sh.s.transmission > 0.0 {
+                beta *= super::subsurface::absorption(&m.principled, h.t);
+            }
             let v = -d;
             if sh.s.emissive.max_element() > 0.0 {
                 l += beta * sh.s.emissive * self.emission_weight(&sh, h.t, d, prev_pdf, prev_delta);
@@ -119,13 +124,24 @@ impl<'a> PathTracer<'a> {
                 _ => {}
             }
             camera = false;
-            let bsdf = Bsdf::new(&sh.s, sh.n, sh.entering);
+            let mut bsdf = Bsdf::new(&sh.s, sh.n, sh.entering).principled(&m.principled, sh.s.roughness);
+            bsdf.channel = channel;
             l += beta * self.next_event(&sh, &bsdf, v, rng);
-            let Some(bs) = bsdf.sample(v, rng) else { break };
+            let Some(mut bs) = bsdf.sample(v, rng) else { break };
             if !depth.bump(bs.lobe, ps) {
                 break;
             }
             beta *= bs.weight;
+            channel = channel.or(bs.channel);
+            if bs.sss {
+                // Random walk inside, then a white Lambert exit with NEE.
+                let Some((ex, w)) = self.random_walk(m, &sh, rng) else { break };
+                beta *= w;
+                let exit = Bsdf::lambert(ex.n);
+                l += beta * self.next_event(&ex, &exit, ex.n, rng);
+                let Some(out) = exit.sample(ex.n, rng) else { break };
+                (sh, bs) = (ex, out);
+            }
             if depth.total > ps.rr_start {
                 let survive = beta.max_element().clamp(0.0, 0.95);
                 if rng.f() >= survive {

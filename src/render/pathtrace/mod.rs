@@ -3,7 +3,8 @@
 //! CPU, plus a wgpu compute port of the SolidCraft GPU path tracer.
 
 pub mod adaptive;
-pub mod bsdf;
+pub use crate::render::bsdf;
+pub mod subsurface;
 pub mod integrator;
 pub mod progressive;
 pub mod settings;

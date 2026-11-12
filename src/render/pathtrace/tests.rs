@@ -2,7 +2,7 @@
 //! multi-bounce interreflection, unbiased Russian Roulette, MIS agreeing
 //! with pure BSDF sampling, adaptive early stop and BSDF pdf consistency.
 
-use super::bsdf::{Bsdf, distribution, sample_vndf, smith_g1};
+use crate::render::bsdf::{Bsdf, distribution, sample_vndf, smith_g1};
 use super::progressive::{PassInfo, render};
 use crate::materials::Material;
 use crate::materials::shading::surface;
@@ -135,7 +135,7 @@ fn bsdf_sampling_matches_its_evaluated_density() {
         let m = Material { base_color: [0.9, 0.6, 0.3], metallic, roughness: rough, ..Material::named("T") };
         let b = Bsdf::new(&surface(&m, Vec2::ZERO, Vec3::ZERO, Vec4::ONE), n, true);
         let mut rng = Rng::new(3);
-        let k = 40_000;
+        let k = 400_000;
         // E[f cos / pdf] by importance sampling ...
         let sampled: Vec3 = (0..k).filter_map(|_| b.sample(v, &mut rng)).map(|s| s.weight).sum::<Vec3>() / k as f32;
         // ... equals the albedo integrated by uniform hemisphere sampling.

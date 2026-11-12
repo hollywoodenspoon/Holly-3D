@@ -54,6 +54,9 @@ pub fn unsupported(rs: &RenderScene) -> Option<&'static str> {
         if mapped || m.proc.pattern != Pattern::None || m.paint.is_some() || m.projection.on() {
             return Some("texture / procedural maps");
         }
+        if m.principled.active() {
+            return Some("Principled SSS / clearcoat / sheen / anisotropy / dispersion");
+        }
         if m.decoupled() {
             return Some("Preserve Texture Appearance materials");
         }

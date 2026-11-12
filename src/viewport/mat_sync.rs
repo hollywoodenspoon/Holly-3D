@@ -151,8 +151,16 @@ pub fn standard(m: &Material, tex: &MatTextures, see_through: bool) -> StandardM
         alpha_mode: if blended { AlphaMode::Blend } else { AlphaMode::Opaque },
         ..default()
     };
+    let pr = &m.principled;
+    if !matches!(m.model, ShadingModel::Toon | ShadingModel::Unlit) {
+        // Viewport preview of the Principled lobes (F9 path-traces them).
+        s.clearcoat = pr.clearcoat.clamp(0.0, 1.0);
+        s.clearcoat_perceptual_roughness = pr.clearcoat_roughness.clamp(0.0, 1.0);
+        s.anisotropy_strength = pr.anisotropy.clamp(0.0, 1.0);
+        s.anisotropy_rotation = pr.aniso_rotation.to_radians();
+    }
     match m.model {
-        ShadingModel::Physical => {}
+        ShadingModel::Physical => s.diffuse_transmission = pr.sss_weight.clamp(0.0, 1.0) * 0.5,
         // Viewport approximation of the cel ramp: flat diffuse, no specular
         // sheen (F9 renders the true quantised bands, rim and highlights).
         ShadingModel::Toon => {
@@ -191,5 +199,9 @@ mod tests {
         assert!(standard(&unlit, &none, false).unlit);
         unlit.emissive_strength = 2.0;
         assert!(standard(&unlit, &none, false).emissive.red > 1.9);
+        let mut paint = Preset::Clay.material();
+        (paint.principled.clearcoat, paint.principled.anisotropy) = (1.0, 0.7);
+        let p = standard(&paint, &none, false);
+        assert!(p.clearcoat == 1.0 && (p.anisotropy_strength - 0.7).abs() < 1e-6, "Principled lobes preview in the viewport");
     }
 }

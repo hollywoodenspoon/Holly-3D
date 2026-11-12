@@ -7,6 +7,7 @@ mod maps;
 mod proc_rollout;
 mod multi;
 mod params;
+mod principled_rollout;
 mod slate;
 
 use crate::editor::{Editor, Tool};
@@ -253,6 +254,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
                     proc_rollout::rollout(ui, ed);
                     params::mapping(ui, ed);
                     params::basic(ui, ed);
+                    principled_rollout::principled(ui, ed);
                     params::outline(ui, ed);
                     maps::rollout(ui, ed);
                     ui.label(dim("Right-click any spinner to reset it."));
