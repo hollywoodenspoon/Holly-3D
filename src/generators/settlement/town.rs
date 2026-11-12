@@ -90,8 +90,8 @@ pub(super) fn place(plan: &mut Plan, lot: Lot) {
     let lo = plan.p.min_floors.max(1);
     let floors = plan.rng.gen_range(lo..=plan.p.max_floors.max(lo));
     let pitch = plan.p.roof_pitch;
-    let (kit, r) = (&mut plan.kit, &mut plan.rng);
-    kit.at(lot.frame(0.0), |k| {
+    let medieval = plan.p.era.is_medieval();
+    plan.wrecked(lot, 0.0, medieval, |k, r| {
         townhouse::townhouse(k, lot.half, floors, pitch, r);
     });
 }

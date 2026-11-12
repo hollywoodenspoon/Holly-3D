@@ -17,10 +17,12 @@ pub fn build(plan: &mut Plan) {
     plan.ground(6.0);
     let (min, max) = (plan.min, plan.max);
     let amp = (max.y - min.y) * 0.06;
-    let spine: Vec<Vec2> = (0..=24).map(|i| {
-        let x = min.x + (max.x - min.x) * i as f32 / 24.0;
-        Vec2::new(x, (x / (max.x - min.x) * TAU).sin() * amp)
-    }).collect();
+    let spine: Vec<Vec2> = (0..=24)
+        .map(|i| {
+            let x = min.x + (max.x - min.x) * i as f32 / 24.0;
+            Vec2::new(x, (x / (max.x - min.x) * TAU).sin() * amp)
+        })
+        .collect();
     plan.road_path(&spine, sw, 0.03, ids::ROAD);
     // Cul-de-sacs alternate north / south of the spine.
     let lot_w = (p.block_size * 0.45).clamp(10.0, 40.0);
@@ -35,10 +37,12 @@ pub fn build(plan: &mut Plan) {
         let len = (end_y - y0) * s;
         if len > lot_w * 1.5 {
             let bend = plan.rng.gen_range(-0.15..0.15) * len;
-            let pts: Vec<Vec2> = (0..=6).map(|i| {
-                let t = i as f32 / 6.0;
-                Vec2::new(x + bend * (t * PI).sin() * t, y0 + s * len * t)
-            }).collect();
+            let pts: Vec<Vec2> = (0..=6)
+                .map(|i| {
+                    let t = i as f32 / 6.0;
+                    Vec2::new(x + bend * (t * PI).sin() * t, y0 + s * len * t)
+                })
+                .collect();
             plan.road_path(&pts, sw * 0.85, 0.035, ids::ROAD);
             let end = *pts.last().unwrap_or(&Vec2::new(x, y0));
             plan.kit.mat(ids::ROAD).frustum(end.extend(0.035), sw * 1.6, sw * 1.6, 0.005, 16, false);
@@ -70,8 +74,7 @@ fn frontage(plan: &mut Plan, pts: &[Vec2], sw: f32, lot_w: f32, depth: f32) {
             if plan.rng.gen_bool(plan.p.density.clamp(0.0, 1.0) as f64) && plan.claim(lot) {
                 let floors = plan.rng.gen_range(plan.p.min_floors.max(1)..=plan.p.max_floors.max(plan.p.min_floors.max(1)));
                 let (pitch, props) = (plan.p.roof_pitch, plan.p.prop_density);
-                let (kit, r) = (&mut plan.kit, &mut plan.rng);
-                kit.at(lot.frame(0.0), |k| house(k, lot.half, floors, pitch, props, r));
+                plan.wrecked(lot, 0.0, false, |k, r| house(k, lot.half, floors, pitch, props, r));
             }
         }
         s += lot_w;
@@ -106,7 +109,9 @@ fn house(kit: &mut Kit, half: Vec2, floors: u32, pitch: f32, props_d: f32, r: &m
     let wx = if r.gen_bool(0.5) { mc.x + main.x - wing.x } else { mc.x };
     let wc = Vec2::new(wx, mc.y + main.y + wing.y);
     kit.mat(wall).block((wc - wing).extend(0.0), (wc + wing).extend(h));
-    kit.at(Mat4::from_translation(wc.extend(h)) * Mat4::from_rotation_z(FRAC_PI_2), |k| k.mat(ids::ROOF).gable(wing.y, wing.x, rise(wing.x), 0.3, wall));
+    kit.at(Mat4::from_translation(wc.extend(h)) * Mat4::from_rotation_z(FRAC_PI_2), |k| {
+        k.mat(ids::ROOF).gable(wing.y, wing.x, rise(wing.x), 0.3, wall)
+    });
     // Windows on the main wing; one lit room now and then.
     kit.at(Mat4::from_translation(mc.extend(0.0)), |k| {
         sides(k, main.x, main.y, |k, side, w| {
@@ -142,11 +147,21 @@ fn house(kit: &mut Kit, half: Vec2, floors: u32, pitch: f32, props_d: f32, r: &m
     for s in [-1.9, 1.9] {
         kit.block(Vec3::new(mc.x + s - 0.1, pz - 1.9, 0.3), Vec3::new(mc.x + s + 0.1, pz - 1.7, 2.6));
     }
-    kit.mat(ids::ROOF).quad(Vec3::new(mc.x - 2.4, pz - 2.2, 2.6), Vec3::new(mc.x + 2.4, pz - 2.2, 2.6), Vec3::new(mc.x + 2.4, pz, 3.1), Vec3::new(mc.x - 2.4, pz, 3.1));
+    kit.mat(ids::ROOF).quad(
+        Vec3::new(mc.x - 2.4, pz - 2.2, 2.6),
+        Vec3::new(mc.x + 2.4, pz - 2.2, 2.6),
+        Vec3::new(mc.x + 2.4, pz, 3.1),
+        Vec3::new(mc.x - 2.4, pz, 3.1),
+    );
     // Fenced backyard and yard trees.
     let back = mc.y + main.y + 0.5;
     if back + 3.0 < half.y {
-        let yard = [Vec2::new(-half.x + 0.3, back), Vec2::new(-half.x + 0.3, half.y - 0.3), Vec2::new(half.x - 0.3, half.y - 0.3), Vec2::new(half.x - 0.3, back)];
+        let yard = [
+            Vec2::new(-half.x + 0.3, back),
+            Vec2::new(-half.x + 0.3, half.y - 0.3),
+            Vec2::new(half.x - 0.3, half.y - 0.3),
+            Vec2::new(half.x - 0.3, back),
+        ];
         for w in yard.windows(2) {
             props::fence(kit, w[0], w[1], |_| 0.0);
         }

@@ -1,4 +1,4 @@
-//! The 24-ID GhostTown Material Pack, rebuilt from the Material Library's
+//! The 28-ID GhostTown Material Pack, rebuilt from the Material Library's
 //! MaterialCraft procedural textures (PR 5.5) with Triplanar mapping, and a
 //! Photo variant that swaps in installed Poly Haven photo textures where a
 //! matching group is installed (falling back to the procedural look).
@@ -9,8 +9,8 @@ use crate::assets::polyhaven::Group;
 /// (ID label, library item, fallback colour, metallic, roughness, photo group).
 type Row = (&'static str, &'static str, [f32; 3], f32, f32, Option<Group>);
 
-/// IDs 1..=24, matching `generators::kit::ids`.
-const ROWS: [Row; 24] = [
+/// IDs 1..=28, matching `generators::kit::ids`.
+const ROWS: [Row; 28] = [
     ("Road / Cobblestone", "Worn Asphalt", [0.3, 0.3, 0.31], 0.0, 0.9, Some(Group::Roads)),
     ("Sidewalk / Lot / Dirt", "Dirt Path", [0.5, 0.45, 0.38], 0.0, 0.95, Some(Group::Ground)),
     ("Primary Facade / Stone", "Limestone", [0.62, 0.6, 0.55], 0.0, 0.85, Some(Group::Stone)),
@@ -35,14 +35,21 @@ const ROWS: [Row; 24] = [
     ("Rusted Metal", "Heavy Rust", [0.45, 0.25, 0.14], 0.6, 0.75, None),
     ("Broken Glass", "", [0.3, 0.36, 0.38], 0.4, 0.25, None),
     ("Neon / Lantern Glow", "", [1.0, 0.45, 0.25], 0.0, 0.4, None),
+    ("Glowing Embers", "Embers", [1.0, 0.35, 0.08], 0.0, 0.9, None),
+    ("Bullet Scars / Soot", "", [0.07, 0.065, 0.06], 0.0, 0.97, None),
+    ("Rubble Dust / Ash", "Ash", [0.52, 0.5, 0.47], 0.0, 0.98, None),
+    ("Blood Smears", "", [0.28, 0.02, 0.02], 0.0, 0.35, None),
 ];
+
+/// Default emission of ID 25 (Glowing Embers).
+pub const EMBER_GLOW: f32 = 6.0;
 
 /// Flat preview colour of an ID (browser thumbnails).
 pub fn swatch(id: u16) -> [f32; 3] {
     ROWS.get((id as usize).wrapping_sub(1)).map_or([0.6; 3], |r| r.2)
 }
 
-/// The pack's materials, IDs 1..=24 in order (`photo` = Photo style).
+/// The pack's materials, IDs 1..=28 in order (`photo` = Photo style).
 pub fn materials(photo: bool) -> Vec<Material> {
     let photos = if photo { crate::assets::photo::all() } else { vec![] };
     ROWS.iter()
@@ -58,6 +65,7 @@ pub fn materials(photo: bool) -> Vec<Material> {
                 6 | 23 => (m.metallic, m.roughness) = (metallic, roughness),
                 7 => (m.emissive, m.emissive_strength) = (rgb, 5.0),
                 24 => (m.emissive, m.emissive_strength) = (rgb, 10.0),
+                25 => (m.emissive, m.emissive_strength) = (rgb, EMBER_GLOW),
                 18 => {
                     let mut w = super::Preset::Crystal.material();
                     (w.base_color, w.attenuation_color, w.roughness, w.ior) = (rgb, [0.2, 0.4, 0.38], roughness, 1.33);
@@ -76,15 +84,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pack_has_24_named_ids_built_from_the_library() {
+    fn pack_has_28_named_ids_built_from_the_library() {
         let mats = materials(false);
-        assert_eq!(mats.len(), 24);
+        assert_eq!(mats.len(), 28);
+        assert!(mats[24].emissive_strength > 0.0, "embers glow");
+        assert_eq!(mats[27].name, "Blood Smears");
         assert_eq!(mats[18].name, "Brick");
         // Library items carry their MaterialCraft procedural surface.
         assert!(mats[18].proc != Material::default().proc, "brick is a MaterialCraft pattern");
         assert!(mats[6].emissive_strength > 0.0 && mats[23].emissive_strength > 0.0, "lit windows and neon glow");
         assert!(mats[0].emissive_strength == 0.0);
         // No photos installed in tests: the Photo style falls back.
-        assert_eq!(materials(true).len(), 24);
+        assert_eq!(materials(true).len(), 28);
     }
 }

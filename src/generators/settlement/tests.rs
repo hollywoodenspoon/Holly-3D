@@ -86,7 +86,10 @@ fn modifier_fills_a_plane_and_a_closed_spline() {
 
     use crate::splines::{Knot, Shape, Spline};
     let pts = [Vec3::ZERO, Vec3::new(80.0, 0.0, 0.0), Vec3::new(90.0, 60.0, 0.0), Vec3::new(10.0, 70.0, 0.0)];
-    let shape = Shape { splines: vec![Spline { knots: pts.iter().map(|&p| Knot::corner(p)).collect(), closed: true, selected: false }], ..Default::default() };
+    let shape = Shape {
+        splines: vec![Spline { knots: pts.iter().map(|&p| Knot::corner(p)).collect(), closed: true, selected: false }],
+        ..Default::default()
+    };
     let m = SettlementMod { params: SettlementParams::of(Era::WalledCity) }.build_from_shape(&shape);
     m.validate().unwrap();
     let b = m.bounds().unwrap();
@@ -133,4 +136,24 @@ fn pr6_toggles_shape_the_town() {
     let mut open = small(Era::StarFort);
     open.features.walls = false;
     assert!(open.build().polygons.len() < small(Era::StarFort).build().polygons.len(), "Town Walls off");
+}
+
+#[test]
+fn pr7_destruction_levels_wreck_the_town() {
+    use crate::generators::ruin::DestructionLevel;
+    let intact = small(Era::Downtown).build();
+    let mut p = small(Era::Downtown);
+    // Ruin jitters to Collapse..Rubble: every tower comes down.
+    p.ruin.level = DestructionLevel::Ruin;
+    let wrecked = p.build();
+    wrecked.validate().unwrap();
+    assert!(mat_ids(&wrecked).contains(&ids::DUST), "rubble mounds");
+    assert!(wrecked.bounds().unwrap().max.z < intact.bounds().unwrap().max.z, "towers brought down");
+    assert_eq!(p.build().counts(), wrecked.counts(), "deterministic");
+    let mut walled = small(Era::WalledCity);
+    walled.ruin.level = DestructionLevel::Collapse;
+    let w = walled.build();
+    w.validate().unwrap();
+    assert!(!mat_ids(&w).contains(&ids::REBAR), "medieval rubble has no rebar");
+    assert!(mat_ids(&w).contains(&ids::DUST));
 }

@@ -9,10 +9,10 @@ fn mat_ids(m: &EditablePoly) -> HashSet<u16> {
 }
 
 #[test]
-fn all_43_types_build_valid_deterministic_meshes() {
-    assert_eq!(BuildingKind::ALL.len(), 43);
+fn all_44_types_build_valid_deterministic_meshes() {
+    assert_eq!(BuildingKind::ALL.len(), 44);
     let counts: Vec<usize> = Category::ALL.iter().map(|c| c.kinds().count()).collect();
-    assert_eq!(counts, vec![14, 12, 5, 12]);
+    assert_eq!(counts, vec![14, 12, 5, 13]);
     for k in BuildingKind::ALL {
         let p = BuildingParams::of(k);
         let m = p.build();
@@ -20,7 +20,7 @@ fn all_43_types_build_valid_deterministic_meshes() {
         let (v, e, f) = m.counts();
         assert!(f >= 6 && v >= 8 && e >= 12, "{k:?}: {v} {e} {f}");
         assert_eq!(p.build().counts(), (v, e, f), "{k:?} deterministic");
-        assert!(mat_ids(&m).iter().all(|&i| (1..=ids::MAX).contains(&i)), "{k:?} IDs in the 24-ID pack");
+        assert!(mat_ids(&m).iter().all(|&i| (1..=ids::MAX).contains(&i)), "{k:?} IDs in the 28-ID pack");
         let b = m.bounds().unwrap();
         assert!(b.min.z > -3.5 && b.max.z > 0.3, "{k:?} stands on the ground: {b:?}");
         let reach = p.width.max(p.length) * 0.5 + 14.0;
@@ -137,5 +137,5 @@ fn staircases_climb_their_rise() {
 fn photo_style_picks_the_photo_pack() {
     assert_eq!(MatStyle::Procedural.pack(), crate::materials::MultiPreset::GhostTown);
     assert_eq!(MatStyle::Photo.pack(), crate::materials::MultiPreset::GhostTownPhoto);
-    assert_eq!(crate::materials::MultiPreset::GhostTown.build().subs.len(), 24);
+    assert_eq!(crate::materials::MultiPreset::GhostTown.build().subs.len(), 28);
 }

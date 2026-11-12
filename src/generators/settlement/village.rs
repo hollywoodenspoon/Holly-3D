@@ -26,10 +26,12 @@ pub fn build(plan: &mut Plan) {
         .collect();
     plan.road_path(&main, sw, 0.04, ids::ROAD);
     let fork = main[18];
-    let up: Vec<Vec2> = (0..=12).map(|i| {
-        let t = i as f32 / 12.0;
-        fork.lerp(hill_c - Vec2::new(0.0, 9.0), t) + Vec2::new((t * 9.0).sin() * 4.0, 0.0)
-    }).collect();
+    let up: Vec<Vec2> = (0..=12)
+        .map(|i| {
+            let t = i as f32 / 12.0;
+            fork.lerp(hill_c - Vec2::new(0.0, 9.0), t) + Vec2::new((t * 9.0).sin() * 4.0, 0.0)
+        })
+        .collect();
     plan.road_path(&up, sw * 0.8, 0.04, ids::ROAD);
     // Hilltop windmill and chapel.
     let mill = Lot::new(hill_c + Vec2::new(-2.0, 2.0), Vec2::splat(4.0), 0.3);
@@ -60,8 +62,13 @@ pub fn build(plan: &mut Plan) {
                 let lot = Lot::new(at + n * (sw * 0.5 + half.y + 3.0), half, n.y.atan2(n.x) - FRAC_PI_2);
                 if plan.rng.gen_bool(p.density.clamp(0.0, 1.0) as f64) && plan.claim(lot) {
                     let z = corner_min(plan, &lot);
-                    let (kit, r, pitch) = (&mut plan.kit, &mut plan.rng, p.roof_pitch);
-                    kit.at(lot.frame(z), |k| if barn { townhouse::barn(k, half, pitch) } else { townhouse::cottage(k, half, pitch, r) });
+                    let pitch = p.roof_pitch;
+                    plan.wrecked(
+                        lot,
+                        z,
+                        true,
+                        |k, r| if barn { townhouse::barn(k, half, pitch) } else { townhouse::cottage(k, half, pitch, r) },
+                    );
                 }
             }
             s += plan.rng.gen_range(14.0..24.0);
@@ -93,7 +100,8 @@ fn corner_min(plan: &Plan, lot: &Lot) -> f32 {
 
 /// Irregular fenced plot (jittered corners) with crop rows inside.
 fn farm_plot(plan: &mut Plan, lot: Lot) {
-    let jit: Vec<Vec2> = lot.corners().iter().map(|q| *q + Vec2::new(plan.rng.gen_range(-1.5..1.5), plan.rng.gen_range(-1.5..1.5))).collect();
+    let jit: Vec<Vec2> =
+        lot.corners().iter().map(|q| *q + Vec2::new(plan.rng.gen_range(-1.5..1.5), plan.rng.gen_range(-1.5..1.5))).collect();
     let hill = plan.hill;
     props::fence_loop(&mut plan.kit, &jit, move |q| super::layout::hill_height(hill, q));
     if plan.rng.gen_bool(0.75) {
@@ -126,7 +134,9 @@ fn windmill(k: &mut Kit) {
 fn chapel(k: &mut Kit, half: Vec2) {
     let h = 5.5;
     k.mat(ids::FACADE).block((-half).extend(0.0), half.extend(h));
-    k.at(Mat4::from_translation(Vec3::Z * h) * Mat4::from_rotation_z(FRAC_PI_2), |k| k.mat(ids::ROOF).gable(half.y, half.x, half.x * 1.2, 0.3, ids::FACADE));
+    k.at(Mat4::from_translation(Vec3::Z * h) * Mat4::from_rotation_z(FRAC_PI_2), |k| {
+        k.mat(ids::ROOF).gable(half.y, half.x, half.x * 1.2, 0.3, ids::FACADE)
+    });
     sides(k, half.x, half.y, |k, side, w| {
         let n = if side % 2 == 1 { 3 } else { 1 };
         for i in 0..n {

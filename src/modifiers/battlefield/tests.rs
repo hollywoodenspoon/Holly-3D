@@ -13,7 +13,12 @@ fn town() -> EditablePoly {
             k.mat(ids::FACADE).block(Vec3::new(-4.0, -3.0, 0.0), Vec3::new(4.0, 3.0, 9.0 + i as f32 * 3.0));
             for z in [2.0, 5.0] {
                 for wx in [-2.0, 0.0, 2.0] {
-                    k.mat(ids::GLASS).quad(Vec3::new(wx - 0.5, -3.05, z), Vec3::new(wx + 0.5, -3.05, z), Vec3::new(wx + 0.5, -3.05, z + 1.2), Vec3::new(wx - 0.5, -3.05, z + 1.2));
+                    k.mat(ids::GLASS).quad(
+                        Vec3::new(wx - 0.5, -3.05, z),
+                        Vec3::new(wx + 0.5, -3.05, z),
+                        Vec3::new(wx + 0.5, -3.05, z + 1.2),
+                        Vec3::new(wx - 0.5, -3.05, z + 1.2),
+                    );
                 }
             }
             for mx in 0..6 {
@@ -146,4 +151,25 @@ fn crater_profiles_dig_and_rim() {
     let foot = Crater { c: Vec2::ZERO, r: 4.0, depth: 2.0, kind: Kind::Footprint(0.0) };
     assert!(foot.profile(Vec2::new(-1.8, 0.0)) < -0.5, "heel");
     assert!(foot.profile(Vec2::new(2.2, 0.0)) < -0.5, "middle toe");
+}
+
+#[test]
+fn pr7_building_destruction_wrecks_each_building() {
+    use crate::generators::ruin::DestructionLevel;
+    let intact = town();
+    assert_eq!(clusters::buildings(&intact).len(), 5, "three buildings, a lamp and a column; ground skipped");
+    let top = intact.bounds().unwrap().max.z;
+    let ruined = run(DestructionMode::Modern, |p| {
+        p.intensity = 0.0;
+        p.buildings.level = DestructionLevel::Ruin;
+    });
+    ruined.validate().unwrap();
+    assert!(ruined.bounds().unwrap().max.z < top, "buildings brought down");
+    assert!(count(&ruined, ids::DUST) > 0, "rubble mounds");
+    assert!(count(&ruined, ids::LOT) == count(&intact, ids::LOT), "ground untouched");
+    let siege = run(DestructionMode::MedievalSiege, |p| p.buildings.level = DestructionLevel::Collapse);
+    siege.validate().unwrap();
+    assert_eq!(count(&siege, ids::REBAR), 0, "medieval era from the mode");
+    let off = run(DestructionMode::Modern, |p| p.intensity = 0.0);
+    assert_eq!(off.counts(), intact.counts(), "Intact + 0 % leaves the input alone");
 }

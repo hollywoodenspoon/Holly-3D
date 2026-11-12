@@ -1,5 +1,5 @@
 //! Buildings & Props Browser (Tools -> Buildings & Props Browser..., the
-//! Create tab and the Create menu): a visual grid of all 43 standalone
+//! Create tab and the Create menu): a visual grid of all 44 standalone
 //! building / prop types with flat-shaded 3/4 thumbnails, plus the Create
 //! tab's "Geometry — Buildings & Props" rollout.
 
@@ -18,7 +18,7 @@ const TILE: f32 = 132.0;
 /// Polygons of a thumbnail in 0..1 tile space (y down), back to front.
 type Thumb = Vec<(Vec<Vec2>, Color32)>;
 
-static THUMBS: [OnceLock<Thumb>; 43] = [const { OnceLock::new() }; 43];
+static THUMBS: [OnceLock<Thumb>; 44] = [const { OnceLock::new() }; 44];
 
 /// Browser UI state kept in egui memory: category filter and search text.
 #[derive(Clone, Default)]
@@ -40,7 +40,7 @@ fn body(ui: &mut egui::Ui, ed: &mut Editor) {
     let id = egui::Id::new("buildings_browser_state");
     let mut st: State = ui.data_mut(|d| d.get_temp(id).unwrap_or_default());
     ui.horizontal_wrapped(|ui| {
-        if ui.selectable_label(st.cat.is_none(), "All (43)").clicked() {
+        if ui.selectable_label(st.cat.is_none(), "All (44)").clicked() {
             st.cat = None;
         }
         for (i, c) in Category::ALL.into_iter().enumerate() {
@@ -95,7 +95,13 @@ fn tile(ui: &mut egui::Ui, ed: &mut Editor, k: BuildingKind) {
         let pts: Vec<Pos2> = pts.iter().map(|q| img.min + egui::vec2(q.x, q.y) * img.size()).collect();
         p.add(egui::Shape::convex_polygon(pts, *c, Stroke::NONE));
     }
-    p.text(egui::pos2(rect.center().x, rect.max.y - 10.0), egui::Align2::CENTER_CENTER, k.label(), egui::FontId::proportional(11.0), v.text_color());
+    p.text(
+        egui::pos2(rect.center().x, rect.max.y - 10.0),
+        egui::Align2::CENTER_CENTER,
+        k.label(),
+        egui::FontId::proportional(11.0),
+        v.text_color(),
+    );
     let (w, l, f) = k.defaults();
     let r = r.on_hover_text(format!("{}\n{w} x {l} m{}", k.label(), if k.has_floors() { format!(", {f} floors") } else { String::new() }));
     if r.clicked() {
@@ -142,7 +148,10 @@ fn thumb(k: BuildingKind) -> &'static Thumb {
 /// Create tab: one collapsible section per category with 2-column grids.
 pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Geometry — Buildings & Props", true, |ui| {
-        if ui.add_sized([CONTENT_W, 26.0], egui::Button::new("Open Buildings & Props Browser...").selected(ed.buildings_browser_open)).clicked() {
+        if ui
+            .add_sized([CONTENT_W, 26.0], egui::Button::new("Open Buildings & Props Browser...").selected(ed.buildings_browser_open))
+            .clicked()
+        {
             ed.buildings_browser_open ^= true;
         }
         for c in Category::ALL {
@@ -151,7 +160,9 @@ pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                     for (i, k) in c.kinds().enumerate() {
                         let kind = WorldKind::Building(k);
                         let active = ed.tool == Tool::CreateWorld(kind);
-                        let r = ui.add_sized([CONTENT_W / 2.0 - 12.0, 24.0], egui::Button::new(k.label()).selected(active)).on_hover_text(c.label());
+                        let r = ui
+                            .add_sized([CONTENT_W / 2.0 - 12.0, 24.0], egui::Button::new(k.label()).selected(active))
+                            .on_hover_text(c.label());
                         if r.clicked() {
                             ed.tool = if active { Tool::None } else { Tool::CreateWorld(kind) };
                         }
@@ -165,7 +176,7 @@ pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                 });
             });
         }
-        ui.label(dim("Each piece stands alone with the 24-ID GhostTown pack. Drag sets Width x Length; right-click places at the origin."));
+        ui.label(dim("Each piece stands alone with the 28-ID GhostTown pack. Drag sets Width x Length; right-click places at the origin."));
     });
 }
 

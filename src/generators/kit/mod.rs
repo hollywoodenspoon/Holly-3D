@@ -118,7 +118,11 @@ impl Kit {
     /// Axis-aligned (in the local frame) box.
     pub fn block(&mut self, min: Vec3, max: Vec3) {
         let c = std::array::from_fn(|i| {
-            Vec3::new(if i & 1 == 0 { min.x } else { max.x }, if i & 2 == 0 { min.y } else { max.y }, if i & 4 == 0 { min.z } else { max.z })
+            Vec3::new(
+                if i & 1 == 0 { min.x } else { max.x },
+                if i & 2 == 0 { min.y } else { max.y },
+                if i & 4 == 0 { min.z } else { max.z },
+            )
         });
         self.hexa(c, false);
     }
@@ -126,7 +130,8 @@ impl Kit {
     /// Box with center, half extents and rotation (local frame).
     pub fn cuboid(&mut self, center: Vec3, half: Vec3, rot: Quat) {
         let c = std::array::from_fn(|i| {
-            let s = Vec3::new(if i & 1 == 0 { -1.0 } else { 1.0 }, if i & 2 == 0 { -1.0 } else { 1.0 }, if i & 4 == 0 { -1.0 } else { 1.0 });
+            let s =
+                Vec3::new(if i & 1 == 0 { -1.0 } else { 1.0 }, if i & 2 == 0 { -1.0 } else { 1.0 }, if i & 4 == 0 { -1.0 } else { 1.0 });
             center + rot * (s * half)
         });
         self.hexa(c, false);
@@ -281,7 +286,6 @@ fn newell(pts: &[Vec3]) -> Vec3 {
     })
 }
 
-
 /// Runs `f` once per side of a `2hx` x `2hy` box in a frame whose face lies
 /// at local y = 0 (just proud of the wall) facing -Y, centred on x = 0;
 /// `f` receives the side index and the face width.
@@ -320,8 +324,14 @@ pub mod ids {
     pub const RUST: u16 = 22;
     pub const BROKEN_GLASS: u16 = 23;
     pub const NEON: u16 = 24;
+    /// PR 7 destruction IDs: glowing embers in rubble crevices,
+    /// bullet scars / soot decals, rubble dust / ash, blood smears.
+    pub const EMBERS: u16 = 25;
+    pub const SCAR: u16 = 26;
+    pub const DUST: u16 = 27;
+    pub const BLOOD: u16 = 28;
     /// Highest GhostTown ID.
-    pub const MAX: u16 = 24;
+    pub const MAX: u16 = 28;
 }
 
 #[cfg(test)]

@@ -8,10 +8,10 @@ mod compose;
 mod downtown;
 mod era;
 mod historic;
-mod modern_mix;
-mod rural;
 mod layout;
+mod modern_mix;
 mod props;
+mod rural;
 mod suburb;
 mod town;
 mod townhouse;
@@ -25,8 +25,8 @@ pub use layout::{Lot, Plan};
 pub(crate) use townhouse::timber_frame;
 
 use super::kit::Kit;
-use crate::mesh::EditablePoly;
 use crate::generators::buildings::{BuildingKind, Parts};
+use crate::mesh::EditablePoly;
 use crate::modifiers::battlefield::{BattleParams, BattlefieldMod};
 use bevy::math::{Mat4, Vec2, Vec3};
 
@@ -61,6 +61,10 @@ pub struct SettlementParams {
     pub prop_style: PropStyle,
     /// Palette types switched off with their checkboxes.
     pub skip: Vec<BuildingKind>,
+    /// PR 7 Building Destruction: each building is wrecked one level either
+    /// side of `ruin.level` (seeded per building), with the same era,
+    /// rubble, embers and gore settings.
+    pub ruin: crate::generators::ruin::RuinParams,
 }
 
 impl Default for SettlementParams {
@@ -92,21 +96,70 @@ impl SettlementParams {
             emissive: true,
             prop_style: PropStyle::Generated,
             skip: vec![],
+            ruin: Default::default(),
         };
         match era {
             Era::Downtown => base,
-            Era::Suburbs => Self { block_size: 44.0, street_width: 8.0, sidewalk_width: 1.5, density: 0.8, min_floors: 1, max_floors: 2, roof_pitch: 32.0, prop_density: 0.6, ..base },
-            Era::WalledCity => Self { block_size: 9.0, street_width: 4.5, sidewalk_width: 0.0, density: 0.95, min_floors: 2, max_floors: 4, roof_pitch: 52.0, prop_density: 0.3, ..base },
-            Era::Village => Self { block_size: 34.0, street_width: 4.0, sidewalk_width: 0.0, density: 0.6, min_floors: 1, max_floors: 1, roof_pitch: 48.0, prop_density: 0.7, ..base },
+            Era::Suburbs => Self {
+                block_size: 44.0,
+                street_width: 8.0,
+                sidewalk_width: 1.5,
+                density: 0.8,
+                min_floors: 1,
+                max_floors: 2,
+                roof_pitch: 32.0,
+                prop_density: 0.6,
+                ..base
+            },
+            Era::WalledCity => Self {
+                block_size: 9.0,
+                street_width: 4.5,
+                sidewalk_width: 0.0,
+                density: 0.95,
+                min_floors: 2,
+                max_floors: 4,
+                roof_pitch: 52.0,
+                prop_density: 0.3,
+                ..base
+            },
+            Era::Village => Self {
+                block_size: 34.0,
+                street_width: 4.0,
+                sidewalk_width: 0.0,
+                density: 0.6,
+                min_floors: 1,
+                max_floors: 1,
+                roof_pitch: 48.0,
+                prop_density: 0.7,
+                ..base
+            },
             Era::RiverCity | Era::HarbourTown => Self { block_size: 40.0, street_width: 10.0, min_floors: 3, max_floors: 14, ..base },
-            Era::Industrial => Self { block_size: 60.0, street_width: 12.0, density: 0.9, min_floors: 1, max_floors: 4, prop_density: 0.3, ..base },
+            Era::Industrial => {
+                Self { block_size: 60.0, street_width: 12.0, density: 0.9, min_floors: 1, max_floors: 4, prop_density: 0.3, ..base }
+            }
             Era::OldTownSprawl => Self { block_size: 36.0, street_width: 9.0, min_floors: 2, max_floors: 10, roof_pitch: 45.0, ..base },
-            Era::SquareWalled | Era::CastleTown | Era::StarFort => {
-                Self { block_size: 12.0, street_width: 5.0, sidewalk_width: 0.0, density: 0.9, min_floors: 1, max_floors: 3, roof_pitch: 50.0, prop_density: 0.4, ..base }
-            }
-            Era::RiverTown | Era::Crossroads | Era::Monastery => {
-                Self { block_size: 14.0, street_width: 4.5, sidewalk_width: 0.0, density: 0.75, min_floors: 1, max_floors: 2, roof_pitch: 48.0, prop_density: 0.7, ..base }
-            }
+            Era::SquareWalled | Era::CastleTown | Era::StarFort => Self {
+                block_size: 12.0,
+                street_width: 5.0,
+                sidewalk_width: 0.0,
+                density: 0.9,
+                min_floors: 1,
+                max_floors: 3,
+                roof_pitch: 50.0,
+                prop_density: 0.4,
+                ..base
+            },
+            Era::RiverTown | Era::Crossroads | Era::Monastery => Self {
+                block_size: 14.0,
+                street_width: 4.5,
+                sidewalk_width: 0.0,
+                density: 0.75,
+                min_floors: 1,
+                max_floors: 2,
+                roof_pitch: 48.0,
+                prop_density: 0.7,
+                ..base
+            },
         }
     }
 
@@ -188,5 +241,10 @@ impl SettlementMod {
 
 /// Kit helpers shared by the era builders.
 pub(crate) fn window(kit: &mut Kit, x: f32, y: f32, z: f32, w: f32, h: f32, id: u16) {
-    kit.mat(id).quad(Vec3::new(x - w * 0.5, y, z), Vec3::new(x + w * 0.5, y, z), Vec3::new(x + w * 0.5, y, z + h), Vec3::new(x - w * 0.5, y, z + h));
+    kit.mat(id).quad(
+        Vec3::new(x - w * 0.5, y, z),
+        Vec3::new(x + w * 0.5, y, z),
+        Vec3::new(x + w * 0.5, y, z + h),
+        Vec3::new(x - w * 0.5, y, z + h),
+    );
 }

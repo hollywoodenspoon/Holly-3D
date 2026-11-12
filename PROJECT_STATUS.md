@@ -1004,3 +1004,48 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 - Prop Style "Realistic" reuses the standalone doodads; there is no imported asset pack.
 - Castle & Town's houses on the hillside stand on flat footings, without stepped foundations.
 - River and harbour water is a flat surface (Material ID 18), not the Ocean generator.
+
+## 29. PR 7: 5-state building destruction, rubble mounds & battlefield textures
+
+**1. Destruction levels** (`src/generators/ruin/`). Six states, offered on every building (Buildings & Props), on the GhostTown settlement (base object and modifier) and in the Battlefield & Ruin modifier's new **Building Destruction** section:
+- **Intact**: untouched.
+- **Light Damage**: cracked or missing glass with shards below, soot above the windows, bullet-scar decals and a little debris. Lit windows go dark when their glass breaks.
+- **Heavy Damage**: a blown-out corner (the mesh is sliced and the corner removed), shell holes, exposed slabs with rebar or joists, a caved-in roof (sagging slab or broken rafters), a slight lean, and barricades (sandbags and tank traps for Modern, carts and barrels for Medieval).
+- **Warzone Collapse**: the failed storey gives way. The upper block either topples (it is detached, rotated about the edge it falls toward and laid on the ground) or pancakes into stacked slabs. A rubble mound forms underneath.
+- **Apocalyptic Ruin**: a jagged stump of the lower floors (cut by three tilted planes), with broken rebar and I-beams, charred timbers or moss along the top, over a large mound.
+- **Pure Rubble**: nothing stands; only the mound is left.
+
+In a town or on the battlefield, each building gets the chosen level or one step either side (seeded per building), so a street has a mix of states. Bridges, quays and street props are never wrecked.
+
+**2. Load-path stress model** (`ruin/stress.rs`). Blasts are scattered over the building's columns, and each blast takes capacity from the columns near it. Lower storeys carry more load. The lowest storey whose remaining capacity cannot carry the floors above it fails. The model also gives the building a lean or fall direction toward the side that lost the most support, and an asymmetry value that decides between toppling and pancaking. A block can only topple if it is taller than it is deep along the fall; otherwise it pancakes.
+- The prompt named FieldCraft as a source. **FieldCraft was not inspected.** The stress, fracture and collapse math is written natively for this project, and no FieldCraft code is used. It is a simple heuristic, not a physics or finite-element solver.
+
+**3. Rubble mounds** (`ruin/mound.rs`):
+- A layered dust heap (ID 27) with a rough, noisy edge, plus ash patches (ID 26).
+- Era debris on the surface:
+  - **Modern**: concrete chunks, bricks, rubble clusters and girders.
+  - **Medieval**: stone blocks, roof tiles and charred timbers.
+  - **Ancient**: big weathered stones, column drums and moss.
+  - Medieval and Ancient never get rebar or girders.
+- `[✓] Glowing Embers` (ID 25) in the crevices, with an **Ember Glow** spinner and an `[ Apply Glow ]` button that sets the object's own ID 25 emission.
+- `[✓] Gore / Blood Smears` (ID 28) with an **Amount** slider: blood pools and drag smears on the rubble and the ground.
+- **Rubble Pile** is a new standalone Buildings & Props type (now 44 types). Width and Length set the spread, and Pile Height sets the height.
+
+**4. Battlefield textures.** The GhostTown Material Pack grows to **28 IDs**: 25 Glowing Embers (emissive), 26 Bullet Scars / Soot, 27 Rubble Dust / Ash, 28 Blood Smears. Objects that still carry an older 24-ID pack get ID 25 added when the Ember Glow is applied.
+
+**5. Battlefield & Ruin modifier.** The modifier now finds each building in its input mesh (connected elements whose footprints overlap, ignoring flat ground) and wrecks each one with the Building Destruction settings, before its existing blast-zone pass.
+
+**Tests (now 544):**
+- Every level on five building types builds valid, deterministic meshes with UVs, using IDs within the pack.
+- Intact leaves the building unchanged. The height drops with the level, Light adds scars and Heavy adds rubble.
+- Debris is period-accurate, including the Ancient override.
+- The Embers and Gore toggles add or remove their IDs.
+- The Rubble Pile follows its spread, height and density.
+- The stress model fails lower storeys harder.
+- Wrecked towns are lower, have rubble and are deterministic, and walled towns get no rebar.
+- The Battlefield modifier wrecks each building.
+
+**Not done in PR 7:**
+- Destruction is generated geometry; there is no rigid-body simulation or animation of the fall.
+- Wrecked buildings are not split into separate objects; a town stays one mesh.
+- Embers glow through the material's emission only; there are no particle sparks or smoke yet (smoke is planned for PR 8).

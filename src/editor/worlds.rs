@@ -48,6 +48,22 @@ impl Editor {
         self.scene.propagate_from(id);
     }
 
+    /// `[✓] Glowing Embers` / Ember Glow: sets the emission of the
+    /// object's own GhostTown sub-material 25 (0 = embers off). Adds the
+    /// row when the object still carries an older 24-ID pack.
+    pub fn set_ember_glow(&mut self, id: ObjId, strength: f32) {
+        use crate::generators::kit::ids::EMBERS;
+        let mid = self.own_multi(id, MultiPreset::GhostTown);
+        let Some(ms) = self.scene.materials.mats[mid].multi.as_mut() else { return };
+        if !ms.subs.iter().any(|s| s.id == EMBERS) {
+            let mat = crate::materials::ghost_pack::materials(false).swap_remove(EMBERS as usize - 1);
+            ms.subs.push(crate::materials::SubMaterial { id: EMBERS, name: mat.name.clone(), enabled: true, mat });
+        }
+        if let Some(s) = ms.subs.iter_mut().find(|s| s.id == EMBERS) {
+            s.mat.emissive_strength = strength.max(0.0);
+        }
+    }
+
     /// The object's Multi/Sub-Object material, made unique to it (assigns a
     /// fresh `pack` when it has none or a plain material).
     fn own_multi(&mut self, id: ObjId, pack: MultiPreset) -> crate::materials::MatId {

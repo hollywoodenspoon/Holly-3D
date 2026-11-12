@@ -25,15 +25,23 @@ pub fn pack_button(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.assign_pack(MultiPreset::GhostTownPhoto);
         }
     });
-    ui.collapsing("Material ID legend (24 IDs)", |ui| {
+    ui.collapsing("Material ID legend (28 IDs)", |ui| {
         ui.label(dim("1 Road · 2 Lot/Dirt · 3 Facade/Stone · 4 Timber/Trim · 5 Roof · 6 Glass · 7 Lit Windows · 8 Foliage · 9 Charred · 10 Iron · 11 Plaster · 12 Rebar"));
         ui.label(dim("13 Asphalt · 14 Lane Lines · 15 Sidewalk Slabs · 16 Curbs · 17 Cobbles · 18 River Water · 19 Brick · 20 Stucco · 21 Slate/Metal Roof · 22 Rusted Metal · 23 Broken Glass · 24 Neon/Lantern Glow"));
+        ui.label(dim("25 Glowing Embers · 26 Bullet Scars / Soot · 27 Rubble Dust / Ash · 28 Blood Smears"));
     });
+}
+
+/// Applies a Destruction rollout's ember-glow request to the current object.
+fn glow(ed: &mut Editor, out: super::ruin::Out) {
+    if let (Some(g), Some(id)) = (out.glow, ed.current()) {
+        ed.set_ember_glow(id, g);
+    }
 }
 
 /// Settlement Parameters (`sized` shows Area Width / Length; the modifier
 /// takes them from its input).
-pub fn settlement_params(ui: &mut egui::Ui, t: &mut Track, p: &mut SettlementParams, sized: bool) {
+pub fn settlement_params(ui: &mut egui::Ui, t: &mut Track, p: &mut SettlementParams, sized: bool) -> super::ruin::Out {
     ui.label(RichText::new("Settlement Preset").strong());
     egui::ComboBox::from_id_salt("ghosttown_era").width(CONTENT_W - 12.0).selected_text(p.era.label()).show_ui(ui, |ui| {
         for e in Era::ALL {
@@ -61,7 +69,12 @@ pub fn settlement_params(ui: &mut egui::Ui, t: &mut Track, p: &mut SettlementPar
     });
     p.max_floors = p.max_floors.max(p.min_floors);
     super::town_toggles::toggles(ui, t, p);
+    ui.separator();
+    let out = super::ruin::destruction(ui, t, &mut p.ruin, "ghosttown", false);
+    ui.label(dim("Each building is wrecked one level either side of this, seeded per building."));
+    ui.separator();
     damaged(ui, t, &mut p.damaged, &mut p.damage, "ghosttown");
+    out
 }
 
 /// `[✓] Damaged / Battlefield Mode` with its parameters.
@@ -105,10 +118,12 @@ pub fn battle_params(ui: &mut egui::Ui, t: &mut Track, p: &mut BattleParams, sal
 pub fn settlement_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "GhostTown Settlement", true, |ui| {
         ui.label(dim("Fills a flat Plane / Editable Poly, or a closed spline's outline."));
+        let mut out = super::ruin::Out::default();
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Settlement(m) = k else { return };
-            settlement_params(ui, t, &mut m.params, false);
+            out = settlement_params(ui, t, &mut m.params, false);
         });
+        glow(ed, out);
         pack_button(ui, ed);
     });
 }
@@ -169,6 +184,7 @@ pub fn battlefield_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
         sub_buttons(ui, ed, &[ModSub::BlastZones]);
         ui.label(dim("No zones: seeded blasts hit the structures. Select zones, then move with W and scale with R."));
         let bounds = ed.current().and_then(|id| ed.scene.objects[id].level_mesh.bounds());
+        let mut out = super::ruin::Out::default();
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Battlefield(b) = k else { return };
             ui.horizontal(|ui| {
@@ -193,7 +209,12 @@ pub fn battlefield_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             });
             battle_params(ui, t, &mut b.params, "modifier");
+            ui.separator();
+            ui.label(RichText::new("Building Destruction").strong());
+            ui.label(dim("Groups the input into buildings (overlapping footprints) and wrecks each one."));
+            out = super::ruin::destruction(ui, t, &mut b.params.buildings, "battlefield", false);
         });
+        glow(ed, out);
         pack_button(ui, ed);
     });
 }

@@ -5,12 +5,13 @@
 //! seed; Z-up like the rest of the scene.
 
 pub mod buildings;
-pub mod kit;
 mod erosion;
+pub mod kit;
 mod ocean;
 mod planet;
 mod planet_layers;
 mod planet_surface;
+pub mod ruin;
 pub mod settlement;
 mod sphere;
 mod terrain;
