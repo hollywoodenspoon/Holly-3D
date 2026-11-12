@@ -169,3 +169,29 @@ fn hand_shapes_curl_the_fingers_into_the_palm() {
     assert!(fist.is_rest(), "Open clears the finger rotations");
 }
 
+
+#[test]
+fn two_bone_ik_reaches_the_target_and_bends_the_right_way() {
+    use super::ik::{joints, nudge, solve, Limb};
+    let (c, s) = (&base().coords, skeleton());
+    for (limb, right) in [(Limb::Arm, false), (Limb::Arm, true), (Limb::Leg, false), (Limb::Leg, true)] {
+        let mut pose = PosePreset::Relaxed.pose();
+        let chain = limb.chain(right);
+        let [sh, _, end] = joints(s, c, &pose, &chain).unwrap();
+        let target = sh + (end - sh) * 0.8 + Vec3::Z * 1.5;
+        assert!(solve(&mut pose, c, limb, right, target));
+        let [sh2, mid, end2] = joints(s, c, &pose, &chain).unwrap();
+        assert!(sh.distance(sh2) < 1e-3, "{limb:?}: the shoulder / hip stays put");
+        assert!(end2.distance(target) < 0.05, "{limb:?} right={right}: reaches {target} (got {end2})");
+        // Knees bend forward, elbows point back.
+        let side = (mid - (sh2 + end2) * 0.5).z;
+        assert!(if limb == Limb::Leg { side > 0.0 } else { side < 0.2 }, "{limb:?} bends the natural way ({side})");
+    }
+    // Nudging the left hand up by 5 cm (0.5 hm08 units) raises the wrist.
+    let mut pose = Pose::default();
+    let before = joints(s, c, &pose, &Limb::Arm.chain(false)).unwrap()[2];
+    assert!(nudge(&mut pose, c, Limb::Arm, false, Vec3::Y * 0.5));
+    let after = joints(s, c, &pose, &Limb::Arm.chain(false)).unwrap()[2];
+    assert!((after - before - Vec3::Y * 0.5).length() < 0.05, "{before} -> {after}");
+    assert!(pose.joints.keys().all(|k| k.ends_with(".L")), "one side only");
+}

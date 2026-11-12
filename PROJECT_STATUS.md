@@ -1221,7 +1221,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 I also checked front and side silhouettes of all 11 presets.
 
 **Not done in 10B:**
-- **No IK:** there are no foot locks or hand targets.
+- ~~**No IK:**~~ Partly done: two-bone IK nudges for hands and feet (above). Still missing: there are no foot locks or hand targets.
 - **No face bones in Easy Pose, and fingers only through the five hand shapes:** single finger joints have no sliders yet.
 - **No animation:** there are no keyframes or timeline.
 - **No viewport bone gizmo:** posing is done with sliders, not by dragging bones.
@@ -1229,5 +1229,6 @@ I also checked front and side silhouettes of all 11 presets.
 - **Procedural Kit pieces:** hair, armour, capes and weapons are placed from the posed joints but are not bent with the limbs, so a weapon does not follow a raised hand.
 - **Sit and Kneel** have no seat or ground contact solving.
 - **Not tested by hand** in the running app, only by unit tests and the silhouette renders.- **Hand shapes:** `character/rig/hands.rs`. Open, Relaxed, Grip, Fist and Point buttons curl all 15 finger bones per hand. Each segment turns about the axis across its own direction and the palm normal (the thumb folds toward the little finger), stored as ordinary per-bone angles, so mirroring and `.ilexpose` files work unchanged. The presets shape the hands too (Relaxed, Walk, Sit and Kneel relaxed; Run a loose grip; Fighting Stance and Victory fists). A test checks that the fist closes into the palm, the thumb crosses it, Point keeps the index straight and the two hands mirror.
+- **Two-bone IK:** `character/rig/ik.rs`. The IK Move row (Hand or Foot, Left or Right, then Up, Down, Forward, Back, Out or In, 5 cm a click) solves analytically: it bends the elbow or knee to the needed reach, then swings the limb about the shoulder or hip. A straight limb bends the natural way (knees forward, elbows back). The result is stored as ordinary angles on the upper and lower limb bones. A test checks all four limbs reach a target within 5 mm, the shoulder or hip stays put, knees bend forward, and a nudge moves the wrist 5 cm. The solve uses the unmorphed base skeleton, so a very tall or short body can land a few millimetres off; the next click corrects it.
 - **Help screenshots:** all 19 Help screenshots were re-captured (`tools/help_shots.sh`) so they show the Ilex names, the current font and toolbar. A new `characters` shot (an Elf in the Wave pose, a Dire Wolf and the Studio open) heads Help page 17.
 

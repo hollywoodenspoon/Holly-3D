@@ -57,7 +57,7 @@ pub(crate) fn palm_normal(c: &[Vec3]) -> Vec3 {
 }
 
 /// Euler [bend, twist, side] degrees (the `Pose` convention) of `q`.
-fn euler_deg(q: Quat) -> [f32; 3] {
+pub(crate) fn euler_deg(q: Quat) -> [f32; 3] {
     let (z, y, x) = q.to_euler(EulerRot::ZYX);
     [x.to_degrees(), y.to_degrees(), z.to_degrees()]
 }

@@ -4,6 +4,7 @@
 
 use crate::character::params::CharacterParams;
 use crate::character::rig::hands::{set_hand, HandShape};
+use crate::character::rig::ik::{nudge, Limb};
 use crate::character::rig::pose::{mirror, twin, CONTROLS};
 use crate::character::rig::presets::PosePreset;
 use crate::character::rig::{pose_file, Pose};
@@ -17,6 +18,7 @@ struct PoseUi {
     control: usize,
     right: bool,
     unmirrored: bool,
+    ik_leg: bool,
 }
 
 fn set_pose(t: &mut Track, p: &mut CharacterParams, pose: Pose) {
@@ -53,6 +55,7 @@ pub fn rollout_ui(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
                 }
             }
         });
+        ik_row(ui, t, p, &mut st);
         ui.separator();
         ui.horizontal(|ui| {
             ui.label("Joint:");
@@ -148,5 +151,30 @@ pub fn rollout_ui(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
             "MakeHuman default skeleton (163 bones), fitted to this body. {n} posed joint(s). Angles are in the rest-pose axes about each joint; right-click a slider to zero it."
         )));
         ui.data_mut(|d| d.insert_temp(id, st));
+    });
+}
+
+/// Two-bone IK nudges: moves a hand or foot 5 cm per click.
+fn ik_row(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams, st: &mut PoseUi) {
+    use bevy::math::Vec3;
+    ui.horizontal(|ui| {
+        ui.label("IK Move:");
+        ui.selectable_value(&mut st.ik_leg, false, "Hand");
+        ui.selectable_value(&mut st.ik_leg, true, "Foot");
+        ui.selectable_value(&mut st.right, false, "Left");
+        ui.selectable_value(&mut st.right, true, "Right");
+    });
+    let out = if st.right { -Vec3::X } else { Vec3::X };
+    let steps = [("Up", Vec3::Y), ("Down", -Vec3::Y), ("Forward", Vec3::Z), ("Back", -Vec3::Z), ("Out", out), ("In", -out)];
+    ui.horizontal_wrapped(|ui| {
+        for (label, dir) in steps {
+            if ui.button(label).on_hover_text("Moves the hand / foot 5 cm; the elbow or knee bends to follow").clicked() {
+                let mut q = p.pose.clone();
+                let limb = if st.ik_leg { Limb::Leg } else { Limb::Arm };
+                if nudge(&mut q, &crate::character::makehuman::obj::base().coords, limb, st.right, dir * 0.5) {
+                    set_pose(t, p, q);
+                }
+            }
+        }
     });
 }

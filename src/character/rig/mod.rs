@@ -8,6 +8,7 @@
 //! vertex is moved by the weighted blend of its bones' transforms.
 
 pub mod hands;
+pub mod ik;
 pub mod pose;
 pub mod pose_file;
 pub mod presets;
