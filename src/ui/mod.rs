@@ -16,6 +16,7 @@ pub mod face_cloner;
 pub mod file_menu;
 pub mod fonts;
 pub mod help;
+pub mod logo;
 pub mod hotkeys;
 pub mod material_editor;
 pub mod menubar;

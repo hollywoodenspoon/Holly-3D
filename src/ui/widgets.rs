@@ -46,7 +46,7 @@ pub fn spin_row<T: Numeric>(ui: &mut Ui, label: &str, value: &mut T, speed: f64,
     c
 }
 
-/// Amber-lit toggle button (active Q/W/E/R, sub-object modes, snaps).
+/// Accent-lit toggle button (active Q/W/E/R, sub-object modes, snaps).
 pub fn toggle_button(ui: &mut Ui, on: bool, text: impl Into<String>) -> Response {
     let text: String = text.into();
     let rich = if on { RichText::new(text).color(theme::input()).strong() } else { RichText::new(text) };

@@ -1,5 +1,5 @@
 //! Draws an `Action` as a toolbar button or a menu entry: toggles light up
-//! amber, unavailable actions grey out and every tooltip names the hotkey.
+//! in the accent colour, unavailable actions grey out and every tooltip names the hotkey.
 
 use super::actions::Action;
 use super::actions::keys::chord_of;

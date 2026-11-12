@@ -1,5 +1,5 @@
-//! What each action does, whether it is on (toggle buttons light up in
-//! amber) and whether it can run right now (greyed-out buttons).
+//! What each action does, whether it is on (toggle buttons light up in the
+//! accent colour) and whether it can run right now (greyed-out buttons).
 
 use super::Action;
 use crate::editor::{Editor, Tool, TransformMode};
@@ -131,7 +131,7 @@ impl Action {
         }
     }
 
-    /// `Some(on)` for toggles (drawn amber when on), `None` for one-shot actions.
+    /// `Some(on)` for toggles (drawn in the accent when on), `None` for one-shot actions.
     pub fn checked(self, ed: &Editor) -> Option<bool> {
         use Action::*;
         let v = ed.viewports.views.get(ed.viewports.active);

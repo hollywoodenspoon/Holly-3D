@@ -1,5 +1,5 @@
-//! "Clean 3ds Max" egui theme: flat slate panels, Max amber for active
-//! state. The colours come from Preferences -> Theme and can change while
+//! Ilex's egui theme: flat grey panels with one accent colour for active
+//! state (blue-green in the default Graphite & Teal look). The colours come from Preferences -> Theme and can change while
 //! the program runs, so panels read them through the accessors below.
 
 use crate::prefs::{Palette, Rgb, ThemePrefs, ViewportPrefs};
@@ -36,13 +36,21 @@ pub fn card() -> Color32 {
 pub fn input() -> Color32 {
     c(live().pal.input)
 }
-/// Active-state accent (3ds Max amber in the default theme).
-pub fn amber() -> Color32 {
+/// Active-state accent (blue-green in the default theme).
+pub fn accent() -> Color32 {
     c(live().pal.accent)
 }
-/// Hover accent.
-pub fn blue() -> Color32 {
+/// Hover / focus accent.
+pub fn hover() -> Color32 {
     c(live().pal.hover)
+}
+/// Older name for [`accent`], kept while panels move over.
+pub fn amber() -> Color32 {
+    accent()
+}
+/// Older name for [`hover`], kept while panels move over.
+pub fn blue() -> Color32 {
+    hover()
 }
 pub fn text() -> Color32 {
     c(live().pal.text)
@@ -68,8 +76,12 @@ pub fn vertex_sel() -> Color32 {
 
 /// Text that stays readable on an accent-filled (active) button.
 pub fn on_accent() -> Color32 {
-    let a = live().pal.accent;
-    if crate::prefs::palette::luminance(a) > 0.35 { Color32::from_rgb(0x14, 0x15, 0x18) } else { Color32::WHITE }
+    readable_on(live().pal.accent)
+}
+
+/// Dark text on light fills, white on dark ones.
+fn readable_on(fill: Rgb) -> Color32 {
+    if crate::prefs::palette::luminance(fill) > 0.35 { Color32::from_rgb(0x14, 0x15, 0x18) } else { Color32::WHITE }
 }
 
 /// Applies Preferences -> Theme (colours, UI size, font size) to egui.
@@ -131,7 +143,7 @@ pub fn apply(ctx: &egui::Context, t: &ThemePrefs, vp: &ViewportPrefs) {
     w.active.bg_fill = hover;
     w.active.weak_bg_fill = hover;
     w.active.bg_stroke = Stroke::new(1.0, hover);
-    w.active.fg_stroke = Stroke::new(1.0, Color32::WHITE);
+    w.active.fg_stroke = Stroke::new(1.0, readable_on(pal.hover));
     w.open.bg_fill = card;
     w.open.weak_bg_fill = card;
     ctx.set_global_style(style);

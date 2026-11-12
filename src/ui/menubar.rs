@@ -26,7 +26,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .frame(egui::Frame::new().fill(theme::input()).inner_margin(egui::Margin::symmetric(8, 2)))
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
-                ui.label(RichText::new("Ilex").color(theme::amber()).strong());
+                super::logo::mark(ui, 16.0).on_hover_text("Ilex");
+                ui.label(RichText::new("Ilex").color(theme::accent()).strong());
                 for (title, entries) in MENUS {
                     if *title == "Rendering" {
                         ui.menu_button("Create", |ui| create_menu(ui, ed));

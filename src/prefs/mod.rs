@@ -53,11 +53,14 @@ pub struct ThemePrefs {
     pub font_size: f32,
     /// The interface font.
     pub font: UiFont,
+    /// Bumped when the default look changes; 0 in files saved before.
+    #[serde(default)]
+    pub look_version: u32,
 }
 
 impl Default for ThemePrefs {
     fn default() -> Self {
-        Self { preset: ThemePreset::SlateAmber, custom: Palette::default(), ui_scale: 1.0, font_size: 11.5, font: UiFont::FiraCode }
+        Self { preset: ThemePreset::GraphiteTeal, custom: Palette::default(), ui_scale: 1.0, font_size: 11.5, font: UiFont::FiraCode, look_version: palette::LOOK_VERSION }
     }
 }
 
@@ -259,7 +262,9 @@ impl Preferences {
     }
 
     pub fn from_ron(text: &str) -> Result<Self, String> {
-        ron::from_str(text).map_err(|e| format!("Preferences: {e}"))
+        let mut p: Self = ron::from_str(text).map_err(|e| format!("Preferences: {e}"))?;
+        p.theme.migrate();
+        Ok(p)
     }
 
     pub fn to_ron(&self) -> String {

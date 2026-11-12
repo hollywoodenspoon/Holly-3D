@@ -86,7 +86,7 @@ fn tile(ui: &mut egui::Ui, ed: &mut Editor, k: BuildingKind) {
     let (rect, r) = ui.allocate_exact_size(egui::vec2(TILE, TILE + 18.0), Sense::click());
     let v = ui.visuals();
     let fill = if r.hovered() { v.widgets.hovered.bg_fill } else { v.extreme_bg_color };
-    let border = if active { Color32::from_rgb(0xE5, 0x9C, 0x24) } else { v.widgets.noninteractive.bg_stroke.color };
+    let border = if active { super::theme::accent() } else { v.widgets.noninteractive.bg_stroke.color };
     let p = ui.painter_at(rect);
     p.rect_filled(rect, 4.0, fill);
     p.rect_stroke(rect, 4.0, Stroke::new(if active { 2.0 } else { 1.0 }, border), egui::StrokeKind::Inside);

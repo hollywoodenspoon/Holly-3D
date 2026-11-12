@@ -63,8 +63,9 @@ fn pos(v: Vec2) -> egui::Pos2 {
 
 /// Rubber band of the region being drawn.
 pub fn draw(painter: &egui::Painter, shape: RegionShape, pts: &[Vec2], pointer: Vec2) {
-    let fill = Color32::from_rgba_unmultiplied(229, 156, 36, 18);
-    let st = Stroke::new(1.0, theme::amber());
+    let a = theme::accent();
+    let fill = Color32::from_rgba_unmultiplied(a.r(), a.g(), a.b(), 18);
+    let st = Stroke::new(1.0, a);
     let Some(&a) = pts.first() else { return };
     match shape {
         RegionShape::Rectangle => {
