@@ -38,6 +38,11 @@ impl Lot {
             a0 < b1 - 1e-3 && b0 < a1 - 1e-3
         })
     }
+    pub fn contains(&self, q: Vec2) -> bool {
+        let [u, v] = self.axes();
+        let d = q - self.c;
+        d.dot(u).abs() <= self.half.x && d.dot(v).abs() <= self.half.y
+    }
     /// Local frame of the lot at height `z`.
     pub fn frame(&self, z: f32) -> Mat4 {
         Mat4::from_rotation_translation(Quat::from_rotation_z(self.yaw), self.c.extend(z))
@@ -56,15 +61,24 @@ pub struct Plan {
     pub used: Vec<Lot>,
     /// Village hill: centre, radius, height.
     pub hill: Option<(Vec2, f32, f32)>,
+    /// Water (river, sea, moat): no ground, roads or lots.
+    pub wet: Vec<Lot>,
+    /// Road centrelines and widths (for the street dressing pass).
+    pub roads: Vec<(Vec2, Vec2, f32)>,
 }
 
 impl Plan {
     pub fn new(p: &SettlementParams, min: Vec2, max: Vec2, outline: Option<Vec<Vec2>>) -> Self {
         let outline = outline.filter(|o| o.len() >= 3);
-        Self { p: p.clone(), kit: Kit::new(), min, max, outline, rng: crate::generators::kit::rng(p.seed, p.era as u64), used: vec![], hill: None }
+        Self { p: p.clone(), kit: Kit::new(), min, max, outline, rng: crate::generators::kit::rng(p.seed, p.era as u64), used: vec![], hill: None, wet: vec![], roads: vec![] }
     }
 
     pub fn contains(&self, q: Vec2) -> bool {
+        self.dry(q) && !self.wet.iter().any(|w| w.contains(q))
+    }
+
+    /// Inside the area and outline (water or not).
+    pub fn dry(&self, q: Vec2) -> bool {
         q.cmpge(self.min).all() && q.cmple(self.max).all() && self.outline.as_ref().is_none_or(|o| inside(o, q))
     }
 
@@ -88,10 +102,10 @@ impl Plan {
 
     /// Ground grid (Material ID 2) over the area, following the hill.
     pub fn ground(&mut self, cell: f32) {
-        let (min, max, hill, outline) = (self.min, self.max, self.hill, self.outline.clone());
+        let (min, max, hill, outline, wet) = (self.min, self.max, self.hill, self.outline.clone(), self.wet.clone());
         let h = move |q: Vec2| hill_height(hill, q);
         self.kit.mat(crate::generators::kit::ids::LOT);
-        self.kit.ground(min, max, cell, h, |q| outline.as_ref().is_none_or(|o| inside(o, q)));
+        self.kit.ground(min, max, cell, h, |q| outline.as_ref().is_none_or(|o| inside(o, q)) && !wet.iter().any(|w| w.contains(q)));
     }
 
     /// A road segment `w` wide (Material `id`) raised `lift` above the
@@ -104,6 +118,7 @@ impl Plan {
         }
         let n = (len / 4.0).ceil().max(1.0) as usize;
         let hill = self.hill;
+        self.roads.push((a, b, w));
         self.kit.mat(id);
         for i in 0..n {
             let (p, q) = (a + d * (i as f32 / n as f32), a + d * ((i + 1) as f32 / n as f32));

@@ -78,7 +78,7 @@ impl CreateKind {
     pub fn is_rect(self) -> bool {
         matches!(
             self,
-            Self::Prim(PrimitiveKind::Box | PrimitiveKind::Plane) | Self::World(WorldKind::Terrain | WorldKind::Ocean | WorldKind::Settlement(_))
+            Self::Prim(PrimitiveKind::Box | PrimitiveKind::Plane) | Self::World(WorldKind::Terrain | WorldKind::Ocean | WorldKind::Settlement(_) | WorldKind::Building(_))
         )
     }
 
@@ -271,6 +271,7 @@ impl Editor {
                 }
                 WorldGen::Planet(p) => p.radius = a,
                 WorldGen::Settlement(s) => (s.width, s.length) = (a.max(4.0), b.max(4.0)),
+                WorldGen::Building(s) => (s.width, s.length) = (a.max(1.0), b.max(1.0)),
             },
             BaseObject::Mech(MechPart::Gear(g)) => g.module = (2.0 * a / g.teeth.max(1) as f32).max(MIN),
             _ => {}

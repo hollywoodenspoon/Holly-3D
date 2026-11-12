@@ -103,14 +103,15 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let Some(id) = ed.current() else { return };
     let BaseObject::World(w) = &ed.scene.objects[id].base else { return };
     let mut w = w.clone();
-    let (mut t, mut tex) = (Track::default(), None);
+    let (mut t, mut tex, mut style) = (Track::default(), None, None);
     match &mut w {
         WorldGen::Terrain(p) => rollout(ui, "Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
         WorldGen::Ocean(p) => rollout(ui, "Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
         WorldGen::Planet(p) => tex = super::planet::params(ui, &mut t, p),
         WorldGen::Settlement(p) => rollout(ui, "GhostTown Settlement", true, |ui| super::ghosttown::settlement_params(ui, &mut t, p, true)),
+        WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| style = super::buildings::params(ui, &mut t, p)),
     }
-    if matches!(w, WorldGen::Settlement(_)) {
+    if let WorldGen::Settlement(_) | WorldGen::Building(_) = &w {
         super::ghosttown::pack_button(ui, ed);
     }
     if t.started {
@@ -118,6 +119,9 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     }
     if t.changed {
         ed.set_world(id, w);
+    }
+    if let Some(s) = style {
+        ed.assign_pack(s.pack());
     }
     if let Some((part, path)) = tex {
         ed.planet_custom_texture(id, part, path.as_deref());

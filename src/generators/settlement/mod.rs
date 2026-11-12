@@ -4,7 +4,12 @@
 //! Material IDs (`kit::ids`), plus the `[✓] Damaged / Battlefield Mode`
 //! toggle that runs the Battlefield / Ruin modifier over the result.
 
+mod compose;
 mod downtown;
+mod era;
+mod historic;
+mod modern_mix;
+mod rural;
 mod layout;
 mod props;
 mod suburb;
@@ -15,57 +20,15 @@ mod village;
 #[cfg(test)]
 mod tests;
 
+pub use era::{Era, Features, PropStyle};
 pub use layout::{Lot, Plan};
 pub(crate) use townhouse::timber_frame;
 
 use super::kit::Kit;
 use crate::mesh::EditablePoly;
-use crate::modifiers::battlefield::{BattleParams, BattlefieldMod, DestructionMode};
+use crate::generators::buildings::{BuildingKind, Parts};
+use crate::modifiers::battlefield::{BattleParams, BattlefieldMod};
 use bevy::math::{Mat4, Vec2, Vec3};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
-pub enum Era {
-    #[default]
-    Downtown,
-    Suburbs,
-    WalledCity,
-    Village,
-}
-
-impl Era {
-    pub const ALL: [Era; 4] = [Self::Downtown, Self::Suburbs, Self::WalledCity, Self::Village];
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Downtown => "Modern Downtown City",
-            Self::Suburbs => "Modern Suburbs / Subdivision",
-            Self::WalledCity => "Medieval Walled City",
-            Self::Village => "Medieval Village / Hamlet",
-        }
-    }
-    pub fn short(self) -> &'static str {
-        match self {
-            Self::Downtown => "Downtown",
-            Self::Suburbs => "Suburbs",
-            Self::WalledCity => "Walled City",
-            Self::Village => "Village",
-        }
-    }
-    pub fn is_medieval(self) -> bool {
-        matches!(self, Self::WalledCity | Self::Village)
-    }
-    /// Storey height in metres.
-    pub fn floor_height(self) -> f32 {
-        match self {
-            Self::Downtown => 3.6,
-            Self::Suburbs => 3.0,
-            Self::WalledCity | Self::Village => 3.1,
-        }
-    }
-    /// The period-accurate destruction mode for the Damaged toggle.
-    pub fn destruction(self) -> DestructionMode {
-        if self.is_medieval() { DestructionMode::MedievalSiege } else { DestructionMode::Modern }
-    }
-}
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
@@ -89,6 +52,15 @@ pub struct SettlementParams {
     /// `[✓] Damaged / Battlefield Mode`.
     pub damaged: bool,
     pub damage: BattleParams,
+    /// Town-feature checkboxes (river, bridges, walls...).
+    pub features: Features,
+    /// Building-part toggles for the Buildings & Props pieces.
+    pub parts: Parts,
+    /// `[✓] Emissive Lights` master toggle (off = no lit windows / lamps).
+    pub emissive: bool,
+    pub prop_style: PropStyle,
+    /// Palette types switched off with their checkboxes.
+    pub skip: Vec<BuildingKind>,
 }
 
 impl Default for SettlementParams {
@@ -115,12 +87,26 @@ impl SettlementParams {
             prop_density: 0.5,
             damaged: false,
             damage: BattleParams::of(era.destruction()),
+            features: Features::default(),
+            parts: Parts::default(),
+            emissive: true,
+            prop_style: PropStyle::Generated,
+            skip: vec![],
         };
         match era {
             Era::Downtown => base,
             Era::Suburbs => Self { block_size: 44.0, street_width: 8.0, sidewalk_width: 1.5, density: 0.8, min_floors: 1, max_floors: 2, roof_pitch: 32.0, prop_density: 0.6, ..base },
             Era::WalledCity => Self { block_size: 9.0, street_width: 4.5, sidewalk_width: 0.0, density: 0.95, min_floors: 2, max_floors: 4, roof_pitch: 52.0, prop_density: 0.3, ..base },
             Era::Village => Self { block_size: 34.0, street_width: 4.0, sidewalk_width: 0.0, density: 0.6, min_floors: 1, max_floors: 1, roof_pitch: 48.0, prop_density: 0.7, ..base },
+            Era::RiverCity | Era::HarbourTown => Self { block_size: 40.0, street_width: 10.0, min_floors: 3, max_floors: 14, ..base },
+            Era::Industrial => Self { block_size: 60.0, street_width: 12.0, density: 0.9, min_floors: 1, max_floors: 4, prop_density: 0.3, ..base },
+            Era::OldTownSprawl => Self { block_size: 36.0, street_width: 9.0, min_floors: 2, max_floors: 10, roof_pitch: 45.0, ..base },
+            Era::SquareWalled | Era::CastleTown | Era::StarFort => {
+                Self { block_size: 12.0, street_width: 5.0, sidewalk_width: 0.0, density: 0.9, min_floors: 1, max_floors: 3, roof_pitch: 50.0, prop_density: 0.4, ..base }
+            }
+            Era::RiverTown | Era::Crossroads | Era::Monastery => {
+                Self { block_size: 14.0, street_width: 4.5, sidewalk_width: 0.0, density: 0.75, min_floors: 1, max_floors: 2, roof_pitch: 48.0, prop_density: 0.7, ..base }
+            }
         }
     }
 
@@ -138,8 +124,22 @@ impl SettlementParams {
             Era::Suburbs => suburb::build(&mut plan),
             Era::WalledCity => town::build(&mut plan),
             Era::Village => village::build(&mut plan),
+            Era::RiverCity => modern_mix::river_city(&mut plan),
+            Era::HarbourTown => modern_mix::harbour(&mut plan),
+            Era::Industrial => modern_mix::industrial(&mut plan),
+            Era::OldTownSprawl => modern_mix::old_and_new(&mut plan),
+            Era::SquareWalled => historic::square_walled(&mut plan),
+            Era::RiverTown => historic::river_town(&mut plan),
+            Era::CastleTown => historic::castle_town(&mut plan),
+            Era::StarFort => historic::star_fort(&mut plan),
+            Era::Crossroads => rural::crossroads(&mut plan),
+            Era::Monastery => rural::monastery(&mut plan),
         }
+        compose::dress(&mut plan);
         let mut m = plan.kit.finish();
+        if !self.emissive {
+            compose::lights_off(&mut m);
+        }
         if self.damaged {
             BattlefieldMod { params: self.damage.clone(), zones: vec![] }.apply(&mut m);
         }

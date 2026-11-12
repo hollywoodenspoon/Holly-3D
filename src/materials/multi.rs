@@ -137,6 +137,8 @@ pub enum MultiPreset {
     OceanWater,
     PlanetStudio,
     GhostTown,
+    /// GhostTown with installed photo textures where available.
+    GhostTownPhoto,
 }
 
 fn pbr(name: &str, rgb: [f32; 3], metallic: f32, roughness: f32) -> Material {
@@ -155,7 +157,8 @@ fn glass(name: &str, tint: [f32; 3], attenuation: [f32; 3], roughness: f32) -> M
 }
 
 impl MultiPreset {
-    pub const ALL: [MultiPreset; 6] = [Self::MedievalCastle, Self::ModernCity, Self::AlpineTerrain, Self::OceanWater, Self::PlanetStudio, Self::GhostTown];
+    pub const ALL: [MultiPreset; 7] =
+        [Self::MedievalCastle, Self::ModernCity, Self::AlpineTerrain, Self::OceanWater, Self::PlanetStudio, Self::GhostTown, Self::GhostTownPhoto];
 
     pub fn label(self) -> &'static str {
         match self {
@@ -165,6 +168,7 @@ impl MultiPreset {
             Self::OceanWater => "Ocean Water Pack",
             Self::PlanetStudio => "Planet Studio Pack",
             Self::GhostTown => "GhostTown Settlement Pack",
+            Self::GhostTownPhoto => "GhostTown Pack (Photo Textures)",
         }
     }
 
@@ -217,24 +221,12 @@ impl MultiPreset {
                 Material { opacity: 0.999, ..pbr("Planetary Rings", [1.0, 1.0, 1.0], 0.0, 0.8) },
             ],
             // `generators::kit::ids`: GhostTown, Medieval Architect, Battlefield.
-            Self::GhostTown => vec![
-                pbr("Road / Cobblestone", [0.3, 0.3, 0.31], 0.0, 0.9),
-                pbr("Sidewalk / Lot / Dirt", [0.5, 0.45, 0.38], 0.0, 0.95),
-                pbr("Primary Facade / Stone", [0.62, 0.6, 0.55], 0.0, 0.85),
-                pbr("Timber / Brick Trim", [0.36, 0.22, 0.13], 0.0, 0.8),
-                pbr("Roof Tiles / Thatch", [0.45, 0.2, 0.14], 0.0, 0.75),
-                pbr("Window Glass", [0.2, 0.28, 0.34], 0.7, 0.08),
-                glow("Lit Windows / Lamps", [1.0, 0.82, 0.5], 5.0),
-                pbr("Foliage / Moss", [0.25, 0.42, 0.16], 0.0, 0.9),
-                pbr("Charred Timber", [0.06, 0.05, 0.045], 0.0, 0.95),
-                pbr("Wrought Iron / Steel", [0.24, 0.24, 0.26], 0.9, 0.45),
-                pbr("Plaster / Mortar", [0.86, 0.82, 0.72], 0.0, 0.9),
-                pbr("Rusted Rebar", [0.42, 0.22, 0.12], 0.75, 0.7),
-            ],
+            Self::GhostTown => super::ghost_pack::materials(false),
+            Self::GhostTownPhoto => super::ghost_pack::materials(true),
         };
         // Generated buildings and terrain have no UV layout: their packs
         // use World / Triplanar mapping, so patterns and photos tile.
-        let triplanar = matches!(self, Self::MedievalCastle | Self::ModernCity | Self::AlpineTerrain | Self::GhostTown);
+        let triplanar = matches!(self, Self::MedievalCastle | Self::ModernCity | Self::AlpineTerrain | Self::GhostTown | Self::GhostTownPhoto);
         let place = |mut m: Material| {
             if triplanar {
                 m.projection = super::Projection::triplanar(2.0);

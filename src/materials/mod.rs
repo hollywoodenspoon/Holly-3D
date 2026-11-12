@@ -3,6 +3,7 @@
 //! outline settings shared by every material.
 
 pub mod bake;
+pub mod ghost_pack;
 pub mod import;
 pub mod library;
 pub mod maps;

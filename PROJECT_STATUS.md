@@ -955,3 +955,52 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 - The turntable writes PNG sequences only, not GIF or WebM.
 - Sprite sheets render one pose. Animation-cycle phases are not supported yet.
 - The Classic raytracer renders catchers as normal surfaces.
+
+## 28. PR 6: Buildings & Props spawner + GhostTown variety
+
+**1. Standalone Buildings & Props** (`src/generators/buildings/`, Create ▸ Geometry ▸ Buildings & Props, the Create menu, Tools ▸ **Buildings & Props Browser...**, the 🏠 toolbar button and the ribbon's *Populate* group):
+- 43 types, each its own object. Click a type, then drag the footprint in a viewport. Right-click a type to create it at the origin.
+  - Modern (14): Glass Skyscraper, Office Block, Brick Tenement, Apartment Block, Shop with Awning, Gas Station, Warehouse, Sawtooth Factory, Parking Garage, School, Hospital, Modern Church, Water Tower, Street Kiosk.
+  - Medieval (12): Castle Keep, Guild Hall, Market Hall, Half-Timber Tavern, Stone Chapel, Windmill, Watermill, Blacksmith Forge, Stable, Granary, Gatehouse, Well House.
+  - Bridges & infrastructure (5): Stone Arch Bridge, Steel Truss Bridge, Drawbridge, Quay / Pier, Crane.
+  - Doodads & props (12): Streetlamp, Lantern Post, Car / Truck, Cart / Wagon, Market Stall, Barrel / Crate Cluster, Dumpster, Sandbag Wall, Tank Trap, Barbed Wire Coil, Park Bench, Fountain / Well.
+- The browser window has category filters, a search box and a flat-shaded 3/4 thumbnail of every type.
+- **Building Parameters** rollout on the Modify tab:
+  - Type (grouped by category), Seed and 🎲, Width, Length, Floors (relabelled per type: Arches, Boom Extra, Courses).
+  - Part toggles: Balconies, Fire Escapes, Awnings, Chimneys, Dormers, Shutters, Rooftop Clutter (AC units, tanks), Signs, Stairs & Porches.
+  - `[✓] Emissive Lights`, Stairs (straight / L-shaped / spiral) and Material Style (Procedural | Photo). Changing the style assigns the matching pack.
+- **Parametric architectural families** (`arch.rs`): walls along a path with mitred corners; door and window openings that frame themselves and leave their own hole (built as wall pieces around the opening, so no Boolean pass is needed); straight, L-shaped and spiral staircases; cross-gable roofs for L / T plans.
+  - The prompt named BIMCraft as a source. **BIMCraft was not inspected.** These algorithms are written natively for this project, and no BIMCraft code is used.
+
+**2. GhostTown settlement expansion** (`src/generators/settlement/`):
+- 14 presets. The original four (Grid Downtown, Suburbs, Round Walled City, Village) are joined by ten new ones:
+  - River City: a river with quays, lamps and trees, alternating truss and arch bridges, and a modern grid.
+  - Harbour Town: a sea band, quay wall, piers, cranes on rails, warehouse frontage and an inland grid.
+  - Industrial District: sawtooth factories and warehouses, a rail yard band, tanks and brick chimneys.
+  - Old Town + Modern Sprawl: a medieval core with a plaza, Market Hall and radial cobble lanes inside a ring road, with the modern grid around it.
+  - Square Walled City: a square curtain wall with corner towers and four gatehouses, a cobble cross, a lane grid and a market square.
+  - River Town: a river with embankments, stone arch bridges, watermills and landing stages, and bank lanes.
+  - Castle & Town: a hill with the Castle Keep and a towered ring wall, a winding castle road and the town below.
+  - Star Fort: five bastions, a moat, a gatehouse and drawbridge, a parade ground and barracks.
+  - Crossroads Hamlet: two crossing roads with an inn, forge, stable, well house and granary on the corners, cottages, fenced crop fields and a windmill.
+  - Monastery: a precinct wall, cloister garth and arcade, chapel, dormitory, granary, stable, kitchen gardens and an orchard.
+- New toggles on the GhostTown rollout (base object and modifier):
+  - **Buildings**: one checkbox per palette type; unchecked types are left out.
+  - **Building Parts**: the same part toggles as the standalone buildings.
+  - **Town Features**: River / Sea, Bridges, Docks / Quays, Town Walls, Moat, Rail Yard, Market Square, Trees / Parks, Farm Plots.
+  - `[✓] Emissive Lights` master toggle. When it is off, lit windows, lamps and neon become plain glass.
+  - **Prop Style**: Generated (the preset's own props), Low-poly pack (box stand-ins) or Realistic pack (the detailed doodads along every street).
+- **24-ID GhostTown Material Pack** (`src/materials/ghost_pack.rs`): IDs 13–24 add Asphalt, Lane Lines, Sidewalk Slabs, Curbs, Cobbles, River Water, Brick, Stucco, Slate / Metal Roof, Rusted Metal, Broken Glass and Neon / Lantern Glow. They use PR 5.5 MaterialCraft textures with Triplanar mapping. **Assign Photo Pack** is the photo-style variant. The rollout shows a collapsible legend of all 24 IDs.
+
+**Tests (now 535):**
+- All 43 building types build valid, deterministic geometry that stays near its footprint, uses IDs 1–24 and has a browser thumbnail.
+- Buildings: Emissive Lights off turns every light off; parameters drive the geometry; mitred walls share corners; openings cut framed holes; staircases climb their rise; Photo style picks the photo pack.
+- The drag sets a building's footprint and assigns its pack.
+- Every one of the 14 presets builds valid, deterministic geometry inside its area, with streets, roofs, walls, ground and trees.
+- Emissive Lights off removes lit and neon IDs. River off removes water. Unchecked building types change the town. Low-poly and Realistic props add geometry. Town Walls off removes walls.
+- Damaged mode stays period-accurate on all 14 presets.
+
+**Not done in PR 6:**
+- Prop Style "Realistic" reuses the standalone doodads; there is no imported asset pack.
+- Castle & Town's houses on the hillside stand on flat footings, without stepped foundations.
+- River and harbour water is a flat surface (Material ID 18), not the Ocean generator.

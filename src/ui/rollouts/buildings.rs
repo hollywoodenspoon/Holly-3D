@@ -1,0 +1,88 @@
+//! PR 6 rollouts: Buildings & Props parameters (Modify tab of a building /
+//! prop base object).
+
+use super::spline::grid;
+use super::worlds::{row, seed_row};
+use crate::generators::buildings::{BuildingKind, BuildingParams, Category, MatStyle, StairKind};
+use crate::ui::command::CONTENT_W;
+use crate::ui::widgets::{Track, dim};
+use bevy_egui::egui::{self, RichText};
+
+/// Building Parameters. Returns the new material style when the user
+/// switched it (the caller reassigns the matching pack).
+pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> Option<MatStyle> {
+    ui.label(RichText::new("Building / Prop Type").strong());
+    kind_combo(ui, t, p);
+    ui.label(dim(p.kind.category().label()));
+    seed_row(ui, t, &mut p.seed);
+    grid(ui, "building_params", |ui| {
+        row(ui, t, "Width:", &mut p.width, 0.2..=400.0, p.kind.defaults().0, 0.05);
+        row(ui, t, "Length:", &mut p.length, 0.2..=400.0, p.kind.defaults().1, 0.05);
+        if p.kind.has_floors() {
+            let label = match p.kind {
+                BuildingKind::ArchBridge => "Arches:",
+                BuildingKind::Crane => "Boom Extra:",
+                BuildingKind::SandbagWall => "Courses:",
+                _ => "Floors:",
+            };
+            row(ui, t, label, &mut p.floors, 1..=200, p.kind.defaults().2, 0.05);
+        }
+    });
+    t.r(ui.checkbox(&mut p.emissive, "Emissive Lights")).on_hover_text("Lit windows, lamps, lanterns, neon signs and forge fires glow; off = dark glass");
+    ui.horizontal(|ui| {
+        ui.label("Stairs:");
+        egui::ComboBox::from_id_salt("building_stairs").selected_text(p.stairs.label()).show_ui(ui, |ui| {
+            for s in StairKind::ALL {
+                if ui.selectable_label(p.stairs == s, s.label()).clicked() && p.stairs != s {
+                    p.stairs = s;
+                    (t.started, t.changed) = (true, true);
+                }
+            }
+        });
+    });
+    ui.label(RichText::new("Building Parts").strong());
+    egui::Grid::new("building_parts").num_columns(2).show(ui, |ui| {
+        for (i, (label, on)) in p.parts.flags().into_iter().enumerate() {
+            t.r(ui.checkbox(on, label));
+            if i % 2 == 1 {
+                ui.end_row();
+            }
+        }
+    });
+    ui.label(dim("Parts only appear on the types that have them (a kiosk has no fire escape)."));
+    let mut style = None;
+    ui.horizontal(|ui| {
+        ui.label("Material Style:");
+        for s in MatStyle::ALL {
+            if ui.selectable_label(p.style == s, s.label()).on_hover_text(style_tip(s)).clicked() && p.style != s {
+                p.style = s;
+                style = Some(s);
+                (t.started, t.changed) = (true, true);
+            }
+        }
+    });
+    style
+}
+
+fn style_tip(s: MatStyle) -> &'static str {
+    match s {
+        MatStyle::Procedural => "GhostTown pack built from MaterialCraft procedural textures (no downloads)",
+        MatStyle::Photo => "GhostTown pack using installed Poly Haven photo textures where available",
+    }
+}
+
+/// Type combo grouped by category; switching type resets size to its
+/// defaults and keeps seed, parts, lights and style.
+fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
+    egui::ComboBox::from_id_salt("building_kind").width(CONTENT_W - 12.0).height(420.0).selected_text(p.kind.label()).show_ui(ui, |ui| {
+        for c in Category::ALL {
+            ui.label(RichText::new(c.label()).strong());
+            for k in c.kinds() {
+                if ui.selectable_label(p.kind == k, format!("   {}", k.label())).clicked() && p.kind != k {
+                    *p = BuildingParams { seed: p.seed, parts: p.parts, emissive: p.emissive, style: p.style, stairs: p.stairs, ..BuildingParams::of(k) };
+                    (t.started, t.changed) = (true, true);
+                }
+            }
+        }
+    });
+}

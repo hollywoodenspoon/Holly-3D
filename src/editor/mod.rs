@@ -112,8 +112,9 @@ pub struct Editor {
     pub mat_editor: MatEditor,
     /// Ctrl+L: force the Default Modeling Lights rig even with scene lights.
     pub default_lights: bool,
-    /// Environment & Effects dialog (`8`).
+    /// Environment & Effects dialog (`8`) and the Buildings & Props Browser.
     pub env_open: bool,
+    pub buildings_browser_open: bool,
     /// Viewport Paint / PaintBox settings.
     pub paint: crate::paint::PaintSettings,
     pub paint_stroke: Option<paint::PaintStroke>,
@@ -184,6 +185,7 @@ impl Default for Editor {
             mat_editor: MatEditor::default(),
             default_lights: false,
             env_open: false,
+            buildings_browser_open: false,
             paint: Default::default(),
             paint_stroke: None,
             render: Default::default(),

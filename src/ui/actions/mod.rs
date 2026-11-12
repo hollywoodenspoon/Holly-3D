@@ -91,6 +91,7 @@ pub enum Action {
     ColorGrading,
     LightMix,
     Turntable,
+    BuildingsBrowser,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -120,7 +121,7 @@ impl Action {
         ];
         v.extend(SUBS.map(Sub));
         v.extend([
-            SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, ConvertToPoly,
+            SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, ConvertToPoly,
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
@@ -206,6 +207,7 @@ impl Action {
             ColorGrading => "Color Grading & Camera RAW",
             LightMix => "LightMix (Relight Render)",
             Turntable => "Render Turntable / Sprite Sheet...",
+            BuildingsBrowser => "Buildings & Props Browser...",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -244,6 +246,7 @@ impl Action {
             Clone => "⎘ Clone",
             Paint => "🖊 Paint",
             ContactSets => "Contact",
+            BuildingsBrowser => "🏠 Buildings",
             Isolate => "◎",
             SceneExplorer => "🗄",
             Ribbon => "🛠 Ribbon",
@@ -299,6 +302,7 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            BuildingsBrowser => "Visual browser of the 43 standalone buildings, bridges and street props: click a tile, then drag in a viewport",
             Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",
             LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",
             ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",

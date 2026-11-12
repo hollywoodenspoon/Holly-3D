@@ -83,7 +83,7 @@ pub fn build(plan: &mut Plan) {
     }
 }
 
-fn place(plan: &mut Plan, lot: Lot) {
+pub(super) fn place(plan: &mut Plan, lot: Lot) {
     if !plan.rng.gen_bool(plan.p.density.clamp(0.0, 1.0) as f64) || !plan.claim(lot) {
         return;
     }
