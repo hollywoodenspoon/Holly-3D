@@ -48,7 +48,7 @@ impl Chord {
     }
 }
 
-/// The MiniMax default keymap (3ds Max conventions, never Blender's).
+/// The Ilex default keymap (3ds Max conventions, never Blender's).
 pub fn default_keymap() -> Vec<(Chord, Action)> {
     use Action::*;
     use Key::*;

@@ -114,14 +114,14 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let (mut t, mut tex, mut style) = (Track::default(), None, None);
     let mut ruin = super::ruin::Out::default();
     match &mut w {
-        WorldGen::Terrain(p) => rollout(ui, "Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
-        WorldGen::Ocean(p) => rollout(ui, "Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
+        WorldGen::Terrain(p) => rollout(ui, "Demiurge Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
+        WorldGen::Ocean(p) => rollout(ui, "Demiurge Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
         WorldGen::Planet(p) => tex = super::planet::params(ui, &mut t, p),
         WorldGen::Settlement(p) => {
-            rollout(ui, "GhostTown Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
+            rollout(ui, "Demiurge GhostTown Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
         }
         WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
-        WorldGen::Smoke(p) => rollout(ui, "Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
+        WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
     }
     if let WorldGen::Settlement(_) | WorldGen::Building(_) = &w {
         super::ghosttown::pack_button(ui, ed);
@@ -145,7 +145,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
 
 /// Terrain stack modifier.
 pub fn terrain_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "Terrain Modifier", true, |ui| {
+    rollout(ui, "Demiurge Terrain", true, |ui| {
         ui.label(dim("Raises the input mesh along local Z over its XY bounds; subdivide it for detail."));
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Terrain(m) = k else { return };
@@ -156,7 +156,7 @@ pub fn terrain_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
 
 /// Ocean stack modifier.
 pub fn ocean_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "Ocean Modifier", true, |ui| {
+    rollout(ui, "Demiurge Ocean", true, |ui| {
         ui.label(dim("Gerstner waves on the input mesh: local XY is the rest position, crests rise along Z."));
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Ocean(m) = k else { return };

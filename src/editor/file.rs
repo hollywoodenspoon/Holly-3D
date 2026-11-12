@@ -1,4 +1,4 @@
-//! File menu actions: New / Open / Save (`.mmax`) and Import / Export of
+//! File menu actions: New / Open / Save (`.ilex`, also opens `.mmax`) and Import / Export of
 //! OBJ, glTF / GLB and FBX.
 
 use super::Editor;
@@ -44,10 +44,9 @@ impl Editor {
         Ok(())
     }
 
-    /// Opens a `.mmax` scene or imports any exchange file.
+    /// Opens a `.ilex` (or legacy `.mmax`) scene or imports any exchange file.
     pub fn open_any(&mut self, path: &Path) -> Result<(), String> {
-        let is_scene = path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case(scene_file::EXT));
-        if is_scene { self.open_scene(path) } else { self.import_file(path).map(|_| ()) }
+        if scene_file::is_scene_path(path) { self.open_scene(path) } else { self.import_file(path).map(|_| ()) }
     }
 
     /// Import: every mesh becomes an Editable Poly with its pivot transform
@@ -128,7 +127,7 @@ mod tests {
     use crate::primitives::PrimitiveKind;
 
     fn tmp(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("minimax-file-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ilex-file-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         dir.join(name)
     }
@@ -163,11 +162,19 @@ mod tests {
         ed.create_primitive(PrimitiveKind::Torus, Vec3::new(1.0, 2.0, 0.0));
         let p = tmp("scene");
         ed.save_scene(&p).unwrap();
-        assert_eq!(ed.scene_path.as_deref().unwrap().extension().unwrap(), "mmax");
+        assert_eq!(ed.scene_path.as_deref().unwrap().extension().unwrap(), "ilex");
         let mut other = Editor::default();
-        other.open_any(&p.with_extension("mmax")).unwrap();
+        other.open_any(&p.with_extension("ilex")).unwrap();
         assert_eq!(other.scene.objects.len(), 1);
         assert!(!other.history.can_undo());
-        assert!(other.open_any(Path::new("missing.mmax")).is_err());
+        assert!(other.open_any(Path::new("missing.ilex")).is_err());
+        // A pre-rename `.mmax` file with the old "MiniMax" header still opens.
+        let text = std::fs::read_to_string(p.with_extension("ilex")).unwrap().replacen("\"Ilex\"", "\"MiniMax\"", 1);
+        std::fs::write(p.with_extension("mmax"), text).unwrap();
+        let mut legacy = Editor::default();
+        legacy.open_any(&p.with_extension("mmax")).unwrap();
+        assert_eq!(legacy.scene.objects.len(), 1);
+        legacy.save_scene(&p.with_extension("mmax")).unwrap();
+        assert_eq!(legacy.scene_path.as_deref().unwrap().extension().unwrap(), "ilex", "saving a legacy file writes .ilex beside it");
     }
 }

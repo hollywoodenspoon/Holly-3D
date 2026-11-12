@@ -138,8 +138,8 @@ impl ModifierKind {
             ModifierKind::Lathe(_) => "Lathe",
             ModifierKind::Extrude(_) => "Extrude",
             ModifierKind::GeoGen(_) => "GeoGen",
-            ModifierKind::Terrain(_) => "Terrain",
-            ModifierKind::Ocean(_) => "Ocean",
+            ModifierKind::Terrain(_) => "Demiurge Terrain",
+            ModifierKind::Ocean(_) => "Demiurge Ocean",
             ModifierKind::Greeble(_) => "Greeble",
             ModifierKind::Chamfer(_) => "Chamfer",
             ModifierKind::PanelGroove(_) => "Panel Groove",
@@ -153,9 +153,9 @@ impl ModifierKind {
             ModifierKind::EditNormals(_) => "Edit Normals",
             ModifierKind::Boolean(_) => "Boolean",
             ModifierKind::ProOptimizer(_) => "ProOptimizer",
-            ModifierKind::Settlement(_) => "GhostTown",
-            ModifierKind::Architect(_) => "Medieval Architect",
-            ModifierKind::Battlefield(_) => "Battlefield / Ruin",
+            ModifierKind::Settlement(_) => "Demiurge GhostTown",
+            ModifierKind::Architect(_) => "Demiurge Medieval Architect",
+            ModifierKind::Battlefield(_) => "Demiurge Battlefield & Ruin",
             ModifierKind::Loft(_) => "Loft",
         }
     }
@@ -270,8 +270,8 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Unwrap UVW", available: true },
     ModifierListItem { name: "VertexPaint", available: true },
     ModifierListItem { name: "GeoGen", available: true },
-    ModifierListItem { name: "Terrain", available: true },
-    ModifierListItem { name: "Ocean", available: true },
+    ModifierListItem { name: "Demiurge Terrain", available: true },
+    ModifierListItem { name: "Demiurge Ocean", available: true },
     ModifierListItem { name: "Greeble", available: true },
     ModifierListItem { name: "TurboSmooth", available: true },
     ModifierListItem { name: "Symmetry", available: true },
@@ -288,13 +288,13 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Edit Normals", available: true },
     ModifierListItem { name: "Boolean", available: true },
     ModifierListItem { name: "ProOptimizer", available: true },
-    ModifierListItem { name: "GhostTown", available: true },
-    ModifierListItem { name: "Medieval Architect", available: true },
-    ModifierListItem { name: "Battlefield / Ruin", available: true },
+    ModifierListItem { name: "Demiurge GhostTown", available: true },
+    ModifierListItem { name: "Demiurge Medieval Architect", available: true },
+    ModifierListItem { name: "Demiurge Battlefield & Ruin", available: true },
 ];
 
 pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
-    match name {
+    match catalog::current_name(name) {
         "Edit Poly" => Some(ModifierEntry::new(ModifierKind::EditPoly(EditPolyMod::default()))),
         "FFD 2x2x2" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(2)))),
         "FFD 3x3x3" => Some(ModifierEntry::new(ModifierKind::Ffd(FfdMod::new(3)))),
@@ -306,8 +306,8 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Extrude" => Some(ModifierEntry::new(ModifierKind::Extrude(ExtrudeMod::default()))),
         "Loft" => Some(ModifierEntry::new(ModifierKind::Loft(Default::default()))),
         "GeoGen" => Some(ModifierEntry::new(ModifierKind::GeoGen(GeoGenMod::default()))),
-        "Terrain" => Some(ModifierEntry::new(ModifierKind::Terrain(Default::default()))),
-        "Ocean" => Some(ModifierEntry::new(ModifierKind::Ocean(Default::default()))),
+        "Demiurge Terrain" => Some(ModifierEntry::new(ModifierKind::Terrain(Default::default()))),
+        "Demiurge Ocean" => Some(ModifierEntry::new(ModifierKind::Ocean(Default::default()))),
         "Greeble" => Some(ModifierEntry::new(ModifierKind::Greeble(GreebleMod::default()))),
         "Chamfer" => Some(ModifierEntry::new(ModifierKind::Chamfer(ChamferMod::default()))),
         "Panel Groove" => Some(ModifierEntry::new(ModifierKind::PanelGroove(PanelGrooveMod::default()))),
@@ -321,9 +321,9 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Edit Normals" => Some(ModifierEntry::new(ModifierKind::EditNormals(EditNormalsMod::default()))),
         "Boolean" => Some(ModifierEntry::new(ModifierKind::Boolean(BooleanMod::default()))),
         "ProOptimizer" => Some(ModifierEntry::new(ModifierKind::ProOptimizer(ProOptimizerMod::default()))),
-        "GhostTown" => Some(ModifierEntry::new(ModifierKind::Settlement(Default::default()))),
-        "Medieval Architect" => Some(ModifierEntry::new(ModifierKind::Architect(Default::default()))),
-        "Battlefield / Ruin" => Some(ModifierEntry::new(ModifierKind::Battlefield(Default::default()))),
+        "Demiurge GhostTown" => Some(ModifierEntry::new(ModifierKind::Settlement(Default::default()))),
+        "Demiurge Medieval Architect" => Some(ModifierEntry::new(ModifierKind::Architect(Default::default()))),
+        "Demiurge Battlefield & Ruin" => Some(ModifierEntry::new(ModifierKind::Battlefield(Default::default()))),
         _ => None,
     }
 }

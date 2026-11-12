@@ -38,7 +38,8 @@ fn gi_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                 .on_hover_text("Next-event samples on emissive polygons (Emission Multiplier > 0)");
             ui.end_row();
         });
-        ui.checkbox(&mut g.denoise, "Edge-Preserving Denoiser (A-Trous on the Path Tracer)");
+        ui.label(egui::RichText::new("Veach À-Trous Wavelet Denoiser").strong());
+        ui.checkbox(&mut g.denoise, "Enable Denoiser (albedo-demodulated, edge-preserving)");
         ui.checkbox(&mut g.softbox, "Studio Softbox Reflection Dome").on_hover_text("Used by reflection rays when no HDRI is loaded");
     });
 }

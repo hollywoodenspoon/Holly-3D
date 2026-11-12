@@ -1,5 +1,5 @@
 //! Phase 10A Character & Creature Studio window (Tools menu, toolbar
-//! `🧍 Characters`, Create tab): one-click archetype and creature tiles,
+//! `♀♂ Characters`, Create tab): one-click archetype and creature tiles,
 //! then the parameters of the selected character.
 
 pub mod params;

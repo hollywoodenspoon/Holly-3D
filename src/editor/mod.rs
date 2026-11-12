@@ -124,7 +124,7 @@ pub struct Editor {
     pub rfw: render::RenderUi,
     /// Editable Spline tool spinners (Fillet, Chamfer, Weld, Divide, Outline…).
     pub spline_ui: SplineUi,
-    /// Current `.mmax` file (Save writes here; `None` = Save As).
+    /// Current `.ilex` file (Save writes here; `None` = Save As).
     pub scene_path: Option<std::path::PathBuf>,
     /// Joint type the J tool creates.
     pub joint_type: crate::assembly::JointType,
@@ -169,7 +169,7 @@ impl Default for Editor {
             explorer_visible: true,
             explorer_filter: String::new(),
             modifier_filter: String::new(),
-            status: "Welcome to MiniMax — create a primitive from the Create tab.".into(),
+            status: "Welcome to Ilex — create a primitive from the Create tab.".into(),
             affect_pivot_only: false,
             typein_offset: false,
             set_id: 1,

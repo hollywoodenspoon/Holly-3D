@@ -1,4 +1,4 @@
-//! Help screenshots. `minimax --help-shot <id>` sets up a scene and opens
+//! Help screenshots. `ilex --help-shot <id>` sets up a scene and opens
 //! the panels a Help page shows; `tools/help_shots.sh` captures each one
 //! into `assets/help/<id>.jpg`, which are built into the program.
 
@@ -212,7 +212,7 @@ fn sample_crash() -> crate::diagnostics::recovery::Pending {
         unix_time: 1_794_000_000,
         cause: "panic".into(),
     };
-    let dir = std::path::PathBuf::from("~/.local/share/minimax/crashes");
+    let dir = std::path::PathBuf::from("~/.local/share/ilex/crashes");
     crate::diagnostics::recovery::Pending {
         report: dir.join(format!("crash_{}.md", report::file_stamp(info.unix_time))),
         text: report::format(&info, &BuildInfo::current("GPU".into()), Some(&[]), None),

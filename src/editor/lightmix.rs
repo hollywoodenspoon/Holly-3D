@@ -35,7 +35,7 @@ impl Editor {
         let w = weights(&mix.faders);
         let edits: Vec<_> = mix.groups.iter().zip(&w).filter(|(_, w)| **w != bevy::math::Vec3::ONE).flat_map(|(g, w)| g.lights.iter().map(move |id| (*id, *w))).collect();
         if edits.is_empty() {
-            self.status = "LightMix: no scene light changed".into();
+            self.status = "Luxon LightMix: no scene light changed".into();
             return;
         }
         self.checkpoint("Apply LightMix");
@@ -54,7 +54,7 @@ impl Editor {
         if let Some(m) = self.rfw.lightmix.as_mut() {
             m.reset();
         }
-        self.status = format!("LightMix applied to {n} scene light(s)");
+        self.status = format!("Luxon LightMix applied to {n} scene light(s)");
         self.rfw.message = self.status.clone();
     }
 }

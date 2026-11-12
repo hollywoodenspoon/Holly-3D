@@ -94,8 +94,8 @@ fn material(o: &mut String, id: u64, name: &str, m: &MatInfo) {
 
 /// The whole ASCII FBX document.
 pub fn write_string(items: &[MeshItem]) -> String {
-    let mut o = String::from("; FBX 7.4.0 project file\n; Created by MiniMax\n");
-    o.push_str("FBXHeaderExtension:  {\n\tFBXHeaderVersion: 1003\n\tFBXVersion: 7400\n\tCreator: \"MiniMax\"\n}\n");
+    let mut o = String::from("; FBX 7.4.0 project file\n; Created by Ilex\n");
+    o.push_str("FBXHeaderExtension:  {\n\tFBXHeaderVersion: 1003\n\tFBXVersion: 7400\n\tCreator: \"Ilex\"\n}\n");
     o.push_str("GlobalSettings:  {\n\tVersion: 1000\n\tProperties70:  {\n");
     for (k, v) in [("UpAxis", 2), ("UpAxisSign", 1), ("FrontAxis", 1), ("FrontAxisSign", -1), ("CoordAxis", 0), ("CoordAxisSign", 1)] {
         let _ = writeln!(o, "\t\tP: \"{k}\", \"int\", \"Integer\", \"\",{v}");

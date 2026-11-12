@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Remakes every Help screenshot in assets/help/ from the real program.
-# Needs: a built target/debug/minimax (or MINIMAX=path), Xvfb, (no window manager needed)
+# Needs: a built target/debug/ilex (or ILEX=path; MINIMAX=path still works), Xvfb, (no window manager needed)
 # ImageMagick (`import`, `convert`). Usage: tools/help_shots.sh [id ...]
 set -euo pipefail
 cd "$(dirname "$0")/.."
-BIN=${MINIMAX:-target/debug/minimax}
+BIN=${ILEX:-${MINIMAX:-target/debug/ilex}}
 OUT=assets/help
 WAIT=${WAIT:-14}
 IDS=("$@")

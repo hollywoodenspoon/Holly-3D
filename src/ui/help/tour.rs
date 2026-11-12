@@ -15,8 +15,8 @@ pub struct Step {
 
 pub const STEPS: [Step; 8] = [
     Step {
-        title: "Welcome to MiniMax",
-        text: "MiniMax works like 3ds Max. This tour shows you where everything is. You can open it again from Help > Getting Started Tour.",
+        title: "Welcome to Ilex",
+        text: "Ilex works like 3ds Max. This tour shows you where everything is. You can open it again from Help > Getting Started Tour.",
         shot: "layout",
         marks: &[m(40.0, 13.0, "Menus"), m(555.0, 42.0, "Main Toolbar"), m(1420.0, 116.0, "Command Panel")],
     },

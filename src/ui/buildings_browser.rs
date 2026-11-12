@@ -147,7 +147,7 @@ fn thumb(k: BuildingKind) -> &'static Thumb {
 
 /// Create tab: one collapsible section per category with 2-column grids.
 pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "Geometry — Buildings & Props", true, |ui| {
+    rollout(ui, "Demiurge Settlements — Buildings & Props", true, |ui| {
         if ui
             .add_sized([CONTENT_W, 26.0], egui::Button::new("Open Buildings & Props Browser...").selected(ed.buildings_browser_open))
             .clicked()

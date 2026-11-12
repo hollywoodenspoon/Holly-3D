@@ -1,4 +1,7 @@
-# MiniMax (Holly-3D)
+# Ilex 3D (Holly-3D)
+
+_Formerly **MiniMax**. Scenes saved as `.mmax` (and `.mmaxpose` poses) still open; new
+scenes save as `.ilex`, and the old `minimax` command still starts the app._
 
 A clean, 3ds Max-style polygon modeler written in Rust (Bevy 0.20 + bevy_egui 0.43).
 See `CLAUDE.md` for the full design spec and `PROJECT_STATUS.md` for progress.
@@ -38,7 +41,7 @@ cargo run --release
 ```
 
 To install it as a command instead, run `cargo install --path .` and start it with
-`minimax`. To update later: `git pull` and then `cargo install --path .` again.
+`ilex`. To update later: `git pull` and then `cargo install --path .` again.
 
 On bash or zsh the steps are the same, except step 3: add
 `export PATH="$HOME/.cargo/bin:$PATH"` to your shell's startup file instead of
@@ -46,10 +49,11 @@ running `fish_add_path`.
 
 ### As a pacman package with a local repository (CachyOS / Arch)
 
-`packaging/` builds a real pacman package. It installs `/usr/bin/minimax`, a
-menu entry, the Slate & Amber app icon, and the `application/x-minimax-scene`
-file type, so double-clicking a `.mmax` file in Dolphin or Nautilus opens it in
-MiniMax. Do steps 1–4 above first (packages, driver, Rust, clone), then:
+`packaging/` builds a real pacman package. It installs `/usr/bin/ilex` (plus a
+`/usr/bin/minimax` symlink for old scripts), a menu entry, the white Holly tree
+app icon, and the `application/x-ilex-scene` and legacy `application/x-minimax-scene`
+file types, so double-clicking a `.ilex` or `.mmax` file in Dolphin or Nautilus opens
+it in Ilex. The package replaces an installed `minimax` package on upgrade. Do steps 1–4 above first (packages, driver, Rust, clone), then:
 
 ```fish
 packaging/publish-repo.sh
@@ -65,7 +69,8 @@ SigLevel = Optional TrustAll
 Server = file:///home/<you>/.local/share/minimax-repo
 ```
 
-Then install with `sudo pacman -Syu minimax`. To upgrade later, run `git pull`,
+Then install with `sudo pacman -Syu ilex`. (The repository keeps its `[minimax]`
+name so an existing `pacman.conf` entry keeps working.) To upgrade later, run `git pull`,
 `packaging/publish-repo.sh` and `sudo pacman -Syu`.
 
 - **Version:** the package version is `0.<commit count>.g<short hash>`, so every new
@@ -136,7 +141,7 @@ cargo test --lib               # headless geometry / editor tests
   `E` to rotate), Boolean (`boolmesh`, ProBoolean-style operand list with Pick / Remove /
   Extract) and ProOptimizer (`meshopt`, keeps material / UV / colour / normal seams).
 
-- **Phase 6**: file I/O (`.mmax` scenes, OBJ, glTF/GLB and FBX import and export),
+- **Phase 6**: file I/O (`.ilex` scenes, formerly `.mmax`, OBJ, glTF/GLB and FBX import and export),
   target and free cameras, the Align dialog, interactive gizmos for the deformers and
   the Symmetry mirror, spline Booleans and Refine, 3D snaps, selection region shapes,
   HDRI environments and Cycles rendering through Blender.

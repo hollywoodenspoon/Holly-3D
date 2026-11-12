@@ -1,4 +1,4 @@
-//! Render Setup (F10) "Lens Effects" rollout: aperture blades for polygonal
+//! Render Setup (F10) "Luxon Lens FX (Bokeh, Anamorphic & Glare)" rollout: aperture blades for polygonal
 //! bokeh, cat's-eye vignetting, anamorphic streak flares and starburst
 //! glare (lens model after EffectCraft, MIT / Apache-2.0).
 
@@ -9,7 +9,7 @@ use bevy_egui::egui;
 
 pub fn rollout_ui(ui: &mut egui::Ui, ed: &mut Editor) {
     let l = &mut ed.render.post.lens;
-    rollout(ui, "Lens Effects", false, |ui| {
+    rollout(ui, "Luxon Lens FX (Bokeh, Anamorphic & Glare)", false, |ui| {
         egui::Grid::new("fx_lens").num_columns(2).spacing([10.0, 6.0]).min_col_width(130.0).show(ui, |ui| {
             ui.label("Aperture Blades");
             ui.horizontal(|ui| {

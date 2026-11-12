@@ -29,10 +29,10 @@ impl Slider {
     pub fn apply(&self, pack: &Pack, coords: &mut [Vec3], v: f32) {
         if v > 0.0 {
             pack.apply(&self.pos, coords, v.min(1.0));
-        } else if v < 0.0 {
-            if let Some(n) = &self.neg {
-                pack.apply(n, coords, (-v).min(1.0));
-            }
+        } else if v < 0.0
+            && let Some(n) = &self.neg
+        {
+            pack.apply(n, coords, (-v).min(1.0));
         }
     }
 }

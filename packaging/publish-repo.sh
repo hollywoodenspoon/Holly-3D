@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds MiniMax with makepkg and publishes it to a local pacman repository,
+# Builds Ilex 3D (formerly MiniMax) with makepkg and publishes it to a local pacman repository,
 # so `sudo pacman -Syu` installs and upgrades it like any other package.
 #
 #   packaging/publish-repo.sh             # build + publish
@@ -27,7 +27,7 @@ backup="$(mktemp)"
 cp PKGBUILD "$backup"
 trap 'cp "$backup" PKGBUILD; rm -f "$backup"' EXIT
 
-echo "==> Building MiniMax (makepkg -sf $*)"
+echo "==> Building Ilex (makepkg -sf $*)"
 makepkg -sf "$@"
 
 # Full paths of the packages just built (honours PKGDEST from makepkg.conf).
@@ -65,7 +65,7 @@ Server = file://$repo_dir
 
 Then install or upgrade with:
 
-  sudo pacman -Syu minimax
+  sudo pacman -Syu ilex
 
 MSG
 

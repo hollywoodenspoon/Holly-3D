@@ -38,7 +38,7 @@ impl Integrator {
     pub const ALL: [Integrator; 2] = [Integrator::PathTracer, Integrator::Classic];
     pub fn label(self) -> &'static str {
         match self {
-            Integrator::PathTracer => "Path Tracer (multi-bounce, MIS)",
+            Integrator::PathTracer => "Veach Path Tracer (multi-bounce, MIS)",
             Integrator::Classic => "Classic Raytracer (fast preview)",
         }
     }

@@ -1,4 +1,4 @@
-//! Environment (`8`) -> Volumetric Godrays & Mist rollout.
+//! Environment (`8`) -> Luxon Volumetric Godrays & Mist rollout.
 
 use crate::render::environment::Environment;
 use crate::render::volumetrics::VolumeSettings;
@@ -7,7 +7,7 @@ use bevy_egui::egui::{self, RichText};
 
 pub fn rows(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
     ui.separator();
-    ui.label(RichText::new("Volumetric Godrays & Mist").strong());
+    ui.label(RichText::new("Luxon Volumetric Godrays & Mist").strong());
     let v = &mut env.volume;
     t.r(ui.checkbox(&mut v.enabled, "Enable Volumetric Godrays"));
     ui.add_enabled_ui(v.enabled, |ui| {

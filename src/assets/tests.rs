@@ -40,7 +40,7 @@ fn serve(routes: HashMap<String, Vec<u8>>) -> (String, Arc<AtomicUsize>) {
 }
 
 fn temp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("minimax_assets_{name}_{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("ilex_assets_{name}_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     d.to_string_lossy().into_owned()
 }

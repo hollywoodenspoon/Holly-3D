@@ -8,9 +8,9 @@ use bevy_egui::egui;
 
 pub fn sidebar(ui: &mut egui::Ui, ed: &mut Editor) {
     egui::Panel::right("rfw_lightmix").resizable(false).exact_size(290.0).show(ui, |ui| {
-        ui.heading("LightMix");
+        ui.heading("Luxon LightMix");
         let Some(mix) = ed.rfw.lightmix.as_mut() else {
-            ui.label(dim("Render with the CPU Path Tracer (F10 > Path Tracing, LightMix on) to relight the image here without re-rendering."));
+            ui.label(dim("Render with the CPU Veach Path Tracer (F10 > Path Tracing, LightMix on) to relight the image here without re-rendering."));
             return;
         };
         ui.label(dim("Re-weights each light group's buffer — no re-render."));
@@ -32,7 +32,7 @@ pub fn sidebar(ui: &mut egui::Ui, ed: &mut Editor) {
         if changed {
             ed.remix_render();
         }
-        if ui.button("💡 Apply LightMix to Scene Lights").on_hover_text("Bake the faders into each light's Multiplier and Color (undoable)").clicked() {
+        if ui.button("💡 Apply Luxon LightMix to Scene Lights").on_hover_text("Bake the faders into each light's Multiplier and Color (undoable)").clicked() {
             ed.apply_lightmix();
         }
     });

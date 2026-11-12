@@ -1,4 +1,4 @@
-//! MiniMax — a clean 3ds Max-style polygon modeler.
+//! Ilex (formerly MiniMax) — a clean 3ds Max-style polygon modeler.
 
 pub mod assembly;
 pub mod assets;

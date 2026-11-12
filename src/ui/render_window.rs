@@ -115,7 +115,7 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         if toggle_button(ui, ed.rfw.grading_open, "🎨 Grading").on_hover_text("Color Grading & Camera RAW sidebar").clicked() {
             ed.rfw.grading_open = !ed.rfw.grading_open;
         }
-        if toggle_button(ui, ed.rfw.lightmix_open, "💡 LightMix").on_hover_text("Relight the render per light group without re-rendering").clicked() {
+        if toggle_button(ui, ed.rfw.lightmix_open, "💡 Luxon LightMix").on_hover_text("Relight the render per light group without re-rendering").clicked() {
             ed.rfw.lightmix_open = !ed.rfw.lightmix_open;
         }
     });
@@ -146,7 +146,7 @@ fn status(ui: &mut egui::Ui, ed: &Editor) {
 
 fn main_window(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
     let mut open = ed.rfw.rfw_open;
-    egui::Window::new(RichText::new("Rendered Frame Window").strong())
+    egui::Window::new(RichText::new("Veach Rendered Frame Window").strong())
         .id(egui::Id::new("rfw"))
         .open(&mut open)
         .default_pos([300.0, 70.0])
@@ -222,7 +222,7 @@ fn clone_windows(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
     for c in &mut ed.rfw.clones {
         let ch = st.clone_channels.entry(c.id).or_default();
         let mut open = c.open;
-        egui::Window::new(RichText::new(format!("Rendered Frame Window — {}", c.label)).strong())
+        egui::Window::new(RichText::new(format!("Veach Rendered Frame Window — {}", c.label)).strong())
             .id(egui::Id::new(("rfw_clone", c.id)))
             .open(&mut open)
             .default_pos([340.0 + c.id as f32 * 24.0, 100.0 + c.id as f32 * 24.0])

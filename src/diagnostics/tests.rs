@@ -8,18 +8,18 @@ use bevy::math::Vec3;
 use std::path::PathBuf;
 
 fn tmp(name: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("minimax_crash_{name}_{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("ilex_crash_{name}_{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     d
 }
 
 const BT: &str = "   0: std::backtrace::Backtrace::force_capture
              at /rustc/library/std/src/backtrace.rs:312:13
-   1: minimax::diagnostics::hook::install::{{closure}}
+   1: ilex::diagnostics::hook::install::{{closure}}
              at ./src/diagnostics/hook.rs:70:28
-   2: minimax::mesh::ops::extrude::extrude_faces
+   2: ilex::mesh::ops::extrude::extrude_faces
              at ./src/mesh/ops/extrude.rs:41:9
-   3: <minimax::editor::Editor>::apply_op
+   3: <ilex::editor::Editor>::apply_op
              at ./src/editor/actions.rs:99:5
    4: bevy_ecs::system::run
 ";
@@ -54,12 +54,12 @@ fn utc_timestamps() {
 }
 
 #[test]
-fn minimax_frames_skip_the_reporter_and_libraries() {
+fn own_frames_skip_the_reporter_and_libraries() {
     let all = report::frames(BT);
     assert_eq!(all.len(), 5);
-    let own = report::minimax_frames(BT);
+    let own = report::own_frames(BT);
     let names: Vec<&str> = own.iter().map(|f| f.function.as_str()).collect();
-    assert_eq!(names, ["minimax::mesh::ops::extrude::extrude_faces", "<minimax::editor::Editor>::apply_op"]);
+    assert_eq!(names, ["ilex::mesh::ops::extrude::extrude_faces", "<ilex::editor::Editor>::apply_op"]);
     assert_eq!(own[0].at, ["./src/mesh/ops/extrude.rs:41:9"]);
 }
 
@@ -82,12 +82,12 @@ fn report_has_the_five_sections_in_order() {
         "## 1. Crash Summary & Location",
         "## 2. Last 50 User Actions (Flight Recorder Breadcrumbs)",
         "## 3. Active Scene & Selection State",
-        "## 4. MiniMax Stack Frames",
+        "## 4. Ilex Stack Frames",
         "## 5. Full Backtrace",
     ];
     let pos: Vec<usize> = heads.iter().map(|h| md.find(h).unwrap_or_else(|| panic!("missing {h}"))).collect();
     assert!(pos.windows(2).all(|w| w[0] < w[1]));
-    // With no panic location, the innermost MiniMax frame is the location.
+    // With no panic location, the innermost Ilex frame is the location.
     assert!(md.contains("**Location:** `./src/mesh/ops/extrude.rs:41:9`"));
     assert!(md.contains("1. `+    1.00s` **Hotkey** W -> Select and Move"));
     assert!(md.contains("2. `+    2.50s` **Op** Extrude"));

@@ -140,7 +140,7 @@ fn frame_buffer_blocks_and_files() {
     assert_eq!(fb.rev, 1);
     let v = fb.view_rgba8(ChannelView { g: false, b: false, ..Default::default() });
     assert_eq!(&v[20..24], &[255, 0, 0, 255], "R-only view");
-    let dir = std::env::temp_dir().join(format!("minimax_fb_{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("ilex_fb_{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     for ext in ["png", "jpg", "exr"] {
         let p = dir.join(format!("t.{ext}"));

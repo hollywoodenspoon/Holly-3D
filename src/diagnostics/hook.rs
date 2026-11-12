@@ -27,11 +27,11 @@ pub fn write_crash(info: &CrashInfo) -> Option<Bundle> {
     let res = res.unwrap_or_else(|| recovery::write_bundle(&dir, &stamp, &md, None));
     match res {
         Ok(b) => {
-            eprintln!("MiniMax crash report written to {}", b.report.display());
+            eprintln!("Ilex crash report written to {}", b.report.display());
             Some(b)
         }
         Err(e) => {
-            eprintln!("MiniMax could not write its crash report: {e}\n\n{md}");
+            eprintln!("Ilex could not write its crash report: {e}\n\n{md}");
             None
         }
     }
@@ -47,7 +47,7 @@ fn thread_name() -> String {
 pub fn simulate() -> Option<Bundle> {
     breadcrumbs::record("Test", "Simulate Test Crash Report");
     let info = CrashInfo {
-        message: "This is a simulated crash report. MiniMax did not crash; the button only checks that reports are written.".into(),
+        message: "This is a simulated crash report. Ilex did not crash; the button only checks that reports are written.".into(),
         location: Some(format!("{}:{}:{}", file!(), line!(), column!())),
         thread: thread_name(),
         backtrace: std::backtrace::Backtrace::force_capture().to_string(),
@@ -152,13 +152,13 @@ mod signals {
             return;
         }
         let thread = thread_name();
-        let spawned = std::thread::Builder::new().name("minimax-crash-report".into()).stack_size(16 << 20).spawn(move || {
+        let spawned = std::thread::Builder::new().name("ilex-crash-report".into()).stack_size(16 << 20).spawn(move || {
             let info = CrashInfo {
-                message: format!("MiniMax was stopped by {}.", name(sig)),
+                message: format!("Ilex was stopped by {}.", name(sig)),
                 location: None,
                 thread,
                 backtrace: "(A fatal signal cannot be unwound safely, so the crashing thread's backtrace is not available. \
-                            The breadcrumbs above show what was happening; run MiniMax from a terminal to see any driver message.)"
+                            The breadcrumbs above show what was happening; run Ilex from a terminal to see any driver message.)"
                     .into(),
                 unix_time: report::unix_now(),
                 cause: format!("signal {}", name(sig)),

@@ -1,6 +1,6 @@
 //! The Markdown crash report, laid out so it can be pasted straight into
 //! Claude Code: where it crashed, the last 50 user actions, the scene and
-//! selection state, MiniMax's own stack frames, then the full backtrace.
+//! selection state, Ilex's own stack frames, then the full backtrace.
 
 use super::breadcrumbs::Crumb;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -105,13 +105,16 @@ pub fn frames(backtrace: &str) -> Vec<Frame> {
     out
 }
 
-/// MiniMax's own frames (not the crash reporter's), innermost first.
-pub fn minimax_frames(backtrace: &str) -> Vec<Frame> {
+/// Ilex's own frames (not the crash reporter's), innermost first. Frames
+/// from the crate's pre-rename name `minimax::` count too, so older
+/// backtraces still read.
+pub fn own_frames(backtrace: &str) -> Vec<Frame> {
     frames(backtrace)
         .into_iter()
         .filter(|f| {
-            let own = f.function.starts_with("minimax::") || f.function.starts_with("<minimax::");
-            own && !f.function.contains("minimax::diagnostics::")
+            let name = f.function.trim_start_matches('<');
+            let own = ["ilex::", "minimax::"].iter().any(|c| name.starts_with(c));
+            own && !name.contains("::diagnostics::")
         })
         .collect()
 }
@@ -119,18 +122,18 @@ pub fn minimax_frames(backtrace: &str) -> Vec<Frame> {
 /// The full Markdown report.
 pub fn format(info: &CrashInfo, build: &BuildInfo, crumbs: Option<&[Crumb]>, scene: Option<&str>) -> String {
     let mut s = String::new();
-    s.push_str("# MiniMax Crash Report\n\n");
+    s.push_str("# Ilex Crash Report\n\n");
     s.push_str("> Paste this whole file into Claude Code and ask it to find and fix the bug. ");
-    s.push_str("Section 1 says where it crashed, section 2 what you were doing, section 4 which MiniMax functions were running.\n\n");
+    s.push_str("Section 1 says where it crashed, section 2 what you were doing, section 4 which Ilex functions were running.\n\n");
     s.push_str(&format!("- **When:** {}\n", timestamp(info.unix_time)));
-    s.push_str(&format!("- **MiniMax:** {} (git `{}`)\n", build.version, build.git));
+    s.push_str(&format!("- **Ilex:** {} (git `{}`)\n", build.version, build.git));
     s.push_str(&format!("- **System:** {}, kernel {}\n", build.os, build.kernel));
     s.push_str(&format!("- **GPU:** {}\n\n", build.gpu));
 
     s.push_str("## 1. Crash Summary & Location\n\n");
     s.push_str(&format!("- **Cause:** {}\n", info.cause));
     s.push_str(&format!("- **Thread:** `{}`\n", info.thread));
-    let own = minimax_frames(&info.backtrace);
+    let own = own_frames(&info.backtrace);
     let loc = info.location.clone().or_else(|| own.iter().find_map(|f| f.at.first().cloned()));
     s.push_str(&format!("- **Location:** `{}`\n\n", loc.as_deref().unwrap_or("unknown")));
     s.push_str("```text\n");
@@ -141,7 +144,7 @@ pub fn format(info: &CrashInfo, build: &BuildInfo, crumbs: Option<&[Crumb]>, sce
     match crumbs {
         Some([]) => s.push_str("_Nothing was recorded before the crash._\n"),
         Some(c) => {
-            s.push_str("Oldest first; the last line is what happened just before the crash. Times are seconds since MiniMax started.\n\n");
+            s.push_str("Oldest first; the last line is what happened just before the crash. Times are seconds since Ilex started.\n\n");
             for (i, cr) in c.iter().enumerate() {
                 s.push_str(&format!("{}. {}\n", i + 1, cr.line()));
             }
@@ -154,9 +157,9 @@ pub fn format(info: &CrashInfo, build: &BuildInfo, crumbs: Option<&[Crumb]>, sce
     s.push_str(scene.unwrap_or("_Not available (the crash happened before the first frame, or the state was being updated)._\n"));
     s.push('\n');
 
-    s.push_str("## 4. MiniMax Stack Frames\n\n");
+    s.push_str("## 4. Ilex Stack Frames\n\n");
     if own.is_empty() {
-        s.push_str("_No MiniMax frames. The crash was inside a library or driver; see the full backtrace._\n");
+        s.push_str("_No Ilex frames. The crash was inside a library or driver; see the full backtrace._\n");
     } else {
         s.push_str("Innermost first.\n\n```text\n");
         for (i, f) in own.iter().enumerate() {

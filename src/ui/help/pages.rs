@@ -48,7 +48,7 @@ pub const BASICS: Page = Page {
     id: "basics",
     title: "1. Getting Started",
     blocks: &[
-        P("MiniMax works like 3ds Max. The screen has five fixed zones, and every tool has a button: hotkeys are only shortcuts."),
+        P("Ilex works like 3ds Max. The screen has five fixed zones, and every tool has a button: hotkeys are only shortcuts."),
         Shot(
             "layout",
             &[

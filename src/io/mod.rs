@@ -1,4 +1,4 @@
-//! File I/O: the native `.mmax` scene format and OBJ / glTF / FBX
+//! File I/O: the native `.ilex` (and legacy `.mmax`) scene format and OBJ / glTF / FBX
 //! import + export. Exchange formats carry polygons (quads and n-gons),
 //! 3ds Max smoothing groups, UVs, vertex colours and material IDs.
 
@@ -133,7 +133,7 @@ impl MeshItem {
     }
 }
 
-/// Z-up (MiniMax / 3ds Max) to Y-up (glTF, OBJ convention): rotate -90° about X.
+/// Z-up (Ilex / 3ds Max) to Y-up (glTF, OBJ convention): rotate -90° about X.
 pub fn z_to_y_up() -> Mat4 {
     Mat4::from_quat(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
 }

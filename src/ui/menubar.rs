@@ -26,7 +26,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .frame(egui::Frame::new().fill(theme::input()).inner_margin(egui::Margin::symmetric(8, 2)))
         .show(ui, |ui| {
             ui.horizontal_centered(|ui| {
-                ui.label(RichText::new("MiniMax").color(theme::amber()).strong());
+                ui.label(RichText::new("Ilex").color(theme::amber()).strong());
                 for (title, entries) in MENUS {
                     if *title == "Rendering" {
                         ui.menu_button("Create", |ui| create_menu(ui, ed));
@@ -65,17 +65,17 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
             pick(ui, ed, m.label(), "", Tool::CreateGeoGen(m));
         }
     });
-    ui.menu_button("Worlds", |ui| {
+    ui.menu_button("Demiurge Worlds", |ui| {
         for k in WorldKind::ALL {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }
     });
-    ui.menu_button("Settlements (GhostTown)", |ui| {
+    ui.menu_button("Demiurge Settlements (GhostTown)", |ui| {
         for k in WorldKind::SETTLEMENTS {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }
     });
-    ui.menu_button("Buildings & Props", |ui| {
+    ui.menu_button("Demiurge Buildings & Props", |ui| {
         if ui.button("Buildings & Props Browser...").clicked() {
             ed.buildings_browser_open = true;
             ui.close();

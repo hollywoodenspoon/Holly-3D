@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ilex scene files (.ilex): RON text that starts with `format: "Ilex"`.
+     Scenes saved before the rename (.mmax, `format: "MiniMax"`) keep their
+     own type, opened by the same application. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-ilex-scene">
+    <comment>Ilex 3D scene</comment>
+    <sub-class-of type="text/plain"/>
+    <icon name="application-x-ilex-scene"/>
+    <glob pattern="*.ilex"/>
+    <magic priority="60">
+      <match type="string" value="format: &quot;Ilex&quot;" offset="0:64"/>
+    </magic>
+  </mime-type>
+  <mime-type type="application/x-minimax-scene">
+    <comment>Ilex 3D scene (legacy MiniMax)</comment>
+    <sub-class-of type="text/plain"/>
+    <icon name="application-x-ilex-scene"/>
+    <glob pattern="*.mmax"/>
+    <magic priority="60">
+      <match type="string" value="format: &quot;MiniMax&quot;" offset="0:64"/>
+    </magic>
+  </mime-type>
+  <mime-type type="application/x-ilex-pose">
+    <comment>Ilex 3D character pose</comment>
+    <sub-class-of type="text/plain"/>
+    <icon name="application-x-ilex-scene"/>
+    <glob pattern="*.ilexpose"/>
+    <glob pattern="*.mmaxpose"/>
+  </mime-type>
+</mime-info>

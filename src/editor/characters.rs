@@ -13,7 +13,7 @@ impl Editor {
     pub fn create_character(&mut self, p: CharacterParams, at: Vec3) -> ObjId {
         self.checkpoint("Create Character");
         let id = self.scene.add(BaseObject::Character(Box::new(p)), at);
-        let mut m = Material::named(&format!("{} Skin", self.scene.objects[id].name));
+        let mut m = Material::named(format!("{} Skin", self.scene.objects[id].name));
         MultiPreset::Character.apply(&mut m);
         self.scene.objects[id].material = Some(self.scene.materials.mats.insert(m));
         self.scene.select_only(Some(id));

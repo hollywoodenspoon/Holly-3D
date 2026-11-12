@@ -1,4 +1,4 @@
-//! Render Setup (F10) → Renderer tab for the native path tracer: Compute
+//! Render Setup (F10) → Renderer tab for the Veach Path Tracer: Compute
 //! Device, Progressive Preview, bounce limits and adaptive sampling.
 
 use crate::render::{ComputeDevice, Integrator, RenderSettings};
@@ -30,7 +30,7 @@ pub fn engine_rows(ui: &mut egui::Ui, r: &mut RenderSettings) {
 pub fn tab(ui: &mut egui::Ui, r: &mut RenderSettings) {
     let p = &mut r.path;
     ui.checkbox(&mut p.progressive, "Stream Full-Frame Progressive Passes (1 -> 4 -> 16 -> Final SPP)");
-    ui.label(RichText::new("Sampling").strong());
+    ui.label(RichText::new("Veach MIS & Adaptive Sampling").strong());
     egui::Grid::new("rs_pt").num_columns(2).spacing([10.0, 6.0]).show(ui, |ui| {
         ui.label("Samples per Pixel");
         max_spinner_range(ui, &mut p.samples, 1.0, 64, 1..=4096);
@@ -66,7 +66,7 @@ pub fn tab(ui: &mut egui::Ui, r: &mut RenderSettings) {
             ui.end_row();
         });
     });
-    ui.checkbox(&mut p.lightmix, "LightMix Buffers (relight per light group in F9, CPU tracer)")
+    ui.checkbox(&mut p.lightmix, "Luxon LightMix Buffers (relight per light group in F9, CPU tracer)")
         .on_hover_text("Keeps one buffer per light group so the Frame Window's LightMix can relight the render live");
     ui.checkbox(&mut r.shadows, "Shadows");
     ui.checkbox(&mut r.outlines, "Universal Ink Outline Pass");

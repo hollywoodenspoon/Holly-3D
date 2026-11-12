@@ -1,4 +1,4 @@
-//! Every command in MiniMax as one `Action`: its label, tooltip and what it
+//! Every command in Ilex as one `Action`: its label, tooltip and what it
 //! does. The toolbar, menus, ribbon, navigation buttons and hotkeys all
 //! go through this table, and a test checks that every action has a visible
 //! button or menu entry ("a button for everything").
@@ -204,11 +204,11 @@ impl Action {
             Nav(NavMode::Orbit) => "Orbit",
             Render => "Render",
             RenderSetup => "Render Setup...",
-            FrameWindow => "Rendered Frame Window",
+            FrameWindow => "Veach Rendered Frame Window",
             ColorGrading => "Color Grading & Camera RAW",
-            LightMix => "LightMix (Relight Render)",
+            LightMix => "Luxon LightMix (Relight Render)",
             Turntable => "Render Turntable / Sprite Sheet...",
-            BuildingsBrowser => "Buildings & Props Browser...",
+            BuildingsBrowser => "Demiurge Buildings & Props Browser...",
             CharacterStudio => "Character & Creature Studio...",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
@@ -218,7 +218,7 @@ impl Action {
             Help => "Help...",
             Tour => "Getting Started Tour",
             HotkeyList => "Hotkey List",
-            About => "About MiniMax",
+            About => "About Ilex 3D",
             CrashReports => "View Crash Reports...",
             Preferences => "Preferences...",
         };
@@ -249,7 +249,7 @@ impl Action {
             Paint => "🖊 Paint",
             ContactSets => "Contact",
             BuildingsBrowser => "🏠 Buildings",
-            CharacterStudio => "🧍 Characters",
+            CharacterStudio => "♀♂ Characters",
             Isolate => "◎",
             SceneExplorer => "🗄",
             Ribbon => "🛠 Ribbon",
@@ -310,13 +310,13 @@ impl Action {
             Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",
             LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",
             ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",
-            Render => "Render the active viewport into the Rendered Frame Window",
+            Render => "Render the active viewport into the Veach Rendered Frame Window",
             RemoveSubObjects => "Remove the selected vertices or edges",
             RepeatLast => "Repeat the previous Edit Poly operation",
             Cancel => "Leave the current tool, caddy or menu",
-            Help => "How MiniMax works, with screenshots (F1 opens the page for what is under the mouse)",
+            Help => "How Ilex works, with screenshots (F1 opens the page for what is under the mouse)",
             Tour => "A short step-by-step tour of the screen",
-            CrashReports => "Crash reports MiniMax wrote after a crash: copy one for Claude, restore the unsaved scene, or simulate a test report",
+            CrashReports => "Crash reports Ilex wrote after a crash: copy one for Claude, restore the unsaved scene, or simulate a test report",
             _ => "",
         }
     }

@@ -3647,6 +3647,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "ilex"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "boolmesh",
+ "gltf",
+ "half",
+ "image",
+ "libc",
+ "meshopt",
+ "miniz_oxide 0.8.9",
+ "noise",
+ "pollster",
+ "rand 0.8.8",
+ "rand_chacha",
+ "rfd",
+ "ron",
+ "serde",
+ "serde_json",
+ "slotmap",
+ "transform-gizmo-egui",
+ "ufbx",
+ "ureq",
+ "uvunwrap",
+ "wgpu",
+]
+
+[[package]]
 name = "image"
 version = "0.25.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4088,35 +4117,6 @@ dependencies = [
  "cc",
  "float-cmp",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "minimax"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_egui",
- "boolmesh",
- "gltf",
- "half",
- "image",
- "libc",
- "meshopt",
- "miniz_oxide 0.8.9",
- "noise",
- "pollster",
- "rand 0.8.8",
- "rand_chacha",
- "rfd",
- "ron",
- "serde",
- "serde_json",
- "slotmap",
- "transform-gizmo-egui",
- "ufbx",
- "ureq",
- "uvunwrap",
- "wgpu",
 ]
 
 [[package]]

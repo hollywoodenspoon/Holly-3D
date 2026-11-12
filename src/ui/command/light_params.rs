@@ -117,7 +117,7 @@ fn shape(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.label(dim("Parallel rays: only the direction matters for shading."));
         });
     } else if kind.is_area() {
-        rollout(ui, "Area Light Shape", true, |ui| {
+        rollout(ui, "Luxon Photometric & Area Lights", true, |ui| {
             edit(ed, |l, t| {
                 grid(ui, "light_area", |ui| match kind {
                     LightKind::RectArea => {
@@ -145,7 +145,7 @@ fn ies(ui: &mut egui::Ui, ed: &mut Editor) {
         return;
     }
     let open = l.ies != IesProfile::None;
-    rollout(ui, "IES Light Profile", open, |ui| {
+    rollout(ui, "Luxon Photometric: IES Light Profile", open, |ui| {
         edit(ed, |l, t| {
             egui::ComboBox::from_id_salt("light_ies").width(240.0).selected_text(l.ies.label()).show_ui(ui, |ui| {
                 for p in IesProfile::ALL {

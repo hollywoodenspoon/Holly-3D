@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn folder_import_fills_slots() {
-        let dir = std::env::temp_dir().join(format!("minimax_pbr_{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ilex_pbr_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let img = image::RgbaImage::from_pixel(4, 4, image::Rgba([200, 100, 50, 255]));
         for name in ["crate_albedo.png", "crate_roughness.png", "crate_metallic.png", "notes.txt"] {

@@ -1,5 +1,6 @@
-//! glTF / GLB import. Files written by MiniMax are rebuilt into their
-//! original polygons from `extras.minimax`; other files come in as
+//! glTF / GLB import. Files written by Ilex are rebuilt into their
+//! original polygons from `extras.ilex` (or `extras.minimax` from before
+//! the rename); other files come in as
 //! triangles welded by position (one material ID per primitive).
 
 use super::{MatInfo, MeshItem, y_to_z_up, z_to_y_up};
@@ -18,7 +19,8 @@ struct Extra {
 
 #[derive(serde::Deserialize)]
 struct Extras {
-    minimax: Extra,
+    #[serde(alias = "minimax")]
+    ilex: Extra,
 }
 
 pub fn import(path: &Path) -> Result<Vec<MeshItem>, String> {
@@ -76,7 +78,7 @@ fn read_mesh(mesh: &gltf::Mesh, buffers: &[gltf::buffer::Data]) -> (EditablePoly
         let uvs: Vec<Vec2> = r.read_tex_coords(0).map_or(vec![], |t| t.into_f32().map(|[u, v]| Vec2::new(u, 1.0 - v)).collect());
         let cols: Vec<Vec4> = r.read_colors(0).map_or(vec![], |c| c.into_rgba_f32().map(Vec4::from).collect());
         let idx: Vec<u32> = r.read_indices().map_or_else(|| (0..pos.len() as u32).collect(), |i| i.into_u32().collect());
-        let extra: Option<Extra> = prim.extras().as_ref().and_then(|raw| serde_json::from_str::<Extras>(raw.get()).ok()).map(|e| e.minimax);
+        let extra: Option<Extra> = prim.extras().as_ref().and_then(|raw| serde_json::from_str::<Extras>(raw.get()).ok()).map(|e| e.ilex);
         let id = extra.as_ref().map_or(pi as u16 + 1, |e| e.mat_id.max(1));
         let slot = id as usize - 1;
         if materials.len() <= slot {

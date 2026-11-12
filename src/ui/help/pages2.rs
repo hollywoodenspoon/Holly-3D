@@ -1,6 +1,7 @@
 //! Help page content, part 2, and the full page list.
 
 use super::pages::*;
+use super::pages3::{CHARACTERS, NAMES};
 use crate::editor::CommandTab;
 use crate::ui::actions::Action;
 use Block::*;
@@ -21,7 +22,7 @@ pub const SKY: Page = Page {
         Steps(&[
             "Click the Sky menu on the toolbar and pick a preset; that is all it takes.",
             "For more control press 8: time of day, sun, clouds, fog, stars, nebula and HDRI images.",
-            "Deep Space turns the sky black with stars and nebulae; add a Planet from Create > Worlds.",
+            "Deep Space turns the sky black with stars and nebulae; add a Planet from Create > Demiurge Worlds.",
             "Weather & Storm Clouds (in the 8 dialog): pick a Weather Preset, from Clear Sky to Thunderstorm, Ash Haze, Heavy Fog, Rainstorm or Blizzard.",
             "Cloud Thickness darkens storm cloud bases. Overcast Sun Dimming dims the linked sun and softens its shadows. Lightning Flash adds a bolt.",
             "Precipitation (Rain, Snow, or Ash with glowing cinders) falls in the viewport and in F9, hidden behind nearer objects.",
@@ -37,7 +38,7 @@ pub const SKY: Page = Page {
         ]),
         H("Godrays and mist"),
         Steps(&[
-            "Press 8 and open Volumetric Godrays & Mist. Tick Enable, or click Cathedral Shafts, Valley Mist or Dusty Hangar.",
+            "Press 8 and open Luxon Volumetric Godrays & Mist. Tick Enable, or click Cathedral Shafts, Valley Mist or Dusty Hangar.",
             "Mist Base Height and Height Falloff keep mist low in streets and valleys; Wisps add patchy 3D noise that drifts with Wind.",
         ]),
         ShowMe("Open Environment and Effects", Show::Act(Action::Environment)),
@@ -48,13 +49,13 @@ pub const RENDER: Page = Page {
     id: "render",
     title: "10. Rendering",
     blocks: &[
-        Shot("render", &[m(627.0, 75.0, "Render Setup (F10)"), m(680.0, 75.0, "Rendered Frame Window"), m(735.0, 75.0, "Render (F9)")]),
+        Shot("render", &[m(627.0, 75.0, "Render Setup (F10)"), m(680.0, 75.0, "Veach Rendered Frame Window"), m(735.0, 75.0, "Render (F9)")]),
         Steps(&[
             "F10 Render Setup: resolution presets, alpha background, camera, anti-aliasing, AO, GI, denoiser, bloom, depth of field.",
-            "Pick the renderer: the Path Tracer (default: multi-bounce light, MIS, Russian Roulette) or the fast Classic Raytracer.",
+            "Pick the renderer: the Veach Path Tracer (default: multi-bounce light, MIS, Russian Roulette) or the fast Classic Raytracer.",
             "Compute Device: Auto uses the GPU (wgpu Vulkan compute) and falls back to the CPU; HDRI skies, opacity, toon and texture maps render on the CPU.",
-            "Progressive Preview streams full-frame passes (1, 2, 4 ... samples). Adaptive Sampling stops pixels whose noise is below the Noise Threshold.",
-            "F9 renders the active view into the Rendered Frame Window.",
+            "Progressive Preview streams full-frame passes (1, 2, 4 ... samples). Veach MIS & Adaptive Sampling stops pixels whose noise is below the Noise Threshold.",
+            "F9 renders the active view into the Veach Rendered Frame Window.",
             "In the Frame Window: save PNG / EXR / JPG, copy, clone the window to compare, and view R / G / B / A channels.",
         ]),
         H("Color Grading & Camera RAW"),
@@ -72,22 +73,22 @@ pub const RENDER: Page = Page {
             "Lens & Film FX: Vignette with Midpoint, Chromatic Aberration and Film Grain (🎲 New Grain changes the pattern).",
             "Right-click any slider or wheel to reset it. Saved PNG / JPG images include the grade; EXR keeps the ungraded linear light.",
         ]),
-        H("LightMix, denoiser and render passes"),
+        H("Luxon LightMix, Veach denoiser and render passes"),
         Steps(&[
-            "Render with the Path Tracer, then click 💡 LightMix: every group (Sun & Sky, Environment, Emissive, Godrays, each light) has On, Solo, Intensity and Tint. The image re-mixes at once, no re-render.",
-            "💡 Apply LightMix to Scene Lights bakes the faders into the lights (Ctrl + Z undoes it).",
-            "The denoiser divides out the surface albedo, smooths only the lighting with a 5-pass A-Trous filter (normal, depth, roughness and object aware), then puts the crisp texture back.",
+            "Render with the Veach Path Tracer, then click 💡 Luxon LightMix: every group (Sun & Sky, Environment, Emissive, Godrays, each light) has On, Solo, Intensity and Tint. The image re-mixes at once, no re-render.",
+            "💡 Apply Luxon LightMix to Scene Lights bakes the faders into the lights (Ctrl + Z undoes it).",
+            "The Veach À-Trous Wavelet Denoiser divides out the surface albedo, smooths only the lighting with a 5-pass A-Trous filter (normal, depth, roughness and object aware), then puts the crisp texture back.",
             "The pass list next to R / G / B / A shows Direct, Indirect GI, Volumetric, Specular, Subsurface, Albedo, World Normal, Linear Depth, Cavity / AO and the adaptive sample heatmap.",
         ]),
         H("Lens effects, ink and catchers"),
         Steps(&[
-            "F10 > Lens Effects: 5 to 9 aperture blades (with rotation) shape the depth-of-field bokeh; Cat's-Eye squeezes it near the frame edges.",
+            "F10 > Luxon Lens FX (Bokeh, Anamorphic & Glare): 5 to 9 aperture blades (with rotation) shape the depth-of-field bokeh; Cat's-Eye squeezes it near the frame edges.",
             "Anamorphic Streak Flare and a 4 / 6 / 8 point Starburst add glare to highlights above the Flare Threshold.",
             "Material Editor > Ink / Toon Outline > Interior Pen Lines draws soft folds and Panel Groove seams. Toon materials have Manga Halftone Shadows.",
             "Display tab > Shadow & Reflection Catcher: the ground renders transparent except for shadows, AO and reflections, ready for a photo backplate.",
             "🎞 Turntable / Sprites (F9 toolbar or F10): a 360° PNG sequence, or an N / NE / E ... sprite atlas PNG + .json at a 30°, 35.264° or 45° pitch.",
         ]),
-        ShowMe("Open LightMix", Show::Act(Action::LightMix)),
+        ShowMe("Open Luxon LightMix", Show::Act(Action::LightMix)),
         ShowMe("Render Turntable / Sprite Sheet", Show::Act(Action::Turntable)),
         ShowMe("Open Color Grading", Show::Act(Action::ColorGrading)),
         ShowMe("Open Render Setup", Show::Act(Action::RenderSetup)),
@@ -96,7 +97,7 @@ pub const RENDER: Page = Page {
 
 pub const GHOSTTOWN: Page = Page {
     id: "ghosttown",
-    title: "11. GhostTown, Medieval Architect and destruction",
+    title: "11. Demiurge: GhostTown, Medieval Architect and destruction",
     blocks: &[
         Shot(
             "ghosttown",
@@ -107,16 +108,16 @@ pub const GHOSTTOWN: Page = Page {
             ],
         ),
         Steps(&[
-            "Create > Settlement, then drag out the town area in a viewport.",
+            "Create > Demiurge Settlements, then drag out the town area in a viewport.",
             "Change the seed, the block and street sizes, floors and density on the Modify tab.",
             "New presets: River City, Harbour Town, Industrial, Old Town + Modern Sprawl, Square Walled City, River Town, Castle & Town, Star Fort, Crossroads Hamlet and Monastery.",
             "Buildings: uncheck any type to leave it out. Building Parts, Town Features (river, bridges, walls, moat, rail...), Emissive Lights and Prop Style (Generated / Low-poly / Realistic) shape the town.",
-            "Damaged / Battlefield Mode, or the Battlefield & Ruin modifier, wrecks the buildings. Blast Zones aim the damage.",
+            "Damaged / Battlefield Mode, or the Demiurge Battlefield & Ruin modifier, wrecks the buildings. Blast Zones aim the damage.",
             "Buildings & Props Browser (Tools menu or the 🏠 toolbar button): click a thumbnail, then drag a footprint to place one of 44 buildings or props on its own.",
             "Destruction Level (on a building, the town and the Battlefield modifier): Intact, Light Damage, Heavy Damage, Warzone Collapse, Apocalyptic Ruin or Pure Rubble. Each building in a town varies by one step.",
             "Rubble Density, Era (Modern concrete and rebar, Medieval stone and charred timber, Ancient stone and moss), Glowing Embers with Ember Glow (ID 25) and Gore / Blood Smears (ID 28) dress the rubble mounds.",
             "The Rubble Pile type places a mound on its own: Width and Length set the spread, Pile Height its height.",
-            "Smoke Plume (Create > Worlds): drag the source radius, then the height. Style (black battlefield, grey chimney, white steam), Wind Lean, Turbulence, Rise Phase and Fire Base Intensity shape it.",
+            "Smoke Plume (Create > Demiurge Worlds): drag the source radius, then the height. Style (black battlefield, grey chimney, white steam), Wind Lean, Turbulence, Rise Phase and Fire Base Intensity shape it.",
             "Spawn Rising Smoke Plumes (damaged town or Battlefield modifier) raises plumes from the tallest wrecks and the blast zones.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
@@ -174,10 +175,10 @@ pub const FILES: Page = Page {
     id: "files",
     title: "14. Files",
     blocks: &[Steps(&[
-        "File > New, Open and Save use MiniMax scenes (.mmax).",
+        "File > New, Open and Save use Ilex scenes (.ilex). Open also reads scenes saved before the rename (.mmax); saving one writes a .ilex beside it.",
         "Import OBJ, glTF / GLB and FBX. Export everything or just the selection.",
         "Autosave keeps a backup every few minutes (Preferences > General).",
-        "You can also open a file from the terminal: minimax scene.mmax",
+        "You can also open a file from the terminal: ilex scene.ilex (the old minimax command still works)",
     ])],
 };
 
@@ -200,7 +201,7 @@ pub const CRASH: Page = Page {
     title: "16. Crash reports and recovery",
     blocks: &[
         P(
-            "If MiniMax ever crashes, it writes a report of what happened and saves your scene first. Next time it starts, this dialog appears.",
+            "If Ilex ever crashes, it writes a report of what happened and saves your scene first. Next time it starts, this dialog appears.",
         ),
         Shot(
             "crash",
@@ -213,9 +214,9 @@ pub const CRASH: Page = Page {
         ),
         Steps(&[
             "Copy Crash Report for Claude copies the whole Markdown report. Paste it into Claude Code and ask it to fix the bug.",
-            "The report says where it crashed, your last 50 actions (tools, hotkeys, modifiers, dialogs), the scene and selection, and the MiniMax functions that were running.",
-            "Restore Unsaved Scene opens crash_recovery.mmax. It opens unsaved, so use File > Save As to keep it.",
-            "Reports live in ~/.local/share/minimax/crashes.",
+            "The report says where it crashed, your last 50 actions (tools, hotkeys, modifiers, dialogs), the scene and selection, and the Ilex functions that were running.",
+            "Restore Unsaved Scene opens crash_recovery.ilex. It opens unsaved, so use File > Save As to keep it.",
+            "Reports live in ~/.local/share/ilex/crashes.",
         ]),
         Tip(
             "Help > View Crash Reports... lists every report. Simulate Test Crash Report writes a sample one without crashing, so you can check it works.",
@@ -231,7 +232,7 @@ pub const CREDITS: Page = Page {
     id: "credits",
     title: "Credits",
     blocks: &[
-        P("MiniMax is built with Bevy, egui, transform-gizmo, slotmap, boolmesh, meshopt, uvunwrap, noise and image."),
+        P("Ilex is built with Bevy, egui, transform-gizmo, slotmap, boolmesh, meshopt, uvunwrap, noise and image."),
         P("Free CC0 assets: Poly Haven (photo textures and realistic models), Kenney and Quaternius (low-poly models). Thank you!"),
         H("MaterialCraft"),
         P(
@@ -252,6 +253,10 @@ pub const CREDITS: Page = Page {
         P(
             "The path tracer (CPU and the wgpu GPU kernel) follows the design of SolidCraft's GPU path tracer: its GGX / visible-normal sampling, lobe mix, power-heuristic MIS and storage-buffer BVH layout, plus the Principled BSDF lobes (random-walk SSS, anisotropic GGX, clearcoat, sheen, dispersion). MIT / Apache-2.0.",
         ),
+        H("MakeHuman"),
+        P(
+            "The Character & Creature Studio uses the MakeHuman hm08 base mesh, its morph targets, modifiers, eyes and skeleton by the MakeHuman Team (makehumancommunity.org). These assets are CC0 1.0 (public domain); see assets/makehuman/LICENSE.ASSETS.md.",
+        ),
         H("Strolle"),
         P(
             "The albedo-demodulated A-Trous denoiser follows the SVGF / A-Trous wavelet filter in Strolle by Patryk Wychowaniec and the Strolle contributors: github.com/Patryk27/strolle. Licensed MIT.",
@@ -268,14 +273,14 @@ pub const CREDITS: Page = Page {
         P(
             "The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. Licensed under the SIL Open Font License 1.1.",
         ),
-        P("The licence texts ship with MiniMax in the licenses folder."),
+        P("The licence texts ship with Ilex in the licenses folder."),
     ],
 };
 
 /// Every page, in topic order.
-pub const ALL: [Page; 18] = [
+pub const ALL: [Page; 20] = [
     BASICS, CREATE, TRANSFORM, EDIT_POLY, MODIFIERS, SPLINES, MATERIALS, PAINT, SKY, RENDER, GHOSTTOWN, MECH, CAD, FILES, PREFS, CRASH,
-    HOTKEYS, CREDITS,
+    CHARACTERS, NAMES, HOTKEYS, CREDITS,
 ];
 
 pub fn index_of(id: &str) -> usize {
