@@ -85,6 +85,25 @@ name so an existing `pacman.conf` entry keeps working.) To upgrade later, run `g
   only), or you can choose another folder with `MINIMAX_REPO_DIR`.
 - **Build once without a repository:** `cd packaging; makepkg -si`.
 
+### Hosted pacman repository (update from anywhere with `pacman -Syu`)
+
+A GitHub Actions workflow (`.github/workflows/pacman-repo.yml`) builds the package on
+Arch Linux for every push to `main` and publishes it as a pacman repository on this
+repo's Releases (tag `repo`). Add this to the end of `/etc/pacman.conf` once
+(replacing any old `[minimax]` block):
+
+```ini
+[ilex]
+SigLevel = Optional TrustAll
+Server = https://github.com/hollywoodenspoon/Holly-3D/releases/download/repo
+```
+
+Then `sudo pacman -Syu ilex` installs it, and every later `sudo pacman -Syu` upgrades it.
+The first build takes a while (Bevy); watch it under the repo's Actions tab, or start one
+by hand with **Actions -> pacman repo -> Run workflow** (the CPU target defaults to `znver3`;
+use `x86-64-v3` for other modern CPUs). The repository must be public for pacman to download
+from it without credentials. The local `packaging/publish-repo.sh` flow above still works.
+
 ### Build & run
 
 ```bash

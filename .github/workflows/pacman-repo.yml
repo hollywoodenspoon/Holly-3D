@@ -1,0 +1,80 @@
+# Builds the Ilex pacman package on Arch Linux and publishes it as a pacman
+# repository on this repo's GitHub Releases (tag "repo"). Users then add
+#   [ilex]
+#   SigLevel = Optional TrustAll
+#   Server = https://github.com/hollywoodenspoon/Holly-3D/releases/download/repo
+# to /etc/pacman.conf and update with `sudo pacman -Syu`.
+name: pacman repo
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
+    inputs:
+      target_cpu:
+        description: 'rustc -C target-cpu (znver3 = Ryzen 5000, x86-64-v3 = most modern CPUs, native = the CI machine)'
+        default: znver3
+
+# One publish at a time so two runs never overwrite each other's database.
+concurrency:
+  group: pacman-repo
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container: archlinux:base-devel
+    env:
+      REPO_NAME: ilex
+      REPO_TAG: repo
+      ILEX_TARGET_CPU: ${{ inputs.target_cpu || 'znver3' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Install build tools
+        run: |
+          pacman -Syu --noconfirm --needed git rust github-cli pkgconf libxkbcommon libx11
+          git config --system --add safe.directory '*'
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the package version is the commit count
+
+      - name: Build package
+        run: |
+          useradd -m builder
+          mkdir /out
+          chown -R builder "$GITHUB_WORKSPACE" /out
+          # --nodeps: build tools are installed above, and the runtime depends
+          # (vulkan driver etc.) are not needed to compile. --nocheck: tests run in their own CI.
+          su builder -c "cd '$GITHUB_WORKSPACE/packaging' && PKGDEST=/out ILEX_SRC='$GITHUB_WORKSPACE' makepkg -f --nodeps --nocheck --noconfirm"
+          ls -lh /out
+
+      - name: Update repository database
+        run: |
+          cd /out
+          gh release view "$REPO_TAG" >/dev/null 2>&1 || gh release create "$REPO_TAG" \
+            --title "pacman repository" --latest=false \
+            --notes "Binary pacman repository for Ilex. Not a normal release: add it to /etc/pacman.conf (see README)."
+          # Start from the published database so older entries are kept consistent.
+          gh release download "$REPO_TAG" -p "$REPO_NAME.db" -p "$REPO_NAME.files" || true
+          [ -f "$REPO_NAME.db" ] && mv "$REPO_NAME.db" "$REPO_NAME.db.tar.gz"
+          [ -f "$REPO_NAME.files" ] && mv "$REPO_NAME.files" "$REPO_NAME.files.tar.gz"
+          chown -R builder /out
+          su builder -c "cd /out && repo-add '$REPO_NAME.db.tar.gz' ilex-*.pkg.tar.zst"
+          # Release assets cannot be symlinks; pacman asks for plain <name>.db / .files.
+          cp -L "$REPO_NAME.db.tar.gz" "$REPO_NAME.db"
+          cp -L "$REPO_NAME.files.tar.gz" "$REPO_NAME.files"
+
+      - name: Upload and prune old packages
+        run: |
+          cd /out
+          gh release upload "$REPO_TAG" --clobber ilex-*.pkg.tar.zst "$REPO_NAME.db" "$REPO_NAME.files"
+          keep="$(ls ilex-*.pkg.tar.zst | head -n1)"
+          gh release view "$REPO_TAG" --json assets -q '.assets[].name' \
+            | grep -E '^ilex-.*\.pkg\.tar\.zst$' | grep -vxF "$keep" \
+            | while read -r old; do gh release delete-asset "$REPO_TAG" "$old" -y; done
