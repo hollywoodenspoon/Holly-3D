@@ -66,6 +66,8 @@ pub struct PathSettings {
     pub noise_threshold: f32,
     /// Samples every pixel takes before it may stop.
     pub min_samples: u32,
+    /// Keep one buffer per light group for the Frame Window's LightMix.
+    pub lightmix: bool,
 }
 
 impl Default for PathSettings {
@@ -83,6 +85,7 @@ impl Default for PathSettings {
             adaptive: true,
             noise_threshold: 0.02,
             min_samples: 8,
+            lightmix: true,
         }
     }
 }

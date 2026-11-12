@@ -18,6 +18,7 @@ pub mod interface;
 mod joint_tests;
 pub mod joints;
 pub mod lights;
+pub mod lightmix;
 pub mod materials;
 pub mod mech;
 pub mod mirror;

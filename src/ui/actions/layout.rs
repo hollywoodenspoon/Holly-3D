@@ -144,6 +144,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(RenderSetup),
             A(FrameWindow),
             A(ColorGrading),
+            A(LightMix),
             Sep,
             A(MaterialEditor),
             A(MaterialLibrary),

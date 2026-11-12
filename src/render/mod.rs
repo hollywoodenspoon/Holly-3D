@@ -18,6 +18,7 @@ pub mod grading;
 pub mod hdri;
 pub mod job;
 pub mod lighting;
+pub mod lightmix;
 pub mod outline;
 pub mod post;
 pub mod postfx;

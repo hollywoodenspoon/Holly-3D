@@ -87,6 +87,9 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         if toggle_button(ui, ed.rfw.grading_open, "🎨 Grading").on_hover_text("Color Grading & Camera RAW sidebar").clicked() {
             ed.rfw.grading_open = !ed.rfw.grading_open;
         }
+        if toggle_button(ui, ed.rfw.lightmix_open, "💡 LightMix").on_hover_text("Relight the render per light group without re-rendering").clicked() {
+            ed.rfw.lightmix_open = !ed.rfw.lightmix_open;
+        }
     });
     // Live tonemapping: re-composes the stored layers, no re-render.
     let live = ed.rfw.fb.as_ref().is_some_and(|f| f.can_retone());
@@ -126,6 +129,9 @@ fn main_window(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
             ui.separator();
             if ed.rfw.grading_open {
                 crate::ui::render_grading::sidebar(ui, ed);
+            }
+            if ed.rfw.lightmix_open {
+                crate::ui::render_lightmix::sidebar(ui, ed);
             }
             let Some(fb) = &ed.rfw.fb else {
                 ui.label(dim("Press Render (F9) to render the active viewport."));

@@ -6,7 +6,9 @@
 //! exposure. `Visible to Camera` shows the emitting surface in F9.
 
 use super::lighting::LightKind;
-use super::trace::{Rng, Tracer};
+use super::scene_build::RShape;
+use super::trace::{Rng, Shading, Tracer};
+use crate::materials::shading::LightIn;
 use bevy::math::{Quat, Vec3};
 use std::f32::consts::{PI, TAU};
 
@@ -192,16 +194,38 @@ impl Area {
 }
 
 impl Tracer<'_> {
-    /// Radiance of the nearest camera-visible area light closer than `tmax`.
-    pub(super) fn area_seen(&self, o: Vec3, d: Vec3, tmax: f32) -> Option<Vec3> {
-        let mut best: Option<(f32, Vec3)> = None;
+    /// Calls `f(light group, light)` for each shadowed light sample reaching
+    /// `sh` (area lights take `shadow_samples` points on their surface).
+    pub(super) fn punctual_each(&self, sh: &Shading, rng: &mut Rng, mut f: impl FnMut(u8, LightIn)) {
+        let o = sh.p + sh.ng * self.eps;
         for l in &self.rs.lights {
-            let super::scene_build::RShape::Area(a) = l.shape else { continue };
+            let n = if matches!(l.shape, RShape::Area(_)) { self.cfg.shadow_samples.max(1) } else { 1 };
+            for _ in 0..n {
+                let Some((dir, dist, k)) = super::volumetrics::incident(l, sh.p, rng) else { continue };
+                if sh.n.dot(dir) <= 0.0 {
+                    continue;
+                }
+                let mut radiance = l.radiance * k / n as f32;
+                if self.cfg.shadows && l.shadows {
+                    let vis = self.visibility(o, dir, dist, l.softness, rng);
+                    radiance *= l.shadow_tint + (Vec3::ONE - l.shadow_tint) * vis;
+                }
+                f(l.group, LightIn { dir, radiance });
+            }
+        }
+    }
+
+    /// Radiance and LightMix group of the nearest camera-visible area light
+    /// closer than `tmax`.
+    pub(super) fn area_seen(&self, o: Vec3, d: Vec3, tmax: f32) -> Option<(Vec3, u8)> {
+        let mut best: Option<(f32, (Vec3, u8))> = None;
+        for l in &self.rs.lights {
+            let RShape::Area(a) = l.shape else { continue };
             if !a.visible {
                 continue;
             }
             if let Some(t) = a.hit(l.pos, o, d).filter(|t| *t < tmax && best.is_none_or(|(b, _)| *t < b)) {
-                best = Some((t, l.radiance / a.projected_area()));
+                best = Some((t, (l.radiance / a.projected_area(), l.group)));
             }
         }
         best.map(|(_, le)| le)

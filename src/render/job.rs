@@ -28,6 +28,8 @@ pub enum Msg {
     },
     /// Progress text of the running pass ("Pass 3/7 · 4 spp").
     Pass(String),
+    /// Per-light-group buffers of the finished path-traced image.
+    LightMix(Box<super::lightmix::Buffers>),
     Done(Result<String, String>),
 }
 
@@ -39,6 +41,8 @@ pub struct RenderJob {
     pub px_total: u64,
     /// Latest progressive pass report (empty for the classic tracer).
     pub pass_label: String,
+    /// LightMix buffers once a path-traced render finished on the CPU.
+    pub lightmix: Option<Box<super::lightmix::Buffers>>,
 }
 
 impl Drop for RenderJob {
@@ -137,7 +141,7 @@ impl RenderJob {
     fn new(px_total: u64) -> (Self, Sender<Msg>, Arc<AtomicBool>) {
         let (tx, rx) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
-        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new() };
+        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new(), lightmix: None };
         (job, tx, cancel)
     }
 
@@ -169,7 +173,7 @@ impl RenderJob {
         std::thread::spawn(move || {
             let t0 = Instant::now();
             let w = region[2] - region[0];
-            let (px, device) = super::pathtrace::run(&rs, &cfg, region, &cancel, |info, img| {
+            let (px, device, mix) = super::pathtrace::run_mix(&rs, &cfg, region, &cancel, |info, img| {
                 let _ = tx.send(Msg::Pass(format!("Pass {}/{passes} · {} spp · {:.0}% sampling", info.pass + 1, info.spp, info.active * 100.0)));
                 let _ = tx.send(block(region[0], region[1], w, img));
             });
@@ -178,6 +182,9 @@ impl RenderJob {
                 return;
             }
             let _ = tx.send(block(region[0], region[1], w, &px));
+            if let Some(m) = mix {
+                let _ = tx.send(Msg::LightMix(Box::new(m)));
+            }
             let secs = t0.elapsed().as_secs_f32();
             let _ = tx.send(Msg::Done(Ok(format!("Rendered {}x{} (path traced on {device}) in {secs:.1}s", cfg.width, cfg.height))));
         });
@@ -200,6 +207,7 @@ impl RenderJob {
                     fb.put_layers(x0, y0, w, &layers);
                 }
                 Msg::Pass(p) => self.pass_label = p,
+                Msg::LightMix(m) => self.lightmix = Some(m),
                 Msg::Done(r) => done = Some(r),
             }
         }

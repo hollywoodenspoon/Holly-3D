@@ -6,6 +6,7 @@
 use super::adaptive::{Welford, converged};
 use super::integrator::PathTracer;
 use crate::render::job::Region;
+use crate::render::lightmix::{Buffers, Fader, GROUPS};
 use crate::render::post::PixelLayers;
 use crate::render::scene_build::RenderScene;
 use crate::render::settings::RenderSettings;
@@ -47,17 +48,25 @@ fn seed(x: u32, y: u32, pass: usize) -> u64 {
 
 /// Renders `region` progressively; `on_pass` sees the whole region after
 /// every pass. Returns the final pixels (post-FX applied unless cancelled).
-pub fn render(
+pub fn render(rs: &RenderScene, cfg: &RenderSettings, region: Region, cancel: &AtomicBool, on_pass: impl FnMut(PassInfo, &[Pixel])) -> Vec<Pixel> {
+    render_mix(rs, cfg, region, cancel, on_pass).0
+}
+
+/// [`render`] that also returns the per-light-group buffers for LightMix
+/// (when `PathSettings::lightmix` is on and the render finished).
+pub fn render_mix(
     rs: &RenderScene,
     cfg: &RenderSettings,
     region: Region,
     cancel: &AtomicBool,
     mut on_pass: impl FnMut(PassInfo, &[Pixel]),
-) -> Vec<Pixel> {
+) -> (Vec<Pixel>, Option<Buffers>) {
     let ps = &cfg.path;
     let [x0, y0, x1, y1] = region;
     let (rw, rh) = ((x1 - x0) as usize, (y1 - y0) as usize);
     let pt = PathTracer::new(Tracer::new(rs, cfg), ps);
+    let k = if ps.lightmix { rs.groups.len().min(GROUPS) } else { 0 };
+    let mut gsum = vec![Vec3::ZERO; rw * rh * k];
     let mut acc = vec![Accum::EMPTY; rw * rh];
     let mut done = vec![false; rw * rh];
     let mut out = vec![Pixel::EMPTY; rw * rh];
@@ -66,20 +75,22 @@ pub fn render(
     for (pass, &target) in ps.schedule().iter().enumerate() {
         let add = target - have;
         have = target;
-        let rows: Vec<_> = acc.chunks_mut(rw).zip(done.chunks(rw)).collect();
+        let mut gs: Vec<&mut [Vec3]> = if k > 0 { gsum.chunks_mut(rw * k).collect() } else { (0..rh).map(|_| &mut [][..]).collect() };
+        let rows: Vec<_> = acc.chunks_mut(rw).zip(done.chunks(rw)).zip(gs.drain(..)).collect();
         let rows = std::sync::Mutex::new(rows.into_iter().enumerate().collect::<Vec<_>>());
         std::thread::scope(|s| {
             for _ in 0..workers {
                 let (pt, rows) = (&pt, &rows);
                 s.spawn(move || {
-                    while let Some((r, (row, fin))) = rows.lock().ok().and_then(|mut v| v.pop()) {
+                    while let Some((r, ((row, fin), gr))) = rows.lock().ok().and_then(|mut v| v.pop()) {
                         if cancel.load(Ordering::Relaxed) {
                             break;
                         }
                         let y = y0 + r as u32;
                         for (i, a) in row.iter_mut().enumerate() {
                             if !fin[i] {
-                                sample_pixel(pt, a, x0 + i as u32, y, add, pass, cfg);
+                                let g = if k > 0 { &mut gr[i * k..(i + 1) * k] } else { &mut [][..] };
+                                sample_pixel(pt, a, g, x0 + i as u32, y, add, pass, cfg);
                             }
                         }
                     }
@@ -87,7 +98,7 @@ pub fn render(
             }
         });
         if cancel.load(Ordering::Relaxed) {
-            return out;
+            return (out, None);
         }
         if ps.adaptive {
             let stats: Vec<_> = acc.iter().map(|a| a.stats).collect();
@@ -103,10 +114,35 @@ pub fn render(
         }
     }
     crate::render::postfx::run(&mut out, rw, rh, rs, cfg);
-    out
+    let mix = (k > 0).then(|| buffers(rs, cfg, region, &acc, gsum, k));
+    (out, mix)
 }
 
-fn sample_pixel(pt: &PathTracer, a: &mut Accum, x: u32, y: u32, n: u32, pass: usize, cfg: &RenderSettings) {
+/// Normalises the accumulated group sums into LightMix buffers.
+fn buffers(rs: &RenderScene, cfg: &RenderSettings, region: Region, acc: &[Accum], mut data: Vec<Vec3>, k: usize) -> Buffers {
+    for (a, g) in acc.iter().zip(data.chunks_mut(k)) {
+        let s = 1.0 / a.n.max(1) as f32;
+        g.iter_mut().for_each(|c| *c *= s);
+    }
+    let ctx = crate::render::postfx::PostCtx::of(rs, cfg);
+    Buffers {
+        region,
+        groups: rs.groups[..k].to_vec(),
+        data,
+        alpha: acc.iter().map(|a| a.sum.w / a.n.max(1) as f32).collect(),
+        back: acc.iter().map(|a| a.back).collect(),
+        g: acc.iter().map(|a| a.g).collect(),
+        faders: vec![Fader::default(); k],
+        cfg: cfg.clone(),
+        materials: rs.materials.clone(),
+        noisy: ctx.noisy,
+        coc: ctx.coc,
+        plain_bg: ctx.plain_bg,
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn sample_pixel(pt: &PathTracer, a: &mut Accum, groups: &mut [Vec3], x: u32, y: u32, n: u32, pass: usize, cfg: &RenderSettings) {
     let (w, h) = (cfg.width, cfg.height);
     let aspect = w as f32 / h as f32;
     let mut rng = Rng::new(seed(x, y, pass));
@@ -122,7 +158,11 @@ fn sample_pixel(pt: &PathTracer, a: &mut Accum, x: u32, y: u32, n: u32, pass: us
         let ndc = Vec2::new((x as f32 + rng.f()) / w as f32 * 2.0 - 1.0, 1.0 - (y as f32 + rng.f()) / h as f32 * 2.0);
         let ray = cam.ray(ndc, aspect);
         let s = pt.radiance(ray.origin, ray.dir, &mut rng);
-        let c = if s.radiance.is_finite() { s.radiance } else { Vec3::ZERO };
+        let ok = s.radiance.is_finite();
+        let c = if ok { s.radiance } else { Vec3::ZERO };
+        if ok {
+            groups.iter_mut().zip(&s.groups).for_each(|(g, v)| *g += *v);
+        }
         a.sum += c.extend(s.alpha);
         a.n += 1;
         a.stats.push(c.dot(Vec3::new(0.2126, 0.7152, 0.0722)));

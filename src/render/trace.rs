@@ -3,7 +3,7 @@
 //! stratified anti-aliasing. Produces linear radiance + a G-buffer per pixel.
 
 use super::bvh::Hit;
-use super::scene_build::{RShape, RenderScene};
+use super::scene_build::RenderScene;
 use super::settings::RenderSettings;
 use crate::materials::{ShadingModel, relief};
 use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface};
@@ -133,7 +133,7 @@ impl<'a> Tracer<'a> {
     }
 
     /// Fraction of the light reaching `p` (0..1), with soft jitter.
-    fn visibility(&self, p: Vec3, to_light: Vec3, dist: f32, soft: f32, rng: &mut Rng) -> f32 {
+    pub(super) fn visibility(&self, p: Vec3, to_light: Vec3, dist: f32, soft: f32, rng: &mut Rng) -> f32 {
         let n = if soft > 0.0 { self.cfg.shadow_samples.max(1) } else { 1 };
         let mut lit = 0.0;
         for _ in 0..n {
@@ -184,25 +184,9 @@ impl<'a> Tracer<'a> {
         out
     }
 
-    /// Shadowed omni / spot / directional lights reaching `sh`.
+    /// Shadowed omni / spot / directional / area lights reaching `sh`.
     pub(super) fn punctual(&self, sh: &Shading, rng: &mut Rng, out: &mut Vec<LightIn>) {
-        let o = sh.p + sh.ng * self.eps;
-        for l in &self.rs.lights {
-            // Area lights: one shadow ray per point drawn on the surface.
-            let n = if matches!(l.shape, RShape::Area(_)) { self.cfg.shadow_samples.max(1) } else { 1 };
-            for _ in 0..n {
-                let Some((dir, dist, k)) = super::volumetrics::incident(l, sh.p, rng) else { continue };
-                if sh.n.dot(dir) <= 0.0 {
-                    continue;
-                }
-                let mut radiance = l.radiance * k / n as f32;
-                if self.cfg.shadows && l.shadows {
-                    let vis = self.visibility(o, dir, dist, l.softness, rng);
-                    radiance *= l.shadow_tint + (Vec3::ONE - l.shadow_tint) * vis;
-                }
-                out.push(LightIn { dir, radiance });
-            }
-        }
+        self.punctual_each(sh, rng, |_, li| out.push(li));
     }
 
     /// Skylight with hemisphere occlusion.
@@ -231,7 +215,7 @@ impl<'a> Tracer<'a> {
 
     fn trace_surface(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
         let hit = self.rs.bvh.closest(o, d, f32::INFINITY);
-        if let Some(le) = self.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).filter(|_| depth == 0) {
+        if let Some((le, _)) = self.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).filter(|_| depth == 0) {
             return (le, 1.0, None);
         }
         let Some(h) = hit else {

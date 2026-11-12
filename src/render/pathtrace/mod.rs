@@ -19,13 +19,19 @@ use std::sync::atomic::AtomicBool;
 
 /// Renders with the chosen Compute Device; returns the pixels and the name
 /// of the device that ran (GPU falls back to the CPU without an adapter).
-pub fn run(
+pub fn run(rs: &RenderScene, cfg: &RenderSettings, region: Region, cancel: &AtomicBool, on_pass: impl FnMut(progressive::PassInfo, &[Pixel])) -> (Vec<Pixel>, String) {
+    let (px, device, _) = run_mix(rs, cfg, region, cancel, on_pass);
+    (px, device)
+}
+
+/// [`run`] plus the LightMix group buffers (CPU tracer only).
+pub fn run_mix(
     rs: &RenderScene,
     cfg: &RenderSettings,
     region: Region,
     cancel: &AtomicBool,
     on_pass: impl FnMut(progressive::PassInfo, &[Pixel]),
-) -> (Vec<Pixel>, String) {
+) -> (Vec<Pixel>, String, Option<crate::render::lightmix::Buffers>) {
     let mut on_pass = on_pass;
     let gpu = match cfg.path.device {
         ComputeDevice::Cpu => Err("CPU selected".to_string()),
@@ -36,13 +42,14 @@ pub fn run(
     };
     let fallback = match gpu {
         Ok(g) => match crate::render::gpu_pathtrace::render(g, rs, cfg, region, cancel, &mut on_pass) {
-            Ok(px) => return (px, g.name.clone()),
+            Ok(px) => return (px, g.name.clone(), None),
             Err(e) => e,
         },
         Err(e) => e,
     };
     let label = if cfg.path.device == ComputeDevice::Cpu { "CPU".to_string() } else { format!("CPU ({fallback})") };
-    (progressive::render(rs, cfg, region, cancel, on_pass), label)
+    let (px, mix) = progressive::render_mix(rs, cfg, region, cancel, on_pass);
+    (px, label, mix)
 }
 #[cfg(test)]
 mod tests;

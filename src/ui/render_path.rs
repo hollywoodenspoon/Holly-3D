@@ -66,6 +66,8 @@ pub fn tab(ui: &mut egui::Ui, r: &mut RenderSettings) {
             ui.end_row();
         });
     });
+    ui.checkbox(&mut p.lightmix, "LightMix Buffers (relight per light group in F9, CPU tracer)")
+        .on_hover_text("Keeps one buffer per light group so the Frame Window's LightMix can relight the render live");
     ui.checkbox(&mut r.shadows, "Shadows");
     ui.checkbox(&mut r.outlines, "Universal Ink Outline Pass");
     ui.label(dim("Multi-bounce paths with MIS (light + BSDF sampling, power heuristic) and Russian Roulette. Auto uses the wgpu GPU kernel and falls back to the CPU."));

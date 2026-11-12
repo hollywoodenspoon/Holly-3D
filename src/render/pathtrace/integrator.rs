@@ -8,6 +8,7 @@ use super::settings::PathSettings;
 use crate::materials::ShadingModel;
 use crate::materials::shading::{camera_view, lin3, shade};
 use crate::render::emitters::point_on;
+use crate::render::lightmix::{EMISSIVE, ENV, Groups, SUN_SKY, VOLUME};
 use crate::render::mis::{area_to_solid_angle, power_heuristic};
 use crate::render::trace::{GSample, Rng, Shading, Tracer};
 use bevy::math::Vec3;
@@ -15,9 +16,11 @@ use bevy::math::Vec3;
 /// Most see-through (alpha < 1) surfaces a path may pass before it ends.
 const MAX_PASSES: u32 = 32;
 
-/// One camera path: premultiplied radiance, coverage and the primary hit.
+/// One camera path: premultiplied radiance (also split by LightMix group),
+/// coverage and the primary hit.
 pub struct PathSample {
     pub radiance: Vec3,
+    pub groups: Groups,
     pub alpha: f32,
     pub g: Option<GSample>,
 }
@@ -61,7 +64,8 @@ impl<'a> PathTracer<'a> {
     /// Traces one path from the camera.
     pub fn radiance(&self, mut o: Vec3, mut d: Vec3, rng: &mut Rng) -> PathSample {
         let (rs, ps) = (self.t.rs, self.ps);
-        let (mut l, mut beta) = (Vec3::ZERO, Vec3::ONE);
+        let (mut l, mut beta): (Groups, Vec3) = (Default::default(), Vec3::ONE);
+        let sky = if rs.procedural.is_some() { SUN_SKY } else { ENV };
         let (mut alpha, mut g, mut camera) = (0.0, None, true);
         let (mut prev_pdf, mut prev_delta, mut passes) = (0.0f32, true, 0);
         let mut depth = Depths::default();
@@ -71,16 +75,16 @@ impl<'a> PathTracer<'a> {
             let hit = rs.bvh.closest(o, d, f32::INFINITY);
             if let Some(m) = &rs.volume {
                 let v = self.t.march(m, o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t), rng);
-                l += beta * v.inscatter;
+                l[VOLUME as usize] += beta * v.inscatter;
                 beta *= v.transmittance;
             }
-            if camera && let Some(le) = self.t.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)) {
-                (l, alpha) = (l + beta * le, 1.0);
+            if camera && let Some((le, gi)) = self.t.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)) {
+                (l[gi as usize], alpha) = (l[gi as usize] + beta * le, 1.0);
                 break;
             }
             let Some(h) = hit else {
                 if !camera {
-                    l += beta * self.t.environment(d);
+                    l[sky as usize] += beta * self.t.environment(d);
                 }
                 break;
             };
@@ -99,7 +103,7 @@ impl<'a> PathTracer<'a> {
             }
             if let Some((col, density)) = rs.fog {
                 let f = (-density * h.t).exp();
-                l += beta * col * (1.0 - f);
+                l[ENV as usize] += beta * col * (1.0 - f);
                 beta *= f;
             }
             if !sh.entering && m.model == ShadingModel::Crystal {
@@ -112,17 +116,17 @@ impl<'a> PathTracer<'a> {
             }
             let v = -d;
             if sh.s.emissive.max_element() > 0.0 {
-                l += beta * sh.s.emissive * self.emission_weight(&sh, h.t, d, prev_pdf, prev_delta);
+                l[EMISSIVE as usize] += beta * sh.s.emissive * self.emission_weight(&sh, h.t, d, prev_pdf, prev_delta);
             }
             match m.model {
                 ShadingModel::Unlit => {
-                    l += beta * sh.s.base;
+                    l[EMISSIVE as usize] += beta * sh.s.base;
                     break;
                 }
                 ShadingModel::Toon => {
                     let mut s = sh.s;
                     s.emissive = Vec3::ZERO;
-                    l += beta * shade(m, &s, sh.n, v, &self.t.direct(&sh, rng), rs.ambient);
+                    l[ENV as usize] += beta * shade(m, &s, sh.n, v, &self.t.direct(&sh, rng), rs.ambient);
                     break;
                 }
                 _ => {}
@@ -130,7 +134,7 @@ impl<'a> PathTracer<'a> {
             camera = false;
             let mut bsdf = Bsdf::new(&sh.s, sh.n, sh.entering).principled(&m.principled, sh.s.roughness);
             bsdf.channel = channel;
-            l += beta * self.next_event(&sh, &bsdf, v, rng);
+            self.next_event(&sh, &bsdf, v, beta, &mut l, rng);
             let Some(mut bs) = bsdf.sample(v, rng) else { break };
             if !depth.bump(bs.lobe, ps) {
                 break;
@@ -142,7 +146,7 @@ impl<'a> PathTracer<'a> {
                 let Some((ex, w)) = self.random_walk(m, &sh, rng) else { break };
                 beta *= w;
                 let exit = Bsdf::lambert(ex.n);
-                l += beta * self.next_event(&ex, &exit, ex.n, rng);
+                self.next_event(&ex, &exit, ex.n, beta, &mut l, rng);
                 let Some(out) = exit.sample(ex.n, rng) else { break };
                 (sh, bs) = (ex, out);
             }
@@ -160,7 +164,7 @@ impl<'a> PathTracer<'a> {
             o = self.offset(&sh, bs.dir);
             d = bs.dir;
         }
-        PathSample { radiance: l, alpha, g }
+        PathSample { radiance: l.iter().sum(), groups: l, alpha, g }
     }
 
     /// MIS weight of emission found by BSDF sampling.
@@ -174,19 +178,18 @@ impl<'a> PathTracer<'a> {
         power_heuristic(prev_pdf, light_pdf)
     }
 
-    /// Direct light: punctual lights (delta, no MIS) plus one MIS-weighted
-    /// sample on an emissive polygon.
-    fn next_event(&self, sh: &Shading, bsdf: &Bsdf, v: Vec3, rng: &mut Rng) -> Vec3 {
-        let mut lights = vec![];
-        self.t.punctual(sh, rng, &mut lights);
-        let mut c: Vec3 = lights.iter().map(|li| bsdf.eval(v, li.dir).0 * li.radiance).sum();
+    /// Direct light into `l` (each light's own group), weighted by `beta`:
+    /// punctual / area lights (no MIS) plus one MIS-weighted sample on an
+    /// emissive polygon.
+    fn next_event(&self, sh: &Shading, bsdf: &Bsdf, v: Vec3, beta: Vec3, l: &mut Groups, rng: &mut Rng) {
+        self.t.punctual_each(sh, rng, |g, li| l[g as usize] += beta * bsdf.eval(v, li.dir).0 * li.radiance);
         let em = &self.t.rs.emitters;
         if self.t.cfg.gi.emitter_samples == 0 {
-            return c;
+            return;
         }
-        let Some((e, prob)) = em.pick(rng) else { return c };
+        let Some((e, prob)) = em.pick(rng) else { return };
         if e.tri == sh.tri {
-            return c;
+            return;
         }
         let t = &self.t.rs.bvh.tris[e.tri];
         let q = point_on(&t.p, rng);
@@ -197,12 +200,11 @@ impl<'a> PathTracer<'a> {
         let light_pdf = area_to_solid_angle(prob / e.area.max(1e-12), d2, nl.dot(dir));
         let (f, bsdf_pdf) = bsdf.eval(v, dir);
         if !light_pdf.is_finite() || f.max_element() <= 0.0 {
-            return c;
+            return;
         }
         let vis = if self.t.cfg.shadows { self.t.transmittance(o, dir, d2.sqrt() - self.t.eps * 4.0) } else { 1.0 };
         if vis > 0.0 {
-            c += f * e.radiance * vis * power_heuristic(light_pdf, bsdf_pdf) / light_pdf;
+            l[EMISSIVE as usize] += beta * f * e.radiance * vis * power_heuristic(light_pdf, bsdf_pdf) / light_pdf;
         }
-        c
     }
 }
