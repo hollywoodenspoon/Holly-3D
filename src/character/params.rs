@@ -100,6 +100,8 @@ pub struct CharacterParams {
     pub creature: Creature,
     pub creature_size: f32,
     pub seed: u32,
+    /// Phase 10B Easy Pose (empty = the A-pose rest).
+    pub pose: super::rig::Pose,
 }
 
 impl Default for CharacterParams {
@@ -117,6 +119,7 @@ impl Default for CharacterParams {
             creature: Creature::Humanoid,
             creature_size: 1.0,
             seed: 1,
+            pose: Default::default(),
         }
     }
 }

@@ -32,11 +32,12 @@ pub const SHOTS: &[(&str, &[u8])] = &[
     ("cad", include_bytes!("../../../assets/help/cad.jpg")),
     ("prefs", include_bytes!("../../../assets/help/prefs.jpg")),
     ("crash", include_bytes!("../../../assets/help/crash.jpg")),
+    ("characters", include_bytes!("../../../assets/help/characters.jpg")),
 ];
 
 /// The ids `tools/help_shots.sh` captures.
-pub const IDS: [&str; 19] = [
-    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "grading", "ghosttown", "mech", "cad", "prefs", "crash",
+pub const IDS: [&str; 20] = [
+    "layout", "create", "transform", "editpoly", "ribbon", "modifiers", "splines", "materials", "library", "procedural", "paint", "sky", "render", "grading", "ghosttown", "mech", "cad", "prefs", "crash", "characters",
 ];
 
 fn demo(ed: &mut Editor) {
@@ -190,6 +191,23 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
         "prefs" => {
             demo(ed);
             ed.iface.prefs_open = true;
+        }
+        "characters" => {
+            use crate::character::params::{Archetype, Creature};
+            use crate::editor::characters::CharacterPick;
+            ed.create_pick(CharacterPick::Creature(Creature::Wolf), Vec3::new(2.2, 0.0, 0.0));
+            let id = ed.create_pick(CharacterPick::Archetype(Archetype::Elf), Vec3::ZERO);
+            let o = &mut ed.scene.objects[id];
+            if let crate::scene::BaseObject::Character(p) = &mut o.base {
+                p.pose = crate::character::rig::presets::PosePreset::Wave.pose();
+            }
+            o.evaluate();
+            for o in ed.scene.objects.values_mut() {
+                o.selected = true;
+            }
+            ed.zoom_extents(true);
+            ed.scene.select_only(Some(id));
+            ed.iface.character_studio_open = true;
         }
         "crash" => {
             demo(ed);

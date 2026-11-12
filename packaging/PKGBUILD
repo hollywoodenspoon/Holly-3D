@@ -80,6 +80,9 @@ package() {
   ln -s ilex "$pkgdir/usr/bin/minimax"
   install -Dm644 ilex.desktop "$pkgdir/usr/share/applications/ilex.desktop"
   install -Dm644 ilex.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/ilex.svg"
+  # Raster sizes for docks and menus that skip SVG icons.
+  install -Dm644 "$pkgname/assets/icon/ilex-256.png" "$pkgdir/usr/share/icons/hicolor/256x256/apps/ilex.png"
+  install -Dm644 "$pkgname/assets/icon/ilex-64.png" "$pkgdir/usr/share/icons/hicolor/64x64/apps/ilex.png"
   # The same icon for .ilex / .mmax / .ilexpose files in Dolphin / Nautilus.
   install -Dm644 ilex.svg "$pkgdir/usr/share/icons/hicolor/scalable/mimetypes/application-x-ilex-scene.svg"
   install -Dm644 ilex.xml "$pkgdir/usr/share/mime/packages/ilex.xml"

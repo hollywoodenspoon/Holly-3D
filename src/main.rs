@@ -92,6 +92,7 @@ fn main() {
     light_sync::register(&mut app);
     volume_sync::register(&mut app);
     skybox::register(&mut app);
+    ilex::viewport::window_icon::register(&mut app);
     app.run();
 }
 
