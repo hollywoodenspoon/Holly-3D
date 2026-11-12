@@ -66,7 +66,13 @@ impl<'a> PathTracer<'a> {
         let (mut prev_pdf, mut prev_delta, mut passes) = (0.0f32, true, 0);
         let mut depth = Depths::default();
         loop {
-            let Some(h) = rs.bvh.closest(o, d, f32::INFINITY) else {
+            let hit = rs.bvh.closest(o, d, f32::INFINITY);
+            if let Some(m) = &rs.volume {
+                let v = self.t.march(m, o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t), rng);
+                l += beta * v.inscatter;
+                beta *= v.transmittance;
+            }
+            let Some(h) = hit else {
                 if !camera {
                     l += beta * self.t.environment(d);
                 }

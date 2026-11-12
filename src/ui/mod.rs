@@ -28,6 +28,7 @@ pub mod render_window;
 pub mod ribbon;
 pub mod rollouts;
 pub mod sky_dialog;
+pub mod volume_dialog;
 pub mod snaps;
 pub mod status_bar;
 pub mod theme;

@@ -65,6 +65,8 @@ pub struct RenderScene {
     /// holds its bake for ambient and the Cycles world.
     pub procedural: Option<super::sky::SkySettings>,
     pub fog: Option<(Vec3, f32)>,
+    /// Volumetric godrays / height mist medium (Environment `8`).
+    pub volume: Option<super::volumetrics::Medium>,
     pub camera: ViewCamera,
     /// Scene bounding radius (AO ray length, epsilons).
     pub radius: f32,
@@ -208,6 +210,7 @@ impl RenderScene {
             hdri,
             procedural,
             fog: env.fog.then(|| (lin3(env.fog_color), env.fog_density)),
+            volume: super::volumetrics::Medium::new(&env.volume),
             camera,
             radius,
             emitters,

@@ -47,6 +47,9 @@ pub struct Environment {
     /// Procedural time-of-day sky / deep space (replaces the HDRI when on).
     #[serde(default)]
     pub sky: super::sky::SkySettings,
+    /// Volumetric Godrays & Mist.
+    #[serde(default)]
+    pub volume: super::volumetrics::VolumeSettings,
 }
 
 impl Default for Environment {
@@ -62,6 +65,7 @@ impl Default for Environment {
             fog_density: 0.05,
             hdri: None,
             sky: Default::default(),
+            volume: Default::default(),
         }
     }
 }

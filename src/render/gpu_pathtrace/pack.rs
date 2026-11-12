@@ -40,6 +40,9 @@ pub fn unsupported(rs: &RenderScene) -> Option<&'static str> {
     if rs.hdri.is_some() || rs.procedural.is_some() {
         return Some("HDRI / procedural sky environment");
     }
+    if rs.volume.is_some() {
+        return Some("volumetric godrays / mist");
+    }
     if rs.translucent {
         return Some("see-through (opacity) surfaces");
     }

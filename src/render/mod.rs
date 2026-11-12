@@ -5,6 +5,7 @@
 pub mod bvh;
 mod bvh_wide;
 pub mod mis;
+pub mod volumetrics;
 pub mod pathtrace;
 pub mod emitters;
 pub mod environment;

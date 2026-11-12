@@ -114,6 +114,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
                             num_row(ui, t, "Density", &mut env.fog_density, 0.0..=2.0, 0.05);
                         });
                     });
+                    crate::ui::volume_dialog::rows(ui, env, t);
                 });
                 if changed {
                     ed.link_sun_to_sky();

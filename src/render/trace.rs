@@ -3,7 +3,7 @@
 //! stratified anti-aliasing. Produces linear radiance + a G-buffer per pixel.
 
 use super::bvh::Hit;
-use super::scene_build::{RShape, RenderScene};
+use super::scene_build::RenderScene;
 use super::settings::RenderSettings;
 use crate::materials::{ShadingModel, relief};
 use crate::materials::shading::{LightIn, Surface, fresnel_dielectric, fresnel_schlick, lin3, refract, shade, surface};
@@ -188,21 +188,8 @@ impl<'a> Tracer<'a> {
     pub(super) fn punctual(&self, sh: &Shading, rng: &mut Rng, out: &mut Vec<LightIn>) {
         let o = sh.p + sh.ng * self.eps;
         for l in &self.rs.lights {
-            let (dir, dist, mut k) = match l.shape {
-                RShape::Directional { dir } => (-dir, f32::INFINITY, 1.0),
-                RShape::Point | RShape::Spot { .. } => {
-                    let v = l.pos - sh.p;
-                    let d = v.length().max(1e-4);
-                    let window = (1.0 - (d / l.range.max(1e-3)).powi(4)).clamp(0.0, 1.0).powi(2);
-                    (v / d, d, window * l.atten.factor(d) / (d * d))
-                }
-            };
-            if let RShape::Spot { dir: axis, cos_in, cos_out } = l.shape {
-                let c = (-dir).dot(axis);
-                let t = ((c - cos_out) / (cos_in - cos_out).max(1e-4)).clamp(0.0, 1.0);
-                k *= t * t * (3.0 - 2.0 * t);
-            }
-            if k <= 0.0 || sh.n.dot(dir) <= 0.0 {
+            let Some((dir, dist, k)) = super::volumetrics::incident(l, sh.p) else { continue };
+            if sh.n.dot(dir) <= 0.0 {
                 continue;
             }
             let mut radiance = l.radiance * k;
@@ -225,8 +212,20 @@ impl<'a> Tracer<'a> {
         self.rs.sky * (open as f32 / n as f32)
     }
 
-    /// Radiance + coverage along a ray.
+    /// Radiance + coverage along a ray; camera rays also march the
+    /// volumetric godray medium up to the surface.
     pub fn trace(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
+        let (c, a, g) = self.trace_surface(o, d, depth, rng);
+        match self.rs.volume.as_ref().filter(|_| depth == 0) {
+            Some(m) => {
+                let v = self.march(m, o, d, g.map_or(f32::INFINITY, |g| g.depth), rng);
+                (c * v.transmittance + v.inscatter, a, g)
+            }
+            None => (c, a, g),
+        }
+    }
+
+    fn trace_surface(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
         let Some(h) = self.rs.bvh.closest(o, d, f32::INFINITY) else {
             return (if depth == 0 { Vec3::ZERO } else { self.environment(d) }, 0.0, None);
         };

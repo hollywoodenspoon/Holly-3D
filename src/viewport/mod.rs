@@ -7,6 +7,7 @@ pub mod joint_gizmos;
 pub mod layout;
 pub mod light_icons;
 pub mod light_sync;
+pub mod volume_sync;
 pub mod lines;
 pub mod mat_sync;
 pub mod mod_gizmos;
