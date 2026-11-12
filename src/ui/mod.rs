@@ -12,6 +12,7 @@ pub mod command;
 pub mod crash_dialog;
 pub mod env_dialog;
 pub mod explorer;
+pub mod face_cloner;
 pub mod file_menu;
 pub mod fonts;
 pub mod help;
@@ -69,6 +70,7 @@ pub struct UiState {
     pub mat: material_editor::MatEditorUi,
     pub rfw: render_window::RfwState,
     pub help: help::HelpUi,
+    pub face: face_cloner::FaceUi,
 }
 
 fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<UiState>) -> Result {
@@ -123,6 +125,7 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     env_dialog::show(&ctx, ed);
     buildings_browser::show(&ctx, ed);
     character_studio::show(&ctx, ed);
+    face_cloner::show(&ctx, ed, &mut st.face);
     paintbox::show(&ctx, ed);
     render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);

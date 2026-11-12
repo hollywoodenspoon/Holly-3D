@@ -72,7 +72,9 @@ fn mesh_3d(m: &Models, rgb: &[[f32; 3]], w: usize, h: usize, roi: &Roi) -> Optio
     let s = MESH_SIZE as f32;
     let pts: Vec<Vec3> = out
         .first()?
-        .chunks_exact(3)
+        .as_chunks::<3>()
+        .0
+        .iter()
         .take(POINTS)
         .map(|p| {
             let [x, y] = roi.to_frame(p[0] / s, p[1] / s);
@@ -141,12 +143,12 @@ fn parse_canonical(b: &[u8]) -> Vec<Vec3> {
                 let Some(len) = varint(mesh, &mut j) else { break };
                 let Some(data) = mesh.get(j..j + len as usize) else { break };
                 if key >> 3 == 3 {
-                    floats.extend(data.chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap_or_default())));
+                    floats.extend(data.as_chunks::<4>().0.iter().map(|c| f32::from_le_bytes(*c)));
                 }
                 j += len as usize;
             }
             _ => break,
         }
     }
-    floats.chunks_exact(5).map(|v| Vec3::new(v[0], v[1], v[2])).collect()
+    floats.as_chunks::<5>().0.iter().map(|v| Vec3::new(v[0], v[1], v[2])).collect()
 }

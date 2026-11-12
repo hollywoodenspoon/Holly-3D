@@ -9,6 +9,7 @@ pub mod clone;
 pub mod correspond;
 pub mod fit;
 pub mod frames;
+pub mod job;
 pub mod math;
 pub mod model;
 pub mod render;
