@@ -40,6 +40,10 @@ pub fn scan(folder: &str) -> Vec<PhotoMat> {
 pub fn rescan(folder: &str) -> usize {
     let found = scan(folder);
     let n = found.len();
+    // Tests must not pick up photos installed on the developer's machine (parallel tests share this list).
+    if cfg!(test) {
+        return n;
+    }
     *PHOTOS.write().unwrap_or_else(|e| e.into_inner()) = found;
     n
 }
