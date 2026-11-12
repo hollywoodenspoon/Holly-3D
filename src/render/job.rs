@@ -30,6 +30,8 @@ pub enum Msg {
     Pass(String),
     /// Per-light-group buffers of the finished path-traced image.
     LightMix(Box<super::lightmix::Buffers>),
+    /// AOV passes of the finished path-traced image.
+    Aovs(Box<super::aov::AovBuffers>),
     Done(Result<String, String>),
 }
 
@@ -43,6 +45,7 @@ pub struct RenderJob {
     pub pass_label: String,
     /// LightMix buffers once a path-traced render finished on the CPU.
     pub lightmix: Option<Box<super::lightmix::Buffers>>,
+    pub aovs: Option<Box<super::aov::AovBuffers>>,
 }
 
 impl Drop for RenderJob {
@@ -141,7 +144,7 @@ impl RenderJob {
     fn new(px_total: u64) -> (Self, Sender<Msg>, Arc<AtomicBool>) {
         let (tx, rx) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
-        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new(), lightmix: None };
+        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new(), lightmix: None, aovs: None };
         (job, tx, cancel)
     }
 
@@ -182,8 +185,11 @@ impl RenderJob {
                 return;
             }
             let _ = tx.send(block(region[0], region[1], w, &px));
-            if let Some(m) = mix {
+            if let Some(m) = mix.lightmix {
                 let _ = tx.send(Msg::LightMix(Box::new(m)));
+            }
+            if let Some(a) = mix.aovs {
+                let _ = tx.send(Msg::Aovs(Box::new(a)));
             }
             let secs = t0.elapsed().as_secs_f32();
             let _ = tx.send(Msg::Done(Ok(format!("Rendered {}x{} (path traced on {device}) in {secs:.1}s", cfg.width, cfg.height))));
@@ -208,6 +214,7 @@ impl RenderJob {
                 }
                 Msg::Pass(p) => self.pass_label = p,
                 Msg::LightMix(m) => self.lightmix = Some(m),
+                Msg::Aovs(a) => self.aovs = Some(a),
                 Msg::Done(r) => done = Some(r),
             }
         }

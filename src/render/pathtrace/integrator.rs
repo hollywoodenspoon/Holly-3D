@@ -23,6 +23,15 @@ pub struct PathSample {
     pub groups: Groups,
     pub alpha: f32,
     pub g: Option<GSample>,
+    /// AOV split: light gathered at the camera hit (emission + direct).
+    pub direct: Vec3,
+    /// First bounce: 0 none, 1 diffuse, 2 glossy, 3 transmission / SSS.
+    pub lobe: u8,
+    /// Camera-hit albedo / roughness (denoiser demodulation, Albedo AOV).
+    pub albedo: Vec3,
+    pub rough: f32,
+    /// One cavity / AO ray from the camera hit (1 = open).
+    pub ao: f32,
 }
 
 #[derive(Default)]
@@ -71,6 +80,7 @@ impl<'a> PathTracer<'a> {
         let mut depth = Depths::default();
         // Dispersion: the color channel this path follows once split.
         let mut channel = None;
+        let (mut direct, mut lobe, mut albedo, mut rough, mut ao) = (None, 0u8, Vec3::ZERO, 0.0, 1.0);
         loop {
             let hit = rs.bvh.closest(o, d, f32::INFINITY);
             if let Some(m) = &rs.volume {
@@ -100,6 +110,9 @@ impl<'a> PathTracer<'a> {
             if camera {
                 (alpha, g) = (1.0, Some(GSample { obj: tri.obj, mat: tri.mat as u32, depth: h.t, normal: sh.n }));
                 sh.s = camera_view(m, &sh.s);
+                (albedo, rough) = (sh.s.base, sh.s.roughness);
+                let reach = self.t.cfg.gi.ao_radius.max(1e-3);
+                ao = if rs.bvh.occluded(sh.p + sh.ng * self.t.eps, crate::render::trace::cosine_dir(sh.n, rng), reach) { 0.0 } else { 1.0 };
             }
             if let Some((col, density)) = rs.fog {
                 let f = (-density * h.t).exp();
@@ -135,7 +148,14 @@ impl<'a> PathTracer<'a> {
             let mut bsdf = Bsdf::new(&sh.s, sh.n, sh.entering).principled(&m.principled, sh.s.roughness);
             bsdf.channel = channel;
             self.next_event(&sh, &bsdf, v, beta, &mut l, rng);
+            let first = direct.is_none();
+            if first {
+                direct = Some(l.iter().sum::<Vec3>());
+            }
             let Some(mut bs) = bsdf.sample(v, rng) else { break };
+            if first {
+                lobe = if bs.sss { 3 } else { 1 + bs.lobe as u8 };
+            }
             if !depth.bump(bs.lobe, ps) {
                 break;
             }
@@ -164,7 +184,8 @@ impl<'a> PathTracer<'a> {
             o = self.offset(&sh, bs.dir);
             d = bs.dir;
         }
-        PathSample { radiance: l.iter().sum(), groups: l, alpha, g }
+        let radiance = l.iter().sum();
+        PathSample { radiance, groups: l, alpha, g, direct: direct.unwrap_or(radiance), lobe, albedo, rough, ao }
     }
 
     /// MIS weight of emission found by BSDF sampling.

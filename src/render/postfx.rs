@@ -24,6 +24,8 @@ pub struct PostCtx<'a> {
     pub coc: Option<f32>,
     pub materials: &'a [crate::materials::Material],
     pub plain_bg: bool,
+    /// Albedo / roughness / variance guides: use the À-Trous denoiser.
+    pub aux: Option<&'a [super::denoise_atrous::Aux]>,
 }
 
 impl<'a> PostCtx<'a> {
@@ -33,6 +35,7 @@ impl<'a> PostCtx<'a> {
             coc: (!rs.camera.is_ortho()).then(|| coc_scale(rs, cfg)),
             materials: &rs.materials,
             plain_bg: rs.hdri.is_none(),
+            aux: None,
         }
     }
 }
@@ -41,8 +44,10 @@ pub fn run_ctx(px: &mut [Pixel], w: usize, h: usize, ctx: &PostCtx, cfg: &Render
     if w == 0 || h == 0 {
         return;
     }
-    if cfg.gi.denoise && ctx.noisy {
-        denoise(px, w, h);
+    match ctx.aux {
+        Some(aux) if cfg.gi.denoise => super::denoise_atrous::denoise(px, aux, w, h),
+        _ if cfg.gi.denoise && ctx.noisy => denoise(px, w, h),
+        _ => {}
     }
     let p = &cfg.post;
     if let Some(coc) = ctx.coc.filter(|_| p.dof) {

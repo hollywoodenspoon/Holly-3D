@@ -2,6 +2,7 @@
 //! Copy, Clone, R/G/B/A/Mono), progress and the image; plus cloned windows.
 
 use crate::editor::Editor;
+use crate::render::aov::Aov;
 use crate::render::{ChannelView, FrameBuffer};
 use crate::ui::render_setup::{SetupTab, view_combo};
 use crate::ui::theme;
@@ -11,7 +12,7 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct RfwState {
-    tex: Option<(TextureHandle, u64, ChannelView)>,
+    tex: Option<(TextureHandle, u64, ChannelView, Aov)>,
     clones: HashMap<u32, (TextureHandle, ChannelView)>,
     clone_channels: HashMap<u32, ChannelView>,
     drag_from: Option<Pos2>,
@@ -20,6 +21,29 @@ pub struct RfwState {
 
 fn color_image(fb: &FrameBuffer, ch: ChannelView) -> egui::ColorImage {
     egui::ColorImage::from_rgba_unmultiplied([fb.width as usize, fb.height as usize], &fb.view_rgba8(ch))
+}
+
+/// The image with the chosen AOV pass in place of the beauty render.
+fn shown_image(ed: &Editor, fb: &FrameBuffer, ch: ChannelView) -> egui::ColorImage {
+    let Some(a) = ed.rfw.aovs.as_ref().filter(|_| ed.rfw.aov != Aov::Beauty) else { return color_image(fb, ch) };
+    let mut f = fb.clone();
+    let v = a.view(ed.rfw.aov, &ed.render.post.tone);
+    let [x0, y0, x1, _] = a.region;
+    f.put_block(x0, y0, x1 - x0, &v, &v);
+    color_image(&f, ch)
+}
+
+fn aov_picker(ui: &mut egui::Ui, ed: &mut Editor) {
+    let has = ed.rfw.aovs.is_some();
+    ui.add_enabled_ui(has, |ui| {
+        egui::ComboBox::from_id_salt("rfw_aov").width(170.0).selected_text(ed.rfw.aov.label()).show_ui(ui, |ui| {
+            for a in Aov::ALL {
+                ui.selectable_value(&mut ed.rfw.aov, a, a.label());
+            }
+        });
+    })
+    .response
+    .on_hover_text(if has { "AOV render pass shown in the window" } else { "AOV passes come with CPU path-traced renders" });
 }
 
 fn channel_buttons(ui: &mut egui::Ui, ch: &mut ChannelView) {
@@ -83,6 +107,7 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         }
         ui.separator();
         channel_buttons(ui, &mut ed.rfw.channels);
+        aov_picker(ui, ed);
         ui.separator();
         if toggle_button(ui, ed.rfw.grading_open, "🎨 Grading").on_hover_text("Color Grading & Camera RAW sidebar").clicked() {
             ed.rfw.grading_open = !ed.rfw.grading_open;
@@ -138,18 +163,19 @@ fn main_window(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
                 return;
             };
             let ch = ed.rfw.channels;
-            let stale = st.tex.as_ref().is_none_or(|(_, rev, c)| *rev != fb.rev || *c != ch);
+            let aov = ed.rfw.aov;
+            let stale = st.tex.as_ref().is_none_or(|(_, rev, c, a)| *rev != fb.rev || *c != ch || *a != aov);
             if stale {
-                let img = color_image(fb, ch);
+                let img = shown_image(ed, fb, ch);
                 match &mut st.tex {
-                    Some((t, rev, c)) => {
+                    Some((t, rev, c, a)) => {
                         t.set(img, egui::TextureOptions::LINEAR);
-                        (*rev, *c) = (fb.rev, ch);
+                        (*rev, *c, *a) = (fb.rev, ch, aov);
                     }
-                    None => st.tex = Some((ctx.load_texture("rfw_image", img, egui::TextureOptions::LINEAR), fb.rev, ch)),
+                    None => st.tex = Some((ctx.load_texture("rfw_image", img, egui::TextureOptions::LINEAR), fb.rev, ch, aov)),
                 }
             }
-            let Some((tex, _, _)) = &st.tex else { return };
+            let Some((tex, ..)) = &st.tex else { return };
             let sense = if ed.rfw.region_mode { egui::Sense::drag() } else { egui::Sense::hover() };
             let (rect, r) = image(ui, tex, fb, sense);
             if ed.rfw.region_mode {

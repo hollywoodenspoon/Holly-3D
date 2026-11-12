@@ -3,6 +3,7 @@
 //! CPU, plus a wgpu compute port of the SolidCraft GPU path tracer.
 
 pub mod adaptive;
+pub mod extras;
 pub use crate::render::bsdf;
 pub mod subsurface;
 pub mod integrator;
@@ -24,14 +25,14 @@ pub fn run(rs: &RenderScene, cfg: &RenderSettings, region: Region, cancel: &Atom
     (px, device)
 }
 
-/// [`run`] plus the LightMix group buffers (CPU tracer only).
+/// [`run`] plus the AOV passes and LightMix group buffers (CPU tracer only).
 pub fn run_mix(
     rs: &RenderScene,
     cfg: &RenderSettings,
     region: Region,
     cancel: &AtomicBool,
     on_pass: impl FnMut(progressive::PassInfo, &[Pixel]),
-) -> (Vec<Pixel>, String, Option<crate::render::lightmix::Buffers>) {
+) -> (Vec<Pixel>, String, extras::Extras) {
     let mut on_pass = on_pass;
     let gpu = match cfg.path.device {
         ComputeDevice::Cpu => Err("CPU selected".to_string()),
@@ -42,7 +43,7 @@ pub fn run_mix(
     };
     let fallback = match gpu {
         Ok(g) => match crate::render::gpu_pathtrace::render(g, rs, cfg, region, cancel, &mut on_pass) {
-            Ok(px) => return (px, g.name.clone(), None),
+            Ok(px) => return (px, g.name.clone(), Default::default()),
             Err(e) => e,
         },
         Err(e) => e,

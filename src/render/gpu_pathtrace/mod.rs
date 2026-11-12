@@ -170,7 +170,7 @@ fn primary(t: &Tracer, cfg: &RenderSettings, x: u32, y: u32) -> Accum {
         let tri = &t.rs.bvh.tris[h.tri];
         GSample { obj: tri.obj, mat: tri.mat as u32, depth: h.t, normal: t.interp(&h, ray.origin, ray.dir).n }
     });
-    Accum { sum: Vec4::ZERO, back: t.backdrop(ray.dir), g, n: 0, stats: Welford::ZERO }
+    Accum { sum: Vec4::ZERO, back: t.backdrop(ray.dir), g, n: 0, stats: Welford::ZERO, ..Accum::EMPTY }
 }
 
 #[cfg(test)]

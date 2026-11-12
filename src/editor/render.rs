@@ -36,6 +36,9 @@ pub struct RenderUi {
     pub lightmix: Option<Box<crate::render::lightmix::Buffers>>,
     /// The LightMix sidebar is shown.
     pub lightmix_open: bool,
+    /// AOV passes of the last path-traced render and the one shown.
+    pub aovs: Option<Box<crate::render::aov::AovBuffers>>,
+    pub aov: crate::render::aov::Aov,
 }
 
 impl Editor {
@@ -67,7 +70,7 @@ impl Editor {
     /// F9 / Render button: opens the RFW and starts rendering.
     pub fn start_render(&mut self) {
         self.cancel_render();
-        self.rfw.lightmix = None;
+        (self.rfw.lightmix, self.rfw.aovs) = (None, None);
         let (w, h) = (self.render.width, self.render.height);
         let rs = RenderScene::build(&self.scene, self.render_camera(), self.uses_default_lights());
         let fb_ok = self.rfw.fb.as_ref().is_some_and(|f| f.width == w && f.height == h);
@@ -122,7 +125,7 @@ impl Editor {
         if let Some(r) = job.poll(fb) {
             self.rfw.message = r.unwrap_or_else(|e| e);
             self.status = self.rfw.message.clone();
-            self.rfw.lightmix = job.lightmix.take();
+            (self.rfw.lightmix, self.rfw.aovs) = (job.lightmix.take(), job.aovs.take());
             self.rfw.job = None;
             // The finished image gets the Color Grading.
             if !self.render.post.grade.is_neutral() {

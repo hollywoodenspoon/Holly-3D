@@ -2,9 +2,11 @@
 //! progressive multi-bounce path tracer (CPU and wgpu GPU) and the classic
 //! raytracer.
 
+pub mod aov;
 pub mod area_lights;
 pub mod bsdf;
 pub mod bvh;
+pub mod denoise_atrous;
 mod bvh_wide;
 pub mod mis;
 pub mod volumetrics;

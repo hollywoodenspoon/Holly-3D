@@ -40,7 +40,7 @@ fn settings() -> RenderSettings {
 
 fn render(rs: &RenderScene) -> (Vec<Pixel>, Buffers) {
     let (px, mix) = crate::render::pathtrace::progressive::render_mix(rs, &settings(), [0, 0, 16, 16], &AtomicBool::new(false), |_, _| {});
-    (px, mix.expect("CPU path tracer keeps light groups"))
+    (px, mix.lightmix.expect("CPU path tracer keeps light groups"))
 }
 
 #[test]
@@ -89,4 +89,20 @@ fn faders_relight_each_group() {
     assert!(mixed.z / mixed.x > base.z / base.x * 1.5, "tint shifts the balance: {base} -> {mixed}");
     mix.faders.iter_mut().for_each(|f| f.on = false);
     assert_eq!(geom(&mix), Vec3::ZERO, "every group off -> black");
+}
+
+#[test]
+fn aov_passes_split_the_beauty_render() {
+    let rs = scene();
+    let mut cfg = settings();
+    (cfg.gi.denoise, cfg.post.bloom, cfg.outlines) = (false, false, false);
+    let (px, ex) = crate::render::pathtrace::progressive::render_mix(&rs, &cfg, [0, 0, 16, 16], &AtomicBool::new(false), |_, _| {});
+    let a = ex.aovs.expect("AOVs");
+    for (p, v) in px.iter().zip(&a.px) {
+        let sum = v.direct + v.indirect;
+        assert!((sum - p.layers.geom.truncate()).abs().max_element() < 1e-3, "direct + indirect = beauty");
+        assert!(v.specular.max_element() <= v.indirect.max_element() + 1e-5 && v.samples == 16);
+    }
+    assert!(a.px.iter().any(|v| v.albedo.x > 0.5 && v.depth.is_finite()), "floor albedo recorded");
+    assert!(a.px.iter().map(|v| v.indirect.max_element()).sum::<f32>() > 0.0, "some indirect light");
 }

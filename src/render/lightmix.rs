@@ -105,6 +105,8 @@ pub struct Buffers {
     pub noisy: bool,
     pub coc: Option<f32>,
     pub plain_bg: bool,
+    /// À-Trous denoiser guides (empty: the bilateral denoiser).
+    pub aux: Vec<super::denoise_atrous::Aux>,
 }
 
 impl Buffers {
@@ -129,6 +131,7 @@ impl Buffers {
             noisy: false,
             coc: None,
             plain_bg: true,
+            aux: vec![],
         }
     }
 
@@ -143,7 +146,7 @@ impl Buffers {
                 Pixel { g: self.g[i], layers, ..Pixel::EMPTY }
             })
             .collect();
-        let ctx = PostCtx { noisy: self.noisy, coc: self.coc, materials: &self.materials, plain_bg: self.plain_bg };
+        let ctx = PostCtx { noisy: self.noisy, coc: self.coc, materials: &self.materials, plain_bg: self.plain_bg, aux: (!self.aux.is_empty()).then_some(&self.aux[..]) };
         run_ctx(&mut px, w, h, &ctx, &self.cfg);
         px
     }

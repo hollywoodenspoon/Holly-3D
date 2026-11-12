@@ -6,7 +6,9 @@
 use super::adaptive::{Welford, converged};
 use super::integrator::PathTracer;
 use crate::render::job::Region;
-use crate::render::lightmix::{Buffers, Fader, GROUPS};
+pub use super::extras::Extras;
+use crate::render::aov::AovPixel;
+use crate::render::lightmix::{GROUPS, VOLUME};
 use crate::render::post::PixelLayers;
 use crate::render::scene_build::RenderScene;
 use crate::render::settings::RenderSettings;
@@ -22,10 +24,21 @@ pub struct Accum {
     pub g: GSample,
     pub n: u32,
     pub stats: Welford,
+    /// AOV sums (radiance passes, albedo, AO); `aov.samples` unused.
+    pub aov: AovPixel,
+    pub rough: f32,
 }
 
 impl Accum {
-    const EMPTY: Accum = Accum { sum: Vec4::ZERO, back: Vec3::ZERO, g: GSample::EMPTY, n: 0, stats: Welford::ZERO };
+    pub const EMPTY: Accum = Accum {
+        sum: Vec4::ZERO,
+        back: Vec3::ZERO,
+        g: GSample::EMPTY,
+        n: 0,
+        stats: Welford::ZERO,
+        aov: AovPixel { direct: Vec3::ZERO, indirect: Vec3::ZERO, volume: Vec3::ZERO, specular: Vec3::ZERO, sss: Vec3::ZERO, albedo: Vec3::ZERO, normal: Vec3::ZERO, depth: 0.0, ao: 0.0, samples: 0 },
+        rough: 0.0,
+    };
 }
 
 /// What a finished pass reports: its index, samples per pixel so far and
@@ -52,15 +65,16 @@ pub fn render(rs: &RenderScene, cfg: &RenderSettings, region: Region, cancel: &A
     render_mix(rs, cfg, region, cancel, on_pass).0
 }
 
-/// [`render`] that also returns the per-light-group buffers for LightMix
-/// (when `PathSettings::lightmix` is on and the render finished).
+/// [`render`] that also returns the AOV passes and, when
+/// `PathSettings::lightmix` is on, the per-light-group LightMix buffers
+/// (both empty if cancelled).
 pub fn render_mix(
     rs: &RenderScene,
     cfg: &RenderSettings,
     region: Region,
     cancel: &AtomicBool,
     mut on_pass: impl FnMut(PassInfo, &[Pixel]),
-) -> (Vec<Pixel>, Option<Buffers>) {
+) -> (Vec<Pixel>, Extras) {
     let ps = &cfg.path;
     let [x0, y0, x1, y1] = region;
     let (rw, rh) = ((x1 - x0) as usize, (y1 - y0) as usize);
@@ -98,7 +112,7 @@ pub fn render_mix(
             }
         });
         if cancel.load(Ordering::Relaxed) {
-            return (out, None);
+            return (out, Extras::default());
         }
         if ps.adaptive {
             let stats: Vec<_> = acc.iter().map(|a| a.stats).collect();
@@ -113,32 +127,11 @@ pub fn render_mix(
             break;
         }
     }
-    crate::render::postfx::run(&mut out, rw, rh, rs, cfg);
-    let mix = (k > 0).then(|| buffers(rs, cfg, region, &acc, gsum, k));
-    (out, mix)
-}
-
-/// Normalises the accumulated group sums into LightMix buffers.
-fn buffers(rs: &RenderScene, cfg: &RenderSettings, region: Region, acc: &[Accum], mut data: Vec<Vec3>, k: usize) -> Buffers {
-    for (a, g) in acc.iter().zip(data.chunks_mut(k)) {
-        let s = 1.0 / a.n.max(1) as f32;
-        g.iter_mut().for_each(|c| *c *= s);
-    }
-    let ctx = crate::render::postfx::PostCtx::of(rs, cfg);
-    Buffers {
-        region,
-        groups: rs.groups[..k].to_vec(),
-        data,
-        alpha: acc.iter().map(|a| a.sum.w / a.n.max(1) as f32).collect(),
-        back: acc.iter().map(|a| a.back).collect(),
-        g: acc.iter().map(|a| a.g).collect(),
-        faders: vec![Fader::default(); k],
-        cfg: cfg.clone(),
-        materials: rs.materials.clone(),
-        noisy: ctx.noisy,
-        coc: ctx.coc,
-        plain_bg: ctx.plain_bg,
-    }
+    let aux = super::extras::aux(&acc);
+    let ctx = crate::render::postfx::PostCtx { aux: Some(&aux), ..crate::render::postfx::PostCtx::of(rs, cfg) };
+    crate::render::postfx::run_ctx(&mut out, rw, rh, &ctx, cfg);
+    let lightmix = (k > 0).then(|| super::extras::lightmix(rs, cfg, region, &acc, gsum, k, aux));
+    (out, Extras { lightmix, aovs: Some(super::extras::aovs(region, &acc)) })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -162,7 +155,16 @@ fn sample_pixel(pt: &PathTracer, a: &mut Accum, groups: &mut [Vec3], x: u32, y: 
         let c = if ok { s.radiance } else { Vec3::ZERO };
         if ok {
             groups.iter_mut().zip(&s.groups).for_each(|(g, v)| *g += *v);
+            let v = &mut a.aov;
+            let ind = s.radiance - s.direct;
+            (v.direct, v.indirect, v.volume) = (v.direct + s.direct, v.indirect + ind, v.volume + s.groups[VOLUME as usize]);
+            match s.lobe {
+                2 => v.specular += ind,
+                3 => v.sss += ind,
+                _ => {}
+            }
         }
+        (a.aov.albedo, a.aov.ao, a.rough) = (a.aov.albedo + s.albedo, a.aov.ao + s.ao, a.rough + s.rough);
         a.sum += c.extend(s.alpha);
         a.n += 1;
         a.stats.push(c.dot(Vec3::new(0.2126, 0.7152, 0.0722)));
