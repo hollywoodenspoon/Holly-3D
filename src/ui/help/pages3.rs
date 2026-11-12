@@ -1,4 +1,4 @@
-//! Help page content, part 3: Phase 10A characters and the Ilex names.
+//! Help page content, part 3: Phase 10A / 10B characters and the Ilex names.
 
 use super::pages::*;
 use crate::editor::CommandTab;
@@ -22,7 +22,15 @@ pub const CHARACTERS: Page = Page {
             "Material IDs: 1 Skin, 2 Eyes, 3 Hair, 4 Cloth, 5 Metal, 6 Leather. The Character Pack Multi/Sub-Object material (with skin subsurface scattering) is assigned for you.",
             "Every change is one undo step; Convert to Editable Poly freezes the character for hand modelling.",
         ]),
-        Tip("Not done yet: the photo face cloner, real MakeHuman hair and clothes assets (hair and outfits are built procedurally), and height / proportion targets for ages other than young adult. Characters are placed at the origin rather than dragged out."),
+        H("Easy Pose (the rig)"),
+        Steps(&[
+            "Every humanoid carries the MakeHuman default skeleton (163 bones), fitted to its own body shape, with MakeHuman's skin weights.",
+            "Character — Easy Pose: click a preset (A-Pose, T-Pose, Relaxed, Walk, Run, Sit, Kneel, Wave, Fighting Stance, Victory, Spell Cast).",
+            "Or pick a Joint (Whole Body, Spine, Chest, Neck, Head, Jaw, Clavicle, Upper Arm, Elbow, Wrist, Thigh, Knee, Foot) and drag Bend, Twist and Side. Left and right move together unless 'Pose this side only' is on.",
+            "Copy L to R, Copy R to L, Mirror Pose, Reset Joint and Reset Pose. Save Pose... writes a .ilexpose file; Load Pose... opens .ilexpose and older .mmaxpose files.",
+            "The body and eyes follow the pose and the feet stay on the ground. Every pose change is one undo step.",
+        ]),
+        Tip("Not done yet: the photo face cloner, real MakeHuman hair and clothes assets (hair and outfits are built procedurally), and height / proportion targets for ages other than young adult. Characters are placed at the origin rather than dragged out. Posing is forward kinematics only (no IK, no fingers or face bones in Easy Pose, no animation), and the procedural hair, armour and weapons are placed from the posed joints but are not bent with the limbs."),
         ShowMe("Open the Character & Creature Studio", Show::Act(Action::CharacterStudio)),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
     ],

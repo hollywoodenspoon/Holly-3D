@@ -7,8 +7,8 @@ _Status as of 12 November 2026, measured against the spec in `CLAUDE.md`._
 | | |
 |---|---|
 | Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
-| Source | 500 `.rs` files, about 75,400 lines; the largest is 350 lines (limit 350) |
-| Tests | 574 headless tests, all passing (`cargo test --lib`) |
+| Source | 506 `.rs` files, about 76,100 lines; the largest is 350 lines (limit 350) |
+| Tests | 579 headless tests, all passing (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
 | Packaging | `packaging/`: a pacman PKGBUILD (version `0.<commits>.g<hash>`, `znver3`) that installs `/usr/bin/ilex` (with a `/usr/bin/minimax` symlink), the desktop entry, the white Holly tree icon and the `.ilex` / `.mmax` / `.ilexpose` file types (§32), plus `publish-repo.sh` for a local `[minimax]` repository (see README and §14). Built and published end to end with makepkg; not yet installed through pacman on CachyOS |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
@@ -1131,7 +1131,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - **Height and proportions** use only the young-adult targets, so they are approximate for child and old ages.
 - **Placement:** characters are placed at the origin; drag-to-create is not wired.
 - **Previews:** the Studio gallery shows text buttons, not rendered thumbnails.
-- The skeleton and weights are bundled but **not used yet**. Rigging and Easy Pose are Phase 10B.
+- The skeleton and weights are bundled; rigging and Easy Pose arrived in Phase 10B (§33).
 - **Not tested by hand:** none of this has been tried in the running app, only by unit tests.
 
 ## 32. Ilex / Veach / Luxon / Demiurge rebrand
@@ -1190,3 +1190,42 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - Internal Rust identifiers (for example `KeySet::MiniMax`, `ModifierKind::Settlement`) keep their names so saved files still deserialize.
 - Not tested by hand in the running app or through pacman.
 
+
+## 33. Phase 10B: MakeHuman rig & Easy Pose
+
+**Rig** (`src/character/rig/`):
+- Every humanoid is bound to the bundled MakeHuman default skeleton: 163 bones, with parents placed before children.
+- Bone heads are the centroids of the skeleton's joint vertex lists on the *morphed* body, so a tall orc and a chibi each get their own fitted rig.
+- The bundled skin weights (139 weighted bones) are normalised per vertex.
+- Posing is forward kinematics with linear blend skinning. Each bone rotates about its rest head, and its children inherit the motion.
+- The pose is applied to the hm08 coordinates before the mesh is built:
+  - The eyes (fitted with `.mhclo`) and the skin normals follow automatically.
+  - The anime head sphere rides on the head bone.
+  - The feet are put back on the ground.
+
+**Easy Pose:**
+- `CharacterParams::pose` holds per-bone Bend / Twist / Side angles. Scenes saved before 10B load in the rest A-pose.
+- **11 presets:** A-Pose (Rest), T-Pose, Relaxed Stand, Walk Stride, Run, Sit, Kneel, Wave Hello, Fighting Stance, Victory and Spell Cast.
+- **13 joint controls:** Whole Body, Lower Spine, Chest, Neck, Head, Jaw, Clavicle, Upper Arm, Elbow, Wrist, Thigh, Knee and Foot. Left and right are mirrored by default, with a "this side only" toggle.
+- **Buttons:** Copy L to R, Copy R to L, Mirror Pose, Reset Joint and Reset Pose.
+- **Pose files:** Save Pose... writes `.ilexpose` (RON, `format: "Ilex"`). Load Pose... also opens legacy `.mmaxpose` files and the `"MiniMax"` header.
+- The **Character — Easy Pose (Rig)** rollout is on the Modify panel and in the Character & Creature Studio. Every pose change is one undo step.
+
+**Tests:** 5 new (579 in all):
+- skeleton order and joints, normalised weights, and the rig following the morph;
+- the rest pose is a no-op, the T-Pose raises both wrists symmetrically, a knee bend moves only that leg, and children inherit a chest bend;
+- mirroring and side copy;
+- posed characters keep their topology and stand on the ground;
+- `.ilexpose` / `.mmaxpose` round trips.
+
+I also checked front and side silhouettes of all 11 presets.
+
+**Not done in 10B:**
+- **No IK:** there are no foot locks or hand targets.
+- **No fingers or face bones in Easy Pose:** they are in the rig but have no controls.
+- **No animation:** there are no keyframes or timeline.
+- **No viewport bone gizmo:** posing is done with sliders, not by dragging bones.
+- **Angles** are measured in the rest-pose axes about each joint, not in a per-bone local frame, so big combined rotations can look odd.
+- **Procedural Kit pieces:** hair, armour, capes and weapons are placed from the posed joints but are not bent with the limbs, so a weapon does not follow a raised hand.
+- **Sit and Kneel** have no seat or ground contact solving.
+- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.

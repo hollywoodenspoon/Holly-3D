@@ -77,6 +77,7 @@ pub fn edit(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
         combo(ui, t, "Weapon:", &mut p.weapon, Weapon::ALL, Weapon::label);
         ui.label(dim("Material IDs: 1 Skin · 2 Eyes · 3 Hair · 4 Cloth · 5 Metal · 6 Leather (Character Pack)."));
     });
+    super::pose::rollout_ui(ui, t, p);
     micro(ui, t, p);
 }
 

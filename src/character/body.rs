@@ -14,7 +14,7 @@ use crate::mesh::EditablePoly;
 use bevy::math::{Vec2, Vec3};
 use std::sync::OnceLock;
 
-/// The morphed hm08 coordinates (decimetres, Y-up) and the head sphere.
+/// The morphed and posed hm08 coordinates (decimetres, Y-up) and the head sphere.
 pub fn morph(p: &CharacterParams) -> (Vec<Vec3>, (Vec3, f32)) {
     let b = base();
     let mut c = b.coords.clone();
@@ -23,7 +23,14 @@ pub fn morph(p: &CharacterParams) -> (Vec<Vec3>, (Vec3, f32)) {
     let head = anime::head_sphere(&c, body_mask());
     anime::grow_head(&mut c, head, p.anime);
     let head = anime::head_sphere(&c, body_mask());
-    (c, head)
+    if p.pose.is_rest() {
+        return (c, head);
+    }
+    // The head sphere rides on the head bone (raised hands would fool a
+    // fresh top-of-body search).
+    let follow = super::rig::bone_matrix(&c, &p.pose, "head");
+    super::rig::apply(&p.pose, &mut c);
+    (c, (follow.transform_point3(head.0), head.1))
 }
 
 pub fn body_mask() -> &'static [bool] {

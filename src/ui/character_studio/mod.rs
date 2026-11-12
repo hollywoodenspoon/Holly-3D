@@ -3,6 +3,7 @@
 //! then the parameters of the selected character.
 
 pub mod params;
+pub mod pose;
 
 use crate::character::params::{Archetype, Creature};
 use crate::editor::Editor;
