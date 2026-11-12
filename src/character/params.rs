@@ -11,6 +11,14 @@ pub mod ids {
     pub const CLOTH: u16 = 4;
     pub const METAL: u16 = 5;
     pub const LEATHER: u16 = 6;
+    // MakeHuman system assets (`character::wardrobe`).
+    pub const EYEBROWS: u16 = 7;
+    pub const EYELASHES: u16 = 8;
+    pub const TEETH: u16 = 9;
+    pub const TONGUE: u16 = 10;
+    pub const MH_HAIR: u16 = 11;
+    /// The first clothing item; the k-th worn item is `CLOTHES + k`.
+    pub const CLOTHES: u16 = 12;
 }
 
 macro_rules! labelled {
@@ -102,6 +110,8 @@ pub struct CharacterParams {
     pub seed: u32,
     /// Phase 10B Easy Pose (empty = the A-pose rest).
     pub pose: super::rig::Pose,
+    /// MakeHuman eyebrows, lashes, teeth, hair, clothes, skin, eye colour.
+    pub mh: super::wardrobe::MhAssets,
 }
 
 impl Default for CharacterParams {
@@ -120,6 +130,7 @@ impl Default for CharacterParams {
             creature_size: 1.0,
             seed: 1,
             pose: Default::default(),
+            mh: Default::default(),
         }
     }
 }

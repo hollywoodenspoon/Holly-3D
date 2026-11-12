@@ -1128,7 +1128,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 
 **Not done in 10A:**
 - The **face cloner** (photo pins, least-squares target fit, RBF warp, skin-tone match) is not started.
-- **Real MakeHuman hair and clothes assets** are not bundled. The community asset repositories need a login, so hair and outfits are procedural Kit geometry instead. Only the eyes use `.mhclo` fitting.
+- ~~**Real MakeHuman hair and clothes assets** are not bundled.~~ Done in §34: the CC0 system asset pack (hair, clothes, eyebrows, eyelashes, teeth, tongue, proxies, skins, eye colours) is bundled and fitted with `.mhclo`. The procedural Kit hair and outfits remain as an option.
 - **Height and proportions** use only the young-adult targets, so they are approximate for child and old ages.
 - ~~**Placement:** characters are placed at the origin; drag-to-create is not wired.~~ Done after 10B: a gallery tile arms a Create Character tool. Click in a viewport to place the character, or drag to set its height like a Biped (a uniform scale, with no mesh rebuild while dragging). **Place ... at Origin** keeps the one-click route.
 - **Previews:** the Studio gallery shows text buttons, not rendered thumbnails.
@@ -1229,7 +1229,32 @@ I also checked front and side silhouettes of all 11 presets.
 - **Angles** are measured in the rest-pose axes about each joint, not in a per-bone local frame, so big combined rotations can look odd.
 - **Procedural Kit pieces:** hair, armour, capes and weapons are placed from the posed joints but are not bent with the limbs, so a weapon does not follow a raised hand.
 - **Sit and Kneel** have no seat or ground contact solving.
-- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.- **Hand shapes:** `character/rig/hands.rs`. Open, Relaxed, Grip, Fist and Point buttons curl all 15 finger bones per hand. Each segment turns about the axis across its own direction and the palm normal (the thumb folds toward the little finger), stored as ordinary per-bone angles, so mirroring and `.ilexpose` files work unchanged. The presets shape the hands too (Relaxed, Walk, Sit and Kneel relaxed; Run a loose grip; Fighting Stance and Victory fists). A test checks that the fist closes into the palm, the thumb crosses it, Point keeps the index straight and the two hands mirror.
+- **Not tested by hand** in the running app, only by unit tests and the silhouette renders.
+- **Hand shapes:** `character/rig/hands.rs`. Open, Relaxed, Grip, Fist and Point buttons curl all 15 finger bones per hand. Each segment turns about the axis across its own direction and the palm normal (the thumb folds toward the little finger), stored as ordinary per-bone angles, so mirroring and `.ilexpose` files work unchanged. The presets shape the hands too (Relaxed, Walk, Sit and Kneel relaxed; Run a loose grip; Fighting Stance and Victory fists). A test checks that the fist closes into the palm, the thumb crosses it, Point keeps the index straight and the two hands mirror.
 - **Two-bone IK:** `character/rig/ik.rs`. The IK Move row (Hand or Foot, Left or Right, then Up, Down, Forward, Back, Out or In, 5 cm a click) solves analytically: it bends the elbow or knee to the needed reach, then swings the limb about the shoulder or hip. A straight limb bends the natural way (knees forward, elbows back). The result is stored as ordinary angles on the upper and lower limb bones. A test checks all four limbs reach a target within 5 mm, the shoulder or hip stays put, knees bend forward, and a nudge moves the wrist 5 cm. The solve uses the unmorphed base skeleton, so a very tall or short body can land a few millimetres off; the next click corrects it.
 - **Help screenshots:** all 19 Help screenshots were re-captured (`tools/help_shots.sh`) so they show the Ilex names, the current font and toolbar. A new `characters` shot (an Elf in the Wave pose, a Dire Wolf and the Studio open) heads Help page 17.
 
+## 34. MakeHuman system assets: hair, clothes, face kit, skins (CC0)
+
+**Assets** (`assets/makehuman/`, CC0 1.0, from `makehuman_system_assets_cc0`):
+- `system.mhp.z` (5.0 MB, zlib, `ILXPAK1` records): every `.obj`, `.mhclo`, `.proxy` and `.mhmat` for 12 eyebrows, 4 eyelashes, 6 teeth, 1 tongue, 10 hair styles, 20 clothing pieces, 3 body proxies (proxy741, female1605, male1591), 23 skins and 9 eye colours. Comments are stripped and coordinates rounded to 4 decimals.
+- `textures.mhp` (7.7 MB): colour textures as JPEG (quality 86) with alpha as a separate grey PNG. Eyebrows and eyelashes 256 px, teeth and tongue 512, eye colours 512, hair, clothes and skins 1024. Textures that several items share are stored once (`.link` records).
+- Packed by `tools/pack_makehuman.py`.
+
+**Code:**
+- `character/makehuman/pack.rs` reads the record format; `library.rs` lists the categories, parses items on first use and caches them and their decoded textures.
+- `mhclo.rs`: only real section keywords switch sections (a `material` line after `verts 0` broke two items), and `delete_verts` expands `a - b` ranges.
+- `character/wardrobe/`: `MhAssets` on `CharacterParams` (serde default, so older scenes load with no assets). Each piece is fitted to the morphed and posed body through its `.mhclo` binding; clothes hide the body faces they cover; a Body Topology proxy replaces the base mesh. MakeHuman hair replaces the procedural hair and beard.
+- `wardrobe/materials.rs` keeps the Character Pack in step: a textured sub-material per piece (IDs 7 Eyebrows, 8 Eyelashes, 9 Teeth, 10 Tongue, 11 Hair, 12 upwards per clothing piece), and the picked skin and eye colour on IDs 1 and 2. Sub-materials whose name already matches are left alone so Material Editor edits survive.
+- New Humans start with the Face Kit (default eyebrows, eyelashes, teeth and tongue).
+- **UI:** the **Character — MakeHuman Assets (CC0)** rollout (Modify panel and Studio): a drop-down per category plus Skin and Eye Colour, a Clothes checklist, and Face Kit, Take Off All Clothes and Remove All Assets buttons.
+- **Help:** a new section and `wardrobe` screenshot on page 17; the Credits entry now names the system assets.
+
+**Tests:** 10 new in `character/wardrobe/tests.rs` (all passing): counts and labels, every item binds to the base mesh, the face kit, proxies follow the morphs, clothes hide the body and get their own IDs, the proxy741 topology, MH hair replaces procedural hair, texture decoding (alpha, links, 1024 px hair), material sync, and the serde round trip with old files.
+
+**Not done:**
+- Normal, AO, bump, specular and displacement maps and litspheres are not imported, only colour and alpha.
+- Clothes follow the body binding; their own `vertexboneweights` are not used.
+- No extra community packs (more hair, poses, expressions), extra rigs or per-age targets.
+- No asset thumbnails in the pickers.
+- Only checked in the running app through the help screenshot (two dressed characters at a distance); no close-up check of every item for clipping.

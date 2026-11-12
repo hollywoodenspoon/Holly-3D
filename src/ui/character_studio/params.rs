@@ -75,8 +75,9 @@ pub fn edit(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
         slider(ui, t, "Hair Length", &mut p.hair_length, 0.0..=1.0, 0.5);
         combo(ui, t, "Outfit:", &mut p.outfit, Outfit::ALL, Outfit::label);
         combo(ui, t, "Weapon:", &mut p.weapon, Weapon::ALL, Weapon::label);
-        ui.label(dim("Material IDs: 1 Skin · 2 Eyes · 3 Hair · 4 Cloth · 5 Metal · 6 Leather (Character Pack)."));
+        ui.label(dim("Material IDs: 1 Skin · 2 Eyes · 3 Hair · 4 Cloth · 5 Metal · 6 Leather · 7–12+ MakeHuman assets (Character Pack)."));
     });
+    super::wardrobe::rollout_ui(ui, t, p);
     super::pose::rollout_ui(ui, t, p);
     micro(ui, t, p);
 }

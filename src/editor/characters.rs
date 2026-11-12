@@ -4,6 +4,7 @@
 
 use super::*;
 use crate::character::params::{Archetype, Creature};
+use crate::character::wardrobe::{self, MhAssets};
 use crate::character::CharacterParams;
 use crate::materials::{Material, MultiPreset};
 use crate::scene::BaseObject;
@@ -39,6 +40,9 @@ impl Editor {
         let id = self.scene.add(BaseObject::Character(Box::new(p)), at);
         let mut m = Material::named(format!("{} Skin", self.scene.objects[id].name));
         MultiPreset::Character.apply(&mut m);
+        if let (Some(ms), BaseObject::Character(c)) = (m.multi.as_mut(), &self.scene.objects[id].base) {
+            wardrobe::materials::sync(&c.mh, ms);
+        }
         self.scene.objects[id].material = Some(self.scene.materials.mats.insert(m));
         self.scene.select_only(Some(id));
         self.sub = SubObject::Object;
@@ -49,7 +53,7 @@ impl Editor {
 
     /// One-click archetype (Human, Elf, Dwarf, ... Anime Heroine).
     pub fn create_archetype(&mut self, a: Archetype, at: Vec3) -> ObjId {
-        let mut p = CharacterParams::default();
+        let mut p = CharacterParams { mh: MhAssets::face_kit(), ..Default::default() };
         a.apply(&mut p);
         self.create_character(p, at)
     }
@@ -70,12 +74,24 @@ impl Editor {
     /// Replaces the character's parameters (the caller records the undo
     /// step) and re-evaluates it.
     pub fn set_character(&mut self, id: ObjId, p: CharacterParams) {
+        self.sync_character_materials(id, &p.mh);
         let o = &mut self.scene.objects[id];
         if let BaseObject::Character(cur) = &mut o.base {
             **cur = p;
         }
         o.evaluate();
         self.scene.propagate_from(id);
+    }
+}
+
+impl Editor {
+    /// Textures the character's Character Pack for its MakeHuman assets.
+    /// A plain (non Multi/Sub-Object) material is left as the user set it.
+    pub fn sync_character_materials(&mut self, id: ObjId, mh: &MhAssets) {
+        let Some(mid) = self.scene.objects.get(id).and_then(|o| o.material) else { return };
+        if let Some(ms) = self.scene.materials.mats.get_mut(mid).and_then(|m| m.multi.as_mut()) {
+            wardrobe::materials::sync(mh, ms);
+        }
     }
 }
 

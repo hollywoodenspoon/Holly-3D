@@ -1,3 +1,6 @@
+<!-- Ilex note -->
+Every file in this folder comes from MakeHuman by the MakeHuman Team (https://www.makehumancommunity.org): the hm08 base mesh, targets, modifiers, eyes, skeleton and weights, and, in `system.mhp.z` and `textures.mhp`, the MakeHuman 1.x system assets (eyebrows, eyelashes, teeth, tongue, hair, clothes, body proxies, skins and eye colours from `makehuman_system_assets_cc0`). They are released under CC0 1.0 Universal, reproduced below. Ilex repacks them (comments stripped, coordinates rounded, textures re-encoded as JPEG + PNG alpha) with `tools/pack_makehuman.py`.
+
 # Creative Commons CC0 1.0 Universal
 
 CREATIVE COMMONS CORPORATION IS NOT A LAW FIRM AND DOES NOT PROVIDE LEGAL SERVICES. DISTRIBUTION OF THIS DOCUMENT DOES NOT CREATE AN ATTORNEY-CLIENT RELATIONSHIP. CREATIVE COMMONS PROVIDES THIS INFORMATION ON AN "AS-IS" BASIS. CREATIVE COMMONS MAKES NO WARRANTIES REGARDING THE USE OF THIS DOCUMENT OR THE INFORMATION OR WORKS PROVIDED HEREUNDER, AND DISCLAIMS LIABILITY FOR DAMAGES RESULTING FROM THE USE OF THIS DOCUMENT OR THE INFORMATION OR WORKS PROVIDED HEREUNDER.

@@ -3,10 +3,10 @@
 use super::params::{Archetype, CharacterParams, Hair, Outfit, Weapon};
 
 impl Archetype {
-    /// Resets `p` to this archetype (keeps the seed, eyes and creature).
+    /// Resets `p` to this archetype (keeps the seed, eyes, MakeHuman assets and creature).
     pub fn apply(self, p: &mut CharacterParams) {
-        let keep = (p.seed, p.eyes);
-        *p = CharacterParams { archetype: self, seed: keep.0, eyes: keep.1, ..Default::default() };
+        let keep = (p.seed, p.eyes, std::mem::take(&mut p.mh));
+        *p = CharacterParams { archetype: self, seed: keep.0, eyes: keep.1, mh: keep.2, ..Default::default() };
         let m = &mut p.macros;
         let recipe: &[(&str, f32)] = match self {
             Archetype::Human => &[],

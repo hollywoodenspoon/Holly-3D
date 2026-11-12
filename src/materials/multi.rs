@@ -246,7 +246,7 @@ impl MultiPreset {
             ],
             // `character::params::ids`.
             Self::Character => vec![
-                skin(),
+                skin_material(),
                 pbr("Eyes", [0.32, 0.22, 0.14], 0.0, 0.08),
                 pbr("Hair", [0.18, 0.11, 0.06], 0.0, 0.55),
                 pbr("Cloth", [0.3, 0.34, 0.45], 0.0, 0.85),
@@ -275,7 +275,8 @@ impl MultiPreset {
     }
 }
 
-fn skin() -> Material {
+/// The Character Pack skin (subsurface scattering on).
+pub fn skin_material() -> Material {
     let mut m = pbr("Skin", [0.86, 0.66, 0.55], 0.0, 0.5);
     m.principled.sss_weight = 0.35;
     m.principled.sss_color = [0.9, 0.35, 0.25];

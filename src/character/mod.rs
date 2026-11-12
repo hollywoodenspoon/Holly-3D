@@ -14,6 +14,7 @@ pub mod outfit;
 pub mod params;
 pub mod rig;
 pub mod shapes;
+pub mod wardrobe;
 
 #[cfg(test)]
 mod tests;

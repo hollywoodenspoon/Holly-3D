@@ -31,7 +31,9 @@ impl Proxy {
         for line in src.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
             let f: Vec<&str> = line.split_ascii_whitespace().collect();
             let num = f[0].parse::<f32>().is_ok();
-            if !num {
+            // Only section keywords switch sections: other keys (such as
+            // `material`) may follow `verts 0` before the binding lines.
+            if !num && matches!(f[0], "verts" | "delete_verts" | "weights") {
                 in_verts = f[0] == "verts";
                 in_delete = f[0] == "delete_verts";
             }
@@ -51,12 +53,20 @@ impl Proxy {
                     };
                     p.bindings.push(b);
                 }
-                _ if num && in_delete => {
-                    for s in &f {
-                        // `a - b` ranges are written as "a - b".
-                        if let Ok(v) = s.parse::<u32>() {
-                            p.delete_verts.push(v);
+                _ if in_delete => {
+                    // Single indices and `a - b` ranges.
+                    let mut k = 0;
+                    while k < f.len() {
+                        if let Ok(a) = f[k].parse::<u32>() {
+                            match (f.get(k + 1), f.get(k + 2).and_then(|s| s.parse::<u32>().ok())) {
+                                (Some(&"-"), Some(b)) if b >= a => {
+                                    p.delete_verts.extend(a..=b);
+                                    k += 2;
+                                }
+                                _ => p.delete_verts.push(a),
+                            }
                         }
+                        k += 1;
                     }
                 }
                 _ => {}
