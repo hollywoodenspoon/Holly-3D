@@ -89,8 +89,8 @@ impl Preset {
                 m.model = ShadingModel::Toon;
                 m.base_color = [0.95, 0.55, 0.42];
                 m.roughness = 0.5;
-                m.toon = ToonParams { steps: 2, shadow_tint: [0.55, 0.45, 0.7], rim: 0.6, rim_color: [1.0, 0.95, 0.85], specular: 0.4 };
-                m.outline = OutlineParams { enabled: true, width: 2.0, color: [0.08, 0.05, 0.1], crease_lines: true, crease_angle: 45.0 };
+                m.toon = ToonParams { steps: 2, shadow_tint: [0.55, 0.45, 0.7], rim: 0.6, rim_color: [1.0, 0.95, 0.85], specular: 0.4, ..Default::default() };
+                m.outline = OutlineParams { enabled: true, width: 2.0, color: [0.08, 0.05, 0.1], crease_lines: true, crease_angle: 45.0, pen_lines: true };
             }
         }
     }

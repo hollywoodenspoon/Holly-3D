@@ -38,7 +38,7 @@ fn gi_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                 .on_hover_text("Next-event samples on emissive polygons (Emission Multiplier > 0)");
             ui.end_row();
         });
-        ui.checkbox(&mut g.denoise, "Edge-Preserving Spatial Denoiser");
+        ui.checkbox(&mut g.denoise, "Edge-Preserving Denoiser (A-Trous on the Path Tracer)");
         ui.checkbox(&mut g.softbox, "Studio Softbox Reflection Dome").on_hover_text("Used by reflection rays when no HDRI is loaded");
     });
 }
@@ -122,5 +122,9 @@ fn post_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
 pub fn tab(ui: &mut egui::Ui, ed: &mut Editor) {
     gi_rollout(ui, ed);
     post_rollout(ui, ed);
+    super::render_lens::rollout_ui(ui, ed);
+    if ui.button("🎞 Render Turntable / Sprite Sheet...").on_hover_text("360° PNG sequence or 4 / 8-direction isometric sprite atlas + JSON").clicked() {
+        ed.rfw.sheet.open = true;
+    }
     ui.label(dim("Tone controls also live in the F9 window and update the image without re-rendering."));
 }

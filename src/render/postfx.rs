@@ -7,7 +7,7 @@ use super::outline;
 use super::sample::Pixel;
 use super::scene_build::RenderScene;
 use super::settings::RenderSettings;
-use bevy::math::{Vec3, Vec4};
+use bevy::math::{Vec2, Vec3, Vec4};
 
 /// Runs every enabled pass over `px` (`w` x `h`, row-major).
 pub fn run(px: &mut [Pixel], w: usize, h: usize, rs: &RenderScene, cfg: &RenderSettings) {
@@ -51,8 +51,9 @@ pub fn run_ctx(px: &mut [Pixel], w: usize, h: usize, ctx: &PostCtx, cfg: &Render
     }
     let p = &cfg.post;
     if let Some(coc) = ctx.coc.filter(|_| p.dof) {
-        dof(px, w, h, coc, p.focus_distance.max(1e-3));
+        dof(px, w, h, coc, p.focus_distance.max(1e-3), &p.lens);
     }
+    super::npr::screentone(px, w, h, ctx.materials);
     if cfg.outlines {
         let g: Vec<_> = px.iter().map(|p| p.g).collect();
         let mut ink = vec![Vec4::ZERO; px.len()];
@@ -62,6 +63,7 @@ pub fn run_ctx(px: &mut [Pixel], w: usize, h: usize, ctx: &PostCtx, cfg: &Render
     if p.bloom {
         bloom(px, w, h, cfg);
     }
+    super::lens_fx::glare(px, w, h, &p.lens);
     px.iter_mut().for_each(|p| p.finish(&cfg.post.tone, ctx.plain_bg, cfg.transparent));
 }
 
@@ -122,7 +124,7 @@ pub fn coc(scale: f32, focus: f32, depth: f32) -> f32 {
     (scale * (1.0 / focus - inv).abs()).min(24.0)
 }
 
-fn dof(px: &mut [Pixel], w: usize, h: usize, scale: f32, focus: f32) {
+fn dof(px: &mut [Pixel], w: usize, h: usize, scale: f32, focus: f32, lens: &super::lens_fx::LensFx) {
     let radius: Vec<f32> = px.iter().map(|p| coc(scale, focus, p.g.depth)).collect();
     let src: Vec<Pixel> = px.to_vec();
     const TAPS: usize = 48;
@@ -135,8 +137,12 @@ fn dof(px: &mut [Pixel], w: usize, h: usize, scale: f32, focus: f32) {
             }
             let (mut geom, mut back, mut wsum) = (Vec4::ZERO, Vec3::ZERO, 0.0);
             for i in 0..TAPS {
-                let rr = r * ((i as f32 + 0.5) / TAPS as f32).sqrt();
                 let a = i as f32 * golden;
+                let rr = r * ((i as f32 + 0.5) / TAPS as f32).sqrt() * super::lens_fx::aperture_radius(a, lens.blades, lens.blade_rotation);
+                let from_c = Vec2::new(x as f32 / w as f32 * 2.0 - 1.0, y as f32 / h as f32 * 2.0 - 1.0);
+                if !super::lens_fx::cats_eye_keeps(Vec2::from_angle(a) * rr, r, from_c, lens.cats_eye) {
+                    continue;
+                }
                 let (sx, sy) = ((x as f32 + rr * a.cos()).round() as i32, (y as f32 + rr * a.sin()).round() as i32);
                 let (sx, sy) = (sx.clamp(0, w as i32 - 1) as usize, sy.clamp(0, h as i32 - 1) as usize);
                 let j = sy * w + sx;

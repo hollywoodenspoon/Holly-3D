@@ -71,7 +71,13 @@ impl<'a> PathTracer<'a> {
     }
 
     /// Traces one path from the camera.
-    pub fn radiance(&self, mut o: Vec3, mut d: Vec3, rng: &mut Rng) -> PathSample {
+    pub fn radiance(&self, o: Vec3, d: Vec3, rng: &mut Rng) -> PathSample {
+        self.radiance_from(o, d, false, rng)
+    }
+
+    /// Traces a camera-like path; `nested` for a shadow catcher's
+    /// reflection ray (catchers it meets then skip their own reflection).
+    pub(super) fn radiance_from(&self, mut o: Vec3, mut d: Vec3, nested: bool, rng: &mut Rng) -> PathSample {
         let (rs, ps) = (self.t.rs, self.ps);
         let (mut l, mut beta): (Groups, Vec3) = (Default::default(), Vec3::ONE);
         let sky = if rs.procedural.is_some() { SUN_SKY } else { ENV };
@@ -113,6 +119,12 @@ impl<'a> PathTracer<'a> {
                 (albedo, rough) = (sh.s.base, sh.s.roughness);
                 let reach = self.t.cfg.gi.ao_radius.max(1e-3);
                 ao = if rs.bvh.occluded(sh.p + sh.ng * self.t.eps, crate::render::trace::cosine_dir(sh.n, rng), reach) { 0.0 } else { 1.0 };
+                if m.shadow_catcher {
+                    let c = self.catch(&sh, d, ao, nested, rng);
+                    l.iter_mut().zip(c.groups).for_each(|(a, b)| *a += b);
+                    alpha = c.alpha;
+                    break;
+                }
             }
             if let Some((col, density)) = rs.fog {
                 let f = (-density * h.t).exp();

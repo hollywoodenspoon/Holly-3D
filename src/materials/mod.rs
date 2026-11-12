@@ -59,6 +59,7 @@ impl ShadingModel {
 
 /// Cel / Toon ramp parameters.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct ToonParams {
     /// Number of light bands (2 = classic anime two-tone).
     pub steps: u32,
@@ -67,16 +68,21 @@ pub struct ToonParams {
     pub rim: f32,
     pub rim_color: [f32; 3],
     pub specular: f32,
+    /// Manga screentone: the shadow band renders as a halftone dot grid.
+    pub screentone: bool,
+    /// Halftone cell size in pixels.
+    pub screentone_scale: f32,
 }
 
 impl Default for ToonParams {
     fn default() -> Self {
-        Self { steps: 2, shadow_tint: [0.55, 0.5, 0.72], rim: 0.0, rim_color: [1.0, 1.0, 1.0], specular: 0.0 }
+        Self { steps: 2, shadow_tint: [0.55, 0.5, 0.72], rim: 0.0, rim_color: [1.0, 1.0, 1.0], specular: 0.0, screentone: false, screentone_scale: 6.0 }
     }
 }
 
 /// Universal ink outline (inverted hull + sharp-edge lines).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct OutlineParams {
     pub enabled: bool,
     /// 0..=10 (scene units x 0.005 in the viewport hull; pixels in renders).
@@ -85,11 +91,14 @@ pub struct OutlineParams {
     pub crease_lines: bool,
     /// Dihedral angle (degrees) above which an edge draws as an ink line.
     pub crease_angle: f32,
+    /// Interior pen lines: soft-curvature valleys / ridges and material
+    /// seams such as Panel Groove floors.
+    pub pen_lines: bool,
 }
 
 impl Default for OutlineParams {
     fn default() -> Self {
-        Self { enabled: false, width: 2.0, color: [0.05, 0.05, 0.07], crease_lines: false, crease_angle: 40.0 }
+        Self { enabled: false, width: 2.0, color: [0.05, 0.05, 0.07], crease_lines: false, crease_angle: 40.0, pen_lines: false }
     }
 }
 
@@ -145,6 +154,10 @@ pub struct Material {
     /// Principled extras: SSS, anisotropy, clearcoat, sheen, absorption, dispersion.
     #[serde(default)]
     pub principled: principled::Principled,
+    /// Shadow & Reflection Catcher: renders transparent except for the
+    /// shadows, AO and reflections other objects put on it.
+    #[serde(default)]
+    pub shadow_catcher: bool,
 }
 
 impl Default for Material {
@@ -174,6 +187,7 @@ impl Default for Material {
             projection: Default::default(),
             paint: None,
             principled: Default::default(),
+            shadow_catcher: false,
         }
     }
 }

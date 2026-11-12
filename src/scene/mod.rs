@@ -132,6 +132,9 @@ pub struct SceneObject {
     pub hidden: bool,
     pub frozen: bool,
     pub see_through: bool,
+    /// Display property: Shadow & Reflection Catcher (alpha ground plane).
+    #[serde(default)]
+    pub shadow_catcher: bool,
     /// Show the UV checker texture in shaded viewports.
     pub checker: bool,
     /// Assigned material (instances share the id, like 3ds Max).
@@ -164,6 +167,7 @@ impl SceneObject {
             hidden: false,
             frozen: false,
             see_through: false,
+            shadow_catcher: false,
             checker: false,
             material: None,
             selected: false,

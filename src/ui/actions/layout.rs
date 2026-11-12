@@ -37,7 +37,7 @@ const SUB_LEVELS: &[Entry] = &[
 ];
 
 const DISPLAY: &[Entry] =
-    &[A(HideSelected), A(HideUnselected), A(UnhideAll), Sep, A(FreezeSelected), A(UnfreezeAll), Sep, A(SeeThrough), A(Isolate)];
+    &[A(HideSelected), A(HideUnselected), A(UnhideAll), Sep, A(FreezeSelected), A(UnfreezeAll), Sep, A(SeeThrough), A(ShadowCatcher), A(Isolate)];
 
 const CONSTRAINTS: &[Entry] = &[
     A(Constrain(SplineConstraint::Parallel)),
@@ -145,6 +145,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(FrameWindow),
             A(ColorGrading),
             A(LightMix),
+            A(Turntable),
             Sep,
             A(MaterialEditor),
             A(MaterialLibrary),

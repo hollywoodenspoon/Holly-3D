@@ -98,6 +98,7 @@ fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
         let mut mat_for = |id: u16| {
             *by_id.entry(if mat.is_multi() { id } else { 0 }).or_insert_with(|| {
                 let mut sub = mat.for_id(id).clone();
+                sub.shadow_catcher |= o.shadow_catcher;
                 // Paint layers of a Multi/Sub-Object lie over all its sub-materials.
                 if mat.is_multi() {
                     sub.paint = mat.paint.clone();

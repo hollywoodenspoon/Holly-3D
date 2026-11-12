@@ -49,6 +49,9 @@ pub fn unsupported(rs: &RenderScene) -> Option<&'static str> {
     if rs.lights.iter().any(|l| l.ies != crate::render::IesProfile::None) {
         return Some("IES light profiles");
     }
+    if rs.materials.iter().any(|m| m.shadow_catcher) {
+        return Some("Shadow & Reflection Catcher surfaces");
+    }
     if rs.translucent {
         return Some("see-through (opacity) surfaces");
     }

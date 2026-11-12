@@ -105,6 +105,8 @@ pub struct PostFx {
     pub f_stop: f32,
     /// F9 Color Grading & Camera RAW (applied to the finished image).
     pub grade: super::grading::Grading,
+    /// Polygonal bokeh, anamorphic streaks and starburst glare.
+    pub lens: super::lens_fx::LensFx,
 }
 
 impl Default for PostFx {
@@ -120,6 +122,7 @@ impl Default for PostFx {
             focus_object: None,
             f_stop: 2.8,
             grade: Default::default(),
+            lens: Default::default(),
         }
     }
 }

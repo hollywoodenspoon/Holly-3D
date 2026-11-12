@@ -72,6 +72,7 @@ pub enum Action {
     FreezeSelected,
     UnfreezeAll,
     SeeThrough,
+    ShadowCatcher,
     // Views
     ToggleGrid,
     Wireframe,
@@ -89,6 +90,7 @@ pub enum Action {
     FrameWindow,
     ColorGrading,
     LightMix,
+    Turntable,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -119,12 +121,12 @@ impl Action {
         v.extend(SUBS.map(Sub));
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, ConvertToPoly,
-            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ToggleGrid,
+            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
-        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, LightMix, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
+        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, LightMix, Turntable, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
         v.extend([Help, Tour, HotkeyList, About, CrashReports, Preferences]);
         v
@@ -183,6 +185,7 @@ impl Action {
             FreezeSelected => "Freeze Selected",
             UnfreezeAll => "Unfreeze All",
             SeeThrough => "See-Through",
+            ShadowCatcher => "Shadow & Reflection Catcher",
             ToggleGrid => "Show Grid",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
@@ -202,6 +205,7 @@ impl Action {
             FrameWindow => "Rendered Frame Window",
             ColorGrading => "Color Grading & Camera RAW",
             LightMix => "LightMix (Relight Render)",
+            Turntable => "Render Turntable / Sprite Sheet...",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -287,6 +291,7 @@ impl Action {
             Measure => "Size, centre and counts of the selection",
             Constrain(c) => c.tip(),
             SeeThrough => "Draw the selected objects semi-transparent",
+            ShadowCatcher => "Render the selected ground transparent except for the shadows, AO and reflections cast on it",
             CameraView => "Look through the selected (or first) camera",
             Ribbon => "Big buttons for every Edit Poly tool under the toolbar",
             Nav(m) => m.label(),
@@ -294,6 +299,7 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",
             LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",
             ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",
             Render => "Render the active viewport into the Rendered Frame Window",

@@ -81,6 +81,7 @@ impl Action {
             FreezeSelected => ed.freeze_selected(),
             UnfreezeAll => ed.unfreeze_all(),
             SeeThrough => ed.toggle_see_through(),
+            ShadowCatcher => ed.toggle_shadow_catcher(),
             ToggleGrid => flip(&mut ed.viewports.active_view_mut().grid),
             Wireframe => {
                 let v = ed.viewports.active_view_mut();
@@ -97,6 +98,7 @@ impl Action {
             Render => ed.start_render(),
             RenderSetup => flip(&mut ed.rfw.setup_open),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
+            Turntable => flip(&mut ed.rfw.sheet.open),
             LightMix => {
                 ed.rfw.lightmix_open = !(ed.rfw.lightmix_open && ed.rfw.rfw_open);
                 ed.rfw.rfw_open |= ed.rfw.lightmix_open;
@@ -159,6 +161,8 @@ impl Action {
             FrameWindow => ed.rfw.rfw_open,
             ColorGrading => ed.rfw.rfw_open && ed.rfw.grading_open,
             LightMix => ed.rfw.rfw_open && ed.rfw.lightmix_open,
+            Turntable => ed.rfw.sheet.open,
+            ShadowCatcher => { let sel = ed.scene.selected(); !sel.is_empty() && sel.iter().all(|id| ed.scene.objects[*id].shadow_catcher) }
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,
             Environment => ed.env_open,
@@ -182,7 +186,7 @@ impl Action {
         match self {
             Undo => ed.history.can_undo(),
             Redo => ed.history.can_redo(),
-            Clone | Delete | ExportSelected | Array | Mirror | HideSelected | FreezeSelected | SeeThrough | ConvertToPoly
+            Clone | Delete | ExportSelected | Array | Mirror | HideSelected | FreezeSelected | SeeThrough | ShadowCatcher | ConvertToPoly
             | ConvertToSpline => any || (self == Delete && ed.in_sub_object()),
             Sub(s) => s == SubObject::Object || ed.current().is_some(),
             SelectRing | SelectLoop => edge_like,

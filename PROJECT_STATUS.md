@@ -889,3 +889,69 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 - The GPU kernel does not have these features yet.
 - IES profiles are analytic curves. Loading `.ies` files is not supported.
 - The viewport does not apply IES shaping.
+
+## 27. Phase 11.5C: LightMix, A-Trous denoiser, AOVs, lens FX, NPR ink, shadow catcher, turntable
+
+**1. LightMix: relight a finished render** (`src/render/lightmix.rs`, `src/editor/lightmix.rs`, `src/ui/render_lightmix.rs`):
+- The CPU path tracer keeps one radiance buffer per light group:
+  - Group 0: Sun & Dynamic Sky. Directional lights named "Sun…" also go here.
+  - Group 1: Environment / HDRI.
+  - Group 2: Emissive materials.
+  - Group 3: Volumetric godrays & mist.
+  - Groups 4–11: scene lights, one each. Lights after the eighth share group 11.
+- The F9 **💡 LightMix** sidebar has On, Solo, Intensity (0–10×, log scale, right-click resets) and Tint for each group.
+- Every change recomposites `Σ group × intensity × tint` and reruns the denoiser, outlines, bloom, tone and grade. There is no re-render.
+- **Apply LightMix to Scene Lights** bakes the faders into each light's Multiplier and Color. It is undoable.
+
+**2. Albedo-demodulated A-Trous denoiser + AOV passes** (`src/render/denoise_atrous.rs`, `src/render/aov.rs`, after Strolle, MIT):
+- Radiance is divided by the camera-hit albedo.
+- Five edge-avoiding B3-spline passes (1, 2, 4, 8, 16 px) are weighted by world normal, linear depth, roughness, object / material ID and variance-scaled luminance.
+- The crisp albedo is then multiplied back, so textures and painted detail stay sharp at 4–8 spp.
+- The Classic raytracer keeps the bilateral filter.
+- The F9 toolbar has a pass selector next to R/G/B/A: Beauty, Direct, Indirect GI, Volumetric, Specular, Subsurface, Albedo, World Normal, Linear Depth, Cavity / AO, and the Adaptive Sample Count heatmap.
+
+**3. Lens FX** (`src/render/lens_fx.rs`, F10 **Lens Effects** rollout, after EffectCraft, MIT / Apache-2.0):
+- Aperture: Circular or 5–9 blades, with Blade Rotation. The blades shape the depth-of-field bokeh taps.
+- Cat's-Eye Vignetting clips off-centre bokeh.
+- Anamorphic Streak Flare: a horizontal, tinted streak.
+- 4 / 6 / 8-point Starburst glare on highlights above the Flare Threshold.
+
+**4. NPR ink and screentone** (`src/render/outline.rs`, `src/render/npr.rs`):
+- **Interior Pen Lines** on the Ink Outline rollout draw:
+  - soft-curvature folds, where normals two pixels apart turn by more than half the crease angle;
+  - material seams inside one object, such as Panel Groove floors.
+- Toon materials get **Manga Halftone Shadows**: the shadow band becomes a 45° dot grid that grows with darkness. **Screentone Cell** sets the dot size.
+
+**5. Shadow & Reflection Catcher** (`src/render/pathtrace/catcher.rs`):
+- Turn it on in the Display tab (per object; an Action) or in the Material Editor (per material).
+- At a camera hit, the path tracer sets alpha from three things:
+  - the shadow fraction: shadowed vs. open light from every lamp;
+  - contact AO;
+  - a Fresnel × gloss reflection trace.
+- Reflections are premultiplied radiance, so the render composites over any backplate.
+
+**6. Turntable & isometric sprite sheet** (`src/render/turntable.rs`, `src/editor/turntable.rs`, `src/ui/render_sheet.rs`):
+- **🎞 Render Turntable / Sprite Sheet…** is in F10, on the F9 toolbar, and in Rendering ▸ menu.
+- Turntable: 8–72 frames orbiting 360° around the selection (or the scene), saved as a numbered PNG sequence.
+- Sprites: 4-Dir or 8-Dir (N, NE, E, SE, S, SW, W, NW), orthographic, at 30° / 35.264° / 45° pitch.
+  - Transparent background and Ink Outline by default.
+  - Packed into one atlas PNG plus a TexturePacker-style `.json`.
+- It renders in the background with the F10 renderer and shows a progress bar and a Cancel button.
+
+**GPU fallback:** shadow catchers render on the CPU path tracer. LightMix buffers and AOVs come from the CPU path tracer only. A GPU render shows no LightMix sidebar and no AOV passes.
+
+**Tests (now 523):**
+- LightMix: the identity mix matches the beauty render; faders relight; Apply bakes into the lights.
+- AOVs: direct + indirect equals the beauty render; each pass shows its own channel.
+- A-Trous: noise drops by more than 10×, checker edges keep their albedo, and nothing bleeds across objects.
+- Bokeh: the polygon kernel has flat blades; cat's-eye clips off-centre bokeh.
+- Glare: the anamorphic streak and the starburst ray counts.
+- Ink: pen lines on folds and groove seams; halftone dot coverage.
+- Shadow catcher: alpha in a scene; the alpha maths.
+- Turntable / sprites: 8-direction layout and atlas JSON; turntable orbit; PNGs written to disk by the render and by the editor job.
+
+**Not done in 11.5C:**
+- The GPU kernel has no LightMix or AOV buffers.
+- The turntable writes PNG sequences only, not GIF or WebM.
+- Sprite sheets render one pose. Animation-cycle phases are not supported yet.
+- The Classic raytracer renders catchers as normal surfaces.

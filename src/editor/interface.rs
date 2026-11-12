@@ -153,7 +153,7 @@ impl Editor {
         }
     }
 
-    fn set_flag(&mut self, label: &str, ids: Vec<ObjId>, f: impl Fn(&mut SceneObject)) {
+    pub(super) fn set_flag(&mut self, label: &str, ids: Vec<ObjId>, f: impl Fn(&mut SceneObject)) {
         if ids.is_empty() {
             return;
         }

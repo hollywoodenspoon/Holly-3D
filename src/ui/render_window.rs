@@ -85,6 +85,9 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         if ui.button("⚙ Setup").on_hover_text("Render Setup (F10)").clicked() {
             ed.rfw.setup_open = true;
         }
+        if toggle_button(ui, ed.rfw.sheet.open, "🎞 Turntable / Sprites").on_hover_text("Render Turntable / Sprite Sheet...").clicked() {
+            ed.rfw.sheet.open = !ed.rfw.sheet.open;
+        }
     });
     ui.horizontal(|ui| {
         if ed.rfw.save_path.is_empty() {
@@ -248,7 +251,9 @@ fn clone_windows(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
     ed.poll_render();
-    if ed.is_rendering() {
+    ed.poll_sheet();
+    crate::ui::render_sheet::window(ctx, ed);
+    if ed.is_rendering() || ed.rfw.sheet.job.is_some() {
         ctx.request_repaint();
     }
     if ed.rfw.rfw_open {
