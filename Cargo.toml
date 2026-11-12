@@ -3,6 +3,7 @@ name = "ilex"
 version = "0.1.0"
 edition = "2024"
 description = "Ilex: a clean 3ds Max-style polygon modeler in Rust"
+license = "GPL-3.0-or-later"
 
 [dependencies]
 # GPU path tracer (same wgpu as Bevy; features unify).

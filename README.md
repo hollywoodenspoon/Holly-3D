@@ -162,3 +162,13 @@ cargo test --lib               # headless geometry / editor tests
 `src/generators` (worlds and settlements), `src/editor` (state, undo, selection, tools,
 drags), `src/viewport` (camera math, picking, Bevy render sync, line overlays), `src/ui`
 (egui panels, rollouts, caddies). Every `.rs` file stays under 350 lines.
+
+## Licence
+
+Ilex is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version
+(`GPL-3.0-or-later`). See [`LICENSE`](LICENSE).
+
+Bundled third-party work keeps its own licence (MIT, Apache-2.0, OFL-1.1, CC0 and
+others, all compatible with GPLv3); see [`licenses/README.md`](licenses/README.md).
