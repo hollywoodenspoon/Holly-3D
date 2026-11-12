@@ -93,6 +93,7 @@ pub enum Action {
     Turntable,
     BuildingsBrowser,
     CharacterStudio,
+    FaceCloner,
     MaterialEditor,
     MaterialLibrary,
     Environment,
@@ -122,7 +123,7 @@ impl Action {
         ];
         v.extend(SUBS.map(Sub));
         v.extend([
-            SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, ConvertToPoly,
+            SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
@@ -210,6 +211,7 @@ impl Action {
             Turntable => "Render Turntable / Sprite Sheet...",
             BuildingsBrowser => "Demiurge Buildings & Props Browser...",
             CharacterStudio => "Character & Creature Studio...",
+            FaceCloner => "Face Cloner (Photos / Frames)...",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
             Environment => "Environment and Effects...",
@@ -250,6 +252,7 @@ impl Action {
             ContactSets => "Contact",
             BuildingsBrowser => "🏠 Buildings",
             CharacterStudio => "♀♂ Characters",
+            FaceCloner => "📸 Face Cloner",
             Isolate => "◎",
             SceneExplorer => "🗄",
             Ribbon => "🛠 Ribbon",
@@ -305,6 +308,7 @@ impl Action {
             Environment => "Background, HDRI, sky, deep space, ambient light and fog",
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
+            FaceCloner => "Fit the selected character's head to photos or exported video frames of a person",
             CharacterStudio => "MakeHuman-based RPG characters (Elf, Dwarf, Orc, anime...) with hair, outfits, weapons, plus creatures",
             BuildingsBrowser => "Visual browser of the 43 standalone buildings, bridges and street props: click a tile, then drag in a viewport",
             Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",

@@ -118,6 +118,9 @@ pub struct InterfaceState {
     pub crash_pending: Option<crate::diagnostics::recovery::Pending>,
     /// Phase 10A Character & Creature Studio window.
     pub character_studio_open: bool,
+    /// Face Cloner window, and a pending "load photos" from the Character rollout.
+    pub face_cloner_open: bool,
+    pub face_load_request: bool,
 }
 
 /// The default Show Buttons set (the most used modifiers).

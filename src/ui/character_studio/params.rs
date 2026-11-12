@@ -134,6 +134,9 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let Some((id, mut p)) = ed.character() else { return };
     let mut t = Track::default();
     edit(ui, &mut t, &mut p);
+    if p.creature == Creature::Humanoid {
+        crate::ui::face_cloner::rollout::show(ui, &mut ed.iface, &mut t, &mut p);
+    }
     if t.started {
         ed.checkpoint("Character Parameters");
     }

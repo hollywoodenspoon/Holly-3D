@@ -101,6 +101,7 @@ impl Action {
             Turntable => flip(&mut ed.rfw.sheet.open),
             BuildingsBrowser => flip(&mut ed.buildings_browser_open),
             CharacterStudio => flip(&mut ed.iface.character_studio_open),
+            FaceCloner => flip(&mut ed.iface.face_cloner_open),
             LightMix => {
                 ed.rfw.lightmix_open = !(ed.rfw.lightmix_open && ed.rfw.rfw_open);
                 ed.rfw.rfw_open |= ed.rfw.lightmix_open;
@@ -166,6 +167,7 @@ impl Action {
             Turntable => ed.rfw.sheet.open,
             BuildingsBrowser => ed.buildings_browser_open,
             CharacterStudio => ed.iface.character_studio_open,
+            FaceCloner => ed.iface.face_cloner_open,
             ShadowCatcher => { let sel = ed.scene.selected(); !sel.is_empty() && sel.iter().all(|id| ed.scene.objects[*id].shadow_catcher) }
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,

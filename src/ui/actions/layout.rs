@@ -112,6 +112,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(ContactSets),
             A(BuildingsBrowser),
             A(CharacterStudio),
+            A(FaceCloner),
             Sep,
             Entry::Sub("Sub-Object Level", SUB_LEVELS),
             A(ConvertToPoly),

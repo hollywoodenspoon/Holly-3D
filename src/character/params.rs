@@ -112,6 +112,8 @@ pub struct CharacterParams {
     pub pose: super::rig::Pose,
     /// MakeHuman eyebrows, lashes, teeth, hair, clothes, skin, eye colour.
     pub mh: super::wardrobe::MhAssets,
+    /// Face Cloner fine warp (photos / frames -> head shape).
+    pub face: super::face_cloner::FaceClone,
 }
 
 impl Default for CharacterParams {
@@ -131,6 +133,7 @@ impl Default for CharacterParams {
             seed: 1,
             pose: Default::default(),
             mh: Default::default(),
+            face: Default::default(),
         }
     }
 }

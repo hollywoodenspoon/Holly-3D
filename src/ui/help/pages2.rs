@@ -262,9 +262,12 @@ pub const CREDITS: Page = Page {
         P(
             "The albedo-demodulated A-Trous denoiser follows the SVGF / A-Trous wavelet filter in Strolle by Patryk Wychowaniec and the Strolle contributors: github.com/Patryk27/strolle. Licensed MIT.",
         ),
-        H("EffectCraft"),
+        H("EffectCraft and MediaPipe"),
         P(
-            "The lens effects (polygonal aperture bokeh, cat's-eye vignetting, anamorphic streaks and starburst glare) follow EffectCraft by the ArtCraft Team and the EffectCraft contributors. Licensed MIT / Apache-2.0.",
+            "The lens effects (polygonal aperture bokeh, cat's-eye vignetting, anamorphic streaks and starburst glare) follow EffectCraft by the ArtCraft Team and the EffectCraft contributors, and the Face Cloner runs face landmark detection through EffectCraft's segment crate. Licensed MIT / Apache-2.0.",
+        ),
+        P(
+            "The Face Cloner's landmark model (assets/face/face_landmarker.task, 478 points with depth) is the MediaPipe Face Landmarker by Google: github.com/google-ai-edge/mediapipe. Licensed Apache-2.0.",
         ),
         H("Asset packs"),
         P(

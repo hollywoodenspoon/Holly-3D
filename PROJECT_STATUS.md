@@ -1127,7 +1127,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - an undo test.
 
 **Not done in 10A:**
-- The **face cloner** (photo pins, least-squares target fit, RBF warp, skin-tone match) is not started.
+- ~~The **face cloner** is not started.~~ Part done in §35 (PR A): load photos or a folder of frames exported from a video (video files are not read directly; export frames first), MediaPipe 478-point landmarks with depth, blur / duplicate / expression filtering and best-N frames per view, front / three-quarter / profile sorting, a 2D pin editor, a multi-view fit of the MakeHuman head sliders with render-and-check refinement, and an RBF fine warp that fades out above the neck. Hair and background masks, a de-lit 360° skin texture, skin-tone match and saved face presets are PR B.
 - ~~**Real MakeHuman hair and clothes assets** are not bundled.~~ Done in §34: the CC0 system asset pack (hair, clothes, eyebrows, eyelashes, teeth, tongue, proxies, skins, eye colours) is bundled and fitted with `.mhclo`. The procedural Kit hair and outfits remain as an option.
 - **Height and proportions** use only the young-adult targets, so they are approximate for child and old ages.
 - ~~**Placement:** characters are placed at the origin; drag-to-create is not wired.~~ Done after 10B: a gallery tile arms a Create Character tool. Click in a viewport to place the character, or drag to set its height like a Biped (a uniform scale, with no mesh rebuild while dragging). **Place ... at Origin** keeps the one-click route.
@@ -1258,3 +1258,41 @@ I also checked front and side silhouettes of all 11 presets.
 - No extra community packs (more hair, poses, expressions), extra rigs or per-age targets.
 - No asset thumbnails in the pickers.
 - Only checked in the running app through the help screenshot (two dressed characters at a distance); no close-up check of every item for clipping.
+
+## 35. Face Cloner, part A: photos and frame folders → MakeHuman head
+
+**What it does:** reshapes the selected humanoid's hm08 head to match photos of a person. The topology, UVs, rig and every `.mhclo` asset keep fitting, and the head keeps the body's scale.
+
+**Pictures in:** one or more photos, or a folder of frames (sorted by name, every n-th with the stride). **Video files are not read directly**: export the clip to frames first with any frame-export tool. A slow head turn from one side to the other gives every view.
+
+**Code** (`src/character/face_cloner/`):
+- `frames.rs`: MediaPipe Face Landmarker (bundled `assets/face/face_landmarker.task`, Apache-2.0, run through `effectcraft-segment`) gives 478 points with depth per picture (downscaled to 1280 px). Each shot gets a sharpness score, head yaw and pitch, a mouth-open measure and a view bin (profile, three-quarter, front, each side; bins at ±15° and ±55°). `pick` drops blurry frames, near-duplicates and (optionally) open mouths, and keeps the sharpest N per view, with a note on every dropped frame.
+- `fit.rs`: per-view similarity cameras (Horn) alternate with a clamped (0..1) active-set ridge least-squares solve over the head, forehead, eyebrows, eyes, nose, mouth, chin and cheek sliders (positive and negative targets per slider; right sliders include their left twin). Residuals are in head space along each camera's axes (depth weighted 0.3); points are weighted by how far they sit from their mesh vertex and by how squarely they face the camera, and views past 35° count less.
+- `calibrate.rs`: the detector's habits are measured by rendering the default character at the shot's yaw (cached in 5° steps) and subtracted. Then 2 render-and-check passes re-measure them on the fitted head.
+- `warp.rs`: a damped per-point offset solve, spread by a Gaussian RBF over the head and faded out between 1.7 and 1.3 head radii below its centre, so the neck seam stays put.
+- `clone.rs` runs it all with the pose and anime ratio taken off for the fit (then restored); `job.rs` loads and fits on a background thread with progress and Cancel.
+- `CharacterParams.face` (`FaceClone`: deltas, strength, views) is applied after the modifiers in `body::morph`; it has a serde default, so older scenes load unchanged.
+
+**UI:**
+- The **📸 Clone Face from Photos / Videos** rollout on a humanoid's Modify panel and in the Studio: Load Photos / Frame Folder..., Open Face Cloner..., status, Warp Strength (right-click resets to 1) and Reset Cloned Face.
+- The **Face Cloner** window (Tools menu and the 📸 Face Cloner button) has three cards:
+  1. pictures, with progress and Cancel;
+  2. frame picking: per view, sharpness, neutral only, view counts and a per-picture use / Pins... list;
+  3. the clone: fine warp, refine passes, caution and a report.
+- The **pin editor** draws the picture with every landmark. Drag a dot to pin it, right-click to unpin. Pins override the detector in the fit.
+- Help page 17 has a new section; the Credits and `licenses/README.md` name MediaPipe and EffectCraft.
+
+**Tests:**
+- Exact projections of a known face from four views are recovered to under a quarter of the shape gap, only face sliders move, and the warp stops at the neck.
+- A rendered default head clones to almost itself.
+- Rendered heads of two different faces move toward the truth.
+- Old characters without a face still load.
+- Head turns are measured and sorted into the right views.
+
+**Not done (honest notes):**
+- **Accuracy is detector-limited.** MediaPipe follows real shape changes only partly (gain about 0.5–0.7, correlation about 0.8). On renders, the landmark error drops by about 60–70%, but the true 3D shape gap closes only about 25–40%. The result is a strong starting point, not a likeness scan.
+- **Ears and the back of the head are guessed** (MediaPipe has no landmarks there).
+- Hair and background masks (MobileSAM), the de-lit 360° skin texture, skin-tone match and Save Cloned Face Preset are **PR B**.
+- Video files are not decoded.
+- Real photos were not tried in the running app; only unit tests on renders and exact projections, plus `cargo check` of the UI.
+- Strong expressions, glasses, heavy make-up and very wide-angle selfies are not handled beyond the neutral-expression filter.
