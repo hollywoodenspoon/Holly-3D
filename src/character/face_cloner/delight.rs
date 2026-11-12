@@ -36,9 +36,8 @@ fn solve<const N: usize>(mut a: [[f64; N]; N], mut b: [f64; N]) -> Option<[f64; 
         b.swap(c, p);
         for r in c + 1..N {
             let f = a[r][c] / a[c][c];
-            for k in c..N {
-                a[r][k] -= f * a[c][k];
-            }
+            let pivot = a[c];
+            a[r].iter_mut().zip(pivot).skip(c).for_each(|(x, p)| *x -= f * p);
             b[r] -= f * b[c];
         }
     }

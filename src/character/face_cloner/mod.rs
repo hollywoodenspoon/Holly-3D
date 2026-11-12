@@ -15,6 +15,7 @@ pub mod job;
 pub mod mask;
 pub mod math;
 pub mod model;
+pub mod preset;
 pub mod render;
 pub mod sam;
 pub mod skin;

@@ -125,7 +125,7 @@ fn materials_follow_the_assets_and_keep_user_edits() {
     let mut mh = MhAssets::face_kit();
     mh.toggle_clothes("female_casualsuit01");
     (mh.skin, mh.eye_color) = (Some("young_asian_female".into()), Some("green".into()));
-    materials::sync(&mh, &mut ms);
+    materials::sync(&mh, None, &mut ms);
     let get = |ms: &crate::materials::multi::MultiSub, id: u16| ms.subs.iter().find(|s| s.id == id).cloned().unwrap();
     for id in [ids::EYEBROWS, ids::EYELASHES, ids::TEETH, ids::TONGUE, ids::CLOTHES, ids::SKIN, ids::EYES] {
         assert!(get(&ms, id).mat.active_map(MapChannel::BaseColor).is_some(), "ID {id} is textured");
@@ -135,16 +135,41 @@ fn materials_follow_the_assets_and_keep_user_edits() {
     assert!(get(&ms, ids::EYEBROWS).mat.opacity < 1.0, "brows blend their alpha");
     // A user edit survives a re-sync.
     ms.subs.iter_mut().find(|s| s.id == ids::CLOTHES).unwrap().mat.roughness = 0.123;
-    materials::sync(&mh, &mut ms);
+    materials::sync(&mh, None, &mut ms);
     assert_eq!(get(&ms, ids::CLOTHES).mat.roughness, 0.123);
     // Taking things off cleans up.
     let ids_before: HashSet<u16> = ms.subs.iter().map(|s| s.id).collect();
     assert!(ids_before.contains(&ids::CLOTHES));
     let bare = MhAssets::default();
-    materials::sync(&bare, &mut ms);
+    materials::sync(&bare, None, &mut ms);
     assert_eq!(ms.subs.len(), 6, "back to the six pack materials");
     assert_eq!(get(&ms, ids::SKIN).name, "Skin");
     assert!(get(&ms, ids::SKIN).mat.active_map(MapChannel::BaseColor).is_none());
+}
+
+#[test]
+fn a_photo_skin_takes_id_1_and_a_rebake_keeps_user_edits() {
+    use crate::materials::texture::{TexHandle, Texture};
+    use crate::materials::{MapChannel, MapNode, MultiPreset};
+    let mut ms = MultiPreset::Character.build();
+    let mh = MhAssets { skin: Some("young_asian_female".into()), ..MhAssets::default() };
+    let skin = |ms: &crate::materials::multi::MultiSub| ms.subs.iter().find(|s| s.id == ids::SKIN).cloned().unwrap();
+    let tex_of = |m: &crate::materials::Material| match m.active_map(MapChannel::BaseColor).unwrap().0 {
+        MapNode::Bitmap { tex: Some(t), .. } => t.clone(),
+        _ => panic!("no bitmap"),
+    };
+    let a = TexHandle::new(Texture::new(4, 4, [200, 150, 120, 255]));
+    materials::sync(&mh, Some(&a), &mut ms);
+    assert_eq!(skin(&ms).name, materials::CLONED_SKIN);
+    assert!(tex_of(&skin(&ms).mat) == a);
+    ms.subs.iter_mut().find(|s| s.id == ids::SKIN).unwrap().mat.roughness = 0.321;
+    let b = TexHandle::new(Texture::new(4, 4, [190, 140, 110, 255]));
+    materials::sync(&mh, Some(&b), &mut ms);
+    assert!(tex_of(&skin(&ms).mat) == b, "a re-bake swaps the bitmap");
+    assert_eq!(skin(&ms).mat.roughness, 0.321, "and keeps the user's edit");
+    // Switching the photo skin off goes back to the MakeHuman skin.
+    materials::sync(&mh, None, &mut ms);
+    assert_eq!(skin(&ms).name, "Skin: Young Asian Female");
 }
 
 #[test]

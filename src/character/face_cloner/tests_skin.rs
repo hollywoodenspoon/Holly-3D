@@ -125,3 +125,45 @@ fn a_fringe_is_cut_off_the_forehead() {
     assert!(fringe(&m) < 0.3 * fringe(&lm) && cheek > 0.8);
     assert_eq!(m.sam, super::sam::installed());
 }
+
+/// Photos on disk -> clone -> the character wears the photo skin on ID 1;
+/// switching it off gives the character's own skin back.
+#[test]
+fn a_clone_from_files_puts_the_photo_skin_on_the_character_pack() {
+    use crate::character::wardrobe::materials::CLONED_SKIN;
+    use crate::character::params::ids;
+    use crate::editor::Editor;
+    let dir = std::env::temp_dir().join(format!("ilex-face-photos-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let (coords, _) = morph(&CharacterParams::default());
+    let shots: Vec<_> = [0.0f32, 0.6, -0.6]
+        .iter()
+        .enumerate()
+        .map(|(i, &y)| {
+            let img = head_view(&coords, y).1;
+            let path = dir.join(format!("shot{i}.png"));
+            img.save(&path).unwrap();
+            let mut s = analyse(&path.display().to_string(), &img).unwrap();
+            s.used = true;
+            s
+        })
+        .collect();
+    let mut ed = Editor::default();
+    let id = ed.create_character(CharacterParams::default(), Vec3::ZERO);
+    let (_, p) = ed.character().unwrap();
+    let (q, rep) = super::clone::clone_face(&p, &shots, &super::clone::Options::default()).unwrap();
+    let _ = std::fs::remove_dir_all(&dir);
+    let k = rep.skin.expect("the skin was baked");
+    assert_eq!(k.photos, 3);
+    assert!(q.face.texture.is_some());
+    ed.set_character(id, q.clone());
+    let skin_name = |ed: &Editor| {
+        let m = &ed.scene.materials.mats[ed.scene.objects[id].material.unwrap()];
+        m.multi.as_ref().unwrap().subs.iter().find(|s| s.id == ids::SKIN).unwrap().name.clone()
+    };
+    assert_eq!(skin_name(&ed), CLONED_SKIN);
+    let mut off = q;
+    off.face.use_texture = false;
+    ed.set_character(id, off);
+    assert_ne!(skin_name(&ed), CLONED_SKIN);
+}
