@@ -1355,3 +1355,23 @@ Not done yet:
 - The joint ranges and the claw size are the spec's proposed defaults and still wait for the owner's sign-off.
 - The hull clevis is merged into the hip drum, not kept as a separate part.
 - The top-down check render had to be tilted. With the camera at exactly −89° pitch, some up-facing faces dropped out. That is a possible raytracer edge case and has not been investigated.
+
+## 38. Mech PR1b: Rig Selection as Spider Platform (the owner's own meshes)
+
+`Create -> Geometry -> Mech -> Rig Selection as Spider Platform` (also in the `Mech` menu) rigs a spider you imported yourself. Select one whole mech (hull, turret, gun and 4 legs of hip ring, thigh, shin and foot) and click it. Nothing of the imported model is stored in the repository; the rig is built in the scene at runtime (`src/mech/spider/fit/`).
+
+- **Which part is which**: a contact graph of which parts touch. Feet are the free ends near the ground; each leg is walked up from its foot (shin, thigh, then hip ring). The hull is the biggest part holding two or more rings. The gun is the most elongated remaining part, and the turret is the biggest part the gun touches. Every other part is welded (Rigid) to the hull, or to the leg part or turret it touches.
+- **Pivots**: each hinge sits on the bolt (a thin round island) nearest where the two parts touch, with its axis along the bolt. Without a bolt it falls back to the contact centre and the leg-plane axis. The hip swing turns about the ring's vertical axis. The gun lift sits on the gun's long axis near the breech. The turret turns where it sits on the body.
+- **Knee support (Option A)**: the fixed strut is cut out of each shin. A face is cut when every one of its corners lies more than 7.5% of the shin length towards the hip and within 9% of the leg mid-plane. A carriage collar sized to the shin section goes where the strut left the shin, on a slider. A piston runs from the strut's thigh end to the collar, and the carriage is Motion-Linked to the knee at 60% of the ratio that would hold the piston length.
+- **In place**: every imported object keeps its world geometry. Its pivot moves onto its joint, its modifier stack is collapsed into the new Editable Poly, and it is renamed (`Spider_FL_Shin`, ...). Material IDs are set by role (1–10 as in §37); her UVs are kept. The rest pose is her pose, so joint angle 0 is the imported angle. Joint limits are the §37 ones, with the gun limits measured from its rest elevation. Undo with `Ctrl+Z`.
+- **Tests**:
+  - A synthetic imported spider checks classification, all 12 bolts found, the geometry left in place, the strut cut, carriage and piston stroke on a knee bend, and the gun lift and turret turn.
+  - Partial selections are refused.
+  - The ignored test `fits_reference_obj` (`REF_OBJ`, `REF_BOX`, `SPIDER_SHOTS`) runs on a local copy of the owner's OBJ. On the Railgun spider it found all 12 bolts and cut 194–199 strut faces per shin, in about 1 s.
+
+Not done yet:
+
+- It was run on the owner's Railgun spider only, in tests. It has not been used from the app's button.
+- The hole the strut leaves in the shin is not capped; the collar covers the place it left.
+- The piston housing eyelet floats at the strut's old thigh end; no mounting tab is added on the thigh.
+- The Missile/AA spiders in the same file have not been tried.

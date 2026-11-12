@@ -24,7 +24,7 @@ fn figure() -> crate::mesh::EditablePoly {
     k.finish()
 }
 
-fn shot(s: &Scene, name: &str, target: Vec3, dist: f32, yaw: f32, pitch: f32) {
+pub(super) fn shot(s: &Scene, name: &str, target: Vec3, dist: f32, yaw: f32, pitch: f32) {
     let Ok(dir) = std::env::var("SPIDER_SHOTS") else { return };
     let mut cam = ViewCamera::new(ViewKind::Perspective);
     (cam.target, cam.distance, cam.yaw, cam.pitch) = (target, dist, yaw.to_radians(), pitch.to_radians());

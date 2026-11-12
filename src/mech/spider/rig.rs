@@ -41,7 +41,7 @@ impl SpiderRig {
     }
 }
 
-fn part(s: &mut Scene, name: String, mesh: EditablePoly, at: Vec3, rot: Quat) -> ObjId {
+pub(super) fn part(s: &mut Scene, name: String, mesh: EditablePoly, at: Vec3, rot: Quat) -> ObjId {
     let id = s.add(BaseObject::EditablePoly(Shared::new(mesh)), at);
     let o = &mut s.objects[id];
     o.name = name;
@@ -50,18 +50,18 @@ fn part(s: &mut Scene, name: String, mesh: EditablePoly, at: Vec3, rot: Quat) ->
     id
 }
 
-fn frame(s: &Scene, id: ObjId) -> Frame {
+pub(super) fn frame(s: &Scene, id: ObjId) -> Frame {
     Frame::of(&s.objects[id].transform)
 }
 
 /// Hinge (axis = `normal`) or other joint placing `child` on `parent` at `point`.
-fn join(s: &mut Scene, kind: JointKind, child: ObjId, parent: ObjId, point: Vec3, normal: Vec3) {
+pub(super) fn join(s: &mut Scene, kind: JointKind, child: ObjId, parent: ObjId, point: Vec3, normal: Vec3) {
     let m = Mount { obj: parent, point, normal };
     let j = joint_at(kind, (child, frame(s, child)), (parent, frame(s, parent)), &m);
     s.add_joint(j).expect("fresh parts cannot form a loop");
 }
 
-fn hinge(min: f32, max: f32, on: bool) -> JointKind {
+pub(super) fn hinge(min: f32, max: f32, on: bool) -> JointKind {
     JointKind::Revolute { axis: Axis::Z, angle: 0.0, limits: Limits { on, min, max } }
 }
 

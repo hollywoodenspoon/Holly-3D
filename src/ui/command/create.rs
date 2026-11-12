@@ -106,6 +106,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         if r.on_hover_text("4-leg walker with the Railgun turret: bare model, Material IDs 1-10, live joints").clicked() {
             ed.create_spider_railgun(Vec3::ZERO);
         }
+        let tip = "Rigs your own imported spider (select its hull, turret, gun and 4 legs) with the same joints, and swaps each shin strut for a knee piston";
+        if ui.add_sized([CONTENT_W - 8.0, 28.0], egui::Button::new("Rig Selection as Spider Platform")).on_hover_text(tip).clicked() {
+            ed.rig_selected_spider();
+        }
         ui.label(dim("Link gears with Motion Links (Assembly rollout); bind a hose's ends to two parts in its Modify panel."));
     });
     rollout(ui, "Shapes / Splines", true, |ui| {

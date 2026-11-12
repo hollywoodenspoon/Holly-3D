@@ -125,4 +125,26 @@ impl Editor {
         self.sub = SubObject::Object;
         self.status = "Spider Platform (Railgun): drag a foot with W to bend its leg, turn joints with E".into();
     }
+
+    /// Create -> Geometry -> Mech -> `[Rig Selection as Spider Platform]`:
+    /// rigs the selected imported spider parts in place with the Spider
+    /// joints, swapping each shin's fixed strut for a knee carriage + piston.
+    pub fn rig_selected_spider(&mut self) {
+        let ids = self.scene.selected();
+        self.checkpoint("Rig Spider Platform");
+        match crate::mech::spider::fit::rig_selection(&mut self.scene, &ids) {
+            Ok(f) => {
+                for id in f.rig.parts() {
+                    self.scene.objects[id].selected = true;
+                }
+                self.sub = SubObject::Object;
+                self.status = f.summary();
+            }
+            Err(e) => {
+                // Nothing changes before the fit succeeds.
+                self.history.discard_last();
+                self.status = format!("Rig Spider Platform: {e}");
+            }
+        }
+    }
 }

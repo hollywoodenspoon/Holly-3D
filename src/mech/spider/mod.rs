@@ -8,6 +8,7 @@
 //! from the thigh to the carriage). Turret turn and gun lift are hinges.
 //! The hull is Grounded, so dragging a foot with `W` bends its leg (IK).
 
+pub mod fit;
 pub mod hull;
 pub mod kit;
 pub mod leg;

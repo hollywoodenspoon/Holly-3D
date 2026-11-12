@@ -98,6 +98,10 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.create_spider_railgun(bevy::math::Vec3::ZERO);
             ui.close();
         }
+        if ui.button("Rig Selection as Spider Platform").clicked() {
+            ed.rig_selected_spider();
+            ui.close();
+        }
     });
     ui.separator();
     ui.menu_button("Shapes / Splines", |ui| {
