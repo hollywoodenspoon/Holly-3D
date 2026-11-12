@@ -110,4 +110,19 @@ impl Editor {
         }
         self.scene.update_hoses();
     }
+
+    /// Create -> Geometry -> Mech -> `[Spider: Railgun]`: the 4-leg Spider
+    /// Platform with the Railgun turret, every joint live, hull Grounded.
+    pub fn create_spider_railgun(&mut self, at: Vec3) {
+        self.checkpoint("Create Spider Platform");
+        for o in self.scene.objects.values_mut() {
+            o.selected = false;
+        }
+        let rig = crate::mech::spider::spawn_railgun(&mut self.scene, at);
+        for id in rig.parts() {
+            self.scene.objects[id].selected = true;
+        }
+        self.sub = SubObject::Object;
+        self.status = "Spider Platform (Railgun): drag a foot with W to bend its leg, turn joints with E".into();
+    }
 }

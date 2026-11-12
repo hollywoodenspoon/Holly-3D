@@ -1332,3 +1332,26 @@ I also checked front and side silhouettes of all 11 presets.
 - Eyebrows and stubble in the photos are partly masked out by the colour model, so the MakeHuman eyebrow asset stays the brows.
 - MobileSAM was only checked on renders here (with a painted fringe), not on real photos in the running app. Its download was not tried from inside the app, only through the same code in tests with the file already present.
 - Presets store the texture inside the RON file (PNG-compressed bytes), so one preset is a few MB.
+
+## 37. Mech PR1 (in progress): Spider Platform base + Railgun prefab
+
+`Create -> Geometry -> Mech -> Spider Platform: Railgun` (also in the `Mech` menu)
+spawns 31 Editable Poly parts joined by the assembly system (`src/mech/spider/`):
+
+- **Hull**: a bevelled base plate, a tapered central box, a sloped front armour plate, vents, side hatches, a pedestal and a bearing ring. The hull is Grounded.
+- **4 legs**: each has a hip drum (swing hinge ±45°), a thigh (lift hinge −30..60°), a shin (knee hinge ±40°) and a foot (ankle ball socket, 30° cone, 4 claws at 1.5×).
+- **Option A knee support**: a carriage slides on the shin, Motion-Linked to the knee at −0.012 m/°. A piston runs from the thigh to the carriage and stays inside its stroke over the whole knee range.
+- **Railgun turret**: a wedge turret (free turn hinge) with a camera box, hatches and a rear radiator. The gun has a lift hinge from −5 to 85°, a collar and a forked muzzle.
+- **Surfaces**: Material IDs 1–10 follow the spec, with Smart UVs and auto smoothing at 35°.
+- **Tests**: closed outward-facing shells, IDs, rest pose on the claws, knee → carriage → piston, turret and gun limits, and dragging a foot (IK) bends its leg.
+- **Check renders**: the ignored test `spider_check_renders`.
+
+Not done yet:
+
+- The joints are verified by unit tests only. Nobody has posed the mech by hand in the app yet.
+- Slat skirts are not built.
+- The posing tools are not built: Foot Lock, Aim, Pose rollout, Ground Conform and Pose Library. The check-render crouch re-drags the feet by hand instead.
+- The Missile/AA and Long Carrier variants and the swappable hardpoints are not built.
+- The joint ranges and the claw size are the spec's proposed defaults and still wait for the owner's sign-off.
+- The hull clevis is merged into the hip drum, not kept as a separate part.
+- The top-down check render had to be tilted. With the camera at exactly −89° pitch, some up-facing faces dropped out. That is a possible raytracer edge case and has not been investigated.

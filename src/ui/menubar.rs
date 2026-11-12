@@ -94,6 +94,10 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
         for k in MechKind::ALL {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateMech(k));
         }
+        if ui.button("Spider Platform: Railgun").clicked() {
+            ed.create_spider_railgun(bevy::math::Vec3::ZERO);
+            ui.close();
+        }
     });
     ui.separator();
     ui.menu_button("Shapes / Splines", |ui| {
