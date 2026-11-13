@@ -102,7 +102,7 @@ fn position_based_maps_stay_on_the_cpu() {
     assert!(bake::position_based(&m));
     assert_eq!(bake::why_not(&m), Some("3D (position-based) procedural maps"));
     let rs = lit(|s| add(s, PrimitiveKind::Plane, Vec3::ZERO, Vec3::splat(3.0), m));
-    assert_eq!(reasons(&rs), [CPU_ONLY[6]]);
+    assert_eq!(reasons(&rs), [CPU_ONLY[5]]);
     // A UV map is fine, and so is a triplanar one that repeats.
     assert_eq!(bake::why_not(&with(Material::named("Uv"), MapChannel::BaseColor, gradient())), None);
     let mut tri = with(Material::named("Tri"), MapChannel::BaseColor, gradient());

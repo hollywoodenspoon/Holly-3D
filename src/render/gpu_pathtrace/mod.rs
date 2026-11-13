@@ -134,7 +134,25 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     b.v3(fc, fd);
     b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
     u4(&mut b, [tex.table, tex.count, tex.records, tex.rec_count]);
+    volume(&mut b, rs);
     b.0
+}
+
+/// Bytes of the kernel's `Params` uniform.
+const PARAMS_BYTES: u64 = 64 + 4 * 16 + 5 * 16 + 16 + 5 * 16;
+
+/// The volume block of `Params` (`vol0..vol4`, see `wgsl/volume.wgsl`);
+/// zeros when the scene has no mist.
+fn volume(b: &mut pack::Buf, rs: &RenderScene) {
+    let Some(m) = &rs.volume else {
+        (0..5).for_each(|_| b.v4(Vec4::ZERO));
+        return;
+    };
+    b.v3(m.albedo, m.density);
+    b.v4(Vec4::new(m.base, m.falloff, m.wisps, m.inv_scale));
+    b.v4(Vec4::new(m.wind.x, m.wind.y, m.g, m.intensity));
+    b.v3(rs.camera.eye(), rs.radius * 6.0);
+    b.v4(Vec4::new(m.steps as f32, 0.0, 0.0, 0.0));
 }
 
 /// Renders `region` on the GPU with progressive passes like the CPU tracer.
@@ -163,7 +181,7 @@ pub fn render(
     let accum = storage(d, "accum", &vec![0; n * 16], true);
     let stats = storage(d, "stats", &vec![0; n * 16], true);
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
-    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 5 * 16 + 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: PARAMS_BYTES, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false), storage(d, "textures", &tex_bytes, false)];
     let pipeline = g.pipeline(Features::of(rs));
     let layout = pipeline.get_bind_group_layout(0);
@@ -246,3 +264,5 @@ mod tests_principled;
 mod tests_lobes;
 #[cfg(test)]
 mod tests_tex;
+#[cfg(test)]
+mod tests_volume;

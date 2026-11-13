@@ -5,32 +5,37 @@ fn ramp(d: f32, a: f32, b: f32) -> f32 {
     return clamp((d - a) / (b - a), 0.0, 1.0);
 }
 
+// Direction to, distance to and falloff of light `l` at `p` (range window,
+// near/far attenuation, spot cone); shared by surfaces and the volume march.
+struct Inc { dir: vec3<f32>, dist: f32, k: f32 }
+
+fn incident(l: Light, p: vec3<f32>) -> Inc {
+    if (l.pos.w > 1.5) { return Inc(-l.dir.xyz, 1e30, 1.0); }
+    let to = l.pos.xyz - p;
+    let dd = max(length(to), 1e-4);
+    let dir = to / dd;
+    let w = clamp(1.0 - pow(dd / max(l.misc.x, 1e-3), 4.0), 0.0, 1.0);
+    var at = 1.0;
+    if (l.atten.x >= 0.0) { at *= ramp(dd, l.atten.x, l.atten.y); }
+    if (l.atten.z >= 0.0) { at *= 1.0 - ramp(dd, l.atten.z, l.atten.w); }
+    var k = w * w * at / (dd * dd);
+    if (l.pos.w > 0.5) {
+        let cc = dot(-dir, l.dir.xyz);
+        let t = clamp((cc - l.rad.w) / max(l.dir.w - l.rad.w, 1e-4), 0.0, 1.0);
+        k *= t * t * (3.0 - 2.0 * t);
+    }
+    return Inc(dir, dd, k);
+}
+
 fn punctual(p: vec3<f32>, ng: vec3<f32>, s: Surf, v: vec3<f32>) -> vec3<f32> {
     let o = p + ng * u.background.w;
     var c = vec3<f32>(0.0);
     for (var i = 0u; i < u.counts.x; i++) {
         let l = lights[i];
-        var dir: vec3<f32>;
-        var dist = 1e30;
-        var k = 1.0;
-        if (l.pos.w > 1.5) {
-            dir = -l.dir.xyz;
-        } else {
-            let to = l.pos.xyz - p;
-            let dd = max(length(to), 1e-4);
-            dir = to / dd;
-            dist = dd;
-            let w = clamp(1.0 - pow(dd / max(l.misc.x, 1e-3), 4.0), 0.0, 1.0);
-            var at = 1.0;
-            if (l.atten.x >= 0.0) { at *= ramp(dd, l.atten.x, l.atten.y); }
-            if (l.atten.z >= 0.0) { at *= 1.0 - ramp(dd, l.atten.z, l.atten.w); }
-            k = w * w * at / (dd * dd);
-            if (l.pos.w > 0.5) {
-                let cc = dot(-dir, l.dir.xyz);
-                let t = clamp((cc - l.rad.w) / max(l.dir.w - l.rad.w, 1e-4), 0.0, 1.0);
-                k *= t * t * (3.0 - 2.0 * t);
-            }
-        }
+        let inc = incident(l, p);
+        let dir = inc.dir;
+        let dist = inc.dist;
+        let k = inc.k;
         if (k <= 0.0 || dot(s.n, dir) <= 0.0) { continue; }
         var rad = l.rad.xyz * k;
         if ((u.counts.w & F_SHADOWS) != 0u && l.misc.y > 0.5) {
