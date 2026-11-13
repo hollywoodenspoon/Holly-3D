@@ -70,8 +70,6 @@ const F_SOFTBOX: u32 = 4u;
 const F_NEE: u32 = 8u;
 // The sky is the procedural one (LightMix: Sun & Sky, else Environment).
 const F_PROC_SKY: u32 = 16u;
-// The scene has Shadow & Reflection Catcher surfaces (tri.light.z = 1).
-const F_CATCHER: u32 = 32u;
 
 // Feature switches, set per scene by the host as pipeline-overridable
 // constants (`super::features`), so a scene only compiles what it uses and a
@@ -85,6 +83,8 @@ override FEAT_ENV_MAP: bool = false;
 override FEAT_AREA: bool = false;
 override FEAT_OPACITY: bool = false;
 override FEAT_LIGHTMIX: bool = false;
+override FEAT_TOON: bool = false;
+override FEAT_CATCHER: bool = false;
 
 var<private> rng_state: u32;
 

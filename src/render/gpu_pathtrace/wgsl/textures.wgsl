@@ -28,7 +28,7 @@ fn tx_mad(acc: Tx, x: Tx, k: f32) -> Tx {
 
 // Cut-out materials (flag 16): the filtered alpha snaps back to 0 or 1,
 // as the CPU thresholds it at the exact UV.
-fn cut(x: Tx, flags: u32) -> Tx {
+fn cut_alpha(x: Tx, flags: u32) -> Tx {
     if ((flags & 16u) == 0u) { return x; }
     return Tx(vec4<f32>(x.a.xyz, select(0.0, 1.0, x.a.w >= 0.5)), x.b, x.c);
 }
@@ -103,7 +103,7 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
         let framed = abs(det) > 1e-12;
         let dpdu = select(vec3<f32>(0.0), (e1 * d2.y - e2 * d1.y) / det, framed);
         let dpdv = select(vec3<f32>(0.0), (e2 * d1.x - e1 * d2.x) / det, framed);
-        if (evaluated) { s = live_shade(aux[e], uv, p, dpdu, dpdv); } else { s = cut(tex_lookup(e, uv), flags); }
+        if (evaluated) { s = live_shade(aux[e], uv, p, dpdu, dpdv); } else { s = cut_alpha(tex_lookup(e, uv), flags); }
         if (tilt && framed) {
             let b = perturb(n, dpdu, dpdv, s.c.yzw);
             if (dot(b, ng) > 0.0) { nn = b; }
@@ -137,7 +137,7 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
         for (var j = 0u; j < 3u; j++) {
             if (k[j] <= 0.0) { continue; }
             var sj: Tx;
-            if (evaluated) { sj = live_shade(aux[e], uvs[j], tp, fu[j], fv[j]); } else { sj = cut(tex_lookup(e, uvs[j]), flags); }
+            if (evaluated) { sj = live_shade(aux[e], uvs[j], tp, fu[j], fv[j]); } else { sj = cut_alpha(tex_lookup(e, uvs[j]), flags); }
             s = tx_mad(s, sj, k[j]);
             nacc += select(n, perturb(n, du[j], dv[j], sj.c.yzw), tilt) * k[j];
         }
@@ -145,4 +145,61 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
         if (dot(b, ng) > 0.0) { nn = b; }
     }
     return TexHit(true, s.a.xyz, s.b.xyz, vec2<f32>(s.b.w, s.c.x), nn, clamp(s.a.w, 0.0, 1.0));
+}
+
+// Bilinear texture alpha only (shadow rays): tex_lookup's filter on the
+// alpha half-word, so see-through shadows don't pull in full shading.
+fn alpha_lookup(e: u32, uv: vec2<f32>, flags: u32) -> f32 {
+    let off = aux[e];
+    let w = aux[e + 1u];
+    let h = aux[e + 2u];
+    let wrap = (aux[e + 3u] & 1u) != 0u;
+    var g = (uv - vec2<f32>(auxf(e + 4u), auxf(e + 5u))) / vec2<f32>(auxf(e + 6u), auxf(e + 7u));
+    if (wrap) { g = fract(g); }
+    let f = g * vec2<f32>(f32(w), f32(h)) - 0.5;
+    let fl = floor(f);
+    let fr = f - fl;
+    let x0 = tex_index(i32(fl.x), w, wrap);
+    let x1 = tex_index(i32(fl.x) + 1, w, wrap);
+    let y0 = tex_index(i32(fl.y), h, wrap);
+    let y1 = tex_index(i32(fl.y) + 1, h, wrap);
+    let a00 = unpack2x16float(aux[off + (y0 * w + x0) * 6u + 1u]).y;
+    let a10 = unpack2x16float(aux[off + (y0 * w + x1) * 6u + 1u]).y;
+    let a01 = unpack2x16float(aux[off + (y1 * w + x0) * 6u + 1u]).y;
+    let a11 = unpack2x16float(aux[off + (y1 * w + x1) * 6u + 1u]).y;
+    let a = mix(mix(a00, a10, fr.x), mix(a01, a11, fr.x), fr.y);
+    if ((flags & 16u) != 0u) { return select(0.0, 1.0, a >= 0.5); }
+    return a;
+}
+
+// The texture's alpha at a hit, as tex_shade's TexHit.alpha (1 when the
+// triangle has no texture or its maps are evaluated live).
+fn tex_alpha(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>) -> f32 {
+    let x = tri * 16u;
+    let id = aux[x + 6u];
+    if (!FEAT_TEXTURES || id == 0xffffffffu) { return 1.0; }
+    let e = u.tex.x + id * 12u;
+    let flags = aux[e + 3u];
+    if ((flags & 8u) != 0u) { return 1.0; }
+    if ((flags & 2u) == 0u) {
+        let uv = vec2<f32>(auxf(x), auxf(x + 1u)) * w.x + vec2<f32>(auxf(x + 2u), auxf(x + 3u)) * w.y + vec2<f32>(auxf(x + 4u), auxf(x + 5u)) * w.z;
+        return clamp(alpha_lookup(e, uv, flags), 0.0, 1.0);
+    }
+    let q = vec4<f32>(auxf(x + 8u), auxf(x + 9u), auxf(x + 10u), auxf(x + 11u));
+    let qi = vec4<f32>(-q.xyz, q.w);
+    let tp = qrot(qi, p - vec3<f32>(auxf(x + 12u), auxf(x + 13u), auxf(x + 14u)));
+    let tn = qrot(qi, ng);
+    let scale = auxf(e + 8u);
+    var wt = pow(abs(tn), vec3<f32>(auxf(e + 9u)));
+    let sum = wt.x + wt.y + wt.z;
+    wt = select(vec3<f32>(0.0, 0.0, 1.0), wt / sum, sum > 1e-12);
+    let live = select(vec3<f32>(0.0), wt, wt > vec3<f32>(0.01));
+    let k = live / (live.x + live.y + live.z);
+    let c = tp * scale;
+    var uvs = array<vec2<f32>, 3>(c.yz, c.xz, c.xy);
+    var a = 0.0;
+    for (var j = 0u; j < 3u; j++) {
+        if (k[j] > 0.0) { a += alpha_lookup(e, uvs[j], flags) * k[j]; }
+    }
+    return clamp(a, 0.0, 1.0);
 }

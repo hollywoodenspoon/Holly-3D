@@ -89,7 +89,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             alpha = 1.0;
             // Preserve Texture Appearance: the camera sees the surface's own colour.
             if (rec != NO_REC && auxf(rec + 11u) >= 0.0) { emit = base * auxf(rec + 11u); }
-            if ((u.counts.w & F_CATCHER) != 0u && t.light.z > 0.5) {
+            if (FEAT_CATCHER && t.light.z > 0.5) {
                 let dark = catch_dark(p, ng, n);
                 alpha = catcher_alpha(dark.x, dark.y, 0.0);
                 if (caught) { break; }
@@ -141,7 +141,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             mix_add(G_EMISSIVE, beta * base);
             break;
         }
-        if (model == 3u && rec != NO_REC) {
+        if (FEAT_TOON && model == 3u && rec != NO_REC) {
             // Like the CPU, toon shading is all direct light, in the Environment group.
             let lt = beta * toon(p, ng, n, -d, base, mr.y, rec, h.tri);
             l += lt;

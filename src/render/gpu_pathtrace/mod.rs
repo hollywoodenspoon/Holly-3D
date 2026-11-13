@@ -138,8 +138,7 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     u4(&mut b, [cfg.width, cfg.height, region[2] - region[0], region[3] - region[1]]);
     u4(&mut b, [region[0], region[1], spp, seed]);
     u4(&mut b, [ps.max_bounces.clamp(1, 8), ps.diffuse_bounces, ps.glossy_bounces, ps.transmission_bounces]);
-    let flags = u32::from(rs.camera.is_ortho()) | u32::from(cfg.shadows) << 1 | u32::from(cfg.gi.softbox) << 2 | u32::from(cfg.gi.emitter_samples > 0) << 3 | u32::from(rs.procedural.is_some()) << 4
-        | u32::from(rs.materials.iter().any(|m| m.shadow_catcher)) << 5;
+    let flags = u32::from(rs.camera.is_ortho()) | u32::from(cfg.shadows) << 1 | u32::from(cfg.gi.softbox) << 2 | u32::from(cfg.gi.emitter_samples > 0) << 3 | u32::from(rs.procedural.is_some()) << 4;
     u4(&mut b, [p.n_lights, p.n_emitters, ps.rr_start, flags]);
     b.v3(rs.background, Tracer::new(rs, cfg).eps);
     // The catcher's contact AO: strength in sky.w, reach in ambient.w.

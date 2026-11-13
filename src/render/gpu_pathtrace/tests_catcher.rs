@@ -9,7 +9,9 @@ use bevy::math::Vec3;
 
 /// The test scene with its floor made a catcher of the given roughness.
 fn caught(rough: f32) -> RenderScene {
-    let mut rs = scene_with(|s| s.add_light(crate::render::Light::new(crate::render::LightKind::FreeDirect), None, Vec3::new(2.0, 1.0, 3.0), Vec3::ZERO));
+    let mut rs = scene_with(|s| {
+        s.add_light(crate::render::Light::new(crate::render::LightKind::FreeDirect), None, Vec3::new(2.0, 1.0, 3.0), Vec3::ZERO);
+    });
     let floor = rs.materials.iter_mut().find(|m| m.name == "Floor").expect("the floor");
     (floor.shadow_catcher, floor.roughness) = (true, rough);
     rs

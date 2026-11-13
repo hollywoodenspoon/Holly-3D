@@ -20,7 +20,12 @@ impl Features {
     pub const OPACITY: u32 = 64;
     /// Per-light-group buffers for the Frame Window's LightMix (set by the render, not the scene).
     pub const LIGHTMIX: u32 = 128;
-    pub const NAMES: [&'static str; 8] = ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY", "FEAT_LIGHTMIX"];
+    /// Cel / toon materials (their own light loop, compiled only when used).
+    pub const TOON: u32 = 256;
+    /// Shadow & Reflection Catcher surfaces.
+    pub const CATCHER: u32 = 512;
+    pub const NAMES: [&'static str; 10] =
+        ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY", "FEAT_LIGHTMIX", "FEAT_TOON", "FEAT_CATCHER"];
     /// Every mask the kernel can be built with.
     pub const COUNT: u32 = 1 << Self::NAMES.len();
 
@@ -35,6 +40,8 @@ impl Features {
         set(has_env_map(rs), Self::ENV_MAP);
         set(rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))), Self::AREA);
         set(rs.translucent, Self::OPACITY);
+        set(rs.materials.iter().any(|m| m.model == crate::materials::ShadingModel::Toon), Self::TOON);
+        set(rs.materials.iter().any(|m| m.shadow_catcher), Self::CATCHER);
         Self(f)
     }
 

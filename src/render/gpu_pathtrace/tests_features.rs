@@ -28,14 +28,17 @@ fn every_switch_combination_of_the_kernel_validates() {
     }
 }
 
-/// With an adapter, every scene mask also builds a real pipeline, and
-/// LightMix builds on top of none and of all of them (every combination is
-/// validated above; building all would keep 256 driver pipelines in memory).
+/// With an adapter, every mask of the first seven switches builds a real
+/// pipeline, and LightMix, toon and the catcher each build on top of none
+/// and of all of them, and all together (every combination is validated
+/// above; building all 1024 would take hours on a software rasteriser).
 #[test]
 fn every_feature_mask_builds_a_gpu_pipeline() {
     let Ok(g) = super::gpu() else { return };
     let scene = Features::LIGHTMIX - 1;
-    let masks: Vec<u32> = (0..=scene).chain([Features::LIGHTMIX, scene | Features::LIGHTMIX]).collect();
+    let extra = [Features::LIGHTMIX, Features::TOON, Features::CATCHER];
+    let all = Features::COUNT - 1;
+    let masks: Vec<u32> = (0..=scene).chain(extra.iter().flat_map(|&x| [x, scene | x])).chain([all]).collect();
     for &mask in &masks {
         let layout = g.pipeline(Features(mask)).get_bind_group_layout(0);
         drop(layout);
