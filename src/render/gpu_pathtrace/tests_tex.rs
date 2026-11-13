@@ -1,6 +1,7 @@
 //! PR 1b: texture and procedural maps on the GPU. Maps are baked over a
 //! UV grid (cached), looked up per hit, tilt normals, project from three
-//! sides for World / Triplanar materials, and 3D-only maps stay on the CPU.
+//! sides for World / Triplanar materials; 3D maps mixed with procedural
+//! surfaces stay on the CPU.
 
 use super::bake::{self, Space};
 use super::features::{CPU_ONLY, Features, reasons};
@@ -95,13 +96,20 @@ fn procedural_surfaces_render_on_the_gpu() {
     parity("procedural wood", &rs);
 }
 
+/// 3D maps can't be baked: on their own they are evaluated live on the GPU,
+/// mixed with a procedural surface they stay on the CPU.
 #[test]
-fn position_based_maps_stay_on_the_cpu() {
+fn position_based_maps_are_live_unless_mixed() {
     let cracks = MapNode::Cracks { scale: 2.0, width: 0.05, vary: 0.5, seed: 1, color_a: [0.8; 3], color_b: [0.1; 3] };
     let m = with(Material::named("Cracked"), MapChannel::BaseColor, cracks);
     assert!(bake::position_based(&m));
     assert_eq!(bake::why_not(&m), Some("3D (position-based) procedural maps"));
+    assert!(super::live::live(&m));
+    let mut mixed = m.clone();
+    mixed.proc.pattern = Pattern::Rock;
     let rs = lit(|s| add(s, PrimitiveKind::Plane, Vec3::ZERO, Vec3::splat(3.0), m));
+    assert!(reasons(&rs).is_empty());
+    let rs = lit(|s| add(s, PrimitiveKind::Plane, Vec3::ZERO, Vec3::splat(3.0), mixed));
     assert_eq!(reasons(&rs), [CPU_ONLY[0]]);
     // A UV map is fine, and so is a triplanar one that repeats.
     assert_eq!(bake::why_not(&with(Material::named("Uv"), MapChannel::BaseColor, gradient())), None);
