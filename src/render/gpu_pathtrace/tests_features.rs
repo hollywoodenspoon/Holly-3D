@@ -28,15 +28,25 @@ fn every_switch_combination_of_the_kernel_validates() {
     }
 }
 
-/// With an adapter, every mask also builds a real pipeline.
+/// With an adapter, every mask of the first seven switches builds a real
+/// pipeline, and LightMix, toon and the catcher each build on top of none
+/// and of all of them, and all together (every combination is validated
+/// above; building all 1024 would take hours on a software rasteriser).
 #[test]
 fn every_feature_mask_builds_a_gpu_pipeline() {
     let Ok(g) = super::gpu() else { return };
-    for mask in 0..Features::COUNT {
+    let scene = Features::LIGHTMIX - 1;
+    let extra = [Features::LIGHTMIX, Features::TOON, Features::CATCHER];
+    let all = Features::COUNT - 1;
+    let masks: Vec<u32> = (0..=scene).chain(extra.iter().flat_map(|&x| [x, scene | x])).chain([all]).collect();
+    for &mask in &masks {
         let layout = g.pipeline(Features(mask)).get_bind_group_layout(0);
         drop(layout);
+        // Cached once, then freed: holding every mask's driver code at once
+        // takes over 10 GB on a software rasteriser (other tests rebuild theirs).
+        let cached = g.pipelines.lock().unwrap().remove(&mask);
+        assert!(cached.is_some(), "mask {mask:#b} is cached");
     }
-    assert_eq!(g.pipelines.lock().unwrap().len(), Features::COUNT as usize, "one cached pipeline per mask");
 }
 
 #[test]
@@ -55,13 +65,12 @@ fn a_plain_scene_needs_no_switches_and_no_fallback() {
 }
 
 #[test]
-fn every_fallback_reason_is_listed_once() {
+fn see_through_surfaces_and_the_sky_need_no_fallback() {
     let mut rs = empty();
     rs.translucent = true;
     rs.procedural = Some(Default::default());
-    let r = reasons(&rs);
-    assert_eq!(r, ["see-through (opacity) surfaces"], "the sky renders on the GPU now");
-    assert_eq!(super::pack::unsupported(&rs), Some(r[0]));
+    assert!(reasons(&rs).is_empty(), "opacity and the sky render on the GPU now: {:?}", reasons(&rs));
+    assert_eq!(super::pack::unsupported(&rs), None);
     let f = Features::of(&rs);
     assert_eq!(f.0, Features::ENV_MAP | Features::OPACITY);
 }

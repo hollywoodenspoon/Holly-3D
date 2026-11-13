@@ -87,8 +87,11 @@ pub fn pack(rs: &RenderScene, shadow_samples: u32) -> Packed {
         t.p.iter().for_each(|p| tris.v3(*p, 0.0));
         t.n.iter().for_each(|n| tris.v3(*n, 0.0));
         if super::textures::textured(m) {
-            // The texture store has the maps; the corners keep the vertex paint.
-            t.col.iter().for_each(|c| tris.v3(lin(c.truncate()), c.w));
+            // The texture store has the maps; the corners keep the vertex paint
+            // (and, for live maps, which have no alpha, the material's opacity).
+            let cut = |a: f32| if m.alpha_cutout { f32::from(u8::from(a >= 0.5)) } else { a.clamp(0.0, 1.0) };
+            let k = if super::live::live(m) { cut(m.opacity) } else { 1.0 };
+            t.col.iter().for_each(|c| tris.v3(lin(c.truncate()), c.w * k));
         } else {
             s.iter().for_each(|s| tris.v3(s.base, s.alpha));
         }
@@ -97,6 +100,7 @@ pub fn pack(rs: &RenderScene, shadow_samples: u32) -> Packed {
         let model = match m.model {
             ShadingModel::Unlit => 1.0,
             ShadingModel::Crystal => 2.0,
+            ShadingModel::Toon => 3.0,
             _ => 0.0,
         };
         // Emitters glow with the CPU's per-triangle radiance (what its NEE uses).
@@ -104,7 +108,7 @@ pub fn pack(rs: &RenderScene, shadow_samples: u32) -> Packed {
         tris.v3(emit, model);
         tris.v3(lin3(m.attenuation_color), m.thickness);
         let (prob, area) = rs.emitters.lookup(i).map_or((0.0, 0.0), |(e, p)| (p, e.area));
-        tris.v4(Vec4::new(prob, area, 0.0, 0.0));
+        tris.v4(Vec4::new(prob, area, f32::from(u8::from(m.shadow_catcher)), 0.0));
     }
     let mut nodes = Buf::default();
     for n in rs.bvh.nodes() {
@@ -125,7 +129,7 @@ pub fn pack(rs: &RenderScene, shadow_samples: u32) -> Packed {
         let (na, nb) = l.atten.near.unwrap_or((-1.0, -1.0));
         let (fa, fb) = l.atten.far.unwrap_or((-1.0, -1.0));
         lights.v4(Vec4::new(na, nb, fa, fb));
-        lights.v4(Vec4::new(l.range, f32::from(u8::from(l.shadows)), l.softness, 0.0));
+        lights.v4(Vec4::new(l.range, f32::from(u8::from(l.shadows)), l.softness, f32::from(l.group)));
         lights.v3(l.shadow_tint, 0.0);
         area(&mut lights, l, shadow_samples);
     }

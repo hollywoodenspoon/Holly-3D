@@ -1930,3 +1930,69 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Opacity, shadow catcher and toon still use the CPU** (PR 4b next: opacity first).
   - **No GPU test yet for area lights in mist**, although the shared `incident()` means they light it. The march takes one area sample per step, as on the CPU.
   - **A big area light almost touching geometry** (a disc 0.2 above a box) differed in one 4×4 block (GPU 2.0 vs CPU 2.8) at the test's low sample count. I didn't investigate further; normal set-ups agree.
+
+## 62. GPU kernel parity, PR 4c: prefab materials on the GPU (live maps)
+- **Prefab Library and Settlement scenes now render on the GPU.** Their materials use 3D maps (Noise, Cracks, Grunge, Wood) or Bricks on World / Triplanar projection. A UV grid cannot hold these, so before this PR the whole scene fell back to the CPU ("maps the GPU cannot bake").
+- **Live maps (`live.rs`, `wgsl/live.wgsl`).** A material that cannot be baked but uses only maps the kernel knows gets a small record instead of a texture. The kernel then evaluates its maps at every hit.
+  - Map kinds the kernel knows: Noise (Perlin / Fractal / Cellular), Bricks (all four kinds), Cracks, Grunge (Dirt / Rust / Scratches / Stains), Wood, Checker, Gradient and Stripes.
+  - Channels: base colour, metallic, roughness, bump (central differences, as on the CPU) and emission.
+  - It works with UV mapping and with World / Triplanar blending, using the same projection frames as `relief::triplanar_normal`.
+  - The noise matches the CPU exactly: the noise crate's Perlin, Fbm and Worley are ported line by line, using its own permutation tables (uploaded once per scene, 9 × 256 words). The pattern maps' hash, fbm and Voronoi are ported too.
+- **Memory:** live materials bake nothing (0 bytes of textures), so they also don't count towards the 1.5 GB cap.
+- **CPU-only reason, reworded:** "maps the GPU cannot bake or evaluate (3D or non-repeating maps mixed with bitmaps, node graphs, procedural surfaces or paint)".
+- **Tests (`tests_live.rs`):**
+  - every map kind and sub-kind (19 materials) and every prefab live material (Settlement, Medieval Castle, Modern City, Alpine Terrain) are checked on colour, emission, metallic, roughness and bump normal. Each is evaluated at 96 points by a compute entry and compared with `base_surface` and `base_tangent_normal`; at most 2 of the 96 points may differ by more than 0.01 (f32 rounding at cell borders);
+  - a Settlement street (cobble road, stone facade, rusted metal, curbs and a triplanar cracks wall) renders on the GPU like the CPU;
+  - a bitmap mixed with a 3D map still falls back.
+  - Mutation checks catch: the Perlin scale factor, Worley's far cell, the pattern hash, Rust-style `fract` on negative coordinates, the bump sign, emission without sRGB decoding, and the fractal noise lacunarity (2 instead of 2π/3).
+- **Not done yet:**
+  - **3D maps mixed with bitmaps, node graphs (Levels, Color Correct, Height Blend, …), procedural surfaces or paint still use the CPU.** Live maps take single map leaves only, which is all the prefab packs use.
+  - **Opacity maps** (e.g. Settlement ID 29 smoke) still need the CPU; that comes with PR 4b.
+  - ~~LightMix only works with the CPU path tracer~~: done in §63.
+  - **Speed:** live maps cost more per hit than a baked lookup (Cracks runs 27 Voronoi cells plus several fbm calls, and bump adds four more evaluations). I haven't timed this on her RX 9060 XT; only lavapipe here.
+
+## 63. GPU kernel parity: Luxon LightMix on the GPU
+- **LightMix now works with the GPU path tracer** (Holly's report: "Luxon LightMix only works with CPU Pathtracer right now"). With `Luxon LightMix Buffers` on, a GPU render keeps its light groups, and the Frame Window's 💡 LightMix sidebar relights it with no re-render, just like a CPU render.
+- **Kernel (`FEAT_LIGHTMIX`, mask bit 128):** every place the integrator adds light also adds that share to the light's group. The groups are in the CPU's order:
+  - Sun & Dynamic Sky (the sky when it is procedural);
+  - Environment (HDRI or flat background, ambient, fog);
+  - Emissive Materials (emission, Unlit, emitter NEE);
+  - Volumetric Godrays & Mist;
+  - one group per scene light (punctual, spot, sun and area NEE, and area lights seen by the camera).
+  - The per-light shares are weighted by the path throughput at that vertex (`mix_beta`), including the subsurface exit.
+  - A sample that isn't finite adds to no group, as on the CPU.
+  - Per-pixel group sums go to a storage buffer (binding 12), read back once at the end and normalised by `extras::lightmix`, the same code the CPU uses. Coverage and the G-buffer come from the GPU image too.
+- **Host (`gpu_pathtrace/mix.rs`):**
+  - The group count is passed in `vol4.y` and each light's group in `misc.w`.
+  - A one-word buffer is bound when LightMix is off, so the variant without LightMix costs nothing.
+  - A group buffer larger than the GPU's storage-buffer limit falls back to the CPU with the reason given.
+- **Tests (`tests_mix.rs`):**
+  - **Red and blue omnis, a sun, a glowing panel and fog:** every group's image mean matches the CPU within 4%.
+  - **A rect area light visible to the camera, a spot and mist under the Earth sky:** Sun & Sky, Volume and per-light groups match.
+  - **LightMix off:** no groups and a one-word buffer.
+  - **Pipeline masks:** the mask test also builds LightMix on its own and on top of every scene feature.
+  - Mutation checks are listed in the PR.
+- **Not done yet:**
+  - **AOV passes** (Direct, Indirect, Specular, Albedo, Normal, Depth and the rest) and the **albedo-guided À-Trous denoiser** are still CPU-only. A GPU render with LightMix uses the bilateral denoiser, like any GPU render.
+  - **Memory:** at 3840×2160 with 12 groups the buffer takes about 1.2 GB. A GPU whose buffer limit is smaller falls back to the CPU instead of splitting the render into tiles.
+  - **Speed** with LightMix on hasn't been timed on her RX 9060 XT; only lavapipe here.
+  - ~~Opacity, the Shadow & Reflection Catcher and toon still need the CPU (PR 4b).~~ Done in §64.
+
+## 64. GPU kernel parity, PR 4b: see-through surfaces, the Shadow & Reflection Catcher and toon on the GPU
+- **See-through surfaces render on the GPU** (`wgsl/opacity.wgsl`): material opacity, opacity maps, vertex alpha and Cut-out.
+  - **Camera and bounce paths** pass straight through a surface with probability 1 − alpha (up to 32 passes), as the CPU does, before the surface is shaded or fogged.
+  - **Shadow rays** from lights, area lights, glowing surfaces and the mist's light loop are dimmed by every see-through surface they cross (`transmit`, up to 8 hits), so light, glow and godrays shine through them.
+  - **Cut-out** snaps the baked alpha back to 0 or 1 at 0.5, so filtered texels don't leave half-clear fringes. Live-map materials apply the threshold to their opacity on the host.
+  - The G-buffer (object/material IDs, depth, normals for the denoiser) skips Cut-out holes, as on the CPU.
+- **Cel / toon materials** (`wgsl/toon.wgsl`): steps, shadow tint, specular band, rim light and rim colour come from the material record (now 28 words). The light comes from every scene light (area lights with their shadow samples), glowing surfaces and the ambient term, as on the CPU, and goes into the Environment LightMix group.
+- **Shadow & Reflection Catcher** (`wgsl/catcher.wgsl`): the alpha combines the shadow fraction over the lights, contact AO (strength and radius from Render Setup) and the reflection's coverage. The reflection is traced as a fresh camera path, so what it shows is shaded like anything else; it is skipped when it would hit another catcher.
+- **Lean kernels:** toon and the catcher are their own feature switches (`FEAT_TOON`, `FEAT_CATCHER`), so scenes without them don't compile that code. Shadow rays read only the alpha half of a texture (`tex_alpha`), not the full material lookup, and the shadow-hit loop bound is a uniform so drivers don't unroll it. A plain quick render's shader build peaked at about 14 GB before this and about 3.3 GB after (on the software Vulkan driver used for tests).
+- **G-buffer fix:** the GPU's first-hit pass now skips Cut-out holes and stops at area lights the camera sees, the same as the CPU, so LightMix, the denoiser and the ID passes line up on both tracers.
+- **CPU fallback:** the only reasons left are 3D maps the GPU can neither bake nor evaluate (mixed with bitmaps, node graphs, procedural surfaces or paint) and more than 1.5 GB of textures.
+- **Tests:** `tests_opacity.rs` (a half-clear veil; a cut-out checker card, an invisible ghost card and a live-map card in mist), `tests_toon.rs` (a cel sphere with rim and specular, a flat toon box and a rect area light; the record stride), `tests_catcher.rs` (a matte catcher with contact AO; a glossy catcher reflecting the scene). Each compares the GPU image with the CPU one (energy, block error, bias and coverage).
+- **Not done yet:**
+  - **Soft shadows on see-through surfaces:** the GPU sends one jittered shadow ray per light per sample, where the CPU loops over the light's shadow samples. They converge to the same image, but the GPU is noisier at low sample counts.
+  - **AOV passes and the À-Trous denoiser** are still CPU-only (see §63).
+  - **Speed** with many stacked see-through cards (hair, foliage) hasn't been timed on her RX 9060 XT; each costs up to 8 shadow hits.
+  - **Test memory:** scenes with textures or live maps build pipelines of about 8–9 GB on the software driver, so the GPU tests run one at a time (`--test-threads=1`).
+  - Everything else from the GPU parity plan is done; next is the Clouds plan.

@@ -217,7 +217,7 @@ impl Tracer<'_> {
 
     /// Radiance and LightMix group of the nearest camera-visible area light
     /// closer than `tmax`.
-    pub(super) fn area_seen(&self, o: Vec3, d: Vec3, tmax: f32) -> Option<(Vec3, u8)> {
+    pub(crate) fn area_seen(&self, o: Vec3, d: Vec3, tmax: f32) -> Option<(Vec3, u8)> {
         let mut best: Option<(f32, (Vec3, u8))> = None;
         for l in &self.rs.lights {
             let RShape::Area(a) = l.shape else { continue };

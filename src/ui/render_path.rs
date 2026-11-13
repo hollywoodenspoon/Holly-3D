@@ -67,7 +67,7 @@ pub fn tab(ui: &mut egui::Ui, r: &mut RenderSettings) {
             ui.end_row();
         });
     });
-    ui.checkbox(&mut p.lightmix, "Luxon LightMix Buffers (relight per light group in F9, CPU tracer)")
+    ui.checkbox(&mut p.lightmix, "Luxon LightMix Buffers (relight per light group in F9, CPU or GPU)")
         .on_hover_text("Keeps one buffer per light group so the Frame Window's LightMix can relight the render live");
     ui.horizontal(|ui| {
         ui.label("GPU Sky Bake");

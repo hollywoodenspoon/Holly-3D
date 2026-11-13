@@ -9,6 +9,8 @@
 pub mod bake;
 pub mod envmap;
 pub mod features;
+pub mod live;
+pub mod mix;
 pub mod pack;
 pub mod textures;
 
@@ -48,6 +50,10 @@ pub fn source() -> String {
         include_str!("wgsl/area.wgsl"),
         include_str!("wgsl/volume.wgsl"),
         include_str!("wgsl/textures.wgsl"),
+        include_str!("wgsl/live.wgsl"),
+        include_str!("wgsl/opacity.wgsl"),
+        include_str!("wgsl/toon.wgsl"),
+        include_str!("wgsl/catcher.wgsl"),
         include_str!("wgsl/integrator.wgsl"),
     ]
     .join("\n")
@@ -105,6 +111,12 @@ fn storage(d: &wgpu::Device, label: &str, bytes: &[u8], rw: bool) -> wgpu::Buffe
 }
 
 fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String> {
+    let f = read_floats(g, src, size)?;
+    Ok(f.as_chunks::<4>().0.iter().map(|c| Vec4::from_array(*c)).collect())
+}
+
+/// `size` bytes of `src` as floats.
+fn read_floats(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<f32>, String> {
     let dst = g.device.create_buffer(&wgpu::BufferDescriptor { label: Some("readback"), size, usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let mut enc = g.device.create_command_encoder(&Default::default());
     enc.copy_buffer_to_buffer(src, 0, &dst, 0, size);
@@ -113,7 +125,7 @@ fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String
     slice.map_async(wgpu::MapMode::Read, |_| {});
     g.device.poll(wgpu::PollType::wait_indefinitely()).map_err(|e| format!("GPU poll: {e}"))?;
     let bytes = slice.get_mapped_range().map_err(|e| format!("GPU map: {e:?}"))?;
-    Ok(bytes.as_chunks::<16>().0.iter().map(|c| Vec4::from_array(std::array::from_fn(|i| f32::from_le_bytes([c[4 * i], c[4 * i + 1], c[4 * i + 2], c[4 * i + 3]])))).collect())
+    Ok(bytes.as_chunks::<4>().0.iter().map(|c| f32::from_le_bytes(*c)).collect())
 }
 
 fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, data: (&pack::Packed, &envmap::EnvMap, &textures::Store)) -> Vec<u8> {
@@ -126,34 +138,44 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     u4(&mut b, [cfg.width, cfg.height, region[2] - region[0], region[3] - region[1]]);
     u4(&mut b, [region[0], region[1], spp, seed]);
     u4(&mut b, [ps.max_bounces.clamp(1, 8), ps.diffuse_bounces, ps.glossy_bounces, ps.transmission_bounces]);
-    let flags = u32::from(rs.camera.is_ortho()) | u32::from(cfg.shadows) << 1 | u32::from(cfg.gi.softbox) << 2 | u32::from(cfg.gi.emitter_samples > 0) << 3;
+    let flags = u32::from(rs.camera.is_ortho()) | u32::from(cfg.shadows) << 1 | u32::from(cfg.gi.softbox) << 2 | u32::from(cfg.gi.emitter_samples > 0) << 3 | u32::from(rs.procedural.is_some()) << 4;
     u4(&mut b, [p.n_lights, p.n_emitters, ps.rr_start, flags]);
     b.v3(rs.background, Tracer::new(rs, cfg).eps);
-    b.v3(rs.sky, 0.0);
-    b.v3(rs.ambient, 0.0);
+    // The catcher's contact AO: strength in sky.w, reach in ambient.w.
+    let gi = &cfg.gi;
+    b.v3(rs.sky, gi.ao_strength.clamp(0.0, 1.0) * f32::from(u8::from(gi.ao)));
+    b.v3(rs.ambient, gi.ao_radius.max(1e-3));
     let (fc, fd) = rs.fog.unwrap_or_default();
     b.v3(fc, fd);
     b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
     u4(&mut b, [tex.table, tex.count, tex.records, tex.rec_count]);
-    volume(&mut b, rs);
+    volume(&mut b, rs, mix::groups(rs, cfg), cfg.gi.emitter_samples);
     b.0
 }
+
+/// See-through surfaces a shadow ray passes before it counts as blocked
+/// (`Tracer::transmittance`). A uniform, not a WGSL constant, so drivers
+/// keep the loop instead of unrolling a BVH walk per hit at every call site.
+const SHADOW_HITS: f32 = 8.0;
 
 /// Bytes of the kernel's `Params` uniform.
 const PARAMS_BYTES: u64 = 64 + 4 * 16 + 5 * 16 + 16 + 5 * 16;
 
 /// The volume block of `Params` (`vol0..vol4`, see `wgsl/volume.wgsl`);
-/// zeros when the scene has no mist.
-fn volume(b: &mut pack::Buf, rs: &RenderScene) {
+/// zeros when the scene has no mist. `vol4.y` carries the LightMix group
+/// count, `vol4.z` the glowing-triangle picks toon materials take and
+/// `vol4.w` the see-through hits a shadow ray passes ([`SHADOW_HITS`]).
+fn volume(b: &mut pack::Buf, rs: &RenderScene, groups: usize, picks: u32) {
     let Some(m) = &rs.volume else {
-        (0..5).for_each(|_| b.v4(Vec4::ZERO));
+        (0..4).for_each(|_| b.v4(Vec4::ZERO));
+        b.v4(Vec4::new(0.0, groups as f32, picks as f32, SHADOW_HITS));
         return;
     };
     b.v3(m.albedo, m.density);
     b.v4(Vec4::new(m.base, m.falloff, m.wisps, m.inv_scale));
     b.v4(Vec4::new(m.wind.x, m.wind.y, m.g, m.intensity));
     b.v3(rs.camera.eye(), rs.radius * 6.0);
-    b.v4(Vec4::new(m.steps as f32, 0.0, 0.0, 0.0));
+    b.v4(Vec4::new(m.steps as f32, groups as f32, picks as f32, SHADOW_HITS));
 }
 
 /// Renders `region` on the GPU with progressive passes like the CPU tracer.
@@ -164,7 +186,7 @@ pub fn render(
     region: Region,
     cancel: &AtomicBool,
     mut on_pass: impl FnMut(PassInfo, &[Pixel]),
-) -> Result<Vec<Pixel>, String> {
+) -> Result<(Vec<Pixel>, Option<crate::render::lightmix::Buffers>), String> {
     let ps = &cfg.path;
     let [x0, y0, x1, y1] = region;
     let (rw, rh) = ((x1 - x0) as usize, (y1 - y0) as usize);
@@ -182,14 +204,18 @@ pub fn render(
     let accum = storage(d, "accum", &vec![0; n * 16], true);
     let stats = storage(d, "stats", &vec![0; n * 16], true);
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
+    let k = mix::groups(rs, cfg);
+    let group_buf = mix::buffer(d, n, k, limit)?;
     let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: PARAMS_BYTES, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false), storage(d, "textures", &tex_bytes, false)];
-    let pipeline = g.pipeline(Features::of(rs));
+    let pipeline = g.pipeline(Features(Features::of(rs).0 | if k > 0 { Features::LIGHTMIX } else { 0 }));
     let layout = pipeline.get_bind_group_layout(0);
     let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf, &bufs[4], &bufs[5]]
         .iter()
         .enumerate()
-        .map(|(i, b)| wgpu::BindGroupEntry { binding: i as u32, resource: b.as_entire_binding() })
+        .map(|(i, b)| (i as u32, *b))
+        .chain([(12, &group_buf)])
+        .map(|(i, b)| wgpu::BindGroupEntry { binding: i, resource: b.as_entire_binding() })
         .collect();
     let bind = d.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("path tracer"), layout: &layout, entries: &entries });
     let (gx, gy) = (rw.div_ceil(8) as u32, rh.div_ceil(8) as u32);
@@ -217,7 +243,7 @@ pub fn render(
             }
             (have, seed) = (have + spp, seed + 1);
             if cancel.load(Ordering::Relaxed) {
-                return Ok(out);
+                return Ok((out, None));
             }
         }
         let (sums, st) = (read_back(g, &accum, size)?, read_back(g, &stats, size)?);
@@ -237,7 +263,8 @@ pub fn render(
         }
     }
     crate::render::postfx::run(&mut out, rw, rh, rs, cfg);
-    Ok(out)
+    let lightmix = if k > 0 { Some(mix::finish(g, &group_buf, rs, cfg, region, &acc, k)?) } else { None };
+    Ok((out, lightmix))
 }
 
 /// Background and G-buffer of a pixel's center ray, traced on the CPU BVH
@@ -245,9 +272,13 @@ pub fn render(
 fn primary(t: &Tracer, cfg: &RenderSettings, x: u32, y: u32) -> Accum {
     let ndc = Vec2::new((x as f32 + 0.5) / cfg.width as f32 * 2.0 - 1.0, 1.0 - (y as f32 + 0.5) / cfg.height as f32 * 2.0);
     let ray = t.rs.camera.ray(ndc, cfg.width as f32 / cfg.height as f32);
-    let g = t.rs.bvh.closest(ray.origin, ray.dir, f32::INFINITY).map_or(GSample::EMPTY, |h| {
+    // As the CPU tracer's G-buffer: Cut-out holes are skipped and an area
+    // light the camera sees in front of the surface leaves it empty.
+    let (o, hit) = t.past_holes(ray.origin, ray.dir);
+    let seen = t.area_seen(o, ray.dir, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).is_some();
+    let g = hit.filter(|_| !seen).map_or(GSample::EMPTY, |h| {
         let tri = &t.rs.bvh.tris[h.tri];
-        GSample { obj: tri.obj, mat: tri.mat as u32, depth: h.t, normal: t.interp(&h, ray.origin, ray.dir).n }
+        GSample { obj: tri.obj, mat: tri.mat as u32, depth: o.distance(ray.origin) + h.t, normal: t.interp(&h, o, ray.dir).n }
     });
     Accum { sum: Vec4::ZERO, back: t.backdrop(ray.dir), g, n: 0, stats: Welford::ZERO, ..Accum::EMPTY }
 }
@@ -269,3 +300,13 @@ mod tests_tex;
 mod tests_volume;
 #[cfg(test)]
 mod tests_area;
+#[cfg(test)]
+mod tests_live;
+#[cfg(test)]
+mod tests_mix;
+#[cfg(test)]
+mod tests_opacity;
+#[cfg(test)]
+mod tests_toon;
+#[cfg(test)]
+mod tests_catcher;

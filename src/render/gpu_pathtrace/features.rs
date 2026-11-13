@@ -3,7 +3,6 @@
 //! reasons a scene still needs the CPU tracer, and the time-based batch size
 //! that keeps each GPU submit short.
 
-use crate::materials::ShadingModel;
 use crate::materials::proc_engine::Pattern;
 use crate::render::scene_build::{RShape, RenderScene};
 
@@ -19,7 +18,14 @@ impl Features {
     pub const ENV_MAP: u32 = 16;
     pub const AREA: u32 = 32;
     pub const OPACITY: u32 = 64;
-    pub const NAMES: [&'static str; 7] = ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY"];
+    /// Per-light-group buffers for the Frame Window's LightMix (set by the render, not the scene).
+    pub const LIGHTMIX: u32 = 128;
+    /// Cel / toon materials (their own light loop, compiled only when used).
+    pub const TOON: u32 = 256;
+    /// Shadow & Reflection Catcher surfaces.
+    pub const CATCHER: u32 = 512;
+    pub const NAMES: [&'static str; 10] =
+        ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY", "FEAT_LIGHTMIX", "FEAT_TOON", "FEAT_CATCHER"];
     /// Every mask the kernel can be built with.
     pub const COUNT: u32 = 1 << Self::NAMES.len();
 
@@ -34,6 +40,8 @@ impl Features {
         set(has_env_map(rs), Self::ENV_MAP);
         set(rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))), Self::AREA);
         set(rs.translucent, Self::OPACITY);
+        set(rs.materials.iter().any(|m| m.model == crate::materials::ShadingModel::Toon), Self::TOON);
+        set(rs.materials.iter().any(|m| m.shadow_catcher), Self::CATCHER);
         Self(f)
     }
 
@@ -57,11 +65,8 @@ pub fn mapped(m: &crate::materials::Material) -> bool {
 
 /// Everything that still sends a scene to the CPU tracer, in the order
 /// [`reasons`] lists it (the Render tab's tooltip shows this list).
-pub const CPU_ONLY: [&str; 5] = [
-    "Shadow & Reflection Catcher surfaces",
-    "see-through (opacity) surfaces",
-    "cel / toon materials",
-    "maps the GPU cannot bake (3D procedural, or triplanar with paint or non-repeating maps)",
+pub const CPU_ONLY: [&str; 2] = [
+    "maps the GPU cannot bake or evaluate (3D or non-repeating maps mixed with bitmaps, node graphs, procedural surfaces or paint)",
     "more than 1.5 GB of baked textures",
 ];
 
@@ -75,11 +80,8 @@ pub fn reasons(rs: &RenderScene) -> Vec<&'static str> {
         }
     };
     let mats = &rs.materials;
-    add(mats.iter().any(|m| m.shadow_catcher), CPU_ONLY[0]);
-    add(rs.translucent, CPU_ONLY[1]);
-    add(mats.iter().any(|m| m.model == ShadingModel::Toon), CPU_ONLY[2]);
-    add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some()), CPU_ONLY[3]);
-    add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[4]);
+    add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some() && !super::live::supported(m)), CPU_ONLY[0]);
+    add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[1]);
     out
 }
 

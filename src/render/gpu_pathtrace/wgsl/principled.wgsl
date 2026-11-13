@@ -19,7 +19,7 @@ fn rec_of(tri: u32) -> u32 {
     if (u.tex.w == 0u) { return NO_REC; }
     let r = aux[tri * 16u + 7u];
     if (r == NO_REC) { return NO_REC; }
-    return u.tex.z + r * 16u;
+    return u.tex.z + r * 28u; // textures::REC_WORDS
 }
 
 // Cauchy IOR at a wavelength (µm) from the base IOR and an Abbe number.

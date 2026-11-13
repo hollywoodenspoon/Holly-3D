@@ -38,6 +38,12 @@ fn incident(l: Light, p: vec3<f32>) -> Inc {
 // the aim; the shadow colour tints what is blocked).
 fn shadow(l: Light, p: vec3<f32>, o: vec3<f32>, dir: vec3<f32>, dist: f32) -> vec3<f32> {
     if ((u.counts.w & F_SHADOWS) == 0u || l.misc.y <= 0.5) { return vec3<f32>(1.0); }
+    let vis = visibility(l, p, o, dir, dist);
+    return l.tint.xyz + (1.0 - l.tint.xyz) * vis;
+}
+
+// Fraction of light `l` reaching `o` (Tracer::visibility, one jittered ray).
+fn visibility(l: Light, p: vec3<f32>, o: vec3<f32>, dir: vec3<f32>, dist: f32) -> f32 {
     var sd = dir;
     var len = dist;
     let soft = l.misc.z;
@@ -50,8 +56,7 @@ fn shadow(l: Light, p: vec3<f32>, o: vec3<f32>, dir: vec3<f32>, dist: f32) -> ve
             sd = normalize(dir + ball() * soft * 0.05);
         }
     }
-    let vis = select(1.0, 0.0, occluded(o, sd, min(len - u.background.w, 1e30)));
-    return l.tint.xyz + (1.0 - l.tint.xyz) * vis;
+    return transmit(o, sd, min(len - u.background.w, 1e30));
 }
 
 // Point, spot and directional lights (area lights are in `area_nee`).
@@ -63,7 +68,9 @@ fn punctual(p: vec3<f32>, ng: vec3<f32>, s: Surf, v: vec3<f32>) -> vec3<f32> {
         if (l.pos.w > 2.5) { continue; }
         let inc = incident(l, p);
         if (inc.k <= 0.0 || dot(s.n, inc.dir) <= 0.0) { continue; }
-        c += bsdf_eval(s, v, inc.dir).f * l.rad.xyz * inc.k * shadow(l, p, o, inc.dir, inc.dist);
+        let li = bsdf_eval(s, v, inc.dir).f * l.rad.xyz * inc.k * shadow(l, p, o, inc.dir, inc.dist);
+        c += li;
+        mix_add(light_group(l), mix_beta * li);
     }
     return c;
 }
@@ -100,6 +107,10 @@ fn emitter_nee(p: vec3<f32>, ng: vec3<f32>, self_tri: u32, s: Surf, v: vec3<f32>
     let light_pdf = e.y / max(e.z, 1e-12) * d2 / cl;
     let ev = bsdf_eval(s, v, dir);
     if (max(ev.f.x, max(ev.f.y, ev.f.z)) <= 0.0) { return vec3<f32>(0.0); }
-    if ((u.counts.w & F_SHADOWS) != 0u && occluded(o, dir, sqrt(d2) - u.background.w * 4.0)) { return vec3<f32>(0.0); }
-    return ev.f * t.emit.xyz * power(light_pdf, ev.pdf) / light_pdf;
+    var vis = 1.0;
+    if ((u.counts.w & F_SHADOWS) != 0u) { vis = transmit(o, dir, sqrt(d2) - u.background.w * 4.0); }
+    if (vis <= 0.0) { return vec3<f32>(0.0); }
+    let le = ev.f * t.emit.xyz * vis * power(light_pdf, ev.pdf) / light_pdf;
+    mix_add(G_EMISSIVE, mix_beta * le);
+    return le;
 }

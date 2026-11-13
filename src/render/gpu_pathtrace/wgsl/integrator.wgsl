@@ -21,23 +21,37 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
     var depth = vec4<u32>(0u);
     // Dispersion: the colour channel this path follows once split (-1 = none).
     var channel = -1;
+    var passes = 0u;
+    // Shadow catcher seen by the camera: its shadow, AO and reflection weight
+    // while the nested reflection path runs (`alpha` is then that path's coverage).
+    var caught = false;
+    var catch_d = vec2<f32>(0.0);
+    var catch_f = 0.0;
     let eps = u.background.w;
-    for (var guard = 0; guard < 64; guard++) {
+    // Room for every bounce plus 32 see-through passes.
+    for (var guard = 0; guard < 128; guard++) {
         let h = closest(o, d, 1e30);
         if (FEAT_VOLUME) {
             let b0 = beta;
-            l += b0 * volume_segment(o, d, h.t, &beta);
+            let lv = b0 * volume_segment(o, d, h.t, &beta);
+            l += lv;
+            mix_add(G_VOLUME, lv);
         }
         if (FEAT_AREA && camera) {
             let a = area_seen(o, d, h.t);
             if (a.w > 0.5) {
                 l += beta * a.xyz;
+                mix_add(u32(a.w - 0.5), beta * a.xyz);
                 alpha = 1.0;
                 break;
             }
         }
         if (h.tri == 0xffffffffu) {
-            if (!camera) { l += beta * environment(d); }
+            if (!camera) {
+                let le = beta * environment(d);
+                l += le;
+                mix_add(select(G_ENV, G_SUN_SKY, (u.counts.w & F_PROC_SKY) != 0u), le);
+            }
             break;
         }
         let t = tris[h.tri];
@@ -51,8 +65,9 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         var base = t.c0.xyz * w.x + t.c1.xyz * w.y + t.c2.xyz * w.z;
         var mr = t.mat.xy;
         var emit = t.emit.xyz;
+        var tx = TexHit(false, vec3<f32>(0.0), vec3<f32>(0.0), vec2<f32>(0.0), n, 1.0);
         if (FEAT_TEXTURES) {
-            let tx = tex_shade(h.tri, w, p, ng, n);
+            tx = tex_shade(h.tri, w, p, ng, n);
             if (tx.ok) {
                 base *= tx.base;
                 emit = tx.emit;
@@ -60,15 +75,48 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
                 n = tx.n;
             }
         }
+        if (FEAT_OPACITY) {
+            // Stochastic opacity: pass straight through with probability 1 - alpha.
+            let a = alpha_of(h.tri, w, tx);
+            if (a < 0.999 && passes < 32u && rnd() >= a) {
+                passes += 1u;
+                o = p + d * eps;
+                continue;
+            }
+        }
         let rec = rec_of(h.tri);
         if (camera) {
             alpha = 1.0;
             // Preserve Texture Appearance: the camera sees the surface's own colour.
             if (rec != NO_REC && auxf(rec + 11u) >= 0.0) { emit = base * auxf(rec + 11u); }
+            if (FEAT_CATCHER && t.light.z > 0.5) {
+                let dark = catch_dark(p, ng, n);
+                alpha = catcher_alpha(dark.x, dark.y, 0.0);
+                if (caught) { break; }
+                // The reflection, unless it sees another catcher, runs as a nested camera path.
+                let ro = p + ng * eps;
+                let rd = d - 2.0 * dot(d, n) * n;
+                let rh = closest(ro, rd, 1e30);
+                if (rh.tri == 0xffffffffu || tris[rh.tri].light.z > 0.5) { break; }
+                caught = true;
+                catch_d = dark;
+                catch_f = catch_fresnel(n, d, mr.y);
+                o = ro;
+                d = rd;
+                beta = vec3<f32>(catch_f);
+                alpha = 0.0;
+                prev_pdf = 0.0;
+                prev_delta = true;
+                depth = vec4<u32>(0u);
+                channel = -1;
+                passes = 0u;
+                continue;
+            }
         }
         if (u.fog.w > 0.0) {
             let f = exp(-u.fog.w * h.t);
             l += beta * u.fog.xyz * (1.0 - f);
+            mix_add(G_ENV, beta * u.fog.xyz * (1.0 - f));
             beta *= f;
         }
         let model = u32(t.emit.w + 0.5);
@@ -86,9 +134,18 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
                 mis = power(prev_pdf, lp);
             }
             l += beta * emit * mis;
+            mix_add(G_EMISSIVE, beta * emit * mis);
         }
         if (model == 1u) {
             l += beta * base;
+            mix_add(G_EMISSIVE, beta * base);
+            break;
+        }
+        if (FEAT_TOON && model == 3u && rec != NO_REC) {
+            // Like the CPU, toon shading is all direct light, in the Environment group.
+            let lt = beta * toon(p, ng, n, -d, base, mr.y, rec, h.tri);
+            l += lt;
+            mix_add(G_ENV, lt);
             break;
         }
         camera = false;
@@ -98,6 +155,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             s.channel = channel;
         }
         let v = -d;
+        mix_beta = beta;
         l += beta * (punctual(p, ng, s, v) + emitter_nee(p, ng, h.tri, s, v) + area_nee(p, ng, s, v));
         var bs = bsdf_sample(s, v);
         if (!bs.ok) { break; }
@@ -117,6 +175,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             ex.t = frame_t(wk.n, 0.0);
             ex.b = cross(wk.n, ex.t);
             ex.white = true;
+            mix_beta = beta;
             l += beta * (punctual(wk.p, wk.ng, ex, wk.n) + emitter_nee(wk.p, wk.ng, wk.tri, ex, wk.n) + area_nee(wk.p, wk.ng, ex, wk.n));
             bs = bsdf_sample(ex, wk.n);
             if (!bs.ok) { break; }
@@ -134,6 +193,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         o = at + at_ng * select(-eps, eps, dot(bs.dir, at_ng) >= 0.0);
         d = bs.dir;
     }
+    if (caught) { alpha = catcher_alpha(catch_d.x, catch_d.y, catch_f * alpha); }
     return vec4<f32>(l, alpha);
 }
 
@@ -147,17 +207,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (done[i] != 0u) { return; }
     let x = u.origin.x + id.x;
     let y = u.origin.y + id.y;
+    _ = groups[0];
     var a = accum[i];
     var st = stats[i];
+    var gsum: array<vec3<f32>, 12>;
     for (var k = 0u; k < u.origin.z; k++) {
+        if (FEAT_LIGHTMIX) { mix_l = array<vec3<f32>, 12>(); }
         rng_state = pcg(pcg(x * 1973u + y * 9277u + 26699u) ^ pcg(u.origin.w * 7919u + k + u32(st.z) * 31u));
         let ray = camera_ray(vec2<f32>(f32(x) + rnd(), f32(y) + rnd()));
         var c = radiance(ray[0], ray[1]);
-        if (any(c != c) || any(abs(c) > vec4<f32>(1e30))) { c = vec4<f32>(0.0, 0.0, 0.0, c.w); }
+        let bad = any(c != c) || any(abs(c) > vec4<f32>(1e30));
+        if (bad) { c = vec4<f32>(0.0, 0.0, 0.0, c.w); }
+        // Like the CPU, a sample that is not finite adds to no group.
+        if (FEAT_LIGHTMIX && !bad) {
+            for (var g = 0u; g < 12u; g++) { gsum[g] += mix_l[g]; }
+        }
         a += c;
         let lum = dot(c.xyz, vec3<f32>(0.2126, 0.7152, 0.0722));
         st += vec4<f32>(lum, lum * lum, 1.0, 0.0);
     }
     accum[i] = a;
     stats[i] = st;
+    if (FEAT_LIGHTMIX) {
+        let k = u32(u.vol4.y + 0.5);
+        for (var g = 0u; g < k; g++) {
+            let j = (i * k + g) * 3u;
+            groups[j] += gsum[g].x;
+            groups[j + 1u] += gsum[g].y;
+            groups[j + 2u] += gsum[g].z;
+        }
+    }
 }
