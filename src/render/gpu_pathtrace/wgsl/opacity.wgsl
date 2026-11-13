@@ -23,13 +23,15 @@ fn hit_alpha(h: Hit, d: vec3<f32>) -> f32 {
 }
 
 // Light passing along a shadow ray (0 = blocked): opaque hits stop it,
-// see-through ones dim it by their alpha and let it on (up to 8 of them).
+// see-through ones dim it by their alpha and let it on (up to `u.vol4.w`,
+// 8, of them: a uniform so drivers don't unroll the BVH walk 8 times).
 fn transmit(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> f32 {
     if (!FEAT_OPACITY) { return select(1.0, 0.0, occluded(o, d, tmax)); }
     var at = o;
     var left = tmax;
     var tr = 1.0;
-    for (var i = 0; i < 8; i++) {
+    let hits = u32(u.vol4.w + 0.5);
+    for (var i = 0u; i < hits; i++) {
         let h = closest(at, d, left);
         if (h.tri == 0xffffffffu) { return tr; }
         let a = hit_alpha(h, d);

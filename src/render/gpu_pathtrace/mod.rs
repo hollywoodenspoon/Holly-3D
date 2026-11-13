@@ -153,23 +153,29 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     b.0
 }
 
+/// See-through surfaces a shadow ray passes before it counts as blocked
+/// (`Tracer::transmittance`). A uniform, not a WGSL constant, so drivers
+/// keep the loop instead of unrolling a BVH walk per hit at every call site.
+const SHADOW_HITS: f32 = 8.0;
+
 /// Bytes of the kernel's `Params` uniform.
 const PARAMS_BYTES: u64 = 64 + 4 * 16 + 5 * 16 + 16 + 5 * 16;
 
 /// The volume block of `Params` (`vol0..vol4`, see `wgsl/volume.wgsl`);
 /// zeros when the scene has no mist. `vol4.y` carries the LightMix group
-/// count and `vol4.z` the glowing-triangle picks toon materials take.
+/// count, `vol4.z` the glowing-triangle picks toon materials take and
+/// `vol4.w` the see-through hits a shadow ray passes ([`SHADOW_HITS`]).
 fn volume(b: &mut pack::Buf, rs: &RenderScene, groups: usize, picks: u32) {
     let Some(m) = &rs.volume else {
         (0..4).for_each(|_| b.v4(Vec4::ZERO));
-        b.v4(Vec4::new(0.0, groups as f32, picks as f32, 0.0));
+        b.v4(Vec4::new(0.0, groups as f32, picks as f32, SHADOW_HITS));
         return;
     };
     b.v3(m.albedo, m.density);
     b.v4(Vec4::new(m.base, m.falloff, m.wisps, m.inv_scale));
     b.v4(Vec4::new(m.wind.x, m.wind.y, m.g, m.intensity));
     b.v3(rs.camera.eye(), rs.radius * 6.0);
-    b.v4(Vec4::new(m.steps as f32, groups as f32, picks as f32, 0.0));
+    b.v4(Vec4::new(m.steps as f32, groups as f32, picks as f32, SHADOW_HITS));
 }
 
 /// Renders `region` on the GPU with progressive passes like the CPU tracer.

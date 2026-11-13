@@ -28,6 +28,13 @@ fn scene() -> RenderScene {
 }
 
 pub(super) fn scene_with(extra: impl FnOnce(&mut Scene)) -> RenderScene {
+    let mut c = ViewCamera::new(ViewKind::Top);
+    (c.target, c.ortho_height) = (Vec3::ZERO, 4.0);
+    scene_seen(extra, c)
+}
+
+/// [`scene_with`] seen from camera `c`.
+pub(super) fn scene_seen(extra: impl FnOnce(&mut Scene), c: ViewCamera) -> RenderScene {
     let mut s = Scene::default();
     (s.environment.ambient_level, s.environment.background) = (0.0, [0.2, 0.25, 0.3]);
     add(&mut s, PrimitiveKind::Plane, Vec3::ZERO, Vec3::splat(3.0), Material { base_color: [0.8; 3], roughness: 0.9, ..Material::named("Floor") });
@@ -38,8 +45,6 @@ pub(super) fn scene_with(extra: impl FnOnce(&mut Scene)) -> RenderScene {
     add(&mut s, PrimitiveKind::Plane, Vec3::new(0.6, 0.8, 0.8), Vec3::splat(0.3), glow);
     s.add_light(Light::new(LightKind::Omni), None, Vec3::new(-1.0, -1.0, 2.5), Vec3::ZERO);
     extra(&mut s);
-    let mut c = ViewCamera::new(ViewKind::Top);
-    (c.target, c.ortho_height) = (Vec3::ZERO, 4.0);
     RenderScene::build(&s, c, false)
 }
 
