@@ -35,6 +35,9 @@ ureq = { version = "2.12", default-features = false, features = ["tls"] }
 # Face Cloner: pure-Rust MediaPipe Face Landmarker + TFLite interpreter (MIT OR Apache-2.0).
 effectcraft-segment = { git = "https://github.com/storytold/effectcraft", rev = "41585f2aec7c470883eb362530a917373536330b" }
 
+[dev-dependencies]
+# Validates every feature-switch build of the GPU kernel (already in the tree via wgpu).
+naga = { version = "30.0.1", features = ["wgsl-in"] }
 
 [profile.dev]
 opt-level = 1

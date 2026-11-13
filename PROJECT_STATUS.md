@@ -1776,3 +1776,18 @@ Not done yet:
   - the spare wheel is a simple cylinder;
   - Library thumbnails show design 1 only;
   - bus, lorry, tractor, forklift, motorbike, bicycle and scooter come next (H4b), then trains, a boat, a small plane and a helicopter (H4c).
+
+## 56. GPU kernel parity, PR 0: groundwork
+No new GPU features yet; this makes the next parity steps safe and visible.
+- **Kernel split** into `src/render/gpu_pathtrace/wgsl/` (common, bvh, bsdf, env, lights, volume, integrator), joined at build time by `gpu_pathtrace::source()`.
+- **Per-scene shader builds:** seven WGSL `override` switches (`FEAT_TEXTURES`, `FEAT_PRINCIPLED`, `FEAT_SSS`, `FEAT_VOLUME`, `FEAT_ENV_MAP`, `FEAT_AREA`, `FEAT_OPACITY`) guard empty hooks (`shade_hook`, `area_nee`, `volume_segment`, `opaque_at`, the env-map branch) that PR 1–4 fill in. `features::Features::of(scene)` picks the mask, and `Gpu::pipeline` compiles and caches one pipeline per mask.
+- **Time-based batches:** each GPU submit traces 1–8 samples per pixel, sized from the last submit's measured time to aim for about 50 ms (`features::next_spp`), replacing the fixed 4 spp. Long renders no longer risk a driver reset, and fast cards get bigger batches.
+- **Every fallback reason:** `features::reasons()` lists all CPU-only features a scene uses, and the Frame Window status shows them all ("CPU (area lights and see-through (opacity) surfaces need the CPU tracer)"). The Render tab's path-tracer note has a tooltip listing everything that still needs the CPU (`features::CPU_ONLY`).
+- **Device label** now includes the driver: "GPU: card (Vulkan, driver)".
+- **Tests:**
+  - a parity harness (block mean error, per-channel bias, energy, coverage) run on two scenes: glass/metal/emitter, and spot + sun + fog in perspective;
+  - naga (dev-dependency) parses and validates all 128 switch combinations;
+  - with an adapter, all 128 pipelines build and are cached;
+  - reasons, joining, constants, batch sizing and the device label.
+  - On lavapipe here: energy GPU 57.11 vs CPU 57.21, and 27.28 vs 27.21 with fog.
+- **Not done yet:** the hooks are empty, so the GPU still falls back for the same scenes as before. Sky/HDRI and textures come in PR 1, Principled in PR 2, volumes in PR 3, area lights / IES / opacity / catcher / toon in PR 4. Speed on a real card (her RX 9060 XT) is untested; only software Vulkan runs here.

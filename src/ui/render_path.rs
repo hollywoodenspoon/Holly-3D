@@ -71,5 +71,7 @@ pub fn tab(ui: &mut egui::Ui, r: &mut RenderSettings) {
         .on_hover_text("Keeps one buffer per light group so the Frame Window's LightMix can relight the render live");
     ui.checkbox(&mut r.shadows, "Shadows");
     ui.checkbox(&mut r.outlines, "Universal Ink Outline Pass");
-    ui.label(dim("Multi-bounce paths with MIS (light + BSDF sampling, power heuristic) and Russian Roulette. Auto uses the wgpu GPU kernel and falls back to the CPU."));
+    let cpu_only = crate::render::gpu_pathtrace::features::CPU_ONLY.map(|r| format!("• {r}")).join("\n");
+    ui.label(dim("Multi-bounce paths with MIS (light + BSDF sampling, power heuristic) and Russian Roulette. Auto uses the wgpu GPU kernel and falls back to the CPU."))
+        .on_hover_text(format!("Scenes with any of these still render on the CPU (the Frame Window names every one it found):\n{cpu_only}"));
 }
