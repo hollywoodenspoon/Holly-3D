@@ -44,7 +44,7 @@ fn lantern_post(kit: &mut Kit, glow: u16) {
     kit.mat(ids::IRON).frustum(Vec3::Z * 3.35, 0.24, 0.0, 0.25, 6, false);
 }
 
-fn car(b: &mut Ctx, hx: f32, hy: f32) {
+pub(super) fn car(b: &mut Ctx, hx: f32, hy: f32) {
     // Body, cabin (truck: cab + cargo box), wheels, lights.
     let truck = hy > 3.0 && b.r.gen_bool(0.35);
     let paint = [ids::BRICK, ids::STUCCO, ids::IRON, ids::PLASTER][b.r.gen_range(0..4)];

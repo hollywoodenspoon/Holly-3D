@@ -1,28 +1,73 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 13 residential, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 17 commercial & office, 14 industrial & utility, 17 services & transport, 10 parks & leisure, 16 garden & lot, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
 //! Settlement Material IDs (`kit::ids`).
 
 pub mod arch;
+mod cars;
+mod vehicles;
+mod appliances;
+mod appliances_b;
+mod commercial_a;
+mod commercial_b;
+mod commercial_c;
+mod decor;
 mod doodads;
+mod furniture;
+mod furniture_b;
+mod furniture_c;
+mod garden;
+mod garden_b;
 mod houses;
+mod industrial;
+mod industry;
+mod kitchen_bath;
 pub mod infra;
 mod kinds;
+mod kinds_defaults;
+mod kinds_info;
 mod medieval_a;
 mod medieval_b;
+mod parks;
+mod parks_b;
 mod modern_a;
 mod modern_b;
 pub mod parts;
 mod residential_a;
 mod residential_b;
+mod rooms;
+mod rural;
+mod services;
+mod services_b;
+mod shops;
+mod transport;
+mod utilities;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_appliances;
+#[cfg(test)]
+mod tests_commercial;
+#[cfg(test)]
+mod tests_furniture;
+#[cfg(test)]
+mod tests_garden;
+#[cfg(test)]
+mod tests_rural;
+#[cfg(test)]
+mod tests_industrial;
+#[cfg(test)]
+mod tests_parks;
+#[cfg(test)]
 mod tests_residential;
 #[cfg(test)]
+mod tests_services;
+#[cfg(test)]
 mod tests_shots;
+#[cfg(test)]
+mod tests_vehicles;
 
 pub use arch::StairKind;
 pub use houses::Lot;
@@ -174,6 +219,55 @@ impl BuildingParams {
                     residential_b::build(&mut b, hx, hy, floors)
                 }
             }
+            Category::Commercial => match self.kind {
+                K::CornerShop | K::Cafe | K::Diner | K::Restaurant | K::Bakery | K::Pharmacy => commercial_a::build(&mut b, hx, hy, floors),
+                K::Supermarket | K::Mall | K::Hotel | K::Motel | K::Bank | K::Cinema => commercial_b::build(&mut b, hx, hy, floors),
+                _ => commercial_c::build(&mut b, hx, hy, floors),
+            },
+            Category::Industrial => match self.kind {
+                K::Factory | K::TruckDepot | K::SiloCluster | K::GrainElevator | K::Refinery | K::TankFarm | K::RecyclingYard => industrial::build(&mut b, hx, hy),
+                _ => utilities::build(&mut b, hx, hy),
+            },
+            Category::Services => match self.kind {
+                K::Temple | K::Cemetery => services_b::build(&mut b, hx, hy),
+                K::FireStation | K::PoliceStation | K::Clinic | K::University | K::Library | K::TownHall | K::PostOffice => services::build(&mut b, hx, hy, floors),
+                _ => transport::build(&mut b, hx, hy, floors),
+            },
+            Category::Parks => match self.kind {
+                K::Playground | K::SportsCourt | K::SportsField | K::Stadium | K::SwimmingPool => parks::build(&mut b, hx, hy),
+                _ => parks_b::build(&mut b, hx, hy),
+            },
+            Category::Garden => match self.kind {
+                K::Mailbox | K::GardenBeds | K::Hedge | K::PicketFence | K::Patio | K::Barbecue | K::SwingSet | K::Trampoline => garden::build(&mut b, hx, hy),
+                _ => garden_b::build(&mut b, hx, hy),
+            },
+            Category::Rural => rural::build(&mut b, hx, hy),
+            Category::Furniture => {
+                // Small parts: finer texture repeats so wood grain reads.
+                b.kit.uv_scale = 2.0;
+                match self.kind {
+                    K::DiningTable | K::CoffeeTable | K::SideTable | K::Desk => furniture_b::build(&mut b, hx, hy),
+                    K::DiningChair | K::OfficeChair | K::Armchair | K::BarStool | K::Sofa | K::SectionalSofa => furniture::build(&mut b, hx, hy),
+                    _ => furniture_c::build(&mut b, hx, hy),
+                }
+            }
+            Category::KitchenBath => {
+                b.kit.uv_scale = 2.0;
+                kitchen_bath::build(&mut b, hx, hy)
+            }
+            Category::Decor => {
+                b.kit.uv_scale = 2.0;
+                decor::build(&mut b, hx, hy)
+            }
+            Category::Appliances => {
+                b.kit.uv_scale = 2.0;
+                match self.kind {
+                    K::Microwave | K::KettleToaster | K::CoffeeMachine | K::Television | K::PcSetup | K::Laptop | K::Speakers => appliances_b::build(&mut b, hx, hy),
+                    _ => appliances::build(&mut b, hx, hy),
+                }
+            }
+            Category::Rooms => rooms::build(&mut b, hx, hy),
+            Category::Vehicles => cars::build(&mut b, hx, hy),
         }
         b.kit.finish()
     }

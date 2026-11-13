@@ -1483,3 +1483,296 @@ Not done yet:
   - the walk-up's bays and the tower's balconies are the same colour as their walls, so they read weakly in thumbnails;
   - more styles per house;
   - the next zones (commercial/office, industrial/utilities, services/transport, parks/lot details/rural).
+
+## 44. Prefab Library, part H2b: commercial and office buildings
+- **17 new kinds** under a new **Commercial & Office** category, second in the library. They are appended after Residential (indices 57–73), so saved scenes and seeds keep their meaning.
+  - **Shops and places to eat:**
+    - Corner Shop: wrap-around shopfront with flats above.
+    - Café: terrace tables with parasols.
+    - Diner: steel bands, ribbon windows and a pylon sign.
+    - Restaurant: brick, tall windows, canopy and planters.
+    - Bakery: bow window and an awning.
+    - Pharmacy: glowing cross and parking.
+  - **Big boxes:**
+    - Supermarket: car park, trolley shelter and loading dock.
+    - Shopping Mall: two anchor stores and a glazed atrium.
+    - Hotel: podium, porte-cochère, slab tower with balconies and a crown sign.
+    - Motel: outside walkways, a door per room, lobby, pylon sign and parking.
+    - Bank: steps, columns and a pediment.
+    - Cinema: glowing marquee, blade sign and poster cases.
+  - **Car-focused:**
+    - Car Dealership: glass showroom, forecourt cars and flags.
+    - Drive-Through: drive lane, menu board, pay window and a tall pylon.
+  - **Offices:**
+    - Low-Rise Office: ribbon glazing and parking.
+    - Mid-Rise Office: curtain wall and a set-back crown.
+    - Office Campus: three blocks round a lawn, glazed bridges and parking.
+- **Shared pieces** in `buildings/shops.rs`: shopfronts, flat boxes with parapets, signs, pylon signs, parking lots with painted bays and parked cars, café tables, planters and canopies.
+- Settlements count Commercial kinds as buildings, so they take ruin damage.
+- **Tests:**
+  - every kind builds valid, deterministic meshes at both detail levels, within budget;
+  - every kind has glazing, stands on the ground and fits its lot;
+  - heights are sensible;
+  - car parks have painted bays;
+  - turning Signs off removes the glow.
+- **Not done yet:**
+  - flat roofs all use the roof colour, so the big boxes read a bit alike from above;
+  - the showroom glass reads as lit white in thumbnails;
+  - no interiors.
+
+## 45. Prefab Library, part H2c: industrial and utility buildings
+- **14 new kinds** under a new **Industrial & Utilities** category. They are appended after Commercial (indices 74–87), so saved scenes and seeds keep their meaning. They have no Floors slider.
+  - **Industrial:**
+    - Factory: gabled brick halls, an office block, chimneys and a loading dock.
+    - Truck Depot: cross-dock shed with a row of dock doors, trailers backed up to them, a guard hut, a gate barrier and a fence.
+    - Silo Cluster: silos with a conveyor gallery, a lattice tower, a chute and a ladder.
+    - Grain Elevator: tall headhouse, twin rows of bins, and a truck bay with a spout.
+    - Refinery: distillation columns with platforms, a glowing flare stack, heaters, a pipe rack and tanks.
+    - Tank Farm: tanks in bund walls, joined by pipes to a header.
+    - Recycling Yard: shed, scrap heaps, shipping containers, a conveyor and hopper, and a scrap crane.
+  - **Utilities:**
+    - Power Plant: turbine hall, boiler house, two hyperbolic cooling towers, a 90 m stack, transformers and a coal heap.
+    - Wind Turbine: the Width slider is the rotor diameter; the hub sits at 1.9× the blade length.
+    - Solar Farm: tilted panel rows on posts, an inverter cabin and a fence.
+    - Pump Station: brick pump house, pipes with valve wheels, a surge tank and an intake basin.
+    - Substation: gravel pad, transformers, gantries with insulators, a control building and a fence.
+    - Power Pylon: lattice tower with three cross-arms and insulator strings.
+    - Cell Tower: monopole, three-sector antennas, a dish, an equipment cabin and a fence.
+- **Shared pieces** in `buildings/industry.rs`:
+  - post-and-wire fences with a gate gap, tanks, silos, ladders, pipes and pipe racks, smoke stacks;
+  - lattice towers (lifted so their braces never dip below ground), dock doors, heaps and shipping containers.
+- `kinds.rs` was split: labels and default sizes moved to `kinds_info.rs`, keeping both files under 350 lines.
+- Settlements count Industrial kinds as buildings, so they take ruin damage.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot;
+  - heights are sensible, and the turbine scales with its rotor;
+  - fenced yards have fences, and solar panels are glass.
+- **Not done yet:**
+  - pipes are straight runs without elbows;
+  - the cooling towers have no inner shading;
+  - wind turbine blades are flat beams, not twisted aerofoils.
+
+## 46. Prefab Library, part H2d: services and transport
+- **17 new kinds** under a new **Services & Transport** category. They are appended after Industrial (indices 88–104), so saved scenes and seeds keep their meaning.
+  - **Services:**
+    - Fire Station: brick appliance bays with glazed doors, an apron, a hose tower and an office wing.
+    - Police Station: flat-roofed block behind a car park, glazed entrance, blue lamp and a flag.
+    - Clinic: single storey with ribbon windows, a drop-off canopy, a glowing cross and parking.
+    - University Block: long brick block with a columned entrance, a clock tower and a lawn quad with paths and trees.
+    - Library: glazed ground floor under a cantilevered finned box, a clerestory and a plaza with benches.
+    - Town Hall: raised centre block with a portico and domed clock tower, lower wings, steps, flags and a plaza.
+    - Post Office: brick counter hall, post boxes, and a delivery van at the loading door.
+    - Temple: stone platform with steps, a columned hall under two tiers of wide roofs, a gate and lanterns.
+    - Cemetery: walled lawn with rows of headstones, trees and a small chapel.
+  - **Transport:**
+    - Bus Stop: glass shelter with a roof, bench, timetable and stop sign.
+    - Bus Depot: gabled garage with roller doors, parked buses, an office and a fuel island.
+    - Train Station: barrel-vaulted hall with a clock and canopy, two-storey wings, and platforms with canopies over tracks.
+    - Metro Entrance: stairs down about 3 m through an opening in the paving, railings, a glass canopy and a lit sign mast.
+    - Tram Stop: island platform with a canopy, bench and ticket machine, tracks on both sides and overhead-wire poles.
+    - Airport Terminal: glazed hall under a sawtooth roof, drop-off road and canopy, jet bridges and an airliner at each gate.
+    - Control Tower: tapered shaft with a flared glass cab, antennas and a base building. Floors make it taller.
+    - Harbour Office: hipped-roof office on a quay with a lookout, a flag, bollards and water in front.
+- Settlements count Services kinds as buildings, so they take ruin damage.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot (only the metro stairs go below ground, by at most 3.5 m);
+  - heights are sensible, the harbour has water and the station has rails.
+- **Not done yet:**
+  - the metro stairs end at a blank wall, with no ticket hall below;
+  - the airliner is simple (no windows, a flat tail);
+  - the train station has no rail lines leaving the lot, and tram tracks don't join up between stops;
+  - there is no hospital, school or parking garage yet; these come with the parks and rural batch or later.
+
+## 47. Prefab Library, part H2e: parks and leisure
+- **10 new kinds** under a new **Parks & Leisure** category, appended after Services & Transport (indices 105–114). They have no Floors slider.
+  - Playground: safety surface, swings, a slide tower with a roof, a see-saw, a climbing dome, a sandpit, benches and a low fence.
+  - Sports Court: painted hard court with lines, either a tennis net or two basketball hoops (by seed), a fence and a bench.
+  - Sports Field: grass pitch with markings, penalty boxes, goals with nets, four floodlights and a clubhouse.
+  - Stadium: pitch and running track inside four tiered stands, cantilever roofs over the long sides, and four 40 m floodlight masts.
+  - Swimming Pool: paved deck, lane ropes, a diving board, a kiddie pool, loungers, parasols, a changing block and a fence.
+  - Plaza: paved square with a ring pattern, a fountain, tree beds, benches, lamps and three flags.
+  - Monument: stepped plinth in a round garden with an obelisk, a column with a figure, or a triumphal arch (by seed).
+  - Park Pond: irregular pond with a gravel path, a footbridge, reeds, ducks, trees and benches.
+  - Bandstand: octagonal raised stage with columns, a railing, steps, a pointed roof and deck chairs.
+  - Skate Park: half-pipe with coping, a fun box with a rail and ramps, a bowl and a ledge.
+- Shared helpers: `parks::lines` (court and pitch markings) and `parks::bench`.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot;
+  - the stadium is tall, the skate park is low, the pools and pond have water, and the courts and pitches have markings.
+- **Not done yet:**
+  - the pond and the pools are flat water surfaces, not dug basins;
+  - the skate bowl is stepped rings, not a smooth curve;
+  - the stadium stands have no seats or stairways modelled.
+
+## 48. Prefab Library, part H2f: garden and lot details
+- **16 new kinds** under a new **Garden & Lot** category, appended after Parks & Leisure (indices 115–130). They are small life-sim items for dressing a house lot, and have no Floors slider. Width runs along X, so a hedge or fence stretches with Width.
+  - Mailbox: post, rounded box, door and flag.
+  - Garden Beds: raised timber beds with gravel paths, crops (leafy rows, shrubs or canes, by seed) and a water butt.
+  - Hedge: clipped hedge with a lumpy top.
+  - Picket Fence: pointed pickets on two rails, posts, and a half-open gate when the fence is long enough.
+  - Patio Set: paving slabs, a table and four chairs under a parasol, a bench and potted plants.
+  - Barbecue: a kettle grill or a brick barbecue with a hood and chimney (by seed).
+  - Swing Set: A-frame with two swings and a slide.
+  - Trampoline: legs, padded frame, mat and safety net.
+  - Garden Shed: clad timber shed with a gable or pent roof, a door and a window.
+  - Doghouse: kennel with an arched opening, a name board and a bowl.
+  - Washing Line: a T-post line with clothes, or a rotary dryer (by seed).
+  - Wheelie Bins: up to four coloured bins with lids (one may stand open) and wheels.
+  - Garden Gnome: boots, body, beard, face and pointed hat, sometimes with a fishing rod.
+  - Hose Reel: drum on a frame with a crank, hose and nozzle.
+  - Backyard Pool: an above-ground pool with a ladder, or a paved in-ground pool with steps and grab rails (by seed).
+  - Porch & Steps: raised deck with steps, posts, railings and a lean-to roof, meant to push against a house wall at +Y.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot;
+  - the gnome is small, the shed is tall enough, the pool has water and the hedge is foliage.
+- **Not done yet:**
+  - no socket snapping yet: the porch, fence and hedge don't snap to houses or to each other;
+  - the in-ground pool is a flat water surface, not a dug basin.
+
+## 49. Prefab Library, part H2g: rural and farm
+- **8 new kinds** under a new **Rural & Farm** category, appended after Garden & Lot (indices 131–138). None of them has a Floors slider.
+  - Barn: red (or timber) barn with a gambrel roof, sliding doors with cross braces, a hay loft door with a hoist beam, and a lean-to with a tin roof when the lot is wide enough.
+  - Greenhouse: glass house on a low brick wall, frame and ridge, a door, staging benches with potted plants.
+  - Polytunnel: half-round plastic tunnel with hoops, a framed door and crop rows inside.
+  - Henhouse & Run: coop on legs with a nesting box, ramp and a wire run, plus a few hens.
+  - Haystacks: round bales (lying and standing) and a stepped stack of square bales on earth.
+  - Orchard: rows of fruit trees with fruit in the crowns, a ladder and fruit crates.
+  - Paddock: post-and-rail fence with an open five-bar gate, a water trough and a field shelter.
+  - Beehives: a row of stacked box hives on stands among wildflowers.
+- **Tests:** every kind builds valid, deterministic meshes within budget, stands on the ground and fits its lot; the barn is tall, the hives are low, and the greenhouse, paddock and orchard have glass, water and foliage.
+- **Not done yet:**
+  - the farmhouse, stable, windmill and silo from the plan already exist elsewhere (Farmhouse in Residential, Windmill in Medieval, Silo Cluster in Industrial); a dedicated stable is not built yet;
+  - the hens and bees are simple blocks, not animals.
+
+## 50. Prefab Library, part H3a: furniture (seating and tables)
+- Second wave starts: a new **Furniture** category, appended after Rural & Farm (indices 139–148). There's no Floors slider, and the texture repeats are finer so wood grain and fabric read at furniture scale.
+  - **Seating:**
+    - Dining Chair: slatted or solid back.
+    - Office Chair: five-star base on casters, gas lift, padded seat, back and armrests.
+    - Armchair: club style.
+    - Bar Stool: pedestal or four legs, with a foot ring.
+    - Sofa: per-seat and back cushions, plus scatter cushions.
+    - Sectional Sofa: L-shaped with a chaise.
+  - **Tables:**
+    - Dining Table: rectangular, or round on a pedestal for square sizes. Place mats, plates and a fruit bowl.
+    - Coffee Table: with a shelf, books and a mug.
+    - Side Table: a drawer, and a lamp or a potted plant on top.
+    - Desk: drawer pedestal, monitor, keyboard, mouse and desk lamp.
+  - Upholstery and top colours vary with the seed. At Mid detail the cushions get rounded corners and softened tops.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget, stands on the floor and fits its footprint;
+  - chair-back and table heights are realistic, and the coffee table is low;
+  - Mid detail adds faces to the sofa.
+- **Not done yet:** no snap sockets yet (chairs don't tuck under tables, sofas don't snap to walls); no room shell yet.
+
+## 51. Prefab Library, part H3b: furniture (bedroom and storage)
+- **9 more Furniture kinds** (indices 149–157). Each has a seeded wood, white or dark carcass, and drawer fronts with handles.
+  - Single Bed and Double Bed: frame, headboard, footboard, mattress, one or two pillows, and a turned-down duvet.
+  - Bunk Bed: corner posts, two bunks with bedding, a guard rail, and a ladder at the foot.
+  - Wardrobe: two or three doors (three when wide), one mirrored door, a plinth, a cornice and a drawer.
+  - Dresser: drawers in one or two columns, with a mirror on top.
+  - Nightstand: two drawers, a lamp and a book.
+  - Bookshelf: five shelves of seeded books, with varied heights, colours and gaps.
+  - TV Stand: media unit with doors, an open bay and a console, a flat TV on a stand (the screen glows when emissive) and a sound bar.
+  - Display Cabinet: cupboard base, glass front, glass shelves with plates and vases.
+- **Tests:** the wardrobe and bunk bed are tall, the nightstand is low, and all the shared furniture checks pass.
+- **Not done yet:** furniture uses the shared Settlement pack, so big wood panels show the weathered timber's plank bands. A clean furniture material pack (smooth wood, fabric, lacquer) is a follow-up.
+
+## 52. Prefab Library, part H3c: kitchen & bath, lighting & decor
+- **Two new categories**, appended after Furniture.
+  - **Kitchen & Bath** (indices 158–164):
+    - Kitchen Units: a run of base units with plinth, worktop, splashback, sink and tap, a four-ring hob and an oven.
+    - Wall Cabinets: hung at 1.45 m with an under-cabinet light strip, and a cooker hood when wide.
+    - Kitchen Island: cabinets, an overhanging top, a prep sink and bar stools along the front.
+    - Toilet: close-coupled, with seat, cistern and flush button.
+    - Vanity Sink: vanity with basin and tap, a mirror cabinet above and a light bar.
+    - Bathtub: built-in, with a tiled panel, water, a mixer and a shower riser.
+    - Shower Cubicle: tray, tiled walls, glass enclosure, riser rail, head and mixer.
+  - **Lighting & Decor** (indices 165–170):
+    - Floor Lamp: a standard lamp with a drum shade, or an arc lamp (by seed).
+    - Pendant Light: ceiling rose at 2.5 m, flex, and a cone or dome shade.
+    - Rug & Pouf: patterned rug with border and fringe, plus a pouf.
+    - Curtains: pole with finials, pleated drapes tied back, and a sheer.
+    - Wall Mirror: rectangular or round, with a shelf.
+    - Floor Plant: a planter with palm blades or a small tree crown.
+  - Wall and ceiling pieces are built at their real height, so they place on the floor under where they hang.
+- `BuildingKind::defaults()` moved to `kinds_defaults.rs` to keep `kinds_info.rs` under 350 lines.
+- **Tests:** toilet height, pendant hang height, bath water, plant foliage, and all the shared furniture checks for the 32 indoor kinds.
+- **Not done yet:**
+  - no room shell yet, and no wall/ceiling sockets: wall cabinets, mirrors and curtains must be placed by hand;
+  - the appliance batch (fridge, washer, electronics…) is next.
+
+
+## 53. Prefab Library, part H3d: appliances & electronics
+- **New category "Appliances & Electronics"** (indices 171–186), appended after Lighting & Decor:
+  - Fridge: fridge-freezer, or side-by-side doors with a dispenser when the lot is wide; magnets and a note.
+  - Cooker: oven door with window and handle, control dials, a four-ring hob with a pan and a pot, splashback.
+  - Microwave, Dishwasher, and Washing Machine: the washer has a porthole door, detergent drawer, dial and display, and is a dryer with a dark door about 30% of the time by seed.
+  - Kettle & Toaster: a jug kettle on its base and a two-slot toaster.
+  - Coffee Machine: an espresso machine with group head, portafilter, steam wand, drip tray and cups.
+  - Television: on splayed feet or a pedestal, with a soundbar.
+  - PC Setup: a tower with a glass side and lit fans, one or two monitors, keyboard, mouse mat and headphones.
+  - Laptop: opened to about 110°, with a phone and a mug.
+  - Speakers: two tower speakers with drivers and a port, plus an amplifier.
+  - Air Conditioner: an indoor split unit at 2.1 m and the outdoor condenser, joined by a pipe.
+  - Radiator: a finned panel on brackets with a valve.
+  - Fan: a pedestal fan with a caged three-blade rotor.
+  - Vending Machine: an open, lit display bay with shelves of products, a keypad and a pickup flap.
+  - Arcade Cabinet: profiled sides, lit marquee and screen, a joystick and buttons, and a coin door.
+- Counter-top pieces stand at z = 0, so Drop on Surfaces puts them on worktops and desks. Screens and displays glow unless Emissive is off.
+- **Tests:** `tests_appliances.rs` covers:
+  - index placement, plus valid, deterministic meshes at both detail levels;
+  - floor contact, and heights for the fridge, cooker, counter-top pieces, the vending and arcade machines, and the high AC unit;
+  - the glowing screens, and that they switch off.
+  - The generic "stands on the ground" check allows 0.15 m tall for this category (a laptop is short).
+- **Not done yet:**
+  - no hinged doors or openable parts;
+  - fridge and cooker have no interiors;
+  - the vending machine has no glass pane, because the thumbnail renderer draws GLASS opaque and it hid the products;
+  - the room-shell generator is next.
+
+## 54. Prefab Library, part H3e: room shells
+- **New category "Room Shells"** (indices 187–190), built in `rooms.rs`:
+  - Room: a door with an open leaf, and windows in the back and side walls.
+  - Open-Plan Room: a door, three windows, glazed patio doors, and a partition stub with a breakfast bar over a tiled kitchen floor.
+  - Bathroom Shell: a tile floor, walls tiled to 1.2 m, and a small high frosted window.
+  - Hallway: doors at both ends and off each side, a small window and a runner.
+- **How a shell is made:**
+  - The lot is the room's inside. The 0.15 m walls stand outside it, so the full width × length is usable floor.
+  - A `layer` helper cuts real openings through each wall.
+  - Every opening gets architraves; windows also get a sill, frame, mullion and glass. Skirting runs between the doors.
+  - The floor finish tops out at z = 0, so furniture dropped in sits on it.
+  - It's a cutaway: no ceiling.
+- `tests_shots.rs` takes `PREFAB_PITCH` (degrees) for a higher camera, so room interiors show on the review sheet.
+- **Tests:** wall height, thin slab, walls outside the lot, a floor face at z = 0, glass, bathroom tiles, and a face count above solid walls.
+- **Not done yet:**
+  - no ceiling option or ceiling sockets;
+  - furniture doesn't snap to walls yet (sockets are a later step);
+  - door and window positions are fixed per kind (no sliders);
+  - rooms don't join into a floor plan.
+
+## 55. Prefab Library, part H4a: road cars
+- **New category "Vehicles"** (indices 191–198), built in `vehicles.rs` (shared body, wheels, cabin, interior, trim) and `cars.rs` (designs and extras).
+- **Eight kinds, three designs each** (stored in the Floors value and picked with new **Design:** buttons in the Modify panel):
+  - Sedan: Family Sedan, Executive Saloon (chrome strip), Compact Coupe.
+  - Hatchback: City Hatch, Hot Hatch (spoiler), Estate (roof rails).
+  - SUV: Compact Crossover, Boxy Off-Roader (spare wheel on the back), Full-Size SUV.
+  - Pickup Truck: Single Cab, Double Cab, Flatbed Work Truck.
+  - Van: Panel Van, Minivan, Camper Van (pop-top).
+  - Sports Car: Mid-Engine (side intakes), Grand Tourer, Roadster (open, low seats).
+  - Taxi: City Cab, Tall Cab, Minivan Cab, all with chequer band and roof sign.
+  - Police Car: Patrol Sedan, Patrol SUV, Interceptor, with a light bar and push bar.
+- **Real parts:** the side profile is extruded with semicircular wheel-arch notches and an inner wheel well; separate wheels (tyre, rim, hub, spokes at Mid); a glass cabin (GLASS ID) with roof panel and A/B/C pillars; head and tail lights (glow when Emissive is on), grille, bumpers, front and rear plate areas, mirrors, door seams and handles. Mid detail adds seats, a dashboard and a steering wheel.
+- No brands, badges or copies of a specific model.
+- Paint is seeded and also varies by design.
+- **Tests (`tests_vehicles.rs`):** appended indices, three designs per kind, valid deterministic meshes at both details, glass and tyres, standing on the road, designs differ, Mid adds parts, and real heights (the van is taller than the sedan, the sports car lower, the police light bar on top).
+- **Not done yet:**
+  - doors, bonnet and boot don't open, and wheels aren't separate objects that can turn;
+  - interiors only appear at Mid detail (or on the roadster);
+  - the spare wheel is a simple cylinder;
+  - Library thumbnails show design 1 only;
+  - bus, lorry, tractor, forklift, motorbike, bicycle and scooter come next (H4b), then trains, a boat, a small plane and a helicopter (H4c).

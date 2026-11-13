@@ -9,10 +9,10 @@ fn mat_ids(m: &EditablePoly) -> HashSet<u16> {
 }
 
 #[test]
-fn all_57_types_build_valid_deterministic_meshes() {
-    assert_eq!(BuildingKind::ALL.len(), 57);
+fn all_199_types_build_valid_deterministic_meshes() {
+    assert_eq!(BuildingKind::ALL.len(), 199);
     let counts: Vec<usize> = Category::ALL.iter().map(|c| c.kinds().count()).collect();
-    assert_eq!(counts, vec![13, 14, 12, 5, 13]);
+    assert_eq!(counts, vec![13, 17, 14, 17, 10, 16, 8, 19, 7, 6, 16, 4, 8, 14, 12, 5, 13]);
     for k in BuildingKind::ALL {
         let p = BuildingParams::of(k);
         let m = p.build();
@@ -22,7 +22,7 @@ fn all_57_types_build_valid_deterministic_meshes() {
         assert_eq!(p.build().counts(), (v, e, f), "{k:?} deterministic");
         assert!(mat_ids(&m).iter().all(|&i| (1..=ids::MAX).contains(&i)), "{k:?} IDs in the 29-ID pack");
         let b = m.bounds().unwrap();
-        assert!(b.min.z > -3.5 && b.max.z > 0.3, "{k:?} stands on the ground: {b:?}");
+        assert!(b.min.z > -3.5 && b.max.z > if k.category() == Category::Appliances { 0.15 } else { 0.3 }, "{k:?} stands on the ground: {b:?}");
         let reach = p.width.max(p.length) * 0.5 + 14.0;
         assert!(b.min.x > -reach && b.max.x < reach && b.min.y > -reach && b.max.y < reach, "{k:?} near its footprint: {b:?}");
         assert!(m.vertices.values().all(|v| v.position.is_finite()), "{k:?} finite");

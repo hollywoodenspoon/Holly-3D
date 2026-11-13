@@ -65,6 +65,37 @@ pub enum BuildingKind {
     BeachHut,
     WalkUp,
     TowerBlock,
+    // Commercial & office (17), appended after Residential
+    CornerShop, Cafe, Diner, Restaurant, Bakery, Pharmacy,
+    Supermarket, Mall, Hotel, Motel, Bank, Cinema,
+    CarDealer, DriveThru, LowRiseOffice, MidRiseOffice, OfficeCampus,
+    // Industrial & utilities (14)
+    Factory, TruckDepot, SiloCluster, GrainElevator, Refinery, TankFarm, RecyclingYard,
+    PowerPlant, WindTurbine, SolarFarm, PumpStation, Substation, PowerPylon, CellTower,
+    // Services & transport (17)
+    FireStation, PoliceStation, Clinic, University, Library, TownHall, PostOffice, Temple, Cemetery,
+    BusStop, BusDepot, TrainStation, MetroEntrance, TramStop, AirportTerminal, ControlTower, HarbourOffice,
+    // Parks & leisure (10)
+    Playground, SportsCourt, SportsField, Stadium, SwimmingPool, Plaza, Monument, ParkPond, Bandstand, SkatePark,
+    // Garden & lot details (16)
+    Mailbox, GardenBeds, Hedge, PicketFence, Patio, Barbecue, SwingSet, Trampoline,
+    GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
+    // Rural (8)
+    Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
+    // Furniture: seating & tables (10)
+    DiningChair, OfficeChair, Armchair, BarStool, Sofa, SectionalSofa, DiningTable, CoffeeTable, SideTable, Desk,
+    // Furniture: bedroom & storage (9)
+    SingleBed, DoubleBed, BunkBed, Wardrobe, Dresser, Nightstand, Bookshelf, TvStand, DisplayCabinet,
+    // Kitchen & bath (7)
+    KitchenUnits, WallCabinets, KitchenIsland, Toilet, VanitySink, Bathtub, ShowerCubicle,
+    // Lighting & decor (6)
+    FloorLamp, PendantLight, RugAndPouf, Curtains, WallMirror, FloorPlant,
+    // Appliances & electronics (16)
+    Fridge, Cooker, Microwave, Dishwasher, WashingMachine, KettleToaster, CoffeeMachine, Television, PcSetup, Laptop, Speakers, AirConditioner, Radiator, Fan, VendingMachine, ArcadeCabinet,
+    // Room shells (4)
+    RoomShell, OpenPlanRoom, BathroomShell, Hallway,
+    // Vehicles: road cars (8, three designs each)
+    Sedan, Hatchback, Suv, Pickup, Van, SportsCar, Taxi, PoliceCar,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -74,10 +105,22 @@ pub enum Category {
     Infrastructure,
     Props,
     Residential,
+    Commercial,
+    Industrial,
+    Services,
+    Parks,
+    Garden,
+    Rural,
+    Furniture,
+    KitchenBath,
+    Decor,
+    Appliances,
+    Rooms,
+    Vehicles,
 }
 
 impl Category {
-    pub const ALL: [Category; 5] = [Self::Residential, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 17] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Rural, Self::Furniture, Self::KitchenBath, Self::Decor, Self::Appliances, Self::Rooms, Self::Vehicles, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -85,6 +128,18 @@ impl Category {
             Self::Infrastructure => "Bridges & Infrastructure",
             Self::Props => "Doodads & Street Props",
             Self::Residential => "Residential",
+            Self::Commercial => "Commercial & Office",
+            Self::Industrial => "Industrial & Utilities",
+            Self::Services => "Services & Transport",
+            Self::Parks => "Parks & Leisure",
+            Self::Garden => "Garden & Lot",
+            Self::Rural => "Rural & Farm",
+            Self::Furniture => "Furniture",
+            Self::KitchenBath => "Kitchen & Bath",
+            Self::Decor => "Lighting & Decor",
+            Self::Appliances => "Appliances & Electronics",
+            Self::Rooms => "Room Shells",
+            Self::Vehicles => "Vehicles",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -93,7 +148,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 57] = {
+    pub const ALL: [BuildingKind; 199] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -140,19 +195,26 @@ impl BuildingKind {
             Bench,
             Fountain,
             RubblePile,
-            Cottage,
-            Bungalow,
-            Farmhouse,
-            LogCabin,
-            AFrame,
-            Villa,
-            Victorian,
-            ModernBox,
-            RowHouses,
-            Duplex,
-            BeachHut,
-            WalkUp,
-            TowerBlock,
+            Cottage, Bungalow, Farmhouse, LogCabin, AFrame, Villa, Victorian,
+            ModernBox, RowHouses, Duplex, BeachHut, WalkUp, TowerBlock,
+            CornerShop, Cafe, Diner, Restaurant, Bakery, Pharmacy,
+            Supermarket, Mall, Hotel, Motel, Bank, Cinema,
+            CarDealer, DriveThru, LowRiseOffice, MidRiseOffice, OfficeCampus,
+            Factory, TruckDepot, SiloCluster, GrainElevator, Refinery, TankFarm, RecyclingYard,
+            PowerPlant, WindTurbine, SolarFarm, PumpStation, Substation, PowerPylon, CellTower,
+            FireStation, PoliceStation, Clinic, University, Library, TownHall, PostOffice, Temple, Cemetery,
+            BusStop, BusDepot, TrainStation, MetroEntrance, TramStop, AirportTerminal, ControlTower, HarbourOffice,
+            Playground, SportsCourt, SportsField, Stadium, SwimmingPool, Plaza, Monument, ParkPond, Bandstand, SkatePark,
+            Mailbox, GardenBeds, Hedge, PicketFence, Patio, Barbecue, SwingSet, Trampoline,
+            GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
+            Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
+            DiningChair, OfficeChair, Armchair, BarStool, Sofa, SectionalSofa, DiningTable, CoffeeTable, SideTable, Desk,
+            SingleBed, DoubleBed, BunkBed, Wardrobe, Dresser, Nightstand, Bookshelf, TvStand, DisplayCabinet,
+            KitchenUnits, WallCabinets, KitchenIsland, Toilet, VanitySink, Bathtub, ShowerCubicle,
+            FloorLamp, PendantLight, RugAndPouf, Curtains, WallMirror, FloorPlant,
+            Fridge, Cooker, Microwave, Dishwasher, WashingMachine, KettleToaster, CoffeeMachine, Television, PcSetup, Laptop, Speakers, AirConditioner, Radiator, Fan, VendingMachine, ArcadeCabinet,
+            RoomShell, OpenPlanRoom, BathroomShell, Hallway,
+            Sedan, Hatchback, Suv, Pickup, Van, SportsCar, Taxi, PoliceCar,
         ]
     };
 
@@ -163,7 +225,19 @@ impl BuildingKind {
             14..=25 => Category::Medieval,
             26..=30 => Category::Infrastructure,
             31..=43 => Category::Props,
-            _ => Category::Residential,
+            44..=56 => Category::Residential,
+            57..=73 => Category::Commercial,
+            74..=87 => Category::Industrial,
+            88..=104 => Category::Services,
+            105..=114 => Category::Parks,
+            115..=130 => Category::Garden,
+            131..=138 => Category::Rural,
+            139..=157 => Category::Furniture,
+            158..=164 => Category::KitchenBath,
+            165..=170 => Category::Decor,
+            171..=186 => Category::Appliances,
+            187..=190 => Category::Rooms,
+            _ => Category::Vehicles,
         }
     }
 
@@ -173,136 +247,9 @@ impl BuildingKind {
             || matches!(self, ArchBridge | Drawbridge | LanternPost | Cart | MarketStall | BarrelCrates | Fountain)
     }
 
-    pub fn label(self) -> &'static str {
-        use BuildingKind::*;
-        match self {
-            GlassSkyscraper => "Glass Skyscraper",
-            OfficeBlock => "Office Block",
-            BrickTenement => "Brick Tenement",
-            ApartmentBlock => "Apartment Block",
-            Shop => "Shop with Awning",
-            GasStation => "Gas Station",
-            Warehouse => "Warehouse",
-            SawtoothFactory => "Sawtooth Factory",
-            ParkingGarage => "Parking Garage",
-            School => "School",
-            Hospital => "Hospital",
-            ModernChurch => "Modern Church",
-            WaterTower => "Water Tower",
-            Kiosk => "Street Kiosk",
-            CastleKeep => "Castle Keep",
-            GuildHall => "Guild Hall",
-            MarketHall => "Market Hall",
-            Tavern => "Half-Timber Tavern",
-            StoneChapel => "Stone Chapel",
-            Windmill => "Windmill",
-            Watermill => "Watermill",
-            Forge => "Blacksmith Forge",
-            Stable => "Stable",
-            Granary => "Granary",
-            Gatehouse => "Gatehouse",
-            WellHouse => "Well House",
-            ArchBridge => "Stone Arch Bridge",
-            TrussBridge => "Steel Truss Bridge",
-            Drawbridge => "Drawbridge",
-            Quay => "Quay / Pier",
-            Crane => "Crane",
-            Streetlamp => "Streetlamp",
-            LanternPost => "Lantern Post",
-            Car => "Car / Truck",
-            Cart => "Wooden Cart / Wagon",
-            MarketStall => "Market Stall",
-            BarrelCrates => "Barrel / Crate Cluster",
-            Dumpster => "Dumpster",
-            SandbagWall => "Sandbag Wall",
-            TankTrap => "Tank Trap (Czech Hedgehog)",
-            BarbedWire => "Barbed Wire Coil",
-            Bench => "Park Bench",
-            Fountain => "Fountain / Well",
-            RubblePile => "Rubble Pile",
-            Cottage => "Cottage",
-            Bungalow => "Bungalow",
-            Farmhouse => "Farmhouse",
-            LogCabin => "Log Cabin",
-            AFrame => "A-Frame Cabin",
-            Villa => "Villa",
-            Victorian => "Victorian House",
-            ModernBox => "Modern House",
-            RowHouses => "Row Houses / Terrace",
-            Duplex => "Duplex",
-            BeachHut => "Beach Hut",
-            WalkUp => "Walk-Up Apartments",
-            TowerBlock => "Residential Tower",
-        }
-    }
-
-    /// Default (width, length, floors) in metres.
-    pub fn defaults(self) -> (f32, f32, u32) {
-        use BuildingKind::*;
-        match self {
-            GlassSkyscraper => (28.0, 28.0, 40),
-            OfficeBlock => (24.0, 18.0, 8),
-            BrickTenement => (14.0, 12.0, 5),
-            ApartmentBlock => (36.0, 14.0, 9),
-            Shop => (10.0, 9.0, 2),
-            GasStation => (22.0, 16.0, 1),
-            Warehouse => (30.0, 20.0, 1),
-            SawtoothFactory => (36.0, 24.0, 1),
-            ParkingGarage => (32.0, 24.0, 5),
-            School => (40.0, 16.0, 2),
-            Hospital => (40.0, 30.0, 6),
-            ModernChurch => (16.0, 26.0, 1),
-            WaterTower => (8.0, 8.0, 1),
-            Kiosk => (2.6, 2.0, 1),
-            CastleKeep => (16.0, 16.0, 4),
-            GuildHall => (14.0, 20.0, 3),
-            MarketHall => (12.0, 18.0, 2),
-            Tavern => (11.0, 9.0, 2),
-            StoneChapel => (8.0, 14.0, 1),
-            Windmill => (7.0, 7.0, 3),
-            Watermill => (9.0, 8.0, 2),
-            Forge => (8.0, 7.0, 1),
-            Stable => (14.0, 7.0, 1),
-            Granary => (6.0, 6.0, 2),
-            Gatehouse => (14.0, 8.0, 3),
-            WellHouse => (3.6, 3.6, 1),
-            ArchBridge => (8.0, 36.0, 3),
-            TrussBridge => (9.0, 48.0, 1),
-            Drawbridge => (7.0, 20.0, 1),
-            Quay => (8.0, 28.0, 1),
-            Crane => (6.0, 18.0, 8),
-            Streetlamp => (0.6, 0.6, 1),
-            LanternPost => (0.5, 0.5, 1),
-            Car => (1.9, 4.4, 1),
-            Cart => (1.6, 3.2, 1),
-            MarketStall => (3.0, 2.2, 1),
-            BarrelCrates => (2.4, 2.0, 1),
-            Dumpster => (1.9, 1.2, 1),
-            SandbagWall => (0.8, 4.0, 3),
-            TankTrap => (1.8, 1.8, 1),
-            BarbedWire => (0.9, 6.0, 1),
-            Bench => (1.8, 0.6, 1),
-            Fountain => (4.0, 4.0, 1),
-            RubblePile => (10.0, 8.0, 1),
-            Cottage => (8.0, 6.5, 1),
-            Bungalow => (12.0, 9.0, 1),
-            Farmhouse => (12.0, 8.0, 2),
-            LogCabin => (8.0, 6.0, 1),
-            AFrame => (7.0, 9.0, 1),
-            Villa => (18.0, 12.0, 2),
-            Victorian => (10.0, 12.0, 3),
-            ModernBox => (14.0, 10.0, 2),
-            RowHouses => (24.0, 9.0, 2),
-            Duplex => (14.0, 10.0, 2),
-            BeachHut => (2.4, 2.6, 1),
-            WalkUp => (16.0, 14.0, 4),
-            TowerBlock => (24.0, 22.0, 18),
-        }
-    }
-
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (self.category() != Category::Props || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut)
+        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden | Category::Rural | Category::Furniture | Category::KitchenBath | Category::Decor | Category::Appliances | Category::Rooms | Category::Vehicles) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
     }
 }

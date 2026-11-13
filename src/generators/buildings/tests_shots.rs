@@ -17,15 +17,26 @@ use std::sync::atomic::AtomicBool;
 fn prefab_check_renders() {
     let Ok(dir) = std::env::var("PREFAB_SHOTS") else { return };
     let cat = std::env::var("PREFAB_CAT").unwrap_or_default();
-    for k in Category::ALL.into_iter().filter(|c| format!("{c:?}") == cat).flat_map(|c| c.kinds()) {
+    let shots = Category::ALL.into_iter().filter(|c| format!("{c:?}") == cat).flat_map(|c| c.kinds());
+    // Every named design of a kind gets its own shot.
+    for (k, design) in shots.flat_map(|k| (1..=k.designs().len().max(1) as u32).map(move |d| (k, d))) {
         let mut ed = Editor::default();
         ed.create_world(WorldKind::Building(k), Vec3::ZERO);
         let Some(id) = ed.current() else { continue };
+        if !k.designs().is_empty() {
+            let o = &mut ed.scene.objects[id];
+            if let crate::scene::BaseObject::World(crate::generators::WorldGen::Building(p)) = &mut o.base {
+                p.floors = design;
+            }
+            o.evaluate();
+        }
         let b = ed.scene.objects[id].evaluated_mesh.bounds().unwrap();
         let size = (b.max - b.min).length();
         let mut cam = ViewCamera::new(ViewKind::Perspective);
         let target = (b.min + b.max) * 0.5;
-        (cam.target, cam.distance, cam.yaw, cam.pitch) = (target, size * 1.15, (62f32).to_radians(), (-22f32).to_radians());
+        let pitch: f32 = std::env::var("PREFAB_PITCH").ok().and_then(|s| s.parse().ok()).unwrap_or(-22.0);
+        let yaw: f32 = std::env::var("PREFAB_YAW").ok().and_then(|s| s.parse().ok()).unwrap_or(62.0);
+        (cam.target, cam.distance, cam.yaw, cam.pitch) = (target, size * 1.15, yaw.to_radians(), pitch.to_radians());
         let cfg = RenderSettings { width: 480, height: 360, aa: 2, ..Default::default() };
         let rs = RenderScene::build(&ed.scene, cam, true);
         let px = raytrace_region(&rs, &cfg, [0, 0, cfg.width, cfg.height], &AtomicBool::new(false), |_, _| {});
@@ -34,6 +45,6 @@ fn prefab_check_renders() {
             let c = p.display.truncate().clamp(Vec3::ZERO, Vec3::ONE) * 255.0;
             img.put_pixel(i as u32 % cfg.width, i as u32 / cfg.width, image::Rgb([c.x as u8, c.y as u8, c.z as u8]));
         }
-        img.save(format!("{dir}/{:02}_{k:?}.png", k as usize)).expect("write the check render");
+        img.save(format!("{dir}/{:02}_{design}_{k:?}.png", k as usize)).expect("write the check render");
     }
 }
