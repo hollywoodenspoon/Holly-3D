@@ -60,7 +60,7 @@ fn every_fallback_reason_is_listed_once() {
     rs.translucent = true;
     rs.procedural = Some(Default::default());
     let r = reasons(&rs);
-    assert_eq!(r, ["HDRI / procedural sky environment", "see-through (opacity) surfaces"]);
+    assert_eq!(r, ["see-through (opacity) surfaces"], "the sky renders on the GPU now");
     assert_eq!(super::pack::unsupported(&rs), Some(r[0]));
     let f = Features::of(&rs);
     assert_eq!(f.0, Features::ENV_MAP | Features::OPACITY);

@@ -1791,3 +1791,22 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - reasons, joining, constants, batch sizing and the device label.
   - On lavapipe here: energy GPU 57.11 vs CPU 57.21, and 27.28 vs 27.21 with fog.
 - **Not done yet:** the hooks are empty, so the GPU still falls back for the same scenes as before. Sky/HDRI and textures come in PR 1, Principled in PR 2, volumes in PR 3, area lights / IES / opacity / catcher / toon in PR 4. Speed on a real card (her RX 9060 XT) is untested; only software Vulkan runs here.
+
+## 57. GPU kernel parity, PR 1a: sky and HDRI on the GPU
+- **Scenes with the dynamic sky or an HDRI no longer fall back to the CPU** (that reason is gone from the fallback list).
+- `gpu_pathtrace/envmap.rs`:
+  - an HDRI uploads as-is, keeping its rotation and strength;
+  - the procedural sky (Earth or Space, with clouds) is baked into an equirect image on all cores, using the same mapping as `HdrImage::sample`;
+  - both are cached, so re-renders with the same sky skip the bake.
+- **Kernel:** a new binding 8 (`envmap`) and a `Params.env` vec4. `env_sample` is the same bilinear lookup as the CPU. Under `FEAT_ENV_MAP`, paths that leave the scene see the image plus the skylight term, exactly like `Tracer::environment`. Camera misses still use the CPU's exact backdrop, so stars and the sun disc stay crisp on screen.
+- **Render tab → GPU Sky Bake:** 512 / 1024 (default) / 2048 / 4096 wide, saved in the render settings.
+- **Tests (`tests_env.rs`):**
+  - texel centres map back to their own pixel;
+  - the bake equals the sky at texel centres;
+  - sky and HDRI scenes switch `FEAT_ENV_MAP` on and don't fall back;
+  - a repeated bake hits the cache;
+  - GPU vs CPU parity under the procedural sky (energy 56.23 vs 56.14) and under a rotated, boosted HDRI (67.44 vs 67.49).
+- **Not done yet:**
+  - **No sky importance sampling (the "pick table"):** the CPU path tracer doesn't sample the sky directly either, so adding it to only one would break the comparison. It's a later noise improvement for both tracers.
+  - **Fine detail in reflections:** stars and the sun disc are softened by the bake size.
+  - **Textures and map baking (PR 1b)** are next.

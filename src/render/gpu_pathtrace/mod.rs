@@ -6,6 +6,7 @@
 //! CI, no driver) or for features only the CPU has, rendering falls back to
 //! the CPU path tracer.
 
+pub mod envmap;
 pub mod features;
 pub mod pack;
 
@@ -110,7 +111,7 @@ fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String
     Ok(bytes.as_chunks::<16>().0.iter().map(|c| Vec4::from_array(std::array::from_fn(|i| f32::from_le_bytes([c[4 * i], c[4 * i + 1], c[4 * i + 2], c[4 * i + 3]])))).collect())
 }
 
-fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, p: &pack::Packed) -> Vec<u8> {
+fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, p: &pack::Packed, env: &envmap::EnvMap) -> Vec<u8> {
     let ps = &cfg.path;
     let inv = rs.camera.view_proj(cfg.width as f32 / cfg.height as f32).inverse();
     let mut b = pack::Buf::default();
@@ -126,6 +127,7 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     b.v3(rs.ambient, 0.0);
     let (fc, fd) = rs.fog.unwrap_or_default();
     b.v3(fc, fd);
+    b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
     b.0
 }
 
@@ -143,16 +145,17 @@ pub fn render(
     let (rw, rh) = ((x1 - x0) as usize, (y1 - y0) as usize);
     let n = rw * rh;
     let p = pack::pack(rs);
+    let env = envmap::env_map(rs, cfg.path.sky_bake).unwrap_or_else(envmap::EnvMap::none);
     let d = &g.device;
     let size = (n * 16) as u64;
     let accum = storage(d, "accum", &vec![0; n * 16], true);
     let stats = storage(d, "stats", &vec![0; n * 16], true);
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
-    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 4 * 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-    let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false)];
+    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 5 * 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+    let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false)];
     let pipeline = g.pipeline(Features::of(rs));
     let layout = pipeline.get_bind_group_layout(0);
-    let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf]
+    let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf, &bufs[4]]
         .iter()
         .enumerate()
         .map(|(i, b)| wgpu::BindGroupEntry { binding: i as u32, resource: b.as_entire_binding() })
@@ -167,7 +170,7 @@ pub fn render(
         while have < target {
             let spp = (target - have).min(batch);
             let t0 = Instant::now();
-            g.queue.write_buffer(&uniform, 0, &params(rs, cfg, region, spp, seed, &p));
+            g.queue.write_buffer(&uniform, 0, &params(rs, cfg, region, spp, seed, &p, &env));
             let mut enc = d.create_command_encoder(&Default::default());
             {
                 let mut cp = enc.begin_compute_pass(&Default::default());
@@ -223,3 +226,5 @@ mod tests;
 
 #[cfg(test)]
 mod tests_features;
+#[cfg(test)]
+mod tests_env;

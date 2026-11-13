@@ -85,6 +85,8 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= u.dims.z || id.y >= u.dims.w) { return; }
+    // Keeps the env binding in every variant's layout (the host always binds it).
+    _ = envmap[0];
     let i = id.y * u.dims.z + id.x;
     if (done[i] != 0u) { return; }
     let x = u.origin.x + id.x;

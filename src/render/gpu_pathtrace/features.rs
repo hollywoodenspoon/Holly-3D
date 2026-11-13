@@ -31,7 +31,7 @@ impl Features {
         set(rs.materials.iter().any(|m| m.principled.active()), Self::PRINCIPLED);
         set(rs.materials.iter().any(|m| m.principled.has_sss()), Self::SSS);
         set(rs.volume.is_some(), Self::VOLUME);
-        set(rs.hdri.is_some() || rs.procedural.is_some(), Self::ENV_MAP);
+        set(has_env_map(rs), Self::ENV_MAP);
         set(rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))), Self::AREA);
         set(rs.translucent, Self::OPACITY);
         Self(f)
@@ -43,6 +43,12 @@ impl Features {
     }
 }
 
+/// The scene shows a procedural sky or a loaded HDRI (what the CPU's
+/// `Tracer::environment` looks up instead of the flat colours).
+pub fn has_env_map(rs: &RenderScene) -> bool {
+    rs.procedural.is_some() || rs.hdri.as_ref().is_some_and(|h| h.image.is_some())
+}
+
 fn mapped(m: &crate::materials::Material) -> bool {
     let maps = m.maps.iter().any(|s| s.enabled && s.node.is_some()) || !m.slate_nodes.is_empty();
     maps || m.proc.pattern != Pattern::None || m.paint.is_some() || m.projection.on()
@@ -50,8 +56,7 @@ fn mapped(m: &crate::materials::Material) -> bool {
 
 /// Everything that still sends a scene to the CPU tracer, in the order
 /// [`reasons`] lists it (the Render tab's tooltip shows this list).
-pub const CPU_ONLY: [&str; 10] = [
-    "HDRI / procedural sky environment",
+pub const CPU_ONLY: [&str; 9] = [
     "volumetric godrays / mist",
     "area lights",
     "IES light profiles",
@@ -73,16 +78,15 @@ pub fn reasons(rs: &RenderScene) -> Vec<&'static str> {
         }
     };
     let mats = &rs.materials;
-    add(rs.hdri.is_some() || rs.procedural.is_some(), CPU_ONLY[0]);
-    add(rs.volume.is_some(), CPU_ONLY[1]);
-    add(rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))), CPU_ONLY[2]);
-    add(rs.lights.iter().any(|l| l.ies != crate::render::IesProfile::None), CPU_ONLY[3]);
-    add(mats.iter().any(|m| m.shadow_catcher), CPU_ONLY[4]);
-    add(rs.translucent, CPU_ONLY[5]);
-    add(mats.iter().any(|m| m.model == ShadingModel::Toon), CPU_ONLY[6]);
-    add(mats.iter().any(mapped), CPU_ONLY[7]);
-    add(mats.iter().any(|m| m.principled.active()), CPU_ONLY[8]);
-    add(mats.iter().any(|m| m.decoupled()), CPU_ONLY[9]);
+    add(rs.volume.is_some(), CPU_ONLY[0]);
+    add(rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))), CPU_ONLY[1]);
+    add(rs.lights.iter().any(|l| l.ies != crate::render::IesProfile::None), CPU_ONLY[2]);
+    add(mats.iter().any(|m| m.shadow_catcher), CPU_ONLY[3]);
+    add(rs.translucent, CPU_ONLY[4]);
+    add(mats.iter().any(|m| m.model == ShadingModel::Toon), CPU_ONLY[5]);
+    add(mats.iter().any(mapped), CPU_ONLY[6]);
+    add(mats.iter().any(|m| m.principled.active()), CPU_ONLY[7]);
+    add(mats.iter().any(|m| m.decoupled()), CPU_ONLY[8]);
     out
 }
 

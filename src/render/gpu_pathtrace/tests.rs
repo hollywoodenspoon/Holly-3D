@@ -15,7 +15,7 @@ use crate::viewport::camera::{ViewCamera, ViewKind};
 use bevy::math::Vec3;
 use std::sync::atomic::AtomicBool;
 
-fn add(s: &mut Scene, kind: PrimitiveKind, at: Vec3, scale: Vec3, mat: Material) {
+pub(super) fn add(s: &mut Scene, kind: PrimitiveKind, at: Vec3, scale: Vec3, mat: Material) {
     let id = s.add(BaseObject::Primitive(Primitive::default_of(kind)), at);
     s.objects[id].transform.scale = scale;
     s.objects[id].material = Some(s.materials.mats.insert(mat));
@@ -27,7 +27,7 @@ fn scene() -> RenderScene {
     scene_with(|_| {})
 }
 
-fn scene_with(extra: impl FnOnce(&mut Scene)) -> RenderScene {
+pub(super) fn scene_with(extra: impl FnOnce(&mut Scene)) -> RenderScene {
     let mut s = Scene::default();
     (s.environment.ambient_level, s.environment.background) = (0.0, [0.2, 0.25, 0.3]);
     add(&mut s, PrimitiveKind::Plane, Vec3::ZERO, Vec3::splat(3.0), Material { base_color: [0.8; 3], roughness: 0.9, ..Material::named("Floor") });
@@ -60,8 +60,8 @@ fn block_means(px: &[Pixel]) -> Vec<Vec3> {
 /// How far the GPU image is from the CPU one: mean absolute error of the
 /// 6x6 block means, and the mean signed difference per channel (a bias
 /// shows up there even when noise hides it in single pixels).
-struct Diff {
-    mean_err: f32,
+pub(super) struct Diff {
+    pub mean_err: f32,
     bias: Vec3,
     energy: (f32, f32),
 }
@@ -75,7 +75,7 @@ fn diff(gpu: &[Pixel], cpu: &[Pixel]) -> Diff {
 }
 
 /// Renders `rs` on both tracers and checks they match (`None` = no adapter).
-fn parity(name: &str, rs: &RenderScene) -> Option<Diff> {
+pub(super) fn parity(name: &str, rs: &RenderScene) -> Option<Diff> {
     let g = match gpu() {
         Ok(g) => g,
         Err(e) if std::env::var_os("MINIMAX_REQUIRE_GPU").is_none() => {

@@ -20,6 +20,7 @@ struct Params {
     sky: vec4<f32>,
     ambient: vec4<f32>,
     fog: vec4<f32>,      // rgb, density (0 = none)
+    env: vec4<f32>,      // environment image w, h, turn (0..1), strength
 }
 
 struct Tri {
@@ -51,6 +52,7 @@ struct Light {
 @group(0) @binding(5) var<storage, read_write> accum: array<vec4<f32>>;
 @group(0) @binding(6) var<storage, read_write> stats: array<vec4<f32>>;
 @group(0) @binding(7) var<storage, read> done: array<u32>;
+@group(0) @binding(8) var<storage, read> envmap: array<vec4<f32>>; // equirect rgb rows
 
 const PI: f32 = 3.14159265;
 const F_ORTHO: u32 = 1u;
