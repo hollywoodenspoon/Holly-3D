@@ -137,11 +137,12 @@ fn scenes_the_gpu_cannot_draw_fall_back_to_the_cpu() {
     let mut rs = scene_with(|s| {
         s.add_light(Light::new(LightKind::DiscArea), None, Vec3::new(0.0, 0.0, 2.0), Vec3::ZERO);
     });
-    rs.translucent = true;
-    assert_eq!(super::features::reasons(&rs), ["area lights", "see-through (opacity) surfaces"]);
+    // Area lights run on the GPU now; catchers and opacity still need the CPU.
+    (rs.translucent, rs.materials[0].shadow_catcher) = (true, true);
+    assert_eq!(super::features::reasons(&rs), ["Shadow & Reflection Catcher surfaces", "see-through (opacity) surfaces"]);
     let mut r = settings(ComputeDevice::Gpu);
     r.path.samples = 2;
     let (px, label) = pathtrace::run(&rs, &r, [0, 0, 24, 24], &AtomicBool::new(false), |_, _| {});
     assert_eq!(px.len(), 24 * 24);
-    assert_eq!(label, "CPU (area lights and see-through (opacity) surfaces need the CPU tracer)");
+    assert_eq!(label, "CPU (Shadow & Reflection Catcher surfaces and see-through (opacity) surfaces need the CPU tracer)");
 }

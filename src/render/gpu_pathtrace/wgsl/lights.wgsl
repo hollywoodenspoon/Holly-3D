@@ -6,55 +6,64 @@ fn ramp(d: f32, a: f32, b: f32) -> f32 {
 }
 
 // Direction to, distance to and falloff of light `l` at `p` (range window,
-// near/far attenuation, spot cone); shared by surfaces and the volume march.
+// near/far attenuation, spot cone, IES); shared by surfaces and the volume
+// march. Area lights pick one point on their facing side per call.
 struct Inc { dir: vec3<f32>, dist: f32, k: f32 }
 
-fn incident(l: Light, p: vec3<f32>) -> Inc {
-    if (l.pos.w > 1.5) { return Inc(-l.dir.xyz, 1e30, 1.0); }
-    let to = l.pos.xyz - p;
-    let dd = max(length(to), 1e-4);
-    let dir = to / dd;
+fn window(l: Light, dd: f32) -> f32 {
     let w = clamp(1.0 - pow(dd / max(l.misc.x, 1e-3), 4.0), 0.0, 1.0);
     var at = 1.0;
     if (l.atten.x >= 0.0) { at *= ramp(dd, l.atten.x, l.atten.y); }
     if (l.atten.z >= 0.0) { at *= 1.0 - ramp(dd, l.atten.z, l.atten.w); }
-    var k = w * w * at / (dd * dd);
+    return w * w * at;
+}
+
+fn incident(l: Light, p: vec3<f32>) -> Inc {
+    if (l.pos.w > 2.5) { return area_incident(l, p); }
+    if (l.pos.w > 1.5) { return Inc(-l.dir.xyz, 1e30, 1.0); }
+    let to = l.pos.xyz - p;
+    let dd = max(length(to), 1e-4);
+    let dir = to / dd;
+    var k = window(l, dd) / (dd * dd);
     if (l.pos.w > 0.5) {
         let cc = dot(-dir, l.dir.xyz);
         let t = clamp((cc - l.rad.w) / max(l.dir.w - l.rad.w, 1e-4), 0.0, 1.0);
         k *= t * t * (3.0 - 2.0 * t);
+        k *= ies(u32(l.area.z), cc);
     }
     return Inc(dir, dd, k);
 }
 
+// Shadow factor of light `l` towards `dir` from `o` (soft shadows jitter
+// the aim; the shadow colour tints what is blocked).
+fn shadow(l: Light, p: vec3<f32>, o: vec3<f32>, dir: vec3<f32>, dist: f32) -> vec3<f32> {
+    if ((u.counts.w & F_SHADOWS) == 0u || l.misc.y <= 0.5) { return vec3<f32>(1.0); }
+    var sd = dir;
+    var len = dist;
+    let soft = l.misc.z;
+    if (soft > 0.0) {
+        if (dist < 1e29) {
+            let aim = p + dir * dist + ball() * soft;
+            sd = normalize(aim - o);
+            len = length(aim - o);
+        } else {
+            sd = normalize(dir + ball() * soft * 0.05);
+        }
+    }
+    let vis = select(1.0, 0.0, occluded(o, sd, min(len - u.background.w, 1e30)));
+    return l.tint.xyz + (1.0 - l.tint.xyz) * vis;
+}
+
+// Point, spot and directional lights (area lights are in `area_nee`).
 fn punctual(p: vec3<f32>, ng: vec3<f32>, s: Surf, v: vec3<f32>) -> vec3<f32> {
     let o = p + ng * u.background.w;
     var c = vec3<f32>(0.0);
     for (var i = 0u; i < u.counts.x; i++) {
         let l = lights[i];
+        if (l.pos.w > 2.5) { continue; }
         let inc = incident(l, p);
-        let dir = inc.dir;
-        let dist = inc.dist;
-        let k = inc.k;
-        if (k <= 0.0 || dot(s.n, dir) <= 0.0) { continue; }
-        var rad = l.rad.xyz * k;
-        if ((u.counts.w & F_SHADOWS) != 0u && l.misc.y > 0.5) {
-            var sd = dir;
-            var len = dist;
-            let soft = l.misc.z;
-            if (soft > 0.0) {
-                if (dist < 1e29) {
-                    let aim = p + dir * dist + ball() * soft;
-                    sd = normalize(aim - o);
-                    len = length(aim - o);
-                } else {
-                    sd = normalize(dir + ball() * soft * 0.05);
-                }
-            }
-            let vis = select(1.0, 0.0, occluded(o, sd, min(len - u.background.w, 1e30)));
-            rad *= l.tint.xyz + (1.0 - l.tint.xyz) * vis;
-        }
-        c += bsdf_eval(s, v, dir).f * rad;
+        if (inc.k <= 0.0 || dot(s.n, inc.dir) <= 0.0) { continue; }
+        c += bsdf_eval(s, v, inc.dir).f * l.rad.xyz * inc.k * shadow(l, p, o, inc.dir, inc.dist);
     }
     return c;
 }
@@ -93,12 +102,4 @@ fn emitter_nee(p: vec3<f32>, ng: vec3<f32>, self_tri: u32, s: Surf, v: vec3<f32>
     if (max(ev.f.x, max(ev.f.y, ev.f.z)) <= 0.0) { return vec3<f32>(0.0); }
     if ((u.counts.w & F_SHADOWS) != 0u && occluded(o, dir, sqrt(d2) - u.background.w * 4.0)) { return vec3<f32>(0.0); }
     return ev.f * t.emit.xyz * power(light_pdf, ev.pdf) / light_pdf;
-}
-
-// Hook for area lights and IES profiles (PR 4): no contribution until then.
-fn area_nee(p: vec3<f32>, ng: vec3<f32>, s: Surf, v: vec3<f32>) -> vec3<f32> {
-    if (FEAT_AREA) {
-        // PR 4: rect / disc / sphere / tube sampling.
-    }
-    return vec3<f32>(0.0);
 }

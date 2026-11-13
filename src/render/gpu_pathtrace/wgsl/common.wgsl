@@ -42,12 +42,15 @@ struct Tri {
 struct Node { lo: vec4<f32>, hi: vec4<f32> }
 
 struct Light {
-    pos: vec4<f32>,   // position, kind (0 point, 1 spot, 2 directional)
-    dir: vec4<f32>,   // axis / travel direction, cos inner
+    pos: vec4<f32>,   // position, kind (0 point, 1 spot, 2 directional, 3 area)
+    dir: vec4<f32>,   // axis / travel direction (area: emission axis), cos inner
     rad: vec4<f32>,   // radiance, cos outer
     atten: vec4<f32>, // near a, b, far a, b (negative = off)
     misc: vec4<f32>,  // range, shadows, softness
     tint: vec4<f32>,  // shadow tint
+    au: vec4<f32>,    // area: local X axis, half width (Rect) or radius
+    av: vec4<f32>,    // area: local Y axis, half length (Rect, Tube) or radius
+    area: vec4<f32>,  // area shape (0 rect, 1 disc, 2 sphere, 3 tube), visible to camera, IES profile, samples
 }
 
 @group(0) @binding(0) var<uniform> u: Params;

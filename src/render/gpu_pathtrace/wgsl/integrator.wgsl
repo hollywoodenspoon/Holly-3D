@@ -28,6 +28,14 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             let b0 = beta;
             l += b0 * volume_segment(o, d, h.t, &beta);
         }
+        if (FEAT_AREA && camera) {
+            let a = area_seen(o, d, h.t);
+            if (a.w > 0.5) {
+                l += beta * a.xyz;
+                alpha = 1.0;
+                break;
+            }
+        }
         if (h.tri == 0xffffffffu) {
             if (!camera) { l += beta * environment(d); }
             break;
