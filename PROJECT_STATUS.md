@@ -1888,3 +1888,24 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Random-walk exits ignore opacity:** the CPU ignores it too, but once see-through surfaces come to the GPU (PR 4), the walk should match whatever the CPU does then.
   - **Absorption needs a transmissive surface:** the GPU, like the CPU, applies it only when leaving one. Volumes (PR 3) are separate.
   - **Per-pixel parity at 24 px is coarse for small highlights.** The per-lobe test carries the exact check.
+
+## 60. GPU kernel parity, PR 3: godrays and height mist on the GPU
+- **Volumetric godrays / mist no longer send the scene to the CPU.** The CPU-only list is down to 7 entries.
+- **Kernel (`wgsl/volume.wgsl`):** a port of `volumetrics.rs`:
+  - the same march as the CPU: one jittered sample per step, `steps` steps over the segment, and misses march out to 6× the scene radius past the eye;
+  - height falloff above the mist base, and FBM wisps drifted by the wind. The value noise hashes cells exactly like `sky_noise.rs`, so the wisps land in the same places;
+  - Henyey-Greenstein single scattering of every punctual light, with a shadow ray when shadows are on;
+  - energy-conserving step weights and Beer-Lambert transmittance on the path throughput.
+  
+  It runs before the surface hit and on misses too, like the CPU integrator.
+- **Shared light falloff:** `incident()` in `lights.wgsl` (range window, near/far attenuation, spot cone) now serves both surface lighting and the march.
+- **Parameters:** five new vec4s at the end of `Params` (`vol0..vol4`): albedo and density; base, falloff, wisps and 1/scale; wind, g and intensity; eye and reach; steps. They are zeros without mist.
+- **Tests (`tests_volume.rs`):**
+  - the kernel's wisp noise and phase function match the CPU at 256 points, including negative cells;
+  - a low sun behind a wall with a gap (11.0 vs 11.0 energy);
+  - a spot cone and an omni in patchy, drifting, back-scattering wisps (10.6 vs 10.5).
+  - Mutation checks catch: no shadow rays in the mist, g forced to 0, wisps off, and transmittance not applied.
+- **Not done yet:**
+  - **Area lights don't light the mist on the GPU** (they still send the scene to the CPU, PR 4).
+  - **Shadow rays in the mist ignore see-through surfaces** (opacity is PR 4); the CPU lets light through them.
+  - **Mist uses the plain shadow test:** no soft shadows and no shadow colour, the same as the CPU march.

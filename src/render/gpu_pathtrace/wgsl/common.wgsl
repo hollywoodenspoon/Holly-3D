@@ -22,6 +22,11 @@ struct Params {
     fog: vec4<f32>,      // rgb, density (0 = none)
     env: vec4<f32>,      // environment image w, h, turn (0..1), strength
     tex: vec4<u32>,      // texture table word index, texture count, material records word index, count
+    vol0: vec4<f32>,     // godrays / mist (layout in volume.wgsl)
+    vol1: vec4<f32>,
+    vol2: vec4<f32>,
+    vol3: vec4<f32>,
+    vol4: vec4<f32>,
 }
 
 struct Tri {

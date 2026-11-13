@@ -24,6 +24,10 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
     let eps = u.background.w;
     for (var guard = 0; guard < 64; guard++) {
         let h = closest(o, d, 1e30);
+        if (FEAT_VOLUME) {
+            let b0 = beta;
+            l += b0 * volume_segment(o, d, h.t, &beta);
+        }
         if (h.tri == 0xffffffffu) {
             if (!camera) { l += beta * environment(d); }
             break;
@@ -54,7 +58,6 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             // Preserve Texture Appearance: the camera sees the surface's own colour.
             if (rec != NO_REC && auxf(rec + 11u) >= 0.0) { emit = base * auxf(rec + 11u); }
         }
-        l += beta * volume_segment(o, d, h.t, &beta);
         if (u.fog.w > 0.0) {
             let f = exp(-u.fog.w * h.t);
             l += beta * u.fog.xyz * (1.0 - f);
