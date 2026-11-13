@@ -35,8 +35,11 @@ fn every_feature_mask_builds_a_gpu_pipeline() {
     for mask in 0..Features::COUNT {
         let layout = g.pipeline(Features(mask)).get_bind_group_layout(0);
         drop(layout);
+        // Cached once, then freed: holding every mask's driver code at once
+        // takes over 10 GB on a software rasteriser (other tests rebuild theirs).
+        let cached = g.pipelines.lock().unwrap().remove(&mask);
+        assert!(cached.is_some(), "mask {mask:#b} is cached");
     }
-    assert_eq!(g.pipelines.lock().unwrap().len(), Features::COUNT as usize, "one cached pipeline per mask");
 }
 
 #[test]
