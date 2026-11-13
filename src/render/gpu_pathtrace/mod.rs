@@ -272,9 +272,11 @@ pub fn render(
 fn primary(t: &Tracer, cfg: &RenderSettings, x: u32, y: u32) -> Accum {
     let ndc = Vec2::new((x as f32 + 0.5) / cfg.width as f32 * 2.0 - 1.0, 1.0 - (y as f32 + 0.5) / cfg.height as f32 * 2.0);
     let ray = t.rs.camera.ray(ndc, cfg.width as f32 / cfg.height as f32);
-    // Cut-out holes are skipped, as the CPU tracer's G-buffer does.
+    // As the CPU tracer's G-buffer: Cut-out holes are skipped and an area
+    // light the camera sees in front of the surface leaves it empty.
     let (o, hit) = t.past_holes(ray.origin, ray.dir);
-    let g = hit.map_or(GSample::EMPTY, |h| {
+    let seen = t.area_seen(o, ray.dir, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).is_some();
+    let g = hit.filter(|_| !seen).map_or(GSample::EMPTY, |h| {
         let tri = &t.rs.bvh.tris[h.tri];
         GSample { obj: tri.obj, mat: tri.mat as u32, depth: o.distance(ray.origin) + h.t, normal: t.interp(&h, o, ray.dir).n }
     });
