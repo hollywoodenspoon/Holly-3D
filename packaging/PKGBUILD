@@ -40,7 +40,7 @@ source=("$pkgname::git+file://$_src"
         'ilex.svg'
         'ilex.xml')
 sha256sums=('SKIP'
-            '017efa7d960260caf360547b4aaf501dbc38d1e991af8680dba0c7fd1e60472d'
+            '74fa857bc09e6862a275dab3c3e9cdc8497e94721b7d3a7976077cb42c63cc31'
             'ed600723044f3856d25ffbd6c074acc2fb42319c591f268f4236d14252b15db7'
             '73834c1b07655501f3ab1dfddb8ad12f1ad5c4623812d342e238ddb03c702034')
 
