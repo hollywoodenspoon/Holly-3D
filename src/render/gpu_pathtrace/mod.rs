@@ -42,6 +42,7 @@ pub fn source() -> String {
         include_str!("wgsl/common.wgsl"),
         include_str!("wgsl/bvh.wgsl"),
         include_str!("wgsl/bsdf.wgsl"),
+        include_str!("wgsl/principled.wgsl"),
         include_str!("wgsl/env.wgsl"),
         include_str!("wgsl/lights.wgsl"),
         include_str!("wgsl/volume.wgsl"),
@@ -132,7 +133,7 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     let (fc, fd) = rs.fog.unwrap_or_default();
     b.v3(fc, fd);
     b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
-    u4(&mut b, [tex.table, tex.count, 0, 0]);
+    u4(&mut b, [tex.table, tex.count, tex.records, tex.rec_count]);
     b.0
 }
 
@@ -239,5 +240,9 @@ mod tests;
 mod tests_features;
 #[cfg(test)]
 mod tests_env;
+#[cfg(test)]
+mod tests_principled;
+#[cfg(test)]
+mod tests_lobes;
 #[cfg(test)]
 mod tests_tex;

@@ -57,7 +57,7 @@ pub fn mapped(m: &crate::materials::Material) -> bool {
 
 /// Everything that still sends a scene to the CPU tracer, in the order
 /// [`reasons`] lists it (the Render tab's tooltip shows this list).
-pub const CPU_ONLY: [&str; 10] = [
+pub const CPU_ONLY: [&str; 8] = [
     "volumetric godrays / mist",
     "area lights",
     "IES light profiles",
@@ -65,8 +65,6 @@ pub const CPU_ONLY: [&str; 10] = [
     "see-through (opacity) surfaces",
     "cel / toon materials",
     "maps the GPU cannot bake (3D procedural, or triplanar with paint or non-repeating maps)",
-    "Principled SSS / clearcoat / sheen / anisotropy / dispersion",
-    "Preserve Texture Appearance materials",
     "more than 1.5 GB of baked textures",
 ];
 
@@ -87,9 +85,7 @@ pub fn reasons(rs: &RenderScene) -> Vec<&'static str> {
     add(rs.translucent, CPU_ONLY[4]);
     add(mats.iter().any(|m| m.model == ShadingModel::Toon), CPU_ONLY[5]);
     add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some()), CPU_ONLY[6]);
-    add(mats.iter().any(|m| m.principled.active()), CPU_ONLY[7]);
-    add(mats.iter().any(|m| m.decoupled()), CPU_ONLY[8]);
-    add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[9]);
+    add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[7]);
     out
 }
 

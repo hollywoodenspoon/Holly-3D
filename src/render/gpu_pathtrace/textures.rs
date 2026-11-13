@@ -1,12 +1,15 @@
 //! The GPU path tracer's texture store (binding 9, one `u32` array):
 //!
 //! * per triangle, 16 words: UVs of the three corners (6 f32), the
-//!   triangle's texture (`u32`, [`NONE`] = untextured), the object's
-//!   rotation quaternion and origin (World / Triplanar projection space);
+//!   triangle's texture (`u32`, [`NONE`] = untextured), its material
+//!   record (`u32`, [`NONE`] = none), the object's rotation quaternion and
+//!   origin (World / Triplanar projection space);
 //! * at `table`, 12 words per texture: texel offset, width, height, flags
 //!   (1 wrap, 2 triplanar, 4 tilts normals), UV origin and span, triplanar
 //!   scale and blend exponent;
-//! * then the baked texels ([`super::bake`]).
+//! * then the baked texels ([`super::bake`]);
+//! * at `records`, [`REC_WORDS`] per material with Principled lobes or
+//!   Preserve Texture Appearance ([`record`]).
 
 use super::bake::{self, Space};
 use crate::materials::Material;
@@ -16,17 +19,21 @@ use bevy::math::Vec2;
 pub const NONE: u32 = u32::MAX;
 pub const TRI_WORDS: usize = 16;
 pub const TEX_WORDS: usize = 12;
+pub const REC_WORDS: usize = 16;
 
 pub struct Store {
     pub words: Vec<u32>,
     /// Word index of the texture table.
     pub table: u32,
     pub count: u32,
+    /// Word index of the material records, and how many there are.
+    pub records: u32,
+    pub rec_count: u32,
 }
 
 impl Store {
     pub fn empty() -> Self {
-        Self { words: vec![0; 4], table: 0, count: 0 }
+        Self { words: vec![0; 4], table: 0, count: 0, records: 0, rec_count: 0 }
     }
     pub fn bytes(&self) -> Vec<u8> {
         self.words.iter().flat_map(|w| w.to_le_bytes()).collect()
@@ -36,6 +43,36 @@ impl Store {
 /// Materials the GPU reads from the store: every mapped one.
 pub fn textured(m: &Material) -> bool {
     super::features::mapped(m)
+}
+
+/// Materials with a record: Principled lobes, or a camera glow of their own.
+pub fn has_record(m: &Material) -> bool {
+    m.principled.active() || m.decoupled()
+}
+
+/// A material's record: anisotropy, rotation (deg), clearcoat, clearcoat
+/// roughness | sheen, sheen tint, SSS weight, Abbe number | Beer
+/// absorption exponent per unit length (rgb), camera glow brightness (< 0
+/// = off) | random-walk extinction and single-scatter albedo (rgb).
+pub fn record(m: &Material) -> [f32; REC_WORDS] {
+    use crate::materials::principled::Principled;
+    let p = &m.principled;
+    let ab = if p.absorption_density > 0.0 {
+        let c = crate::materials::shading::lin3(p.absorption_color).max(bevy::math::Vec3::splat(1e-3));
+        bevy::math::Vec3::new(c.x.ln(), c.y.ln(), c.z.ln()) * p.absorption_density
+    } else {
+        bevy::math::Vec3::ZERO
+    };
+    let glow = if m.decoupled() { m.direct_camera_brightness.clamp(0.0, 2.0) } else { -1.0 };
+    let col = crate::materials::shading::lin3(p.sss_color);
+    let alb = col.to_array().map(Principled::walk_albedo);
+    let (aniso, cc, sheen, sss) = (p.anisotropy.clamp(0.0, 1.0), p.clearcoat.clamp(0.0, 1.0), p.sheen.clamp(0.0, 1.0), p.sss_weight.clamp(0.0, 1.0));
+    #[rustfmt::skip]
+    let r = [aniso, p.aniso_rotation, cc, p.clearcoat_roughness.clamp(0.0, 1.0),
+        sheen, p.sheen_tint.clamp(0.0, 1.0), sss, p.abbe.max(0.0),
+        ab.x, ab.y, ab.z, glow,
+        1.0 / p.mean_free_path(), alb[0], alb[1], alb[2]];
+    r
 }
 
 /// Total store size for the scene's mapped materials (bytes).
@@ -76,7 +113,15 @@ fn space(rs: &RenderScene, mi: usize) -> Space {
 
 pub fn build(rs: &RenderScene) -> Store {
     let mats = used(rs);
-    if mats.is_empty() {
+    let mut rec = vec![NONE; rs.materials.len()];
+    let mut recs = Vec::new();
+    for t in &rs.bvh.tris {
+        if rec[t.mat] == NONE && has_record(&rs.materials[t.mat]) {
+            rec[t.mat] = recs.len() as u32;
+            recs.push(t.mat);
+        }
+    }
+    if mats.is_empty() && recs.is_empty() {
         return Store::empty();
     }
     let mut id = vec![NONE; rs.materials.len()];
@@ -96,7 +141,7 @@ pub fn build(rs: &RenderScene) -> Store {
     for t in &rs.bvh.tris {
         let (rot, origin) = rs.frames.get(t.obj as usize).copied().unwrap_or_default();
         w.extend(t.uv.iter().flat_map(|uv| [f(uv.x), f(uv.y)]));
-        w.extend([id[t.mat], 0]);
+        w.extend([id[t.mat], rec[t.mat]]);
         w.extend(rot.to_array().map(f));
         w.extend([f(origin.x), f(origin.y), f(origin.z), 0]);
     }
@@ -112,5 +157,9 @@ pub fn build(rs: &RenderScene) -> Store {
     for b in &baked {
         w.extend_from_slice(&b.words);
     }
-    Store { words: w, table: table as u32, count: baked.len() as u32 }
+    let records = w.len() as u32;
+    for &mi in &recs {
+        w.extend(record(&rs.materials[mi]).map(f));
+    }
+    Store { words: w, table: table as u32, count: baked.len() as u32, records, rec_count: recs.len() as u32 }
 }
