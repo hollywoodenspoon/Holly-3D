@@ -111,6 +111,16 @@ impl BuildingKind {
             AirportTerminal => "Airport Terminal",
             ControlTower => "Control Tower",
             HarbourOffice => "Harbour Office",
+            Playground => "Playground",
+            SportsCourt => "Sports Court",
+            SportsField => "Sports Field",
+            Stadium => "Stadium",
+            SwimmingPool => "Swimming Pool",
+            Plaza => "Plaza",
+            Monument => "Monument",
+            ParkPond => "Park Pond",
+            Bandstand => "Bandstand",
+            SkatePark => "Skate Park",
         }
     }
 
@@ -223,6 +233,16 @@ impl BuildingKind {
             AirportTerminal => (120.0, 60.0, 1),
             ControlTower => (14.0, 14.0, 4),
             HarbourOffice => (16.0, 12.0, 2),
+            Playground => (24.0, 20.0, 1),
+            SportsCourt => (36.0, 20.0, 1),
+            SportsField => (110.0, 72.0, 1),
+            Stadium => (180.0, 140.0, 1),
+            SwimmingPool => (50.0, 30.0, 1),
+            Plaza => (40.0, 40.0, 1),
+            Monument => (30.0, 30.0, 1),
+            ParkPond => (50.0, 40.0, 1),
+            Bandstand => (24.0, 24.0, 1),
+            SkatePark => (36.0, 28.0, 1),
         }
     }
 }

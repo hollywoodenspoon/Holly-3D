@@ -1584,3 +1584,25 @@ Not done yet:
   - the airliner is simple (no windows, a flat tail);
   - the train station has no rail lines leaving the lot, and tram tracks don't join up between stops;
   - there is no hospital, school or parking garage yet; these come with the parks and rural batch or later.
+
+## 47. Prefab Library, part H2e: parks and leisure
+- **10 new kinds** under a new **Parks & Leisure** category, appended after Services & Transport (indices 105–114). They have no Floors slider.
+  - Playground: safety surface, swings, a slide tower with a roof, a see-saw, a climbing dome, a sandpit, benches and a low fence.
+  - Sports Court: painted hard court with lines, either a tennis net or two basketball hoops (by seed), a fence and a bench.
+  - Sports Field: grass pitch with markings, penalty boxes, goals with nets, four floodlights and a clubhouse.
+  - Stadium: pitch and running track inside four tiered stands, cantilever roofs over the long sides, and four 40 m floodlight masts.
+  - Swimming Pool: paved deck, lane ropes, a diving board, a kiddie pool, loungers, parasols, a changing block and a fence.
+  - Plaza: paved square with a ring pattern, a fountain, tree beds, benches, lamps and three flags.
+  - Monument: stepped plinth in a round garden with an obelisk, a column with a figure, or a triumphal arch (by seed).
+  - Park Pond: irregular pond with a gravel path, a footbridge, reeds, ducks, trees and benches.
+  - Bandstand: octagonal raised stage with columns, a railing, steps, a pointed roof and deck chairs.
+  - Skate Park: half-pipe with coping, a fun box with a rail and ramps, a bowl and a ledge.
+- Shared helpers: `parks::lines` (court and pitch markings) and `parks::bench`.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot;
+  - the stadium is tall, the skate park is low, the pools and pond have water, and the courts and pitches have markings.
+- **Not done yet:**
+  - the pond and the pools are flat water surfaces, not dug basins;
+  - the skate bowl is stepped rings, not a smooth curve;
+  - the stadium stands have no seats or stairways modelled.

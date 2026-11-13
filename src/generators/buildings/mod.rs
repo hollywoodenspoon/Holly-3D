@@ -1,5 +1,5 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 13 residential, 17 commercial & office, 14 industrial & utility, 17 services & transport, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 17 commercial & office, 14 industrial & utility, 17 services & transport, 10 parks & leisure, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
@@ -18,6 +18,8 @@ mod kinds;
 mod kinds_info;
 mod medieval_a;
 mod medieval_b;
+mod parks;
+mod parks_b;
 mod modern_a;
 mod modern_b;
 pub mod parts;
@@ -34,6 +36,8 @@ mod tests;
 mod tests_commercial;
 #[cfg(test)]
 mod tests_industrial;
+#[cfg(test)]
+mod tests_parks;
 #[cfg(test)]
 mod tests_residential;
 #[cfg(test)]
@@ -204,6 +208,10 @@ impl BuildingParams {
                 K::Temple | K::Cemetery => services_b::build(&mut b, hx, hy),
                 K::FireStation | K::PoliceStation | K::Clinic | K::University | K::Library | K::TownHall | K::PostOffice => services::build(&mut b, hx, hy, floors),
                 _ => transport::build(&mut b, hx, hy, floors),
+            },
+            Category::Parks => match self.kind {
+                K::Playground | K::SportsCourt | K::SportsField | K::Stadium | K::SwimmingPool => parks::build(&mut b, hx, hy),
+                _ => parks_b::build(&mut b, hx, hy),
             },
         }
         b.kit.finish()

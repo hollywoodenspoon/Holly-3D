@@ -75,6 +75,8 @@ pub enum BuildingKind {
     // Services & transport (17)
     FireStation, PoliceStation, Clinic, University, Library, TownHall, PostOffice, Temple, Cemetery,
     BusStop, BusDepot, TrainStation, MetroEntrance, TramStop, AirportTerminal, ControlTower, HarbourOffice,
+    // Parks & leisure (10)
+    Playground, SportsCourt, SportsField, Stadium, SwimmingPool, Plaza, Monument, ParkPond, Bandstand, SkatePark,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -87,10 +89,11 @@ pub enum Category {
     Commercial,
     Industrial,
     Services,
+    Parks,
 }
 
 impl Category {
-    pub const ALL: [Category; 8] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 9] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -101,6 +104,7 @@ impl Category {
             Self::Commercial => "Commercial & Office",
             Self::Industrial => "Industrial & Utilities",
             Self::Services => "Services & Transport",
+            Self::Parks => "Parks & Leisure",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -109,7 +113,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 105] = {
+    pub const ALL: [BuildingKind; 115] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -165,6 +169,7 @@ impl BuildingKind {
             PowerPlant, WindTurbine, SolarFarm, PumpStation, Substation, PowerPylon, CellTower,
             FireStation, PoliceStation, Clinic, University, Library, TownHall, PostOffice, Temple, Cemetery,
             BusStop, BusDepot, TrainStation, MetroEntrance, TramStop, AirportTerminal, ControlTower, HarbourOffice,
+            Playground, SportsCourt, SportsField, Stadium, SwimmingPool, Plaza, Monument, ParkPond, Bandstand, SkatePark,
         ]
     };
 
@@ -178,7 +183,8 @@ impl BuildingKind {
             44..=56 => Category::Residential,
             57..=73 => Category::Commercial,
             74..=87 => Category::Industrial,
-            _ => Category::Services,
+            88..=104 => Category::Services,
+            _ => Category::Parks,
         }
     }
 
@@ -191,6 +197,6 @@ impl BuildingKind {
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (!matches!(self.category(), Category::Props | Category::Industrial) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
+        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
     }
 }
