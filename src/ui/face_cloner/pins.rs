@@ -16,6 +16,10 @@ pub struct PinEditor {
 }
 
 impl PinEditor {
+    pub fn clear_textures(&mut self) {
+        self.tex = None;
+    }
+
     pub fn open(&mut self, i: usize) {
         self.shot = Some(i);
         self.drag = None;

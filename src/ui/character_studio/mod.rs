@@ -19,7 +19,8 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         return;
     }
     let mut open = true;
-    egui::Window::new("Character & Creature Studio").open(&mut open).default_size([380.0, 620.0]).show(ctx, |ui| {
+    let win = egui::Window::new("Character & Creature Studio").default_size([380.0, 620.0]);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::CharacterStudio, win, &mut open, |ui| {
         egui::ScrollArea::vertical().show(ui, |ui| {
             gallery(ui, ed, 2);
             ui.separator();

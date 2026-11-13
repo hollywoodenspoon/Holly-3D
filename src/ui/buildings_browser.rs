@@ -32,7 +32,8 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         return;
     }
     let mut open = true;
-    egui::Window::new("Buildings & Props Browser").open(&mut open).default_size([640.0, 520.0]).show(ctx, |ui| body(ui, ed));
+    let win = egui::Window::new("Buildings & Props Browser").default_size([640.0, 520.0]);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::BuildingsBrowser, win, &mut open, |ui| body(ui, ed));
     ed.buildings_browser_open &= open;
 }
 

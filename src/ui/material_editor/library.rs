@@ -50,6 +50,10 @@ pub fn listed(shelf: Shelf, search: &str, favourites: &[String], kind: Kind) -> 
 }
 
 impl LibraryUi {
+    pub fn clear_textures(&mut self) {
+        self.swatches.clear();
+    }
+
     /// The swatch of `item`, rendering it now if the frame budget allows.
     fn swatch(&mut self, ctx: &egui::Context, item: Item, budget: &mut usize) -> Option<egui::TextureId> {
         if let Some(t) = self.swatches.get(item.name()) {
@@ -158,13 +162,12 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut LibraryUi) {
         return;
     }
     let mut open = true;
-    egui::Window::new(RichText::new("Material Library").strong())
+    let win = egui::Window::new(RichText::new("Material Library").strong())
         .id(egui::Id::new("material_library"))
-        .open(&mut open)
         .default_pos([660.0, 90.0])
         .default_size([720.0, 560.0])
-        .resizable(true)
-        .show(ctx, |ui| {
+        .resizable(true);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::MaterialLibrary, win, &mut open, |ui| {
             ui.horizontal(|ui| {
                 ui.label("🔍");
                 ui.add(egui::TextEdit::singleline(&mut st.search).hint_text("Search materials...").desired_width(220.0));

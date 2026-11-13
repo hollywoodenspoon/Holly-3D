@@ -30,6 +30,11 @@ pub struct MatEditorUi {
 }
 
 impl MatEditorUi {
+    /// Drops the slot previews (they belong to the window that made them).
+    pub fn clear_textures(&mut self) {
+        self.previews.clear();
+    }
+
     /// Preview texture for a material, re-rendered only when it changed.
     fn preview(&mut self, ctx: &egui::Context, id: MatId, m: &Material) -> egui::TextureId {
         if let Some((cached, tex)) = self.previews.get(&id) {
@@ -223,15 +228,14 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
     }
     let mut open = true;
     let width = COLS as f32 * (CELL + 4.0) + 12.0;
-    egui::Window::new(RichText::new("Material Editor").strong())
+    let win = egui::Window::new(RichText::new("Material Editor").strong())
         .id(egui::Id::new("material_editor"))
-        .open(&mut open)
         .default_pos([300.0, 70.0])
         .default_width(width)
         .min_width(width)
         .default_height(780.0)
-        .resizable(true)
-        .show(ctx, |ui| {
+        .resizable(true);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::MaterialEditor, win, &mut open, |ui| {
             slot_grid(ui, ed, st);
             material_toolbar(ui, ed);
             ui.separator();

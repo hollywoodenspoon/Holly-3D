@@ -49,12 +49,15 @@ pub struct PrefsUi {
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut PrefsUi) {
-    persist(ctx, ed, st);
+    if crate::ui::popout::is_main() {
+        persist(ctx, ed, st);
+    }
     if !ed.iface.prefs_open {
         return;
     }
     let mut open = true;
-    egui::Window::new("Preferences").open(&mut open).default_size([560.0, 520.0]).collapsible(false).show(ctx, |ui| {
+    let win = egui::Window::new("Preferences").default_size([560.0, 520.0]).collapsible(false);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::Preferences, win, &mut open, |ui| {
         ui.horizontal_wrapped(|ui| {
             for t in PrefsTab::ALL {
                 if ui.selectable_label(st.tab == t, t.label()).clicked() && st.tab != t {

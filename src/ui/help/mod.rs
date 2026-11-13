@@ -19,6 +19,8 @@ use pages2::{ALL, index_of, text_of};
 pub struct HelpUi {
     pub search: String,
     pub textures: view::Textures,
+    /// The tour stays in the main window, so it keeps its own textures.
+    pub tour_textures: view::Textures,
     /// The startup tour was considered this session.
     pub tour_checked: bool,
 }
@@ -78,7 +80,9 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut HelpUi) {
             ed.iface.tour = Some(0);
         }
     }
-    tour::show(ctx, ed, &mut st.textures);
+    if crate::ui::popout::is_main() {
+        tour::show(ctx, ed, &mut st.tour_textures);
+    }
     if ed.iface.help_context {
         ed.iface.help_context = false;
         if ed.iface.help_open {
@@ -89,8 +93,9 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut HelpUi) {
         return;
     }
     let mut open = true;
-    let win = egui::Window::new("Help").open(&mut open).default_size([980.0, 680.0]).collapsible(false);
-    win.pivot(egui::Align2::CENTER_CENTER).default_pos(ctx.content_rect().center()).show(ctx, |ui| {
+    let win = egui::Window::new("Help").default_size([980.0, 680.0]).collapsible(false);
+    let win = win.pivot(egui::Align2::CENTER_CENTER).default_pos(ctx.content_rect().center());
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::Help, win, &mut open, |ui| {
         ui.horizontal_top(|ui| {
             ui.vertical(|ui| {
                 ui.set_width(200.0);

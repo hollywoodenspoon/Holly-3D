@@ -67,6 +67,8 @@ fn main() {
                     resolution: (1600, 920).into(),
                     ..default()
                 }),
+                // Pop-out dialog windows close with the main window.
+                exit_condition: bevy::window::ExitCondition::OnPrimaryClosed,
                 ..default()
             })
             .set(ilex::viewport::gpu::render_plugin()),

@@ -58,13 +58,12 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         return;
     }
     let mut open = true;
-    egui::Window::new(RichText::new("PaintBox").strong())
+    let win = egui::Window::new(RichText::new("PaintBox").strong())
         .id(egui::Id::new("paint_box"))
-        .open(&mut open)
         .default_pos([260.0, 90.0])
         .default_width(W + 16.0)
-        .resizable(false)
-        .show(ctx, |ui| {
+        .resizable(false);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::PaintBox, win, &mut open, |ui| {
             let h = (ctx.content_rect().height() - 160.0).max(200.0);
             egui::ScrollArea::vertical().max_height(h).min_scrolled_height(h).show(ui, |ui| {
             ui.horizontal(|ui| {

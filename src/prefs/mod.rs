@@ -30,6 +30,8 @@ pub struct LayoutPrefs {
     pub properties_width: f32,
     /// Height of the Scene Explorer at the top of that column.
     pub explorer_height: f32,
+    /// Dialogs living in their own OS windows (`popout::Dock::key` names).
+    pub popouts: Vec<String>,
 }
 
 impl LayoutPrefs {
@@ -40,7 +42,7 @@ impl LayoutPrefs {
 
 impl Default for LayoutPrefs {
     fn default() -> Self {
-        Self { properties_width: 340.0, explorer_height: 200.0 }
+        Self { properties_width: 340.0, explorer_height: 200.0, popouts: Vec::new() }
     }
 }
 

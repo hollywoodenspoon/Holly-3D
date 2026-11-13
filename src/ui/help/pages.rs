@@ -78,6 +78,12 @@ pub const BASICS: Page = Page {
             "The house icon goes back to Home. Right-click the cube to set Home, switch Perspective / Orthographic or turn on Fit to View.",
             "Views > Orientation Cube shows or hides it.",
         ]),
+        H("Pop-out windows"),
+        Steps(&[
+            "Big dialogs (Material Editor, Material Library, Rendered Frame Window, Edit UVWs, MakeHuman, Face Cloner, Buildings browser, PaintBox, Help, Preferences) have a ↗ button in their title bar: it moves the dialog into its own OS window, so your window manager can place or tile it.",
+            "Each pop-out has its own app id, ilex-<name> (for example ilex-material-editor), for window-manager rules.",
+            "Close that window, or click ↙ in its top-right corner, to dock the dialog back. Ilex remembers which dialogs you popped out.",
+        ]),
         ShowMe("Show me the Create tab", Show::Tab(CommandTab::Create)),
     ],
 };
