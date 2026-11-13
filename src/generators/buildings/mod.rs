@@ -10,6 +10,8 @@ mod commercial_a;
 mod commercial_b;
 mod commercial_c;
 mod doodads;
+mod furniture;
+mod furniture_b;
 mod garden;
 mod garden_b;
 mod houses;
@@ -37,6 +39,8 @@ mod utilities;
 mod tests;
 #[cfg(test)]
 mod tests_commercial;
+#[cfg(test)]
+mod tests_furniture;
 #[cfg(test)]
 mod tests_garden;
 #[cfg(test)]
@@ -225,6 +229,14 @@ impl BuildingParams {
                 _ => garden_b::build(&mut b, hx, hy),
             },
             Category::Rural => rural::build(&mut b, hx, hy),
+            Category::Furniture => {
+                // Small parts: finer texture repeats so wood grain reads.
+                b.kit.uv_scale = 2.0;
+                match self.kind {
+                K::DiningTable | K::CoffeeTable | K::SideTable | K::Desk => furniture_b::build(&mut b, hx, hy),
+                _ => furniture::build(&mut b, hx, hy),
+                }
+            }
         }
         b.kit.finish()
     }

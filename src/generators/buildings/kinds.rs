@@ -82,6 +82,8 @@ pub enum BuildingKind {
     GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
     // Rural (8)
     Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
+    // Furniture: seating & tables (10)
+    DiningChair, OfficeChair, Armchair, BarStool, Sofa, SectionalSofa, DiningTable, CoffeeTable, SideTable, Desk,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -97,10 +99,11 @@ pub enum Category {
     Parks,
     Garden,
     Rural,
+    Furniture,
 }
 
 impl Category {
-    pub const ALL: [Category; 11] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Rural, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 12] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Rural, Self::Furniture, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -114,6 +117,7 @@ impl Category {
             Self::Parks => "Parks & Leisure",
             Self::Garden => "Garden & Lot",
             Self::Rural => "Rural & Farm",
+            Self::Furniture => "Furniture",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -122,7 +126,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 139] = {
+    pub const ALL: [BuildingKind; 149] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -182,6 +186,7 @@ impl BuildingKind {
             Mailbox, GardenBeds, Hedge, PicketFence, Patio, Barbecue, SwingSet, Trampoline,
             GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
             Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
+            DiningChair, OfficeChair, Armchair, BarStool, Sofa, SectionalSofa, DiningTable, CoffeeTable, SideTable, Desk,
         ]
     };
 
@@ -198,7 +203,8 @@ impl BuildingKind {
             88..=104 => Category::Services,
             105..=114 => Category::Parks,
             115..=130 => Category::Garden,
-            _ => Category::Rural,
+            131..=138 => Category::Rural,
+            _ => Category::Furniture,
         }
     }
 
@@ -211,6 +217,6 @@ impl BuildingKind {
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden | Category::Rural) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
+        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden | Category::Rural | Category::Furniture) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
     }
 }

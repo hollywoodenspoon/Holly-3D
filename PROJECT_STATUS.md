@@ -1647,3 +1647,25 @@ Not done yet:
 - **Not done yet:**
   - the farmhouse, stable, windmill and silo from the plan already exist elsewhere (Farmhouse in Residential, Windmill in Medieval, Silo Cluster in Industrial); a dedicated stable is not built yet;
   - the hens and bees are simple blocks, not animals.
+
+## 50. Prefab Library, part H3a: furniture (seating and tables)
+- Second wave starts: a new **Furniture** category, appended after Rural & Farm (indices 139–148). There's no Floors slider, and the texture repeats are finer so wood grain and fabric read at furniture scale.
+  - **Seating:**
+    - Dining Chair: slatted or solid back.
+    - Office Chair: five-star base on casters, gas lift, padded seat, back and armrests.
+    - Armchair: club style.
+    - Bar Stool: pedestal or four legs, with a foot ring.
+    - Sofa: per-seat and back cushions, plus scatter cushions.
+    - Sectional Sofa: L-shaped with a chaise.
+  - **Tables:**
+    - Dining Table: rectangular, or round on a pedestal for square sizes. Place mats, plates and a fruit bowl.
+    - Coffee Table: with a shelf, books and a mug.
+    - Side Table: a drawer, and a lamp or a potted plant on top.
+    - Desk: drawer pedestal, monitor, keyboard, mouse and desk lamp.
+  - Upholstery and top colours vary with the seed. At Mid detail the cushions get rounded corners and softened tops.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget, stands on the floor and fits its footprint;
+  - chair-back and table heights are realistic, and the coffee table is low;
+  - Mid detail adds faces to the sofa.
+- **Not done yet:** no snap sockets yet (chairs don't tuck under tables, sofas don't snap to walls); no room shell yet.
+

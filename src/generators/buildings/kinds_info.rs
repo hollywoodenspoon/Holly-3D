@@ -145,6 +145,16 @@ impl BuildingKind {
             Orchard => "Orchard",
             Paddock => "Paddock",
             Beehives => "Beehives",
+            DiningChair => "Dining Chair",
+            OfficeChair => "Office Chair",
+            Armchair => "Armchair",
+            BarStool => "Bar Stool",
+            Sofa => "Sofa",
+            SectionalSofa => "Sectional Sofa",
+            DiningTable => "Dining Table",
+            CoffeeTable => "Coffee Table",
+            SideTable => "Side Table",
+            Desk => "Desk",
         }
     }
 
@@ -291,6 +301,16 @@ impl BuildingKind {
             Orchard => (20.0, 15.0, 1),
             Paddock => (24.0, 18.0, 1),
             Beehives => (8.0, 4.0, 1),
+            DiningChair => (0.45, 0.45, 1),
+            OfficeChair => (0.65, 0.65, 1),
+            Armchair => (0.9, 0.85, 1),
+            BarStool => (0.45, 0.45, 1),
+            Sofa => (2.1, 0.95, 1),
+            SectionalSofa => (2.8, 2.0, 1),
+            DiningTable => (1.8, 0.9, 1),
+            CoffeeTable => (1.1, 0.6, 1),
+            SideTable => (0.45, 0.45, 1),
+            Desk => (1.4, 0.7, 1),
         }
     }
 }
