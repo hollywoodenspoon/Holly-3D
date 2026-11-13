@@ -83,6 +83,10 @@ impl Action {
             SeeThrough => ed.toggle_see_through(),
             ShadowCatcher => ed.toggle_shadow_catcher(),
             ToggleGrid => flip(&mut ed.viewports.active_view_mut().grid),
+            OrientationCube => {
+                flip(&mut ed.prefs.viewport.show_cube);
+                ed.iface.layout_dirty = true;
+            }
             Wireframe => {
                 let v = ed.viewports.active_view_mut();
                 v.shading = if v.shading == Shading::Wireframe { Shading::Default } else { Shading::Wireframe };
@@ -156,6 +160,7 @@ impl Action {
             Paint => ed.paint.active,
             Measure => ed.iface.measure_open,
             ToggleGrid => v.is_some_and(|v| v.grid),
+            OrientationCube => ed.prefs.viewport.show_cube,
             Wireframe => v.is_some_and(|v| v.shading == Shading::Wireframe),
             EdgedFaces => v.is_some_and(|v| v.edged_faces),
             Maximize => ed.viewports.maximized,

@@ -124,6 +124,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
         "Views",
         &[
             A(ToggleGrid),
+            A(OrientationCube),
             A(Wireframe),
             A(EdgedFaces),
             A(SeeThrough),

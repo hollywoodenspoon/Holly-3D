@@ -71,6 +71,13 @@ pub const BASICS: Page = Page {
             "F3: wireframe or shaded. F4: edged faces. G: grid.",
         ]),
         Tip("No middle mouse button? Click Pan, Orbit or Zoom at the bottom right, then left-drag in a viewport. Right-click stops."),
+        H("Orientation Cube"),
+        Steps(&[
+            "Click a face, edge or corner of the cube (top right of each view) to turn the view to it.",
+            "Drag the cube to orbit. Drag the compass ring to spin around the vertical axis.",
+            "The house icon goes back to Home. Right-click the cube to set Home, switch Perspective / Orthographic or turn on Fit to View.",
+            "Views > Orientation Cube shows or hides it.",
+        ]),
         ShowMe("Show me the Create tab", Show::Tab(CommandTab::Create)),
     ],
 };

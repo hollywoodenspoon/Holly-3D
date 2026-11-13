@@ -75,6 +75,7 @@ pub enum Action {
     ShadowCatcher,
     // Views
     ToggleGrid,
+    OrientationCube,
     Wireframe,
     EdgedFaces,
     ZoomExtents,
@@ -124,7 +125,7 @@ impl Action {
         v.extend(SUBS.map(Sub));
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
-            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid,
+            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
@@ -190,6 +191,7 @@ impl Action {
             SeeThrough => "See-Through",
             ShadowCatcher => "Shadow & Reflection Catcher",
             ToggleGrid => "Show Grid",
+            OrientationCube => "Orientation Cube",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
             ZoomExtents => "Zoom Extents",

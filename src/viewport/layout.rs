@@ -41,6 +41,9 @@ pub struct ViewState {
     pub visible: bool,
     /// Camera object this view looks through (`ViewKind::Camera`).
     pub cam_obj: Option<crate::scene::ObjId>,
+    /// Orientation Cube: saved Home view and the flight in progress.
+    pub home: Option<ViewCamera>,
+    pub flight: Option<crate::viewport::view_cube::Flight>,
 }
 
 impl ViewState {
@@ -54,6 +57,8 @@ impl ViewState {
             rect: ScreenRect::default(),
             visible: true,
             cam_obj: None,
+            home: None,
+            flight: None,
         }
     }
 

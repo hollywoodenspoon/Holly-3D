@@ -7,6 +7,7 @@ mod gizmo;
 mod nav;
 mod overlay;
 mod region;
+mod view_cube;
 
 use crate::editor::Editor;
 use crate::editor::select::SelectOp;

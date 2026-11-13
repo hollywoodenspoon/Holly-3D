@@ -248,4 +248,5 @@ pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region:
         }
     }
     label_menus(ui, ed, vi, rect);
+    super::view_cube::show(ui, ed, vi, rect);
 }

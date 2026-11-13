@@ -138,6 +138,10 @@ pub struct ViewportPrefs {
     pub zoom_speed: f32,
     pub orbit_speed: f32,
     pub pan_speed: f32,
+    /// Orientation Cube in the top-right corner of every view.
+    pub show_cube: bool,
+    /// A cube click also frames the selection (Zoom Extents).
+    pub cube_fit_on_change: bool,
 }
 
 impl Default for ViewportPrefs {
@@ -153,6 +157,8 @@ impl Default for ViewportPrefs {
             zoom_speed: 1.0,
             orbit_speed: 1.0,
             pan_speed: 1.0,
+            show_cube: true,
+            cube_fit_on_change: false,
         }
     }
 }
