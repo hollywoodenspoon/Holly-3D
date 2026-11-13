@@ -33,6 +33,35 @@ impl Buf {
     }
 }
 
+/// 32-bit words of one packed light (nine vec4s).
+pub const LIGHT_WORDS: usize = 36;
+
+/// IES profile number in the kernel (`ies()` in `wgsl/lights.wgsl`).
+pub fn ies_id(p: crate::render::IesProfile) -> f32 {
+    crate::render::IesProfile::ALL.iter().position(|x| *x == p).unwrap_or(0) as f32
+}
+
+/// The area block of a light: axes and half sizes, shape, camera
+/// visibility, IES profile and sample count (zeros except IES otherwise).
+fn area(b: &mut Buf, l: &crate::render::scene_build::RLight, samples: u32) {
+    use crate::render::area_lights::AreaShape;
+    let ies = ies_id(l.ies);
+    let RShape::Area(a) = l.shape else {
+        b.v4(Vec4::ZERO);
+        b.v4(Vec4::ZERO);
+        return b.v4(Vec4::new(0.0, 0.0, ies, 1.0));
+    };
+    let shape = match a.shape {
+        AreaShape::Rect => 0.0,
+        AreaShape::Disc => 1.0,
+        AreaShape::Sphere => 2.0,
+        AreaShape::Tube => 3.0,
+    };
+    b.v3(a.u, a.hw);
+    b.v3(a.v, a.hl);
+    b.v4(Vec4::new(shape, f32::from(u8::from(a.visible)), ies, samples.max(1) as f32));
+}
+
 /// Why this scene renders on the CPU instead (`None` = the GPU handles it):
 /// the first of [`super::features::reasons`].
 pub fn unsupported(rs: &RenderScene) -> Option<&'static str> {
@@ -48,7 +77,8 @@ pub struct Packed {
     pub n_emitters: u32,
 }
 
-pub fn pack(rs: &RenderScene) -> Packed {
+/// `shadow_samples`: points each area light takes per shading point.
+pub fn pack(rs: &RenderScene, shadow_samples: u32) -> Packed {
     let mut tris = Buf::default();
     for (i, t) in rs.bvh.tris.iter().enumerate() {
         let m = &rs.materials[t.mat];
@@ -87,8 +117,7 @@ pub fn pack(rs: &RenderScene) -> Packed {
             RShape::Point => (0.0, Vec3::Z, 1.0, 0.0),
             RShape::Spot { dir, cos_in, cos_out } => (1.0, dir, cos_in, cos_out),
             RShape::Directional { dir } => (2.0, dir, 1.0, 0.0),
-            // Never packed: `unsupported` sends area lights to the CPU.
-            RShape::Area(_) => (0.0, Vec3::Z, 1.0, 0.0),
+            RShape::Area(a) => (3.0, a.n, 1.0, 0.0),
         };
         lights.v3(l.pos, kind);
         lights.v3(axis, cin);
@@ -98,6 +127,7 @@ pub fn pack(rs: &RenderScene) -> Packed {
         lights.v4(Vec4::new(na, nb, fa, fb));
         lights.v4(Vec4::new(l.range, f32::from(u8::from(l.shadows)), l.softness, 0.0));
         lights.v3(l.shadow_tint, 0.0);
+        area(&mut lights, l, shadow_samples);
     }
     let mut emitters = Buf::default();
     let mut cdf = 0.0;
@@ -109,7 +139,7 @@ pub fn pack(rs: &RenderScene) -> Packed {
     Packed {
         tris: tris.or_dummy(13 * 16),
         nodes: nodes.or_dummy(32),
-        lights: lights.or_dummy(6 * 16),
+        lights: lights.or_dummy(LIGHT_WORDS * 4),
         emitters: emitters.or_dummy(16),
         n_lights: rs.lights.len() as u32,
         n_emitters: rs.emitters.list.len() as u32,

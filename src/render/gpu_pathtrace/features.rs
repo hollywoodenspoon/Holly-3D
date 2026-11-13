@@ -57,9 +57,7 @@ pub fn mapped(m: &crate::materials::Material) -> bool {
 
 /// Everything that still sends a scene to the CPU tracer, in the order
 /// [`reasons`] lists it (the Render tab's tooltip shows this list).
-pub const CPU_ONLY: [&str; 7] = [
-    "area lights",
-    "IES light profiles",
+pub const CPU_ONLY: [&str; 5] = [
     "Shadow & Reflection Catcher surfaces",
     "see-through (opacity) surfaces",
     "cel / toon materials",
@@ -77,13 +75,11 @@ pub fn reasons(rs: &RenderScene) -> Vec<&'static str> {
         }
     };
     let mats = &rs.materials;
-    add(rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))), CPU_ONLY[0]);
-    add(rs.lights.iter().any(|l| l.ies != crate::render::IesProfile::None), CPU_ONLY[1]);
-    add(mats.iter().any(|m| m.shadow_catcher), CPU_ONLY[2]);
-    add(rs.translucent, CPU_ONLY[3]);
-    add(mats.iter().any(|m| m.model == ShadingModel::Toon), CPU_ONLY[4]);
-    add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some()), CPU_ONLY[5]);
-    add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[6]);
+    add(mats.iter().any(|m| m.shadow_catcher), CPU_ONLY[0]);
+    add(rs.translucent, CPU_ONLY[1]);
+    add(mats.iter().any(|m| m.model == ShadingModel::Toon), CPU_ONLY[2]);
+    add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some()), CPU_ONLY[3]);
+    add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[4]);
     out
 }
 

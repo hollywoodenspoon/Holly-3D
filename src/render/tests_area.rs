@@ -107,7 +107,7 @@ fn visible_to_camera_shows_the_emitter() {
         assert_eq!(a > 0.0, visible, "camera ray coverage");
         assert_eq!(c.max_element() > 1.0, visible, "bright softbox: {c}");
     }
-    assert_eq!(crate::render::gpu_pathtrace::pack::unsupported(&scene_with(Light::new(LightKind::DiscArea), Vec3::Z)), Some("area lights"));
+    assert_eq!(crate::render::gpu_pathtrace::pack::unsupported(&scene_with(Light::new(LightKind::DiscArea), Vec3::Z)), None, "area lights render on the GPU");
 }
 
 #[test]

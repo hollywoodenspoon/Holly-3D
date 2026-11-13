@@ -45,6 +45,7 @@ pub fn source() -> String {
         include_str!("wgsl/principled.wgsl"),
         include_str!("wgsl/env.wgsl"),
         include_str!("wgsl/lights.wgsl"),
+        include_str!("wgsl/area.wgsl"),
         include_str!("wgsl/volume.wgsl"),
         include_str!("wgsl/textures.wgsl"),
         include_str!("wgsl/integrator.wgsl"),
@@ -168,7 +169,7 @@ pub fn render(
     let [x0, y0, x1, y1] = region;
     let (rw, rh) = ((x1 - x0) as usize, (y1 - y0) as usize);
     let n = rw * rh;
-    let p = pack::pack(rs);
+    let p = pack::pack(rs, cfg.shadow_samples);
     let env = envmap::env_map(rs, cfg.path.sky_bake).unwrap_or_else(envmap::EnvMap::none);
     let tex = textures::build(rs);
     let tex_bytes = tex.bytes();
@@ -266,3 +267,5 @@ mod tests_lobes;
 mod tests_tex;
 #[cfg(test)]
 mod tests_volume;
+#[cfg(test)]
+mod tests_area;

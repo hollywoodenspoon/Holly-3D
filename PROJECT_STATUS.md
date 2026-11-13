@@ -1909,3 +1909,24 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Area lights don't light the mist on the GPU** (they still send the scene to the CPU, PR 4).
   - **Shadow rays in the mist ignore see-through surfaces** (opacity is PR 4); the CPU lets light through them.
   - **Mist uses the plain shadow test:** no soft shadows and no shadow colour, the same as the CPU march.
+
+## 61. GPU kernel parity, PR 4a: area lights and IES profiles on the GPU
+- **Area lights and IES profiles no longer send the scene to the CPU.** The CPU-only list is down to 5 entries: Shadow & Reflection Catcher, see-through (opacity), cel/toon, maps the GPU cannot bake, and more than 1.5 GB of baked textures.
+- **Kernel (`wgsl/area.wgsl`):** a port of `area_lights.rs`:
+  - Rect, Disc, Sphere and Tube sampling, using the same points and estimator scales as the CPU (Sphere and Tube sample the half facing the shading point);
+  - `Shadow Samples` points per area light at each shading point, each with its own soft-shadow ray and shadow colour;
+  - Visible to Camera: camera rays that reach an area light before any surface see its radiance (intensity over projected area) and set alpha;
+  - the five IES webs (`ies()`), which shape both spots and area lights.
+- **Shared code:** `incident()` in `lights.wgsl` now handles area lights too, so area lights also light the volumetric mist on the GPU, as on the CPU. The shadow test moved into `shadow()`, which point, spot, directional and area lights share.
+- **Packing:** each light is 36 words now. The area block holds the X and Y axes with the half sizes, then shape, visible, IES id and sample count. `pack()` takes the render's shadow samples.
+- **Tests (`tests_area.rs`):**
+  - the kernel's IES webs match the CPU at 201 angles for every profile;
+  - a rect softbox and a large disc (83.2 vs 83.3 energy, mean error 0.007);
+  - a sphere and a neon tube seen by the camera;
+  - an IES spot (Tactical Flashlight) and an IES panel (Wall Scallop);
+  - the fallback test now uses a shadow catcher and opacity.
+  - Mutation checks catch: the camera not seeing lights, the wrong Tube scale, the wrong Sphere scale, a missing 1/n sample weight, IES off on area lights, and a centre-heavy disc sample.
+- **Not done yet:**
+  - **Opacity, shadow catcher and toon still use the CPU** (PR 4b next: opacity first).
+  - **No GPU test yet for area lights in mist**, although the shared `incident()` means they light it. The march takes one area sample per step, as on the CPU.
+  - **A big area light almost touching geometry** (a disc 0.2 above a box) differed in one 4×4 block (GPU 2.0 vs CPU 2.8) at the test's low sample count. I didn't investigate further; normal set-ups agree.
