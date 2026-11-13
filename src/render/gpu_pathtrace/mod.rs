@@ -6,9 +6,11 @@
 //! CI, no driver) or for features only the CPU has, rendering falls back to
 //! the CPU path tracer.
 
+pub mod bake;
 pub mod envmap;
 pub mod features;
 pub mod pack;
+pub mod textures;
 
 use crate::render::job::Region;
 use crate::render::pathtrace::adaptive::{Welford, converged};
@@ -43,6 +45,7 @@ pub fn source() -> String {
         include_str!("wgsl/env.wgsl"),
         include_str!("wgsl/lights.wgsl"),
         include_str!("wgsl/volume.wgsl"),
+        include_str!("wgsl/textures.wgsl"),
         include_str!("wgsl/integrator.wgsl"),
     ]
     .join("\n")
@@ -111,7 +114,8 @@ fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String
     Ok(bytes.as_chunks::<16>().0.iter().map(|c| Vec4::from_array(std::array::from_fn(|i| f32::from_le_bytes([c[4 * i], c[4 * i + 1], c[4 * i + 2], c[4 * i + 3]])))).collect())
 }
 
-fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, p: &pack::Packed, env: &envmap::EnvMap) -> Vec<u8> {
+fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, data: (&pack::Packed, &envmap::EnvMap, &textures::Store)) -> Vec<u8> {
+    let (p, env, tex) = data;
     let ps = &cfg.path;
     let inv = rs.camera.view_proj(cfg.width as f32 / cfg.height as f32).inverse();
     let mut b = pack::Buf::default();
@@ -128,6 +132,7 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     let (fc, fd) = rs.fog.unwrap_or_default();
     b.v3(fc, fd);
     b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
+    u4(&mut b, [tex.table, tex.count, 0, 0]);
     b.0
 }
 
@@ -146,16 +151,22 @@ pub fn render(
     let n = rw * rh;
     let p = pack::pack(rs);
     let env = envmap::env_map(rs, cfg.path.sky_bake).unwrap_or_else(envmap::EnvMap::none);
+    let tex = textures::build(rs);
+    let tex_bytes = tex.bytes();
+    let limit = g.device.limits().max_storage_buffer_binding_size;
+    if tex_bytes.len() as u64 > limit {
+        return Err(format!("baked textures ({} MB) exceed this GPU's {} MB buffer limit", tex_bytes.len() >> 20, limit >> 20));
+    }
     let d = &g.device;
     let size = (n * 16) as u64;
     let accum = storage(d, "accum", &vec![0; n * 16], true);
     let stats = storage(d, "stats", &vec![0; n * 16], true);
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
-    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 5 * 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-    let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false)];
+    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 5 * 16 + 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+    let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false), storage(d, "textures", &tex_bytes, false)];
     let pipeline = g.pipeline(Features::of(rs));
     let layout = pipeline.get_bind_group_layout(0);
-    let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf, &bufs[4]]
+    let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf, &bufs[4], &bufs[5]]
         .iter()
         .enumerate()
         .map(|(i, b)| wgpu::BindGroupEntry { binding: i as u32, resource: b.as_entire_binding() })
@@ -170,7 +181,7 @@ pub fn render(
         while have < target {
             let spp = (target - have).min(batch);
             let t0 = Instant::now();
-            g.queue.write_buffer(&uniform, 0, &params(rs, cfg, region, spp, seed, &p, &env));
+            g.queue.write_buffer(&uniform, 0, &params(rs, cfg, region, spp, seed, (&p, &env, &tex)));
             let mut enc = d.create_command_encoder(&Default::default());
             {
                 let mut cp = enc.begin_compute_pass(&Default::default());
@@ -228,3 +239,5 @@ mod tests;
 mod tests_features;
 #[cfg(test)]
 mod tests_env;
+#[cfg(test)]
+mod tests_tex;
