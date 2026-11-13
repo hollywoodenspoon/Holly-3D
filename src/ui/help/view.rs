@@ -37,7 +37,7 @@ pub fn shot(ui: &mut egui::Ui, cache: &mut Textures, id: &'static str, marks: &[
     ui.add_space(10.0);
     let [w, h] = tex.size().map(|v| v as f32);
     let size = egui::vec2(width, width * h / w);
-    let r = ui.add(egui::Image::new(&tex).fit_to_exact_size(size).corner_radius(4)).rect;
+    let r = ui.add(egui::Image::new(&tex).fit_to_exact_size(size).corner_radius(theme::R_CARD)).rect;
     let p = ui.painter();
     for (i, mk) in marks.iter().enumerate() {
         let c = r.min + egui::vec2(mk.at[0] * size.x, mk.at[1] * size.y);
@@ -84,7 +84,7 @@ pub fn page(ui: &mut egui::Ui, ed: &mut Editor, cache: &mut Textures, p: &Page) 
                 ui.label(t);
             }
             Block::Tip(t) => {
-                egui::Frame::new().fill(theme::card()).corner_radius(4).inner_margin(6).show(ui, |ui| {
+                egui::Frame::new().fill(theme::card()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
                     ui.set_width(width - 12.0);
                     ui.label(RichText::new(format!("💡 {t}")));
                 });

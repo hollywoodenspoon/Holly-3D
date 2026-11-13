@@ -1,7 +1,7 @@
 //! Editable Poly mesh core: index/slotmap based face-corner topology.
 //!
 //! 3D vertex positions are decoupled from per-face-corner attributes (UV,
-//! explicit normals) exactly like 3ds Max, so smoothing groups, hard edges and
+//! explicit normals), so smoothing groups, hard edges and
 //! UV seams never require physically duplicating vertices.
 
 pub mod adjacency;
@@ -56,7 +56,7 @@ impl FaceCorner {
 pub struct Polygon {
     /// Triangles, quads and N-gons (>= 3 corners), counter-clockwise seen from outside.
     pub corners: Vec<FaceCorner>,
-    /// 32-bit bitmask of 3ds Max Smoothing Groups 1..=32.
+    /// 32-bit bitmask of Smoothing Groups 1..=32.
     pub smoothing_group: u32,
     pub material_id: u16,
     pub selected: bool,
@@ -112,7 +112,7 @@ pub struct EditablePoly {
     edge_map: HashMap<(VertexId, VertexId), EdgeId>,
 }
 
-/// Which sub-object level an operation or selection refers to (3ds Max `1`..`5`).
+/// Which sub-object level an operation or selection refers to (`1`..`5`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize)]
 pub enum SubObject {
     #[default]

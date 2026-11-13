@@ -1,4 +1,4 @@
-//! Smoothing-group driven normals (3ds Max semantics).
+//! Smoothing-group driven normals.
 
 use super::adjacency::Adjacency;
 use super::*;
@@ -51,7 +51,7 @@ impl EditablePoly {
         acc.into_iter().map(|(k, v)| (k, v.normalize_or(Vec3::Z))).collect()
     }
 
-    /// 3ds Max "Auto Smooth": faces whose shared-edge angle is below `threshold_deg`
+    /// "Auto Smooth": faces whose shared-edge angle is below `threshold_deg`
     /// end up sharing a smoothing group; sharper neighbours never share one.
     /// Only affects `targets` (all polygons when empty).
     pub fn auto_smooth(&mut self, targets: &[PolyId], threshold_deg: f32) {

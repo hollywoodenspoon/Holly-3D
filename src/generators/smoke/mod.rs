@@ -1,5 +1,5 @@
 //! PR 8: procedural billowing smoke & fire plumes (Create -> Geometry ->
-//! Worlds / FX -> Smoke Plume, and the Battlefield / GhostTown
+//! Worlds / FX -> Smoke Plume, and the Battlefield / Settlement
 //! `[✓] Spawn Rising Smoke Plumes` toggle).
 //!
 //! A plume is a stack of noise-displaced lobe shells (soft metaball-like
@@ -118,7 +118,7 @@ pub struct SmokeIds {
 impl SmokeIds {
     /// The Smoke & Fire pack (standalone plumes).
     pub const PACK: Self = Self { fire: 1, smoke: 2, wisp: 3 };
-    /// Inside the GhostTown pack (battlefield plumes).
+    /// Inside the Settlement pack (battlefield plumes).
     pub const TOWN: Self = Self { fire: super::kit::ids::EMBERS, smoke: super::kit::ids::SMOKE, wisp: super::kit::ids::SMOKE };
 }
 

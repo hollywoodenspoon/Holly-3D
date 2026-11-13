@@ -1,5 +1,5 @@
 //! FFD 2x2x2 / 3x3x3 / 4x4x4: Bernstein-polynomial lattice deformer fitted to
-//! the modifier's input bounding box (3ds Max "Set Volume" at apply time).
+//! the modifier's input bounding box ("Set Volume" at apply time).
 
 use crate::mesh::{Aabb, EditablePoly};
 use crate::viewport::camera::Ray;
@@ -17,7 +17,7 @@ pub struct FfdMod {
     /// Control points in normalized lattice space; index `i + n*(j + n*k)`.
     pub points: Vec<Vec3>,
     pub selected: Vec<bool>,
-    /// Deform only vertices inside the lattice volume (3ds Max default).
+    /// Deform only vertices inside the lattice volume.
     pub only_in_volume: bool,
 }
 

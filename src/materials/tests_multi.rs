@@ -10,7 +10,7 @@ fn ids_resolve_wrap_and_switch_off() {
     assert_eq!(ms.subs.iter().map(|s| s.id).collect::<Vec<_>>(), vec![1, 2, 3]);
     ms.subs[1].mat.base_color = [1.0, 0.0, 0.0];
     assert_eq!(ms.resolve(2).base_color, [1.0, 0.0, 0.0]);
-    // ID 5 wraps to the 2nd entry of a 3-entry list (3ds Max behavior).
+    // ID 5 wraps to the 2nd entry of a 3-entry list.
     assert_eq!(ms.index_for(5), Some(1));
     assert_eq!(ms.index_for(0), Some(0), "ID 0 is treated as ID 1");
     // A renumbered entry is found by its ID, not its position.

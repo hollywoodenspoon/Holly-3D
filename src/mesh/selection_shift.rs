@@ -1,4 +1,4 @@
-//! Ring / Loop shift (the spinner arrows next to Ring and Loop in 3ds Max):
+//! Ring / Loop shift (the spinner arrows next to Ring and Loop):
 //! moves every selected edge one step along its ring (to the parallel edge
 //! of the next quad) or along its loop (to the next edge through a vertex).
 

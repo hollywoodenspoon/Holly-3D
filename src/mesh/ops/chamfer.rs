@@ -206,7 +206,7 @@ pub fn chamfer_edges_ex(m: &mut EditablePoly, amount: f32, segments: u32, tensio
         }
     }
     m.finalize();
-    // 3ds Max keeps the new chamfer edges selected in Edge mode.
+    // Keep the new chamfer edges selected in Edge mode.
     let hes: Vec<(VertexId, VertexId)> =
         new_polys.iter().filter_map(|&p| m.polygons.get(p)).flat_map(|p| p.half_edges().collect::<Vec<_>>()).collect();
     for (a, b) in hes {

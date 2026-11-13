@@ -32,9 +32,15 @@ fn set_base_map(m: &mut Material, key: &str, tex: TexHandle) {
     let slot = m.map_mut(MapChannel::BaseColor);
     (slot.node, slot.enabled, slot.amount) = (Some(MapNode::Bitmap { path: format!("makehuman:{key}"), tex: Some(tex) }), true, 100.0);
     m.base_color = [1.0; 3];
-    if has_alpha {
-        // Just under 1 so the viewport blends the texture's alpha.
-        m.opacity = 0.999;
+    // Hair cards and clothes: the alpha cuts holes instead of blending, so
+    // there is no draw-order mess and no haze over the skin.
+    m.alpha_cutout = has_alpha;
+}
+
+/// Brows and lashes are a single soft layer on the skin: they blend.
+fn blend_alpha(m: &mut Material) {
+    if m.alpha_cutout {
+        (m.alpha_cutout, m.opacity) = (false, 0.999);
     }
 }
 
@@ -46,10 +52,22 @@ pub fn from_mhmat(name: String, mm: &MhMat, key: &str, tex: Option<TexHandle>) -
     if let Some(t) = tex {
         set_base_map(&mut m, key, t);
     }
-    if mm.transparent {
-        m.opacity = m.opacity.min(0.999);
-    }
     m
+}
+
+/// Hair, brows and lashes: soft and fairly rough with a light sheen, not
+/// the glossy helmet a high `.mhmat` shininess gives.
+fn soften_hair(cat: Category, m: &mut Material) {
+    let rough = match cat {
+        Category::Hair => 0.55,
+        Category::Eyebrows | Category::Eyelashes => {
+            blend_alpha(m);
+            0.7
+        }
+        _ => return,
+    };
+    m.roughness = rough;
+    (m.principled.sheen, m.principled.sheen_tint) = (0.25, 0.6);
 }
 
 fn put(ms: &mut MultiSub, id: u16, name: &str, make: impl FnOnce() -> Material) {
@@ -85,11 +103,24 @@ pub fn sync(mh: &MhAssets, face_skin: Option<&TexHandle>, ms: &mut MultiSub) {
     let pieces = mh.pieces();
     // Drop pieces that were taken off (only the ones this module made).
     ms.subs.retain(|s| s.id < ids::EYEBROWS || !PREFIXES.iter().any(|p| s.name.starts_with(p)) || pieces.iter().any(|(_, _, id)| *id == s.id));
+    // Scenes saved before cut-out alpha: their hair and clothes blended at 0.999.
+    for s in ms.subs.iter_mut().filter(|s| s.mat.opacity == 0.999 && (s.name.starts_with("Hair: ") || s.name.starts_with("Clothes: "))) {
+        (s.mat.opacity, s.mat.alpha_cutout) = (1.0, true);
+    }
     for (cat, name, id) in pieces {
         let Some(it) = library::item(cat, name) else { continue };
         let label = format!("{}{}", prefix(cat), library::pretty(name));
         let key = format!("{}/{}", it.folder, it.mat.diffuse_texture.clone().unwrap_or_default());
-        put(ms, id, &label, || from_mhmat(label.clone(), &it.mat, &key, it.texture()));
+        put(ms, id, &label, || {
+            let mut m = from_mhmat(label.clone(), &it.mat, &key, it.texture());
+            soften_hair(cat, &mut m);
+            m
+        });
+        if matches!(cat, Category::Hair | Category::Eyebrows)
+            && let (Some(sub), Some(tex)) = (ms.subs.iter_mut().find(|s| s.id == id), it.texture())
+        {
+            dye(&mut sub.mat, &key, &tex, mh.hair_color);
+        }
     }
     match &mh.skin {
         _ if face_skin.is_some() => put_cloned_skin(ms, face_skin.unwrap()),
@@ -116,12 +147,59 @@ pub fn sync(mh: &MhAssets, face_skin: Option<&TexHandle>, ms: &mut MultiSub) {
                 let mm = library::material(&format!("eyes/materials/{c}.mhmat")).unwrap_or_default();
                 let key = format!("eyes/materials/{}", mm.diffuse_texture.clone().unwrap_or_default());
                 let mut m = from_mhmat(label.clone(), &mm, &key, library::texture(&key));
-                (m.roughness, m.opacity) = (0.08, 1.0);
+                (m.roughness, m.opacity, m.alpha_cutout) = (0.08, 1.0, false);
                 m
             });
         }
         None => reset_if(ms, ids::EYES, "Eyes: ", eyes_material),
     }
+}
+
+/// Puts the hair texture on `m`, recoloured to `color` (or as it is).
+/// Only touches the map when the dye changed, so Material Editor edits
+/// to the rest of the material are kept.
+fn dye(m: &mut Material, key: &str, tex: &TexHandle, color: Option<[f32; 3]>) {
+    let path = match color {
+        Some(c) => {
+            let [r, g, b] = c.map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8);
+            format!("makehuman:{key}#dye={r:02x}{g:02x}{b:02x}")
+        }
+        None => format!("makehuman:{key}"),
+    };
+    let slot = m.map_mut(MapChannel::BaseColor);
+    if matches!(&slot.node, Some(MapNode::Bitmap { path: p, .. }) if *p == path) {
+        return;
+    }
+    let t = color.map_or_else(|| tex.clone(), |c| recolor(tex, c));
+    slot.node = Some(MapNode::Bitmap { path, tex: Some(t) });
+}
+
+/// The texture's strands in `rgb` (sRGB): each pixel keeps its brightness
+/// relative to the texture's (alpha-weighted) average, so dark roots and
+/// light tips stay; highlights roll off towards white instead of
+/// clipping to another hue.
+pub fn recolor(tex: &TexHandle, rgb: [f32; 3]) -> TexHandle {
+    let t = &tex.tex;
+    let lum = |p: &[u8; 4]| (0.2126 * p[0] as f32 + 0.7152 * p[1] as f32 + 0.0722 * p[2] as f32) / 255.0;
+    let (sum, wsum) = t.data.iter().fold((0.0, 0.0), |(s, w), p| {
+        let a = p[3] as f32 / 255.0;
+        (s + lum(p) * a, w + a)
+    });
+    let mean = if wsum < 1e-3 { 0.5 } else { (sum / wsum).max(0.02) };
+    let lin = rgb.map(|c| c.clamp(0.0, 1.0).powf(2.2));
+    let data = t
+        .data
+        .iter()
+        .map(|p| {
+            let k = (lum(p) / mean).powf(2.2).min(4.0);
+            let v = lin.map(|l| l * k);
+            let m = v[0].max(v[1]).max(v[2]);
+            let v = if m > 1.0 { v.map(|c| c / m + (1.0 - 1.0 / m) * 0.3) } else { v };
+            let c = v.map(|l| (l.clamp(0.0, 1.0).powf(1.0 / 2.2) * 255.0).round() as u8);
+            [c[0], c[1], c[2], p[3]]
+        })
+        .collect();
+    TexHandle::new(crate::materials::texture::Texture { width: t.width, height: t.height, data })
 }
 
 pub fn eyes_material() -> Material {

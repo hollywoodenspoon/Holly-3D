@@ -18,7 +18,7 @@ pub struct FrameBuffer {
     /// Bumped on every write so the UI re-uploads its texture.
     pub rev: u64,
     /// Built-in raytracer layers, kept so the F9 tone controls (operator,
-    /// Exposure, Contrast) re-tonemap without re-rendering. Empty for Cycles.
+    /// Exposure, Contrast) re-tonemap without re-rendering. Empty for loaded images.
     pub layers: Vec<PixelLayers>,
     /// The background is the plain Environment color.
     pub plain_bg: bool,
@@ -105,7 +105,7 @@ impl FrameBuffer {
     }
 
     /// Re-tonemaps (when the layers are kept) and re-grades the image, all
-    /// without re-rendering. Cycles images are graded from their pixels.
+    /// without re-rendering. Loaded 8-bit images are graded from their pixels.
     pub fn regrade(&mut self, tone: &Tone, g: &Grading) {
         if self.base.len() != self.display.len() {
             self.base = self.display.clone();
@@ -173,7 +173,7 @@ impl FrameBuffer {
         r.map_err(|e| e.to_string())
     }
 
-    /// Loads an 8-bit image (Cycles output) into a frame buffer.
+    /// Loads an 8-bit image (e.g. an earlier render) into a frame buffer.
     pub fn from_image(img: image::DynamicImage) -> Self {
         let rgba = img.to_rgba32f();
         let (w, h) = rgba.dimensions();

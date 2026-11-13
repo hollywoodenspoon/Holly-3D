@@ -63,7 +63,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut HotkeysUi) {
     });
     capture(ui, ed, st, &mut map);
     if let Some((a, c, other)) = st.pending {
-        egui::Frame::new().fill(theme::card()).corner_radius(4).inner_margin(6).show(ui, |ui| {
+        egui::Frame::new().fill(theme::card()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
             ui.label(RichText::new(format!("{} is used by {}.", c.text(), other.label())).color(theme::amber()));
             ui.horizontal(|ui| {
                 let old = chord_of(&map, a).map_or("no key".to_string(), |k| k.text());

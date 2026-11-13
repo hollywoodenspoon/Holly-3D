@@ -1,6 +1,6 @@
 //! Pivot tab.
 
-use super::CONTENT_W;
+use super::content_w;
 use crate::editor::Editor;
 use crate::ui::widgets::{action, dim, rollout, toggle_button};
 use bevy_egui::egui;
@@ -14,7 +14,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
             }
             ui.add_space(4.0);
             let mut run = |ui: &mut egui::Ui, label: &str, f: fn(&mut crate::scene::SceneObject)| {
-                if action(ui, label, true, CONTENT_W) {
+                if action(ui, label, true, content_w()) {
                     ed.checkpoint(label);
                     for id in ed.scene.selected() {
                         f(&mut ed.scene.objects[id]);

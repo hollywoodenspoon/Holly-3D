@@ -1,6 +1,6 @@
 //! Modify tab: name + wire color, Modifier List, stack and context rollouts.
 
-use super::{CONTENT_W, light_params, modifier_list, params, stack};
+use super::{content_w, light_params, modifier_list, params, stack};
 use crate::editor::Editor;
 use crate::mesh::SubObject;
 use crate::modifiers::ModifierKind;
@@ -17,7 +17,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     };
     ui.horizontal(|ui| {
         let o = &mut ed.scene.objects[id];
-        ui.add(egui::TextEdit::singleline(&mut o.name).desired_width(CONTENT_W - 40.0));
+        ui.add(egui::TextEdit::singleline(&mut o.name).desired_width(content_w() - 40.0));
         ui.color_edit_button_rgb(&mut o.wire_color).on_hover_text("Wireframe color");
     });
     // Lights and targets have no modifier stack.
@@ -49,7 +49,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         } else {
             rollouts::worlds::base(ui, ed);
         }
-        if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
+        if action(ui, "Convert to Editable Poly", true, content_w()) {
             ed.convert_to_editable_poly();
         }
         return;
@@ -61,7 +61,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
         } else {
             rollouts::geogen::base(ui, ed);
         }
-        if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
+        if action(ui, "Convert to Editable Poly", true, content_w()) {
             ed.convert_to_editable_poly();
         }
         return;
@@ -69,7 +69,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     if o.active_level.is_none() && o.primitive_mut_ref().is_some() {
         params::show(ui, ed);
         ui.label(dim("Convert to Editable Poly (right-click quad menu) or add an Edit Poly modifier to model."));
-        if action(ui, "Convert to Editable Poly", true, CONTENT_W) {
+        if action(ui, "Convert to Editable Poly", true, content_w()) {
             ed.convert_to_editable_poly();
         }
         return;

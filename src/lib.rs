@@ -1,4 +1,4 @@
-//! Ilex (formerly MiniMax) — a clean 3ds Max-style polygon modeler.
+//! Ilex (formerly MiniMax) — a clean polygon modeler.
 
 pub mod assembly;
 pub mod assets;
@@ -19,3 +19,6 @@ pub mod scene;
 pub mod splines;
 pub mod ui;
 pub mod viewport;
+
+#[cfg(test)]
+mod brand_tests;

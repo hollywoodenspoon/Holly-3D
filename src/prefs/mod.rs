@@ -19,13 +19,41 @@ pub struct Preferences {
     pub general: GeneralPrefs,
     pub render: RenderPrefs,
     pub assets: AssetPrefs,
+    pub layout: LayoutPrefs,
+}
+
+/// Sizes of the resizable panels, remembered between sessions.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct LayoutPrefs {
+    /// Width of the right Properties column in points.
+    pub properties_width: f32,
+    /// Height of the Scene Explorer at the top of that column.
+    pub explorer_height: f32,
+    /// Dialogs living in their own OS windows (`popout::Dock::key` names).
+    pub popouts: Vec<String>,
+    /// Prefab Library favourites (prefab type names).
+    pub prefab_favourites: Vec<String>,
+}
+
+impl LayoutPrefs {
+    pub const MIN_W: f32 = 260.0;
+    pub const MAX_W: f32 = 640.0;
+    pub const MIN_EXPLORER: f32 = 80.0;
+}
+
+impl Default for LayoutPrefs {
+    fn default() -> Self {
+        Self { properties_width: 340.0, explorer_height: 200.0, popouts: Vec::new(), prefab_favourites: Vec::new() }
+    }
 }
 
 /// The interface font (Preferences > Theme).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UiFont {
-    /// Fira Code, built into the program.
+    /// Fira Code, built into the program (the removed Inter option loads as this).
     #[default]
+    #[serde(alias = "Inter")]
     FiraCode,
     /// egui's own proportional font.
     Classic,
@@ -53,11 +81,14 @@ pub struct ThemePrefs {
     pub font_size: f32,
     /// The interface font.
     pub font: UiFont,
+    /// Bumped when the default look changes; 0 in files saved before.
+    #[serde(default)]
+    pub look_version: u32,
 }
 
 impl Default for ThemePrefs {
     fn default() -> Self {
-        Self { preset: ThemePreset::SlateAmber, custom: Palette::default(), ui_scale: 1.0, font_size: 11.5, font: UiFont::FiraCode }
+        Self { preset: ThemePreset::GraphiteTeal, custom: Palette::default(), ui_scale: 1.0, font_size: 11.5, font: UiFont::FiraCode, look_version: palette::LOOK_VERSION }
     }
 }
 
@@ -72,7 +103,7 @@ impl ThemePrefs {
 pub enum KeySet {
     #[default]
     MiniMax,
-    /// Closer to 3ds Max's own Default UI keyboard shortcuts.
+    /// The Classic key set: alternative default shortcuts.
     Max,
 }
 
@@ -81,7 +112,7 @@ impl KeySet {
     pub fn label(self) -> &'static str {
         match self {
             KeySet::MiniMax => "Ilex default",
-            KeySet::Max => "3ds Max standard",
+            KeySet::Max => "Classic",
         }
     }
 }
@@ -98,7 +129,8 @@ pub struct KeyPrefs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ViewportPrefs {
-    /// Viewports show the Environment (8) background colour.
+    /// Viewports show the Environment (8) background colour instead of the
+    /// neutral viewport grey (renders always use the Environment colour).
     pub use_env_background: bool,
     /// Viewport background when `use_env_background` is off (sRGB 0–1).
     pub background: [f32; 3],
@@ -110,21 +142,27 @@ pub struct ViewportPrefs {
     pub zoom_speed: f32,
     pub orbit_speed: f32,
     pub pan_speed: f32,
+    /// Orientation Cube in the top-right corner of every view.
+    pub show_cube: bool,
+    /// A cube click also frames the selection (Zoom Extents).
+    pub cube_fit_on_change: bool,
 }
 
 impl Default for ViewportPrefs {
     fn default() -> Self {
         Self {
-            use_env_background: true,
-            background: [0.235, 0.24, 0.255],
-            grid: [0.32, 0.33, 0.35],
-            grid_axis: [0.12, 0.12, 0.13],
+            use_env_background: false,
+            background: [0.24, 0.24, 0.24],
+            grid: [0.33, 0.33, 0.33],
+            grid_axis: [0.13, 0.13, 0.13],
             vertex: [0x3D, 0x8B, 0xFF],
             vertex_selected: [0xFF, 0x2E, 0x1F],
             invert_zoom: false,
             zoom_speed: 1.0,
             orbit_speed: 1.0,
             pan_speed: 1.0,
+            show_cube: true,
+            cube_fit_on_change: false,
         }
     }
 }
@@ -187,7 +225,7 @@ impl Default for GeneralPrefs {
 #[serde(default)]
 pub struct RenderPrefs {
     /// Renderer for new scenes (old `engine` / `blender_exe` keys from the
-    /// removed Cycles bridge are ignored on load).
+    /// removed external renderer bridge are ignored on load).
     pub integrator: Integrator,
     pub device: ComputeDevice,
     pub width: u32,
@@ -259,7 +297,10 @@ impl Preferences {
     }
 
     pub fn from_ron(text: &str) -> Result<Self, String> {
-        ron::from_str(text).map_err(|e| format!("Preferences: {e}"))
+        let mut p: Self = ron::from_str(text).map_err(|e| format!("Preferences: {e}"))?;
+        p.viewport.migrate(p.theme.look_version);
+        p.theme.migrate();
+        Ok(p)
     }
 
     pub fn to_ron(&self) -> String {
@@ -284,60 +325,4 @@ impl Preferences {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn preferences_round_trip_through_ron() {
-        let mut p = Preferences::default();
-        p.theme.preset = ThemePreset::MidnightBlue;
-        p.theme.ui_scale = 1.25;
-        p.keys.bindings = Some(vec![("Move".into(), "W".into())]);
-        p.viewport.invert_zoom = true;
-        p.general.undo_steps = 200;
-        p.general.units = Units::Feet;
-        p.render.width = 1920;
-        assert_eq!(Preferences::from_ron(&p.to_ron()).unwrap(), p);
-    }
-
-    #[test]
-    fn save_and_load_from_disk() {
-        let dir = std::env::temp_dir().join(format!("ilex_prefs_{}", std::process::id()));
-        let path = dir.join("preferences.ron");
-        let mut p = Preferences::default();
-        p.general.autosave_minutes = 12;
-        p.save_to(&path).unwrap();
-        assert_eq!(Preferences::load_from(&path).unwrap(), p);
-        assert_eq!(Preferences::load_from(&dir.join("missing.ron")).unwrap(), Preferences::default());
-        std::fs::remove_dir_all(&dir).ok();
-    }
-
-    #[test]
-    fn legacy_minimax_dirs_are_kept_until_ilex_exists() {
-        let base = std::env::temp_dir().join(format!("ilex_dirs_{}", std::process::id()));
-        std::fs::create_dir_all(base.join("minimax")).unwrap();
-        assert_eq!(app_dir(&base), base.join("minimax"));
-        std::fs::create_dir_all(base.join("ilex")).unwrap();
-        assert_eq!(app_dir(&base), base.join("ilex"));
-        std::fs::remove_dir_all(&base).ok();
-    }
-
-    #[test]
-    fn partial_files_fill_in_defaults() {
-        let p = Preferences::from_ron("(general: (undo_steps: 10))").unwrap();
-        assert_eq!(p.general.undo_steps, 10);
-        assert_eq!(p.general.autosave_minutes, GeneralPrefs::default().autosave_minutes);
-        assert_eq!(p.theme, ThemePrefs::default());
-        assert!(Preferences::from_ron("(general: oops)").is_err());
-    }
-
-    #[test]
-    fn units_and_zoom_helpers() {
-        assert_eq!(Units::Centimeters.format(2.5), "250.0cm");
-        assert_eq!(Units::Feet.format(0.3048), "1.000ft");
-        let mut v = ViewportPrefs { zoom_speed: 2.0, ..Default::default() };
-        assert_eq!(v.zoom_steps(1.0), 2.0);
-        v.invert_zoom = true;
-        assert_eq!(v.zoom_steps(1.0), -2.0);
-    }
-}
+mod tests;

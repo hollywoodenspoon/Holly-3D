@@ -14,7 +14,7 @@ pub struct Palette {
     pub panel: Rgb,
     pub card: Rgb,
     pub input: Rgb,
-    /// Active Q/W/E/R, sub-object and snap buttons (3ds Max amber).
+    /// Active Q/W/E/R, sub-object and snap buttons.
     pub accent: Rgb,
     /// Hover outline.
     pub hover: Rgb,
@@ -27,13 +27,14 @@ pub struct Palette {
 
 impl Default for Palette {
     fn default() -> Self {
-        ThemePreset::SlateAmber.palette()
+        ThemePreset::GraphiteTeal.palette()
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum ThemePreset {
     #[default]
+    GraphiteTeal,
     SlateAmber,
     MaxClassic,
     MidnightBlue,
@@ -43,13 +44,14 @@ pub enum ThemePreset {
 }
 
 impl ThemePreset {
-    pub const ALL: [ThemePreset; 6] =
-        [Self::SlateAmber, Self::MaxClassic, Self::MidnightBlue, Self::Light, Self::HighContrast, Self::Custom];
+    pub const ALL: [ThemePreset; 7] =
+        [Self::GraphiteTeal, Self::SlateAmber, Self::MaxClassic, Self::MidnightBlue, Self::Light, Self::HighContrast, Self::Custom];
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::SlateAmber => "Slate & Amber (default)",
-            Self::MaxClassic => "3ds Max Classic Gray",
+            Self::GraphiteTeal => "Graphite & Teal (default)",
+            Self::SlateAmber => "Slate & Amber",
+            Self::MaxClassic => "Classic Gray",
             Self::MidnightBlue => "Midnight Blue",
             Self::Light => "Light",
             Self::HighContrast => "High Contrast",
@@ -57,7 +59,7 @@ impl ThemePreset {
         }
     }
 
-    /// The preset's colours (`Custom` starts from Slate & Amber).
+    /// The preset's colours (`Custom` starts from Graphite & Teal).
     pub fn palette(self) -> Palette {
         let p = |light, panel, card, input, accent, hover, text, text_dim, button, button_hover, border| Palette {
             light,
@@ -73,7 +75,21 @@ impl ThemePreset {
             border,
         };
         match self {
-            Self::SlateAmber | Self::Custom => p(
+            // Neutral greys with no blue tint and a blue-green accent.
+            Self::GraphiteTeal | Self::Custom => p(
+                false,
+                [0x24, 0x24, 0x24],
+                [0x2E, 0x2E, 0x2E],
+                [0x1A, 0x1A, 0x1A],
+                [0x26, 0xB8, 0xB0],
+                [0x3F, 0xD0, 0xC7],
+                [0xE8, 0xE8, 0xE8],
+                [0xA6, 0xA6, 0xA6],
+                [0x3A, 0x3A, 0x3A],
+                [0x45, 0x45, 0x45],
+                [0x3C, 0x3C, 0x3C],
+            ),
+            Self::SlateAmber => p(
                 false,
                 [0x22, 0x23, 0x27],
                 [0x2B, 0x2D, 0x31],
@@ -142,6 +158,42 @@ impl ThemePreset {
     }
 }
 
+/// Raised whenever the default look changes, so saved prefs move over once.
+pub const LOOK_VERSION: u32 = 2;
+
+impl super::ThemePrefs {
+    /// Version 1 made Graphite & Teal the default: prefs still on the old
+    /// default (Slate & Amber) switch once; a later pick of Slate & Amber stays.
+    pub fn migrate(&mut self) {
+        if self.look_version < 1 && self.preset == ThemePreset::SlateAmber {
+            self.preset = ThemePreset::GraphiteTeal;
+        }
+        self.look_version = self.look_version.max(LOOK_VERSION);
+    }
+}
+
+/// The version 1 viewport colours (slightly blue).
+const V1_BACKGROUND: [f32; 3] = [0.235, 0.24, 0.255];
+const V1_GRID: [f32; 3] = [0.32, 0.33, 0.35];
+const V1_GRID_AXIS: [f32; 3] = [0.12, 0.12, 0.13];
+
+impl super::ViewportPrefs {
+    /// Version 2 gave viewports their own neutral grey instead of the
+    /// Environment colour; colours still on the old defaults move over once.
+    pub fn migrate(&mut self, from: u32) {
+        if from >= 2 {
+            return;
+        }
+        let d = Self::default();
+        self.use_env_background = false;
+        for (v, old, new) in [(&mut self.background, V1_BACKGROUND, d.background), (&mut self.grid, V1_GRID, d.grid), (&mut self.grid_axis, V1_GRID_AXIS, d.grid_axis)] {
+            if *v == old {
+                *v = new;
+            }
+        }
+    }
+}
+
 /// WCAG relative luminance of an sRGB colour.
 pub fn luminance(c: Rgb) -> f32 {
     let lin = |v: u8| {
@@ -194,6 +246,39 @@ mod tests {
             let problems = t.palette().readability();
             assert!(problems.is_empty(), "{}: {problems:?}", t.label());
         }
+    }
+
+    #[test]
+    fn graphite_teal_is_the_default() {
+        assert_eq!(ThemePreset::default(), ThemePreset::GraphiteTeal);
+        assert_eq!(super::super::ThemePrefs::default().preset, ThemePreset::GraphiteTeal);
+        assert_eq!(Palette::default().accent, [0x26, 0xB8, 0xB0]);
+    }
+
+    #[test]
+    fn old_amber_prefs_move_to_teal_once() {
+        use super::super::Preferences;
+        let old = Preferences::from_ron("(theme: (preset: SlateAmber))").unwrap();
+        assert_eq!(old.theme.preset, ThemePreset::GraphiteTeal);
+        assert_eq!(old.theme.look_version, LOOK_VERSION);
+        let picked = Preferences::from_ron(&format!("(theme: (preset: SlateAmber, look_version: {LOOK_VERSION}))")).unwrap();
+        assert_eq!(picked.theme.preset, ThemePreset::SlateAmber);
+        let other = Preferences::from_ron("(theme: (preset: MidnightBlue))").unwrap();
+        assert_eq!(other.theme.preset, ThemePreset::MidnightBlue);
+    }
+
+    #[test]
+    fn old_viewport_colours_become_neutral_grey_once() {
+        use super::super::{Preferences, ViewportPrefs};
+        let old = Preferences::from_ron("(theme: (look_version: 1), viewport: (use_env_background: true, background: (0.235, 0.24, 0.255)))").unwrap();
+        assert!(!old.viewport.use_env_background);
+        assert_eq!(old.viewport.background, ViewportPrefs::default().background);
+        let custom = Preferences::from_ron("(theme: (look_version: 1), viewport: (background: (0.5, 0.1, 0.1)))").unwrap();
+        assert_eq!(custom.viewport.background, [0.5, 0.1, 0.1]);
+        let picked = Preferences::from_ron(&format!("(theme: (look_version: {LOOK_VERSION}), viewport: (use_env_background: true))")).unwrap();
+        assert!(picked.viewport.use_env_background);
+        let picked = Preferences::from_ron("(theme: (preset: SlateAmber, look_version: 1))").unwrap();
+        assert_eq!(picked.theme.preset, ThemePreset::SlateAmber);
     }
 
     #[test]

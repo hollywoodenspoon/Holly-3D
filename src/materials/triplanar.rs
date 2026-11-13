@@ -1,6 +1,6 @@
 //! World / Triplanar mapping: the material is projected along the X, Y and
 //! Z axes and the three projections are blended by the surface normal, so
-//! textures tile seamlessly on meshes that have no UVs (GhostTown, Terrain,
+//! textures tile seamlessly on meshes that have no UVs (Settlement, Terrain,
 //! GeoGen rocks, Battlefield rubble). The projection space is the object's
 //! own space at world scale: `size` is in scene units and the texture
 //! stays put when the object moves or turns.

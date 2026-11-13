@@ -8,7 +8,7 @@ use crate::ui::widgets::{dim, max_spinner_range, rollout, toggle_button};
 use bevy_egui::egui;
 
 fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
-    egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width(130.0).show(ui, body);
+    egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width((crate::ui::properties::content_w() * 0.42).min(130.0)).show(ui, body);
 }
 
 fn gi_rollout(ui: &mut egui::Ui, ed: &mut Editor) {

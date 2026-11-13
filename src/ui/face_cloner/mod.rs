@@ -126,9 +126,11 @@ impl FaceUi {
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut FaceUi) {
-    st.poll(ed);
-    if std::mem::take(&mut ed.iface.face_load_request) {
-        st.load_photos();
+    if crate::ui::popout::is_main() {
+        st.poll(ed);
+        if std::mem::take(&mut ed.iface.face_load_request) {
+            st.load_photos();
+        }
     }
     if !ed.iface.face_cloner_open {
         return;
@@ -137,11 +139,14 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut FaceUi) {
         ctx.request_repaint_after(std::time::Duration::from_millis(150));
     }
     let mut open = true;
-    egui::Window::new("📸 Face Cloner — Photos / Video Frames").open(&mut open).default_size([420.0, 640.0]).show(ctx, |ui| {
+    let win = egui::Window::new("📸 Face Cloner — Photos / Video Frames").default_size([420.0, 640.0]);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::FaceCloner, win, &mut open, |ui| {
         egui::ScrollArea::vertical().show(ui, |ui| body(ui, ed, st));
     });
     ed.iface.face_cloner_open &= open;
-    pins::show(ctx, st);
+    if crate::ui::popout::here(crate::ui::popout::Dock::FaceCloner) {
+        pins::show(ctx, st);
+    }
 }
 
 fn body(ui: &mut egui::Ui, ed: &mut Editor, st: &mut FaceUi) {

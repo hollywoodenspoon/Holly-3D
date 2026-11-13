@@ -75,6 +75,7 @@ pub enum Action {
     ShadowCatcher,
     // Views
     ToggleGrid,
+    OrientationCube,
     Wireframe,
     EdgedFaces,
     ZoomExtents,
@@ -124,7 +125,7 @@ impl Action {
         v.extend(SUBS.map(Sub));
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
-            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid,
+            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube,
             Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
@@ -190,6 +191,7 @@ impl Action {
             SeeThrough => "See-Through",
             ShadowCatcher => "Shadow & Reflection Catcher",
             ToggleGrid => "Show Grid",
+            OrientationCube => "Orientation Cube",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
             ZoomExtents => "Zoom Extents",
@@ -209,8 +211,8 @@ impl Action {
             ColorGrading => "Color Grading & Camera RAW",
             LightMix => "Luxon LightMix (Relight Render)",
             Turntable => "Render Turntable / Sprite Sheet...",
-            BuildingsBrowser => "Demiurge Buildings & Props Browser...",
-            CharacterStudio => "Character & Creature Studio...",
+            BuildingsBrowser => "Prefab Library...",
+            CharacterStudio => "MakeHuman...",
             FaceCloner => "Face Cloner (Photos / Frames)...",
             MaterialEditor => "Material Editor",
             MaterialLibrary => "Material Library...",
@@ -250,7 +252,7 @@ impl Action {
             Clone => "⎘ Clone",
             Paint => "🖊 Paint",
             ContactSets => "Contact",
-            BuildingsBrowser => "🏠 Buildings",
+            BuildingsBrowser => "🏠 Prefabs",
             CharacterStudio => "♀♂ Characters",
             FaceCloner => "📸 Face Cloner",
             Isolate => "◎",
@@ -309,8 +311,8 @@ impl Action {
             Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
             MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
             FaceCloner => "Fit the selected character's head to photos or exported video frames of a person",
-            CharacterStudio => "MakeHuman-based RPG characters (Elf, Dwarf, Orc, anime...) with hair, outfits, weapons, plus creatures",
-            BuildingsBrowser => "Visual browser of the 43 standalone buildings, bridges and street props: click a tile, then drag in a viewport",
+            CharacterStudio => "The MakeHuman window: characters (Human, Elf, Dwarf, anime...) with hair, eyes, clothes, skins, poses and Randomise, plus creatures and an asset Library",
+            BuildingsBrowser => "Prefab Library: thumbnails of every building, bridge and street prop, with favourites; click a tile, then click in a viewport to drop it",
             Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",
             LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",
             ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",

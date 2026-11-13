@@ -103,8 +103,9 @@ impl Tracer<'_> {
         }
         let n = gi.ao_samples.clamp(1, 64);
         let o = sh.p + sh.ng * self.eps;
-        let hit = (0..n).filter(|_| self.rs.bvh.occluded(o, cosine_dir(sh.n, rng), gi.ao_radius.max(1e-4))).count();
-        1.0 - gi.ao_strength.clamp(0.0, 1.0) * hit as f32 / n as f32
+        // Cut-out holes and see-through cards let the ambient light in.
+        let hit: f32 = (0..n).map(|_| 1.0 - self.transmittance(o, cosine_dir(sh.n, rng), gi.ao_radius.max(1e-4))).sum();
+        1.0 - gi.ao_strength.clamp(0.0, 1.0) * hit / n as f32
     }
 
     /// 1-bounce indirect diffuse irradiance (times albedo by the caller):

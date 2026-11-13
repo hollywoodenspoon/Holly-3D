@@ -1,4 +1,4 @@
-//! Interface state behind the button-rich 3ds Max toolbar: Lock Selection,
+//! Interface state behind the button-rich toolbar: Lock Selection,
 //! Window / Crossing, the Selection Filter, Percent Snap, the viewport
 //! navigation buttons, the Display tab's hide / freeze actions and the
 //! small tool windows (Select From Scene, Measure, Hotkeys, About).
@@ -116,11 +116,17 @@ pub struct InterfaceState {
     /// (shown once as the recovery dialog until dismissed).
     pub crash_open: bool,
     pub crash_pending: Option<crate::diagnostics::recovery::Pending>,
-    /// Phase 10A Character & Creature Studio window.
+    /// The MakeHuman window (characters and creatures).
     pub character_studio_open: bool,
     /// Face Cloner window, and a pending "load photos" from the Character rollout.
     pub face_cloner_open: bool,
     pub face_load_request: bool,
+    /// The Properties tab shown before F10 / 8 switched to Render / Environment.
+    pub prev_tab: CommandTab,
+    /// A panel was resized: save the layout once the mouse is released.
+    pub layout_dirty: bool,
+    /// Prefab Library place mode options.
+    pub place: super::place::PlaceOpts,
 }
 
 /// The default Show Buttons set (the most used modifiers).
@@ -133,6 +139,17 @@ impl InterfaceState {
 }
 
 impl Editor {
+    /// Shows a Properties tab, or goes back to the previous one when it is
+    /// already showing (F10 and 8 toggle like their old windows did).
+    pub fn toggle_tab(&mut self, tab: CommandTab) {
+        if self.tab == tab {
+            self.tab = if self.iface.prev_tab == tab { CommandTab::Modify } else { self.iface.prev_tab };
+        } else {
+            self.iface.prev_tab = self.tab;
+            self.tab = tab;
+        }
+    }
+
     /// Toggles a navigation button (pressing the active one turns it off).
     pub fn toggle_nav_mode(&mut self, m: NavMode) {
         self.iface.nav_mode = if self.iface.nav_mode == Some(m) { None } else { Some(m) };

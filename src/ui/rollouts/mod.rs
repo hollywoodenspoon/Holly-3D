@@ -23,15 +23,17 @@ pub mod worlds;
 
 use crate::editor::Editor;
 use crate::mesh::ops::PolyOp;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{action, split_button};
 use bevy_egui::egui;
 
-pub(crate) const HALF: f32 = CONTENT_W / 2.0 - 4.0;
+pub(crate) fn half() -> f32 {
+    content_w() / 2.0 - 4.0
+}
 
 /// One split-caddy cell: main applies remembered params, `[□]` opens the caddy.
 pub(crate) fn caddy_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, default: PolyOp, enabled: bool) {
-    let (main, caddy) = split_button(ui, label, enabled, HALF);
+    let (main, caddy) = split_button(ui, label, enabled, half());
     if main {
         let op = ed.remembered(default.clone());
         ed.apply_op(op);
@@ -43,7 +45,7 @@ pub(crate) fn caddy_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, defaul
 
 /// One plain action cell.
 pub(crate) fn op_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, op: PolyOp, enabled: bool) {
-    if action(ui, label, enabled, HALF) {
+    if action(ui, label, enabled, half()) {
         ed.apply_op(op);
     }
 }

@@ -1,6 +1,6 @@
 //! UI fonts. Fira Code (OFL-1.1) is built into the program and is the
-//! default for both proportional and monospace text; egui's own fonts stay
-//! behind it as fallbacks, so emoji and icon glyphs still draw.
+//! default for all text. egui's own fonts stay behind it as fallbacks, so
+//! emoji and icon glyphs still draw.
 
 use crate::prefs::UiFont;
 use bevy_egui::egui::{self, FontData, FontDefinitions, FontFamily};

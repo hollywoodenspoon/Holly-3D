@@ -87,7 +87,7 @@ impl BaseObject {
     }
 }
 
-/// Object-level transform (3ds Max node TM) — Z up.
+/// Object-level transform (node TM) — Z up.
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Xform {
     pub translation: Vec3,
@@ -130,7 +130,7 @@ pub struct SceneObject {
     /// `None` = base object, `Some(i)` = modifier `i`.
     pub active_level: Option<usize>,
     pub transform: Xform,
-    /// Pivot offset (3ds Max "object offset"): mesh space -> pivot space.
+    /// Pivot offset ("object offset"): mesh space -> pivot space.
     pub offset: Mat4,
     pub wire_color: [f32; 3],
     pub hidden: bool,
@@ -141,7 +141,7 @@ pub struct SceneObject {
     pub shadow_catcher: bool,
     /// Show the UV checker texture in shaded viewports.
     pub checker: bool,
-    /// Assigned material (instances share the id, like 3ds Max).
+    /// Assigned material (instances share the id).
     pub material: Option<crate::materials::MatId>,
     pub selected: bool,
     pub instance_group: Option<u32>,
@@ -224,7 +224,7 @@ pub struct Scene {
     next_instance_group: u32,
 }
 
-/// Pleasant 3ds Max-like random wireframe colors.
+/// Pleasant random wireframe colors.
 const WIRE_COLORS: [[f32; 3]; 8] = [
     [0.55, 0.78, 0.35],
     [0.33, 0.62, 0.89],

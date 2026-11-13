@@ -1,5 +1,5 @@
 //! Battlefield & Ruin: a period-accurate destruction modifier (also run by
-//! the `Damaged / Battlefield Mode` toggles of GhostTown and the Medieval
+//! the `Damaged / Battlefield Mode` toggles of Settlement and the Medieval
 //! Architect). Blast zones (user-placed sub-object spheres, or seeded ones
 //! on the structures) drive a cut height field per mode:
 //! - Modern / Mecha: tilted Voronoi-style shear planes, pancaked slabs,

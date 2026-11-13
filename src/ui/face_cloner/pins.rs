@@ -16,6 +16,10 @@ pub struct PinEditor {
 }
 
 impl PinEditor {
+    pub fn clear_textures(&mut self) {
+        self.tex = None;
+    }
+
     pub fn open(&mut self, i: usize) {
         self.shot = Some(i);
         self.drag = None;
@@ -86,9 +90,9 @@ pub fn show(ctx: &egui::Context, st: &mut FaceUi) {
         for j in 0..POINTS {
             let p = s.point(j);
             let (c, r) = if s.pins.contains_key(&j) {
-                (egui::Color32::from_rgb(229, 156, 36), 3.0)
+                (crate::ui::theme::accent(), 3.0)
             } else if Some(j) == hover || Some(j) == ed.drag {
-                (egui::Color32::from_rgb(58, 122, 254), 3.5)
+                (crate::ui::theme::hover(), 3.5)
             } else if j >= 468 {
                 (egui::Color32::from_rgb(120, 220, 255), 1.6)
             } else {

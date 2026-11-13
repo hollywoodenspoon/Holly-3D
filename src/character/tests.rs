@@ -9,7 +9,7 @@ fn mats(m: &crate::mesh::EditablePoly) -> HashSet<u16> {
 
 #[test]
 fn default_character_is_a_standing_valid_mesh() {
-    let p = CharacterParams { hair: Hair::Bald, outfit: Outfit::None, ..Default::default() };
+    let p = CharacterParams { eyes: Eyes::Low, hair: Hair::Bald, outfit: Outfit::None, ..Default::default() };
     let m = p.build();
     assert!(m.validate().is_ok(), "{:?}", m.validate());
     let (v, _e, f) = m.counts();

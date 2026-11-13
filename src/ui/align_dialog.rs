@@ -1,4 +1,4 @@
-//! Tools -> Align (Alt+A): the 3ds Max Align Selection dialog with
+//! Tools -> Align (Alt+A): the Align Selection dialog with
 //! position / orientation / scale options, previewed live.
 
 use super::widgets::dim;

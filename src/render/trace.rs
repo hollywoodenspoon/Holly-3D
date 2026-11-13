@@ -196,8 +196,21 @@ impl<'a> Tracer<'a> {
         }
         let n = self.cfg.sky_samples.max(1);
         let o = sh.p + sh.ng * self.eps;
-        let open = (0..n).filter(|_| !self.rs.bvh.occluded(o, cosine_dir(sh.n, rng), self.rs.radius)).count();
-        self.rs.sky * (open as f32 / n as f32)
+        let open: f32 = (0..n).map(|_| self.transmittance(o, cosine_dir(sh.n, rng), self.rs.radius)).sum();
+        self.rs.sky * (open / n as f32)
+    }
+
+    /// First hit along a ray that is not a Cut-out hole. Holes are skipped
+    /// at the same depth, so what shows through them keeps its full shading.
+    fn past_holes(&self, mut o: Vec3, d: Vec3) -> (Vec3, Option<super::bvh::Hit>) {
+        for _ in 0..32 {
+            let Some(h) = self.rs.bvh.closest(o, d, f32::INFINITY) else { return (o, None) };
+            if !self.rs.materials[self.rs.bvh.tris[h.tri].mat].alpha_cutout || self.interp(&h, o, d).s.alpha > 0.0 {
+                return (o, Some(h));
+            }
+            o += d * (h.t + self.eps);
+        }
+        (o, self.rs.bvh.closest(o, d, f32::INFINITY))
     }
 
     /// Radiance + coverage along a ray; camera rays also march the
@@ -214,7 +227,7 @@ impl<'a> Tracer<'a> {
     }
 
     fn trace_surface(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
-        let hit = self.rs.bvh.closest(o, d, f32::INFINITY);
+        let (o, hit) = self.past_holes(o, d);
         if let Some((le, _)) = self.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)).filter(|_| depth == 0) {
             return (le, 1.0, None);
         }

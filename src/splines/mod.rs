@@ -1,4 +1,4 @@
-//! Splines & shapes (3ds Max Create -> Shapes, Editable Spline): Bezier
+//! Splines & shapes (Create -> Shapes, Editable Spline): Bezier
 //! knots with Corner / Smooth / Bezier / Bezier Corner tangents, polyline
 //! interpolation, the Rendering rollout sweep and spline edit operations.
 
@@ -20,7 +20,7 @@ pub use sweep::SplineRender;
 
 use bevy::math::Vec3;
 
-/// 3ds Max vertex (knot) tangent types.
+/// Vertex (knot) tangent types.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum KnotType {
     #[default]
@@ -84,7 +84,7 @@ pub struct Spline {
     pub selected: bool,
 }
 
-/// A shape: one or more splines (3ds Max shapes can hold several).
+/// A shape: one or more splines (shapes can hold several).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Shape {
     pub splines: Vec<Spline>,

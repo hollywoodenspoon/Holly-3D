@@ -7,7 +7,7 @@ use crate::render::grading::{Grading, NEUTRAL_K, Wheel};
 use crate::ui::widgets::dim;
 use bevy_egui::egui::{self, Color32, Pos2, Sense, Stroke, Vec2};
 
-/// A labelled slider; right-click resets it to `default` (3ds Max spinner rule).
+/// A labelled slider; right-click resets it to `default` (spinner rule).
 fn slider(ui: &mut egui::Ui, label: &str, v: &mut f32, range: std::ops::RangeInclusive<f32>, default: f32, tip: &str) -> bool {
     let mut changed = false;
     ui.horizontal(|ui| {

@@ -1,5 +1,5 @@
-//! "GhostTown" procedural settlements (Create -> Geometry -> Settlement and
-//! the GhostTown modifier): Modern Downtown, Modern Suburbs, Medieval
+//! Procedural settlements (Create -> Geometry -> Settlement and
+//! the Settlement modifier): Modern Downtown, Modern Suburbs, Medieval
 //! Walled City and Medieval Village presets with automatic Multi/Sub-Object
 //! Material IDs (`kit::ids`), plus the `[✓] Damaged / Battlefield Mode`
 //! toggle that runs the Battlefield / Ruin modifier over the result.
@@ -200,7 +200,7 @@ impl SettlementParams {
     }
 }
 
-/// GhostTown as a stack modifier: fills the input's XY footprint (a flat
+/// Settlement as a stack modifier: fills the input's XY footprint (a flat
 /// single polygon's outline, otherwise its bounds) and sits on its top.
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
@@ -241,6 +241,27 @@ impl SettlementMod {
 
 /// Kit helpers shared by the era builders.
 pub(crate) fn window(kit: &mut Kit, x: f32, y: f32, z: f32, w: f32, h: f32, id: u16) {
+    if kit.mid {
+        // Recessed pane inside a frame, with a sill and a mullion.
+        let (t, d, prev) = ((w.min(h) * 0.08).clamp(0.04, 0.09), 0.07, kit.mat);
+        kit.mat(id).quad(
+            Vec3::new(x - w * 0.5, y, z),
+            Vec3::new(x + w * 0.5, y, z),
+            Vec3::new(x + w * 0.5, y, z + h),
+            Vec3::new(x - w * 0.5, y, z + h),
+        );
+        kit.mat(super::kit::ids::TRIM);
+        let (l, r) = (x - w * 0.5, x + w * 0.5);
+        kit.block(Vec3::new(l - t, y - d, z + h), Vec3::new(r + t, y, z + h + t));
+        kit.block(Vec3::new(l - t, y - d, z), Vec3::new(l, y, z + h));
+        kit.block(Vec3::new(r, y - d, z), Vec3::new(r + t, y, z + h));
+        kit.block(Vec3::new(l - t * 2.0, y - d * 2.0, z - t), Vec3::new(r + t * 2.0, y, z));
+        if w > 0.9 {
+            kit.block(Vec3::new(x - t * 0.3, y - d * 0.4, z), Vec3::new(x + t * 0.3, y, z + h));
+        }
+        kit.mat = prev;
+        return;
+    }
     kit.mat(id).quad(
         Vec3::new(x - w * 0.5, y, z),
         Vec3::new(x + w * 0.5, y, z),

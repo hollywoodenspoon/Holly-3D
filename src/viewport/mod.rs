@@ -22,4 +22,5 @@ pub mod render_sync;
 pub mod skybox;
 pub mod spline_lines;
 pub mod tangents;
+pub mod view_cube;
 pub mod triplanar_uv;

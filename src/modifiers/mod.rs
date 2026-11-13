@@ -153,7 +153,7 @@ impl ModifierKind {
             ModifierKind::EditNormals(_) => "Edit Normals",
             ModifierKind::Boolean(_) => "Boolean",
             ModifierKind::ProOptimizer(_) => "ProOptimizer",
-            ModifierKind::Settlement(_) => "Demiurge GhostTown",
+            ModifierKind::Settlement(_) => "Demiurge Settlement",
             ModifierKind::Architect(_) => "Demiurge Medieval Architect",
             ModifierKind::Battlefield(_) => "Demiurge Battlefield & Ruin",
             ModifierKind::Loft(_) => "Loft",
@@ -180,7 +180,7 @@ impl ModifierKind {
     }
 
     /// Called once with the modifier's input when it is added to a stack
-    /// (fits lattices / gizmos, captures UVs — 3ds Max "Set Volume").
+    /// (fits lattices / gizmos, captures UVs — "Set Volume").
     pub fn init(&mut self, input: &EditablePoly) {
         match self {
             ModifierKind::Ffd(f) => f.fit(input),
@@ -288,7 +288,7 @@ pub const MODIFIER_LIST: &[ModifierListItem] = &[
     ModifierListItem { name: "Edit Normals", available: true },
     ModifierListItem { name: "Boolean", available: true },
     ModifierListItem { name: "ProOptimizer", available: true },
-    ModifierListItem { name: "Demiurge GhostTown", available: true },
+    ModifierListItem { name: "Demiurge Settlement", available: true },
     ModifierListItem { name: "Demiurge Medieval Architect", available: true },
     ModifierListItem { name: "Demiurge Battlefield & Ruin", available: true },
 ];
@@ -321,7 +321,7 @@ pub fn make_modifier(name: &str) -> Option<ModifierEntry> {
         "Edit Normals" => Some(ModifierEntry::new(ModifierKind::EditNormals(EditNormalsMod::default()))),
         "Boolean" => Some(ModifierEntry::new(ModifierKind::Boolean(BooleanMod::default()))),
         "ProOptimizer" => Some(ModifierEntry::new(ModifierKind::ProOptimizer(ProOptimizerMod::default()))),
-        "Demiurge GhostTown" => Some(ModifierEntry::new(ModifierKind::Settlement(Default::default()))),
+        "Demiurge Settlement" => Some(ModifierEntry::new(ModifierKind::Settlement(Default::default()))),
         "Demiurge Medieval Architect" => Some(ModifierEntry::new(ModifierKind::Architect(Default::default()))),
         "Demiurge Battlefield & Ruin" => Some(ModifierEntry::new(ModifierKind::Battlefield(Default::default()))),
         _ => None,

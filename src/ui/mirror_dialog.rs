@@ -1,4 +1,4 @@
-//! Tools -> Mirror (3ds Max Mirror dialog): Mirror Axis, Offset and
+//! Tools -> Mirror (Mirror dialog): Mirror Axis, Offset and
 //! Clone Selection, previewed live in the viewports.
 
 use super::widgets::{dim, max_spinner, toggle_button};

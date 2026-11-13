@@ -1,5 +1,5 @@
-//! Render Setup (F10) parameters. Old scenes that chose the removed Cycles
-//! bridge still load: the unknown fields are ignored and they render with
+//! Render Setup (F10) parameters. Old scenes that chose the removed external
+//! renderer bridge still load: the unknown fields are ignored and they render with
 //! the native path tracer.
 
 /// Output resolution presets (Common tab).

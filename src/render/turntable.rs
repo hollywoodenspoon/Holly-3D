@@ -63,7 +63,7 @@ pub fn dir_names(dirs: u32) -> Vec<&'static str> {
     if dirs == 4 { vec!["N", "E", "S", "W"] } else { DIRS8.to_vec() }
 }
 
-/// Camera yaw that shows a model (front facing -Y, 3ds Max Front) facing
+/// Camera yaw that shows a model (front facing -Y, the Front view) facing
 /// compass direction `deg` on screen (N = up, E = right, clockwise).
 pub fn facing_yaw(deg: f32) -> f32 {
     (deg - 90.0).to_radians()

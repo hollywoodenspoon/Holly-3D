@@ -1,4 +1,4 @@
-//! The 44 standalone building / bridge / doodad types and their defaults.
+//! The standalone building / bridge / doodad types and their defaults.
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum BuildingKind {
@@ -51,6 +51,20 @@ pub enum BuildingKind {
     Bench,
     Fountain,
     RubblePile,
+    // Residential (13), appended so saved indices and seeds stay put
+    Cottage,
+    Bungalow,
+    Farmhouse,
+    LogCabin,
+    AFrame,
+    Villa,
+    Victorian,
+    ModernBox,
+    RowHouses,
+    Duplex,
+    BeachHut,
+    WalkUp,
+    TowerBlock,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -59,16 +73,18 @@ pub enum Category {
     Medieval,
     Infrastructure,
     Props,
+    Residential,
 }
 
 impl Category {
-    pub const ALL: [Category; 4] = [Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 5] = [Self::Residential, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
             Self::Medieval => "Medieval Buildings",
             Self::Infrastructure => "Bridges & Infrastructure",
             Self::Props => "Doodads & Street Props",
+            Self::Residential => "Residential",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -77,7 +93,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 44] = {
+    pub const ALL: [BuildingKind; 57] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -124,6 +140,19 @@ impl BuildingKind {
             Bench,
             Fountain,
             RubblePile,
+            Cottage,
+            Bungalow,
+            Farmhouse,
+            LogCabin,
+            AFrame,
+            Villa,
+            Victorian,
+            ModernBox,
+            RowHouses,
+            Duplex,
+            BeachHut,
+            WalkUp,
+            TowerBlock,
         ]
     };
 
@@ -133,7 +162,8 @@ impl BuildingKind {
             0..=13 => Category::Modern,
             14..=25 => Category::Medieval,
             26..=30 => Category::Infrastructure,
-            _ => Category::Props,
+            31..=43 => Category::Props,
+            _ => Category::Residential,
         }
     }
 
@@ -190,6 +220,19 @@ impl BuildingKind {
             Bench => "Park Bench",
             Fountain => "Fountain / Well",
             RubblePile => "Rubble Pile",
+            Cottage => "Cottage",
+            Bungalow => "Bungalow",
+            Farmhouse => "Farmhouse",
+            LogCabin => "Log Cabin",
+            AFrame => "A-Frame Cabin",
+            Villa => "Villa",
+            Victorian => "Victorian House",
+            ModernBox => "Modern House",
+            RowHouses => "Row Houses / Terrace",
+            Duplex => "Duplex",
+            BeachHut => "Beach Hut",
+            WalkUp => "Walk-Up Apartments",
+            TowerBlock => "Residential Tower",
         }
     }
 
@@ -241,11 +284,25 @@ impl BuildingKind {
             Bench => (1.8, 0.6, 1),
             Fountain => (4.0, 4.0, 1),
             RubblePile => (10.0, 8.0, 1),
+            Cottage => (8.0, 6.5, 1),
+            Bungalow => (12.0, 9.0, 1),
+            Farmhouse => (12.0, 8.0, 2),
+            LogCabin => (8.0, 6.0, 1),
+            AFrame => (7.0, 9.0, 1),
+            Villa => (18.0, 12.0, 2),
+            Victorian => (10.0, 12.0, 3),
+            ModernBox => (14.0, 10.0, 2),
+            RowHouses => (24.0, 9.0, 2),
+            Duplex => (14.0, 10.0, 2),
+            BeachHut => (2.4, 2.6, 1),
+            WalkUp => (16.0, 14.0, 4),
+            TowerBlock => (24.0, 22.0, 18),
         }
     }
 
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
-        self.category() != Category::Props || matches!(self, BuildingKind::SandbagWall)
+        use BuildingKind::*;
+        (self.category() != Category::Props || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut)
     }
 }

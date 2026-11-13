@@ -1,5 +1,5 @@
 //! Maps rollout (channel slots with amount spinners) and the shared map-node
-//! parameter editor used by both Compact and Slate views.
+//! parameter editor used by both Compact and Node Graph views.
 
 use super::params::{color, num};
 use super::{craft_params, edit};
@@ -7,7 +7,7 @@ use crate::editor::Editor;
 use crate::materials::maps::NoiseKind;
 use crate::materials::patterns::{BrickKind, GrungeKind};
 use crate::materials::{MapChannel, MapNode, import};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout as card};
 use bevy_egui::egui::{self, RichText};
 
@@ -206,8 +206,8 @@ pub fn rollout(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.separator();
         ui.label(dim("Import PBR Texture Folder (albedo / metallic / roughness / normal / opacity / emissive):"));
-        ui.add(egui::TextEdit::singleline(&mut ed.mat_editor.pbr_folder).desired_width(CONTENT_W).hint_text("/path/to/textures"));
-        if ui.add_sized([CONTENT_W, 24.0], egui::Button::new("📁 Import PBR Texture Folder")).clicked() {
+        ui.add(egui::TextEdit::singleline(&mut ed.mat_editor.pbr_folder).desired_width(content_w()).hint_text("/path/to/textures"));
+        if ui.add_sized([content_w(), 24.0], egui::Button::new("📁 Import PBR Texture Folder")).clicked() {
             ed.import_pbr_folder();
         }
     });

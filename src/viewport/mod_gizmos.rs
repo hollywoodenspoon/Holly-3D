@@ -74,7 +74,7 @@ pub fn draw(g: &mut Gizmos<OverlayLines>, ed: &Editor, cache: &mut BoxCache) {
                     for k in 0..4 {
                         g.line(c[k], c[(k + 1) % 4], color);
                     }
-                    // 3ds Max marks the top (V = 1) edge in green and the U direction
+                    // Mark the top (V = 1) edge in green and the U direction
                     g.line(c[2], c[3], SEAM);
                     g.line(p(0.0, 0.0, 0.0), p(0.0, 0.0, 0.15), color);
                 }

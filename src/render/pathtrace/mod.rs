@@ -1,5 +1,5 @@
-//! Native progressive path tracer (Phase 11.5A), replacing the old Cycles /
-//! Blender bridge: multi-bounce paths with MIS and Russian Roulette on the
+//! Native progressive path tracer (Phase 11.5A), replacing the old external
+//! renderer bridge: multi-bounce paths with MIS and Russian Roulette on the
 //! CPU, plus a wgpu compute port of the SolidCraft GPU path tracer.
 
 pub mod adaptive;

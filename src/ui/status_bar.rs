@@ -54,7 +54,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
         .rect
 }
 
-/// What the current tool expects next (3ds Max's prompt line).
+/// What the current tool expects next (prompt line).
 pub fn prompt(ed: &Editor) -> String {
     if let Some(d) = &ed.iface.create_drag
         && d.id.is_some()

@@ -1,10 +1,14 @@
-//! Center 3D viewports: layout, 3ds Max navigation, gizmo, selection,
+//! Center 3D viewports: layout, navigation, gizmo, selection,
 //! marquee, modal tools and the right-click quad menu.
 
+mod frame;
+pub use frame::round_corners;
 mod gizmo;
 mod nav;
 mod overlay;
+mod place;
 mod region;
+mod view_cube;
 
 use crate::editor::Editor;
 use crate::editor::select::SelectOp;
@@ -33,7 +37,9 @@ fn v2(p: egui::Pos2) -> Vec2 {
 }
 
 pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: egui::Rect) {
-    ed.viewports.layout(ScreenRect { min: v2(area.min), max: v2(area.max) }, 3.0);
+    let inner = frame::inner(area);
+    ed.viewports.layout(ScreenRect { min: v2(inner.min), max: v2(inner.max) }, frame::GAP);
+    frame::gaps(ui.painter(), area, !ed.viewports.maximized);
     ed.sync_camera_views();
     let (mods, scroll, delta, mmb_down, pointer) =
         ui.input(|i| (i.modifiers, i.smooth_scroll_delta.y, i.pointer.delta(), i.pointer.middle_down(), i.pointer.hover_pos()));
@@ -71,7 +77,8 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
         if !mmb_down && st.nav == Some(vi) {
             st.nav = None;
         }
-        if resp.hovered() && scroll.abs() > 0.0 {
+        let placing = matches!(ed.tool, crate::editor::Tool::PlacePrefab(_));
+        if resp.hovered() && scroll.abs() > 0.0 && !placing {
             let steps = ed.prefs.viewport.zoom_steps(scroll / 60.0);
             ed.viewports.views[vi].camera.zoom(steps);
             ed.push_view_to_camera(vi);
@@ -116,6 +123,11 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut ViewportUiState, area: 
             if resp.clicked_by(PointerButton::Secondary) {
                 ed.cancel_tool();
             }
+            overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
+            continue;
+        }
+        // ---- Prefab Library place mode
+        if place::run(ui, ed, &resp, vi, mods.shift, scroll, pointer.map(v2)) {
             overlay::draw(ui, ed, vi, rect, None, pointer.map(v2));
             continue;
         }

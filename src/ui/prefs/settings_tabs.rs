@@ -19,7 +19,7 @@ pub fn viewports(ui: &mut egui::Ui, ed: &mut Editor) {
     egui::Grid::new("vp_colours").num_columns(2).spacing([10.0, 6.0]).show(ui, |ui| {
         ui.label("Background");
         ui.horizontal(|ui| {
-            ui.checkbox(&mut v.use_env_background, "Use Environment (8) colour");
+            ui.checkbox(&mut v.use_env_background, "Show the Environment (8) colour");
             ui.add_enabled_ui(!v.use_env_background, |ui| ui.color_edit_button_rgb(&mut v.background));
         });
         ui.end_row();

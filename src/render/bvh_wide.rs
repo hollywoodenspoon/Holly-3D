@@ -85,7 +85,10 @@ pub fn walk(nodes: &[Node4], tris: &[Tri], o: Vec3, d: Vec3, tmax: f32, any: boo
     if nodes.is_empty() {
         return None;
     }
-    let inv = Vec3::ONE / d;
+    // No exact zero components: a ray running along a box face with its
+    // origin on that face would get 0 * inf = NaN and miss the box.
+    let safe = |v: f32| if v.abs() < 1e-20 { 1e-20f32.copysign(v) } else { v };
+    let inv = Vec3::ONE / Vec3::new(safe(d.x), safe(d.y), safe(d.z));
     let mut best: Option<Hit> = None;
     let mut limit = tmax;
     // (entry distance, slot): popped nearest first.

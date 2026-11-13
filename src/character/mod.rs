@@ -13,12 +13,15 @@ pub mod landmarks;
 pub mod makehuman;
 pub mod outfit;
 pub mod params;
+pub mod randomise;
 pub mod rig;
 pub mod shapes;
 pub mod wardrobe;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_look;
 
 pub use params::CharacterParams;
 

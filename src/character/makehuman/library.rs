@@ -135,6 +135,19 @@ pub fn eye_colors() -> Vec<&'static str> {
     system().records.keys().filter_map(|k| k.strip_prefix("eyes/materials/")?.strip_suffix(".mhmat")).collect()
 }
 
+/// Bundled then imported item names in `cat` (imported names never
+/// clash with bundled ones).
+pub fn all_items(cat: Category) -> Vec<String> {
+    let mut v: Vec<String> = items(cat).into_iter().map(str::to_string).collect();
+    v.extend(super::user_lib::names(cat));
+    v
+}
+
+/// True for an item the user imported.
+pub fn is_user(cat: Category, name: &str) -> bool {
+    !items(cat).contains(&name) && super::user_lib::names(cat).iter().any(|n| n == name)
+}
+
 /// "male_casualsuit01" -> "Male Casualsuit 01".
 pub fn pretty(name: &str) -> String {
     let mut out = String::new();
@@ -172,15 +185,27 @@ fn parse_item(cat: Category, name: &str) -> Option<Item> {
 
 type ItemCache = Mutex<HashMap<(Category, String), Option<Arc<Item>>>>;
 
-/// The parsed item (cached), or None if the pack has no such item.
-pub fn item(cat: Category, name: &str) -> Option<Arc<Item>> {
+fn item_cache() -> &'static ItemCache {
     static CACHE: OnceLock<ItemCache> = OnceLock::new();
-    let cache = CACHE.get_or_init(Default::default);
+    CACHE.get_or_init(Default::default)
+}
+
+/// Drops a cached item (after an import or removal).
+pub fn forget(cat: Category, name: &str) {
+    if let Ok(mut c) = item_cache().lock() {
+        c.remove(&(cat, name.to_string()));
+    }
+}
+
+/// The parsed item (cached): bundled first, then the user's imports.
+/// None if neither has it.
+pub fn item(cat: Category, name: &str) -> Option<Arc<Item>> {
+    let cache = item_cache();
     let key = (cat, name.to_string());
     if let Some(hit) = cache.lock().ok()?.get(&key) {
         return hit.clone();
     }
-    let parsed = parse_item(cat, name).map(Arc::new);
+    let parsed = parse_item(cat, name).or_else(|| super::user_lib::parse(cat, name)).map(Arc::new);
     cache.lock().ok()?.insert(key, parsed.clone());
     parsed
 }
@@ -191,6 +216,11 @@ pub fn material(key: &str) -> Option<MhMat> {
 }
 
 fn decode(key: &str) -> Option<Texture> {
+    if let Some(path) = key.strip_prefix(super::user_lib::USER) {
+        let rgba = image::open(path).ok()?.into_rgba8();
+        let (w, h) = rgba.dimensions();
+        return Some(Texture { width: w, height: h, data: rgba.pixels().map(|p| p.0).collect() });
+    }
     let rgb = image::load_from_memory_with_format(textures().get(&format!("{key}.rgb"))?, image::ImageFormat::Jpeg).ok()?.into_rgb8();
     let (w, h) = rgb.dimensions();
     let alpha = textures()

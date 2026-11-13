@@ -82,7 +82,7 @@ impl Principled {
     }
 
     /// Single-scattering albedo giving multi-scatter color `c` (van de Hulst
-    /// inversion, as in Cycles' random walk).
+    /// inversion, as in the usual random walk).
     pub fn walk_albedo(c: f32) -> f32 {
         let a = c.clamp(0.0, 0.999);
         let s = 4.09712 + 4.20863 * a - (9.59217 + 41.6808 * a + 17.7126 * a * a).sqrt();

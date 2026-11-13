@@ -1,4 +1,4 @@
-//! Materials: 3ds Max-style material library (24 Compact Material Editor
+//! Materials: the material library (24 Compact Material Editor
 //! slots), shading models, procedural / bitmap maps and the universal ink
 //! outline settings shared by every material.
 
@@ -121,13 +121,13 @@ pub struct Material {
     pub attenuation_color: [f32; 3],
     /// Luminance / Emission color (sRGB).
     pub emissive: [f32; 3],
-    /// Emission Multiplier (0..100); above 0 the surface is an area light in F9 / Cycles.
+    /// Emission Multiplier (0..100); above 0 the surface is an area light in F9.
     pub emissive_strength: f32,
     pub toon: ToonParams,
     pub outline: OutlineParams,
     /// Maps rollout: one slot per [`MapChannel`].
     pub maps: [MapSlot; 6],
-    /// Free (unwired) nodes on the Slate canvas.
+    /// Free (unwired) nodes on the Node Graph canvas.
     pub slate_nodes: Vec<MapNode>,
     /// "Show Shaded Material in Viewport".
     pub show_in_viewport: bool,
@@ -159,6 +159,11 @@ pub struct Material {
     /// shadows, AO and reflections other objects put on it.
     #[serde(default)]
     pub shadow_catcher: bool,
+    /// "Alpha: Cut-out": texture alpha is either fully there or gone (at
+    /// 50 %), with no blending. Hair cards, lashes and leaves use it so
+    /// they need no depth sorting and leave no haze.
+    #[serde(default)]
+    pub alpha_cutout: bool,
 }
 
 impl Default for Material {
@@ -189,6 +194,7 @@ impl Default for Material {
             paint: None,
             principled: Default::default(),
             shadow_catcher: false,
+            alpha_cutout: false,
         }
     }
 }
@@ -256,7 +262,7 @@ impl Default for MaterialLib {
 }
 
 impl MaterialLib {
-    /// "01 - Name" (3ds Max slot naming).
+    /// "01 - Name" (slot naming).
     fn numbered(i: usize, mut m: Material) -> Material {
         m.name = format!("{:02} - {}", i + 1, m.name);
         m

@@ -171,7 +171,7 @@ pub fn transform_vertices(m: &mut EditablePoly, verts: &[VertexId], mat: Mat4) {
 }
 
 /// Soft Selection weights: 1 for selected vertices, falling off to 0 at
-/// `falloff` distance (shaped by `pinch` / `bubble`, like 3ds Max).
+/// `falloff` distance (shaped by `pinch` / `bubble`).
 pub fn soft_weights(m: &EditablePoly, selected: &[VertexId], falloff: f32, pinch: f32, bubble: f32) -> HashMap<VertexId, f32> {
     let sel: HashSet<VertexId> = selected.iter().copied().collect();
     let pts: Vec<Vec3> = selected.iter().map(|&v| m.pos(v)).collect();

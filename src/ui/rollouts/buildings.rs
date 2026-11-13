@@ -3,8 +3,8 @@
 
 use super::spline::grid;
 use super::worlds::{row, seed_row};
-use crate::generators::buildings::{BuildingKind, BuildingParams, Category, MatStyle, StairKind};
-use crate::ui::command::CONTENT_W;
+use crate::generators::buildings::{BuildingKind, BuildingParams, Category, Detail, MatStyle, StairKind};
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui::{self, RichText};
 
@@ -32,6 +32,19 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
     t.r(ui.checkbox(&mut p.emissive, "Emissive Lights"))
         .on_hover_text("Lit windows, lamps, lanterns, neon signs and forge fires glow; off = dark glass");
     ui.horizontal(|ui| {
+        ui.label("Detail:");
+        for d in Detail::ALL {
+            let tip = match d {
+                Detail::Standard => "Light settlement look: flat window panes, few parts",
+                Detail::Mid => "Window frames, sills and mullions, trims and extra small parts",
+            };
+            if ui.selectable_label(p.detail == d, d.label()).on_hover_text(tip).clicked() && p.detail != d {
+                p.detail = d;
+                (t.started, t.changed) = (true, true);
+            }
+        }
+    });
+    ui.horizontal(|ui| {
         ui.label("Stairs:");
         egui::ComboBox::from_id_salt("building_stairs").selected_text(p.stairs.label()).show_ui(ui, |ui| {
             for s in StairKind::ALL {
@@ -52,6 +65,18 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
         }
     });
     ui.label(dim("Parts only appear on the types that have them (a kiosk has no fire escape)."));
+    if p.kind.category() == Category::Residential {
+        ui.label(RichText::new("Lot").strong());
+        egui::Grid::new("building_lot").num_columns(2).show(ui, |ui| {
+            for (i, (label, on)) in p.lot.flags().into_iter().enumerate() {
+                t.r(ui.checkbox(on, label));
+                if i % 2 == 1 {
+                    ui.end_row();
+                }
+            }
+        });
+        ui.label(dim("Garden, driveway, garage and fence around detached houses."));
+    }
     ui.separator();
     let pile = p.kind == BuildingKind::RubblePile;
     let out = super::ruin::destruction(ui, t, &mut p.ruin, "building", pile);
@@ -72,15 +97,15 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
 
 fn style_tip(s: MatStyle) -> &'static str {
     match s {
-        MatStyle::Procedural => "GhostTown pack built from MaterialCraft procedural textures (no downloads)",
-        MatStyle::Photo => "GhostTown pack using installed Poly Haven photo textures where available",
+        MatStyle::Procedural => "Settlement pack built from MaterialCraft procedural textures (no downloads)",
+        MatStyle::Photo => "Settlement pack using installed Poly Haven photo textures where available",
     }
 }
 
 /// Type combo grouped by category; switching type resets size to its
 /// defaults and keeps seed, parts, lights and style.
 fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
-    egui::ComboBox::from_id_salt("building_kind").width(CONTENT_W - 12.0).height(420.0).selected_text(p.kind.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("building_kind").width(content_w() - 12.0).height(420.0).selected_text(p.kind.label()).show_ui(ui, |ui| {
         for c in Category::ALL {
             ui.label(RichText::new(c.label()).strong());
             for k in c.kinds() {
@@ -92,6 +117,8 @@ fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
                         style: p.style,
                         stairs: p.stairs,
                         ruin: p.ruin.clone(),
+                        detail: p.detail,
+                        lot: p.lot,
                         ..BuildingParams::of(k)
                     };
                     (t.started, t.changed) = (true, true);

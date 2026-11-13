@@ -1,7 +1,7 @@
 //! Viewport display of Multi/Sub-Object materials: an object whose shown
 //! material is a Multi/Sub-Object is drawn as one part per sub-material,
 //! each holding the triangles of the polygons whose Material ID resolves to
-//! it (3ds Max wrap-around rules; switched-off IDs use the default gray).
+//! it (wrap-around rules; switched-off IDs use the default gray).
 
 use super::mat_sync::{MatCache, MatTextures, standard};
 use super::render_sync::{LAYER_MESH, build_mesh};

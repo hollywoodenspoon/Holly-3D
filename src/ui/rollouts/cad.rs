@@ -3,7 +3,7 @@
 use super::spline::{grid, mod_params, num_row, u_row};
 use crate::editor::{Editor, Tool};
 use crate::modifiers::ModifierKind;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::theme;
 use crate::ui::widgets::{dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
@@ -12,8 +12,8 @@ use bevy_egui::egui::{self, RichText};
 fn sections(ui: &mut egui::Ui, ed: &mut Editor) {
     mod_params(ui, ed, |ui, k, t| {
         let ModifierKind::Loft(l) = k else { return };
-        egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
-            ui.set_width(CONTENT_W - 12.0);
+        egui::Frame::new().fill(theme::input()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
+            ui.set_width(content_w() - 12.0);
             ui.set_min_height(60.0);
             if l.sections.is_empty() {
                 ui.label(dim("No sections yet: a 0.2 circle is used."));
@@ -49,7 +49,7 @@ pub fn loft(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.label(dim("The object under the modifier is the path; pick shapes as cross-sections."));
         let picking = ed.tool == Tool::PickLoftShape;
         ui.horizontal(|ui| {
-            let w = CONTENT_W / 2.0 - 4.0;
+            let w = content_w() / 2.0 - 4.0;
             if ui
                 .add_sized([w, 28.0], egui::Button::new(if picking { "Picking Shapes…" } else { "Pick Shape" }).selected(picking))
                 .on_hover_text("Click shape objects in a viewport; each becomes a section at \"Next Section At %\"")

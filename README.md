@@ -3,7 +3,7 @@
 _Formerly **MiniMax**. Scenes saved as `.mmax` (and `.mmaxpose` poses) still open; new
 scenes save as `.ilex`, and the old `minimax` command still starts the app._
 
-A clean, 3ds Max-style polygon modeler written in Rust (Bevy 0.20 + bevy_egui 0.43).
+A clean polygon modeler, painter and renderer written in Rust (Bevy 0.20 + bevy_egui 0.43).
 See `CLAUDE.md` for the full design spec and `PROJECT_STATUS.md` for progress.
 **Phases 1–8C are implemented and merged.**
 
@@ -119,14 +119,12 @@ cargo test --lib               # headless geometry / editor tests
   `native` in that file and rebuild.
 - **Build runs out of memory:** the config runs 10 compile jobs at once, sized for
   16 GB of RAM. With less memory, build with fewer jobs: `cargo run --release -j 4`.
-- **Cycles rendering:** the Cycles option in Render Setup (`F10`) needs Blender
-  (`sudo pacman -S blender`). The built-in raytracer needs nothing extra.
 
 ## What's in it
 
 - **5-zone layout**: top toolbar, Scene Explorer (`H`), 2x2 viewports, Command Panel
-  (Create / Modify / Pivot), status + transform type-in bar. Slate `#222327` theme with
-  3ds Max amber `#E59C24`. Right-click any spinner to reset it.
+  (Create / Modify / Pivot), status + transform type-in bar. Graphite & Teal theme
+  (`#242424` with `#26B8B0` accents). Right-click any spinner to reset it.
 - **Viewports** (Z-up): Top / Front / Left / Perspective, `Alt+W` maximize, `MMB` pan,
   `Alt+MMB` orbit around the selection, wheel or `Ctrl+Alt+MMB` zoom, `Z` zoom extents
   (`Shift+Z` all views), `G` grid, `F3` wireframe, `F4` edged faces, `Alt+X` see-through,
@@ -157,20 +155,20 @@ cargo test --lib               # headless geometry / editor tests
   rendering profiles, Lathe and Extrude, the Array dialog and Mirror, GeoGen
   (crystals, rocks, cliffs, stalagmites), Greeble, Chamfer, Symmetry, Shell, TurboSmooth,
   Bend / Twist / Taper / Push, Edit Normals (Break / Unify / Reset / Make Explicit,
-  `E` to rotate), Boolean (`boolmesh`, ProBoolean-style operand list with Pick / Remove /
+  `E` to rotate), Boolean (`boolmesh`, stackable operand list with Pick / Remove /
   Extract) and ProOptimizer (`meshopt`, keeps material / UV / colour / normal seams).
 
 - **Phase 6**: file I/O (`.ilex` scenes, formerly `.mmax`, OBJ, glTF/GLB and FBX import and export),
   target and free cameras, the Align dialog, interactive gizmos for the deformers and
   the Symmetry mirror, spline Booleans and Refine, 3D snaps, selection region shapes,
-  HDRI environments and Cycles rendering through Blender.
+  HDRI environments and an external renderer bridge (since replaced by the native path tracer).
 - **Phase 7**: bone-free mech assembly (joints, FK / IK drag, Mirror Mech Limb, Contact
   Sets, Motion Links), Gear / Piston / Hose primitives and Panel Groove.
 - **Phase 8A**: Multi/Sub-Object materials, emissive area lights, AO / GI / denoiser /
   bloom / depth of field, and a dynamic sky with clouds and deep space.
 - **Phase 8B**: procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain
   with erosion, a Gerstner Ocean with crest foam, and Planet Studio.
-- **Phase 8C**: GhostTown settlements under `Create -> Geometry -> Settlement` (Modern
+- **Phase 8C**: Demiurge settlements under `Create -> Geometry -> Settlement` (Modern
   Downtown, Suburbs, Medieval Walled City, Village), the scale-aware Medieval Architect
   modifier, and Battlefield / Ruin destruction (Modern, Medieval Siege, Ancient Ruins)
   with movable Blast Zones.

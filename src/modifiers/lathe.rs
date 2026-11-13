@@ -96,7 +96,7 @@ impl LatheMod {
                     cap(&mut m, &last);
                 }
             }
-            // Face away from the axis by default (3ds Max users then use Flip Normals).
+            // Face away from the axis by default (users then use Flip Normals).
             let outward: f32 = m
                 .polygons
                 .keys()

@@ -114,6 +114,20 @@ fn ambient_occlusion_darkens_contact_crevices() {
 }
 
 #[test]
+fn cut_out_holes_let_ambient_light_through() {
+    let mut s = dark_floor();
+    s.environment.ambient_level = 1.0;
+    // Opacity 0.3 under Cut-out is a hole everywhere: like a hair card's
+    // transparent part, it must cast no AO.
+    let m = Material { opacity: 0.3, alpha_cutout: true, ..Material::named("Card") };
+    add(&mut s, PrimitiveKind::Box, Vec3::Z * 0.2, Vec3::new(0.6, 3.0, 1.5), m);
+    let gi = post::GiSettings { ao: true, ao_samples: 32, ao_radius: 1.0, ao_strength: 1.0, denoise: false, ..Default::default() };
+    let px = render(&s, &RenderSettings { gi, ..cfg() });
+    let (near, far, under) = (px[16 * 32 + 20].hdr.y, px[16 * 32 + 30].hdr.y, px[17 * 32 + 17].hdr.y);
+    assert!(near > far * 0.95 && under > far * 0.95, "no contact shadow from a hole: {near} {under} vs {far}");
+}
+
+#[test]
 fn one_bounce_gi_bleeds_color_onto_the_floor() {
     let mut s = floor_with_box(0.0);
     let mut l = Light::new(LightKind::FreeDirect);

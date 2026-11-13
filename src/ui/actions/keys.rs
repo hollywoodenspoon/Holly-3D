@@ -1,4 +1,4 @@
-//! Keyboard chords and the default 3ds Max keymap. Hotkeys are only
+//! Keyboard chords and the default keymap. Hotkeys are only
 //! shortcuts: every action they trigger also has a button or menu entry.
 
 use super::Action;
@@ -48,7 +48,7 @@ impl Chord {
     }
 }
 
-/// The Ilex default keymap (3ds Max conventions, never Blender's).
+/// The Ilex default keymap.
 pub fn default_keymap() -> Vec<(Chord, Action)> {
     use Action::*;
     use Key::*;

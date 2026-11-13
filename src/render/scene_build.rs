@@ -68,7 +68,7 @@ pub struct RenderScene {
     /// HDRI seen by camera misses and reflections (strength applied).
     pub hdri: Option<crate::render::hdri::Hdri>,
     /// Procedural sky evaluated per ray (crisp stars / sun); `hdri` then
-    /// holds its bake for ambient and the Cycles world.
+    /// holds its bake for ambient light.
     pub procedural: Option<super::sky::SkySettings>,
     pub fog: Option<(Vec3, f32)>,
     /// Volumetric godrays / height mist medium (Environment `8`).
@@ -221,7 +221,7 @@ impl RenderScene {
         let emitters = super::emitters::Emitters::build(&bvh, &materials);
         let translucent = bvh.tris.iter().any(|t| {
             let m = &materials[t.mat];
-            m.opacity < 0.999 || m.active_map(crate::materials::MapChannel::Opacity).is_some() || t.col.iter().any(|c| c.w < 0.999)
+            m.opacity < 0.999 || m.alpha_cutout || m.active_map(crate::materials::MapChannel::Opacity).is_some() || t.col.iter().any(|c| c.w < 0.999)
         });
         Self {
             bvh,

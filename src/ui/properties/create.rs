@@ -1,10 +1,9 @@
-//! Create tab: Geometry / Shapes / Lights & Cameras.
+//! Create tab: Geometry / Mech / Shapes / Lights & Cameras. Worlds,
+//! settlements and GeoGen are on the Demiurge tab, humans on Characters.
 
-use super::CONTENT_W;
+use super::content_w;
 use crate::editor::{Editor, Tool};
-use crate::generators::WorldKind;
 use crate::mech::MechKind;
-use crate::modifiers::GeoMode;
 use crate::primitives::PrimitiveKind;
 use crate::render::LightKind;
 use crate::scene::camera::CameraKind;
@@ -19,7 +18,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         egui::Grid::new("prims").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
             for (i, kind) in PrimitiveKind::ALL.iter().enumerate() {
                 let active = ed.tool == Tool::Create(*kind);
-                let r = ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
+                let r = ui.add_sized([content_w() / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
                 if r.clicked() {
                     ed.tool = if active { Tool::None } else { Tool::Create(*kind) };
                 }
@@ -33,67 +32,12 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.label(dim("Pick a type, then drag in a viewport: the base first, then move and click for the height. A plain click places a default size; right-click cancels. Right-click a type to create at the origin."));
     });
-    rollout(ui, "Geometry — GeoGen", true, |ui| {
-        egui::Grid::new("geogen").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
-            for (i, mode) in GeoMode::ALL.iter().enumerate() {
-                let active = ed.tool == Tool::CreateGeoGen(*mode);
-                let r = ui
-                    .add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(mode.short()).selected(active))
-                    .on_hover_text(mode.label());
-                if r.clicked() {
-                    ed.tool = if active { Tool::None } else { Tool::CreateGeoGen(*mode) };
-                }
-                if r.secondary_clicked() {
-                    ed.create_geogen(*mode, Vec3::ZERO);
-                }
-                if i % 2 == 1 {
-                    ui.end_row();
-                }
-            }
-        });
-    });
-    rollout(ui, "Demiurge Worlds: Terrain, Ocean, Planet, Smoke Plume", true, |ui| {
-        ui.horizontal(|ui| {
-            for kind in WorldKind::ALL {
-                let active = ed.tool == Tool::CreateWorld(kind);
-                let r =
-                    ui.add_sized([CONTENT_W / 3.0 - 6.0, 28.0], egui::Button::new(kind.label()).selected(active)).on_hover_text(kind.tip());
-                if r.clicked() {
-                    ed.tool = if active { Tool::None } else { Tool::CreateWorld(kind) };
-                }
-                if r.secondary_clicked() {
-                    ed.create_world(kind, Vec3::ZERO);
-                }
-            }
-        });
-        ui.label(dim("Each world comes with its Multi/Sub-Object pack, so the generated Material IDs render right away."));
-    });
-    rollout(ui, "Demiurge Settlements: GhostTown, Buildings & Props", true, |ui| {
-        egui::Grid::new("create_settlement").num_columns(2).show(ui, |ui| {
-            for (i, kind) in WorldKind::SETTLEMENTS.into_iter().enumerate() {
-                let active = ed.tool == Tool::CreateWorld(kind);
-                let r = ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active)).on_hover_text(kind.tip());
-                if r.clicked() {
-                    ed.tool = if active { Tool::None } else { Tool::CreateWorld(kind) };
-                }
-                if r.secondary_clicked() {
-                    ed.create_world(kind, Vec3::ZERO);
-                }
-                if i % 2 == 1 {
-                    ui.end_row();
-                }
-            }
-        });
-        ui.label(dim("Demiurge GhostTown: click to place a whole settlement with the GhostTown Material Pack."));
-    });
-    crate::ui::buildings_browser::create_rollout(ui, ed);
-    crate::ui::character_studio::create_rollout(ui, ed);
     rollout(ui, "Geometry — Mech", true, |ui| {
         ui.horizontal(|ui| {
             for kind in MechKind::ALL {
                 let active = ed.tool == Tool::CreateMech(kind);
                 let r =
-                    ui.add_sized([CONTENT_W / 3.0 - 6.0, 28.0], egui::Button::new(kind.label()).selected(active)).on_hover_text(kind.tip());
+                    ui.add_sized([content_w() / 3.0 - 6.0, 28.0], egui::Button::new(kind.label()).selected(active)).on_hover_text(kind.tip());
                 if r.clicked() {
                     ed.tool = if active { Tool::None } else { Tool::CreateMech(kind) };
                 }
@@ -102,6 +46,14 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             }
         });
+        let r = ui.add_sized([content_w() - 8.0, 28.0], egui::Button::new("Spider Platform: Railgun"));
+        if r.on_hover_text("4-leg walker with the Railgun turret: bare model, Material IDs 1-10, live joints").clicked() {
+            ed.create_spider_railgun(Vec3::ZERO);
+        }
+        let tip = "Rigs your own imported spider (select its hull, turret, gun and 4 legs) with the same joints, and swaps each shin strut for a knee piston";
+        if ui.add_sized([content_w() - 8.0, 28.0], egui::Button::new("Rig Selection as Spider Platform")).on_hover_text(tip).clicked() {
+            ed.rig_selected_spider();
+        }
         ui.label(dim("Link gears with Motion Links (Assembly rollout); bind a hose's ends to two parts in its Modify panel."));
     });
     rollout(ui, "Shapes / Splines", true, |ui| {
@@ -112,7 +64,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                     Tool::Line { .. } => *kind == ShapeKind::Line,
                     _ => false,
                 };
-                let r = ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
+                let r = ui.add_sized([content_w() / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
                 if r.clicked() {
                     ed.tool = match (active, kind) {
                         (true, _) => Tool::None,
@@ -137,7 +89,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         egui::Grid::new("lights").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
             for (i, kind) in LightKind::ALL.iter().enumerate() {
                 let active = matches!(ed.tool, Tool::CreateLight { kind: k, .. } if k == *kind);
-                let r = ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
+                let r = ui.add_sized([content_w() / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
                 if r.clicked() {
                     ed.tool = if active { Tool::None } else { Tool::CreateLight { kind: *kind, first: None } };
                 }
@@ -155,7 +107,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         ui.horizontal(|ui| {
             for kind in CameraKind::ALL {
                 let active = matches!(ed.tool, Tool::CreateCamera { kind: k, .. } if k == kind);
-                let r = ui.add_sized([CONTENT_W / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
+                let r = ui.add_sized([content_w() / 2.0 - 8.0, 28.0], egui::Button::new(kind.label()).selected(active));
                 if r.clicked() {
                     ed.tool = if active { Tool::None } else { Tool::CreateCamera { kind, first: None } };
                 }
@@ -168,7 +120,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     });
 }
 
-/// Creation Method (3ds Max): Box / Cube for the Box, Edge / Center for round objects.
+/// Creation Method: Box / Cube for the Box, Edge / Center for round objects.
 fn creation_method(ui: &mut egui::Ui, ed: &mut Editor) {
     use crate::editor::create_drag::CreateKind;
     let Some(kind) = CreateKind::of(&ed.tool) else { return };

@@ -1,9 +1,7 @@
-//! The 3ds Max menu bar: File · Edit · Tools · Views · Create · Modifiers ·
-//! Rendering · Help. The action menus come from `actions::layout::MENUS`;
-//! Create and Modifiers are generated from the Create tab and the catalog.
+//! The generated header menus: Create (every object type, as on the Create,
+//! Demiurge and Characters tabs) and Modifiers (the Modifier List catalog).
+//! The other menus come from `actions::layout::MENUS` (see `header`).
 
-use super::action_ui::menu_entries;
-use super::actions::layout::MENUS;
 use super::theme;
 use crate::editor::{CommandTab, Editor, Tool};
 use crate::generators::WorldKind;
@@ -16,31 +14,7 @@ use crate::scene::camera::CameraKind;
 use crate::splines::ShapeKind;
 use bevy_egui::egui::{self, RichText};
 
-pub const HEIGHT: f32 = 24.0;
-
-pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
-    egui::Panel::top("menu_bar")
-        .resizable(false)
-        .show_separator_line(false)
-        .exact_size(HEIGHT)
-        .frame(egui::Frame::new().fill(theme::input()).inner_margin(egui::Margin::symmetric(8, 2)))
-        .show(ui, |ui| {
-            ui.horizontal_centered(|ui| {
-                ui.label(RichText::new("Ilex").color(theme::amber()).strong());
-                for (title, entries) in MENUS {
-                    if *title == "Rendering" {
-                        ui.menu_button("Create", |ui| create_menu(ui, ed));
-                        ui.menu_button("Modifiers", |ui| modifiers_menu(ui, ed));
-                    }
-                    ui.menu_button(*title, |ui| menu_entries(ui, ed, entries));
-                }
-            });
-        })
-        .response
-        .rect
-}
-
-/// Picks a Create tool (and shows the Create tab, like 3ds Max).
+/// Picks a Create tool (and shows the Create tab).
 fn pick(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tip: &str, tool: Tool) {
     let r = ui.button(label);
     let r = if tip.is_empty() { r } else { r.on_hover_text(tip) };
@@ -70,13 +44,13 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }
     });
-    ui.menu_button("Demiurge Settlements (GhostTown)", |ui| {
+    ui.menu_button("Demiurge Settlements", |ui| {
         for k in WorldKind::SETTLEMENTS {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }
     });
     ui.menu_button("Demiurge Buildings & Props", |ui| {
-        if ui.button("Buildings & Props Browser...").clicked() {
+        if ui.button("Prefab Library...").clicked() {
             ed.buildings_browser_open = true;
             ui.close();
         }
@@ -93,6 +67,14 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.menu_button("Mech", |ui| {
         for k in MechKind::ALL {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateMech(k));
+        }
+        if ui.button("Spider Platform: Railgun").clicked() {
+            ed.create_spider_railgun(bevy::math::Vec3::ZERO);
+            ui.close();
+        }
+        if ui.button("Rig Selection as Spider Platform").clicked() {
+            ed.rig_selected_spider();
+            ui.close();
         }
     });
     ui.separator();

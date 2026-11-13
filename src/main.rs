@@ -1,4 +1,4 @@
-//! Ilex — clean 3ds Max-style modeler, painter and renderer.
+//! Ilex — clean modeler, painter and renderer.
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
@@ -43,7 +43,10 @@ fn main() {
     // `--help-shot <id>`: the scene and panels for one Help screenshot (tools/help_shots.sh).
     let args: Vec<String> = std::env::args().collect();
     if let Some(id) = args.iter().position(|a| a == "--help-shot").and_then(|i| args.get(i + 1)) {
+        // Fresh scene, but keep the look from the prefs file (default in tools/help_shots.sh).
+        let theme = editor.prefs.theme.clone();
         editor = Editor::default();
+        editor.prefs.theme = theme;
         if !ilex::ui::help::shots::setup(&mut editor, id) {
             eprintln!("unknown help shot {id}; known: {}", ilex::ui::help::shots::IDS.join(", "));
             std::process::exit(2);
@@ -57,13 +60,15 @@ fn main() {
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "Ilex — 3ds Max-style Modeler".into(),
+                    title: "Ilex".into(),
                     // WM_CLASS / Wayland app ID: matches `StartupWMClass` in
                     // packaging/ilex.desktop so the taskbar shows the icon.
                     name: Some("ilex".into()),
                     resolution: (1600, 920).into(),
                     ..default()
                 }),
+                // Pop-out dialog windows close with the main window.
+                exit_condition: bevy::window::ExitCondition::OnPrimaryClosed,
                 ..default()
             })
             .set(ilex::viewport::gpu::render_plugin()),

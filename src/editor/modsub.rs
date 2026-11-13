@@ -13,7 +13,7 @@ impl Editor {
     /// The modifier sub-object mode in effect (valid for the active stack level).
     pub fn active_mod_sub(&self) -> Option<ModSub> {
         let kind = self.current_obj()?.active_modifier()?;
-        // Edit Normals is always in its Normal sub-object (as in 3ds Max)
+        // Edit Normals is always in its Normal sub-object
         if matches!(kind, ModifierKind::EditNormals(_)) {
             return Some(ModSub::Normal);
         }

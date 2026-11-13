@@ -19,6 +19,13 @@ pub struct RfwState {
     pub setup_tab: SetupTab,
 }
 
+impl RfwState {
+    pub fn clear_textures(&mut self) {
+        self.tex = None;
+        self.clones.clear();
+    }
+}
+
 fn color_image(fb: &FrameBuffer, ch: ChannelView) -> egui::ColorImage {
     egui::ColorImage::from_rgba_unmultiplied([fb.width as usize, fb.height as usize], &fb.view_rgba8(ch))
 }
@@ -83,7 +90,7 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.rfw.region_mode = !ed.rfw.region_mode;
         }
         if ui.button("⚙ Setup").on_hover_text("Render Setup (F10)").clicked() {
-            ed.rfw.setup_open = true;
+            ed.tab = crate::editor::CommandTab::Render;
         }
         if toggle_button(ui, ed.rfw.sheet.open, "🎞 Turntable / Sprites").on_hover_text("Render Turntable / Sprite Sheet...").clicked() {
             ed.rfw.sheet.open = !ed.rfw.sheet.open;
@@ -146,12 +153,11 @@ fn status(ui: &mut egui::Ui, ed: &Editor) {
 
 fn main_window(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
     let mut open = ed.rfw.rfw_open;
-    egui::Window::new(RichText::new("Veach Rendered Frame Window").strong())
+    let win = egui::Window::new(RichText::new("Veach Rendered Frame Window").strong())
         .id(egui::Id::new("rfw"))
-        .open(&mut open)
         .default_pos([300.0, 70.0])
-        .default_size([840.0, 700.0])
-        .show(ctx, |ui| {
+        .default_size([840.0, 700.0]);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::FrameWindow, win, &mut open, |ui| {
             toolbar(ui, ed);
             status(ui, ed);
             ui.separator();
@@ -250,14 +256,19 @@ fn clone_windows(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
 }
 
 pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut RfwState) {
-    ed.poll_render();
-    ed.poll_sheet();
-    crate::ui::render_sheet::window(ctx, ed);
+    use crate::ui::popout::{self, Dock};
+    if popout::is_main() {
+        ed.poll_render();
+        ed.poll_sheet();
+        crate::ui::render_sheet::window(ctx, ed);
+    }
     if ed.is_rendering() || ed.rfw.sheet.job.is_some() {
         ctx.request_repaint();
     }
     if ed.rfw.rfw_open {
         main_window(ctx, ed, st);
     }
-    clone_windows(ctx, ed, st);
+    if popout::here(Dock::FrameWindow) {
+        clone_windows(ctx, ed, st);
+    }
 }

@@ -4,7 +4,7 @@ use super::deformers::{axis_row, speed_row};
 use super::spline::{grid, mod_params, num_row, u_row};
 use crate::editor::Editor;
 use crate::modifiers::{ChamferFilter, ModifierKind};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
 
@@ -75,7 +75,7 @@ pub fn chamfer(ui: &mut egui::Ui, ed: &mut Editor) {
 fn filter(ui: &mut egui::Ui, t: &mut Track, f: &mut ChamferFilter, id: &str) {
     ui.label(RichText::new("Selection Filter").strong());
     let current = *f;
-    egui::ComboBox::from_id_salt(format!("{id}_filter")).width(CONTENT_W - 12.0).selected_text(current.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt(format!("{id}_filter")).width(content_w() - 12.0).selected_text(current.label()).show_ui(ui, |ui| {
         let angle = match current {
             ChamferFilter::Angle { .. } => current,
             _ => ChamferFilter::Angle { min: 30.0, max: 180.0 },

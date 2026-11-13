@@ -1,4 +1,4 @@
-//! Target / Free Camera objects. Like 3ds Max, a camera looks down its
+//! Target / Free Camera objects. A camera looks down its
 //! local -Z axis, `fov` is horizontal and the lens is measured on a 36 mm
 //! film back. Lights and cameras share the Target helper bookkeeping here.
 
@@ -125,7 +125,7 @@ impl SceneObject {
         }
     }
 
-    /// Its target was deleted: becomes the Free variant (3ds Max behaviour).
+    /// Its target was deleted: becomes the Free variant.
     pub fn lose_target(&mut self) {
         self.set_target_id(None);
         match &mut self.base {
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn lens_and_fov_follow_36mm_film() {
         let mut c = Camera::new(CameraKind::Free);
-        assert!((c.lens_mm() - 43.456).abs() < 0.01, "45° = 43.456 mm like 3ds Max");
+        assert!((c.lens_mm() - 43.456).abs() < 0.01, "45° = 43.456 mm");
         c.set_lens_mm(50.0);
         assert!((c.fov - 39.598).abs() < 0.01);
         assert_eq!(c.clip().1, f32::INFINITY);

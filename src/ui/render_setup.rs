@@ -1,4 +1,4 @@
-//! Render Setup (F10): Common tab (output size, aspect lock, alpha, view)
+//! The Render tab (F10): Common page (output size, aspect lock, alpha, view)
 //! and Renderer tab (path tracer or classic raytracer settings) and the
 //! GI & Post-FX tab (see `render_fx`).
 
@@ -18,7 +18,7 @@ pub enum SetupTab {
 }
 
 fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
-    egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width(130.0).show(ui, body);
+    egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width((crate::ui::properties::content_w() * 0.42).min(130.0)).show(ui, body);
 }
 
 /// "Active Viewport", a numbered viewport or a camera object; shared with the RFW dropdown.
@@ -113,51 +113,37 @@ fn raytracer(ui: &mut egui::Ui, r: &mut RenderSettings) {
     ui.label(dim("Soft shadows, glossy reflections, crystal refraction, fog and tonemapping."));
 }
 
-pub fn show(ctx: &egui::Context, ed: &mut Editor, tab: &mut SetupTab) {
-    if !ed.rfw.setup_open {
-        return;
-    }
-    let mut open = true;
-    egui::Window::new(RichText::new("Render Setup").strong())
-        .id(egui::Id::new("render_setup"))
-        .open(&mut open)
-        .default_pos([1150.0, 80.0])
-        .default_width(330.0)
-        .resizable(false)
-        .show(ctx, |ui| {
-            crate::ui::render_path::engine_rows(ui, &mut ed.render);
-            ui.separator();
-            ui.horizontal(|ui| {
-                for (t, label) in [(SetupTab::Common, "Common"), (SetupTab::Renderer, "Renderer"), (SetupTab::Effects, "GI & Post-FX")] {
-                    if crate::ui::widgets::toggle_button(ui, *tab == t, label).clicked() {
-                        *tab = t;
-                    }
-                }
-            });
-            ui.separator();
-            match *tab {
-                SetupTab::Common => common(ui, ed),
-                SetupTab::Renderer => match ed.render.path.integrator {
-                    Integrator::Classic => raytracer(ui, &mut ed.render),
-                    Integrator::PathTracer => crate::ui::render_path::tab(ui, &mut ed.render),
-                },
-                SetupTab::Effects => {
-                    egui::ScrollArea::vertical().max_height(520.0).show(ui, |ui| crate::ui::render_fx::tab(ui, ed));
-                }
+/// The Render tab (F10): engine, Common / Renderer / GI & Post-FX pages and the Render button.
+pub fn body(ui: &mut egui::Ui, ed: &mut Editor, tab: &mut SetupTab) {
+    crate::ui::render_path::engine_rows(ui, &mut ed.render);
+    ui.separator();
+    ui.horizontal(|ui| {
+        for (t, label) in [(SetupTab::Common, "Common"), (SetupTab::Renderer, "Renderer"), (SetupTab::Effects, "GI & Post-FX")] {
+            if crate::ui::widgets::toggle_button(ui, *tab == t, label).clicked() {
+                *tab = t;
             }
-            ui.separator();
-            ui.horizontal(|ui| {
-                let busy = ed.is_rendering();
-                if ui.add_enabled(!busy, egui::Button::new(RichText::new("▶ Render").strong()).min_size(egui::vec2(120.0, 26.0))).clicked()
-                {
-                    ed.start_render();
-                }
-                if busy && ui.button("Cancel").clicked() {
-                    ed.cancel_render();
-                }
-            });
-        });
-    if !open {
-        ed.rfw.setup_open = false;
+        }
+    });
+    ui.separator();
+    match *tab {
+        SetupTab::Common => common(ui, ed),
+        SetupTab::Renderer => match ed.render.path.integrator {
+            Integrator::Classic => raytracer(ui, &mut ed.render),
+            Integrator::PathTracer => crate::ui::render_path::tab(ui, &mut ed.render),
+        },
+        SetupTab::Effects => crate::ui::render_fx::tab(ui, ed),
     }
+    ui.separator();
+    ui.horizontal(|ui| {
+        let busy = ed.is_rendering();
+        let w = crate::ui::properties::content_w();
+        let text = RichText::new("▶ Render (F9)").color(crate::ui::theme::on_accent()).strong();
+        let b = egui::Button::new(text).fill(crate::ui::theme::accent()).min_size(egui::vec2(if busy { w - 90.0 } else { w }, 28.0));
+        if ui.add_enabled(!busy, b).clicked() {
+            ed.start_render();
+        }
+        if busy && ui.button("Cancel").clicked() {
+            ed.cancel_render();
+        }
+    });
 }

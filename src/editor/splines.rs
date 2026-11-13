@@ -272,7 +272,7 @@ impl Editor {
             .min_by(f32::total_cmp)
     }
 
-    /// Sets the type of the selected vertices (right-click menu in 3ds Max).
+    /// Sets the type of the selected vertices (vertex right-click menu).
     pub fn set_knot_type(&mut self, kind: KnotType) {
         self.edit_shape(kind.label(), |s| s.set_type_selected(kind));
     }

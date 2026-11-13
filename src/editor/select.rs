@@ -1,5 +1,5 @@
 //! Click and marquee (window) selection for objects and sub-objects.
-//! Ctrl adds, Alt subtracts (3ds Max convention).
+//! Ctrl adds, Alt subtracts.
 
 use super::*;
 use crate::mesh::adjacency::Adjacency;

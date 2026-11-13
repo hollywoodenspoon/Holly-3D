@@ -1,7 +1,7 @@
 //! Parameter editors of the procedural engine's map nodes: Tileable
 //! Pattern, Levels (with a histogram of its input), Height Blend, Slope
 //! Blur and Normal From Height. Used by both the Compact Maps rollout and
-//! the Slate inspector.
+//! the Node Graph inspector.
 
 use super::params::{color, num};
 use crate::materials::MapNode;

@@ -12,7 +12,7 @@ use std::collections::HashMap;
 pub struct ProOptimizerMod {
     /// Vertex % of the calculated source (1..=100).
     pub percent: f32,
-    /// Nothing is reduced until `[ Calculate ]` has been pressed (3ds Max behaviour).
+    /// Nothing is reduced until `[ Calculate ]` has been pressed.
     pub calculated: bool,
     pub source_verts: usize,
     pub keep_materials: bool,

@@ -30,6 +30,9 @@ pub struct MhAssets {
     pub eye_color: Option<String>,
     /// A low-poly body proxy in place of the full hm08 body.
     pub topology: Option<String>,
+    /// Dyes the hair (and brows) this sRGB colour, keeping the strand
+    /// detail of the texture. None keeps the texture's own colour.
+    pub hair_color: Option<[f32; 3]>,
 }
 
 /// The most clothes one character wears (Material IDs 12..=23).
@@ -40,6 +43,22 @@ impl MhAssets {
     pub fn face_kit() -> Self {
         let s = |v: &str| Some(v.to_string());
         Self { eyebrows: s("eyebrow001"), eyelashes: s("eyelashes01"), teeth: s("teeth_base"), tongue: s("tongue01"), ..Default::default() }
+    }
+
+    /// MakeHuman hair in place of the stylised procedural hair of a new,
+    /// realistic (non-anime) character. Beards stay procedural.
+    pub fn default_hair(p: &mut crate::character::CharacterParams) {
+        use crate::character::params::Hair;
+        if p.anime >= 0.5 || p.mh.hair.is_some() || p.hair == Hair::Beard {
+            return;
+        }
+        let pick = match p.hair {
+            Hair::Long => "long01",
+            Hair::Ponytail => "ponytail01",
+            _ if p.macros.gender >= 0.5 => "short02",
+            _ => "ponytail01",
+        };
+        (p.mh.hair, p.hair) = (Some(pick.into()), Hair::Bald);
     }
 
     /// The single-choice slot of `cat` (None for Clothes).
@@ -115,7 +134,22 @@ impl MhAssets {
 
 /// Adds a fitted proxy mesh with Material ID `mat`; returns its polygon count.
 pub fn add_item(m: &mut EditablePoly, it: &Item, coords: &[Vec3], place: &Place, mat: u16) -> usize {
-    let fitted = it.proxy.fit(coords);
+    add_fitted(m, it, &it.proxy.fit(coords), place, mat)
+}
+
+/// How far hair sits off the scalp (base-mesh dm): a tight cap would let
+/// the skin poke through in patches.
+const HAIR_LIFT: f32 = 0.04;
+
+/// Pushes hair away from its own centre so the scalp stays under it.
+fn lift_hair(fitted: &mut [Vec3]) {
+    let c = fitted.iter().copied().sum::<Vec3>() / fitted.len().max(1) as f32;
+    for p in fitted {
+        *p += (*p - c).normalize_or_zero() * HAIR_LIFT;
+    }
+}
+
+fn add_fitted(m: &mut EditablePoly, it: &Item, fitted: &[Vec3], place: &Place, mat: u16) -> usize {
     let ids: Vec<_> = fitted.iter().map(|p| m.add_vertex(place.at(*p))).collect();
     let mut n = 0;
     for f in &it.mesh.faces {
@@ -135,7 +169,11 @@ pub fn add_item(m: &mut EditablePoly, it: &Item, coords: &[Vec3], place: &Place,
 pub fn add_pieces(m: &mut EditablePoly, mh: &MhAssets, coords: &[Vec3], place: &Place) {
     for (cat, name, mat) in mh.pieces() {
         if let Some(it) = library::item(cat, name) {
-            add_item(m, &it, coords, place, mat);
+            let mut fitted = it.proxy.fit(coords);
+            if cat == Category::Hair {
+                lift_hair(&mut fitted);
+            }
+            add_fitted(m, &it, &fitted, place, mat);
         }
     }
 }

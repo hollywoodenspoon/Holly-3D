@@ -74,7 +74,7 @@ pub fn rows(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
     ui.separator();
     ui.label(RichText::new("Dynamic Sky").strong());
     let cur = env.sky.mode;
-    egui::ComboBox::from_id_salt("sky_mode").width(300.0).selected_text(cur.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("sky_mode").width(ui.available_width().min(300.0)).truncate().selected_text(cur.label()).show_ui(ui, |ui| {
         for m in SkyMode::ALL {
             if ui.selectable_label(m == cur, m.label()).clicked() {
                 env.sky.mode = m;

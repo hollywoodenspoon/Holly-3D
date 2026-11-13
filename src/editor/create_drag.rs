@@ -1,4 +1,4 @@
-//! 3ds Max click-and-drag creation. Drag out the base (corner to corner or
+//! Click-and-drag creation. Drag out the base (corner to corner or
 //! a radius), release, then move the mouse and click for height and any
 //! further step. Right-click cancels a half-made object; a plain click
 //! still places a default-size object. The tool stays active afterwards.
@@ -22,7 +22,7 @@ pub enum CreateKind {
     Geo(GeoMode),
     World(WorldKind),
     Mech(MechKind),
-    /// Drag sets the height (uniform scale), like 3ds Max Biped.
+    /// Drag sets the height (uniform scale).
     Character(super::characters::CharacterPick),
 }
 

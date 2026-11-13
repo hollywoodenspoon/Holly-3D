@@ -29,7 +29,7 @@ fn every_era_builds_a_valid_deterministic_settlement() {
         for id in [ids::LOT, ids::FOLIAGE] {
             assert!(ids.contains(&id), "{era:?} has ID {id}");
         }
-        assert!(ids.iter().all(|&i| (1..=ids::MAX).contains(&i)), "{era:?} IDs in the GhostTown pack");
+        assert!(ids.iter().all(|&i| (1..=ids::MAX).contains(&i)), "{era:?} IDs in the Settlement pack");
         assert!(!ids.contains(&ids::CHARRED) && !ids.contains(&ids::REBAR), "{era:?} undamaged");
         // Fits its area (props may overhang a little).
         let b = m.bounds().unwrap();

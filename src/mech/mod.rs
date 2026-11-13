@@ -8,6 +8,7 @@ pub mod fastener;
 pub mod gear;
 pub mod hose;
 pub mod piston;
+pub mod spider;
 #[cfg(test)]
 mod tests;
 

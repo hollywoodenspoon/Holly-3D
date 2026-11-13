@@ -132,7 +132,11 @@ fn materials_follow_the_assets_and_keep_user_edits() {
     }
     assert_eq!(get(&ms, ids::SKIN).name, "Skin: Young Asian Female");
     assert!(get(&ms, ids::SKIN).mat.principled.sss_weight > 0.0, "skin keeps its SSS");
-    assert!(get(&ms, ids::EYEBROWS).mat.opacity < 1.0, "brows blend their alpha");
+    let brows = get(&ms, ids::EYEBROWS).mat;
+    assert!(!brows.alpha_cutout && brows.opacity < 1.0, "brows blend softly");
+    assert!(get(&ms, ids::CLOTHES).mat.alpha_cutout || get(&ms, ids::CLOTHES).mat.opacity == 1.0, "clothes never haze");
+    assert!(brows.roughness >= 0.6, "brows are not glossy");
+    assert!(!get(&ms, ids::EYES).mat.alpha_cutout, "eyes have no holes");
     // A user edit survives a re-sync.
     ms.subs.iter_mut().find(|s| s.id == ids::CLOTHES).unwrap().mat.roughness = 0.123;
     materials::sync(&mh, None, &mut ms);
@@ -179,4 +183,16 @@ fn old_characters_load_without_assets() {
     assert_eq!(ron::from_str::<CharacterParams>(&s).unwrap(), p);
     let old: CharacterParams = ron::from_str("(hair: Long)").unwrap();
     assert_eq!(old.mh, MhAssets::default());
+}
+
+#[test]
+fn hair_dye_recolours_but_keeps_alpha_and_strand_contrast() {
+    use crate::materials::texture::{TexHandle, Texture};
+    let data = (0..64u32).map(|i| { let v = (40 + i * 3) as u8; [v, v, v, if i % 4 == 0 { 0 } else { 255 }] }).collect();
+    let tex = TexHandle::new(Texture { width: 8, height: 8, data });
+    let red = super::materials::recolor(&tex, [0.8, 0.1, 0.1]);
+    let px = &red.tex.data;
+    assert!(px.iter().zip(&tex.tex.data).all(|(a, b)| a[3] == b[3]));
+    assert!(px.iter().filter(|p| p[3] > 0).all(|p| p[0] > p[1] && p[0] > p[2]));
+    assert!(px[63][0] > px[1][0], "light tips stay lighter than dark roots");
 }

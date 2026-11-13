@@ -1,4 +1,4 @@
-//! 3ds Max-style Move / Rotate / Scale gizmo (transform-gizmo-egui) wired to
+//! Move / Rotate / Scale gizmo (transform-gizmo-egui) wired to
 //! object transforms, sub-object selections, pivots and the Slice Plane.
 
 use crate::editor::{CoordSystem, Editor, PivotMode, TransformMode};

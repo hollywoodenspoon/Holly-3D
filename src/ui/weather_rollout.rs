@@ -22,7 +22,7 @@ pub fn rows(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
         let cur = env.sky.weather.preset;
         ui.horizontal(|ui| {
             ui.label("Weather Preset");
-            egui::ComboBox::from_id_salt("weather_preset").width(200.0).selected_text(cur.label()).show_ui(ui, |ui| {
+            egui::ComboBox::from_id_salt("weather_preset").width(ui.available_width().min(200.0)).truncate().selected_text(cur.label()).show_ui(ui, |ui| {
                 for p in WeatherPreset::ALL {
                     if ui.selectable_label(p == cur, p.label()).clicked() {
                         apply(env, p, t);

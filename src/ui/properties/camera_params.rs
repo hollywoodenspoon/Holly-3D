@@ -1,7 +1,7 @@
 //! Modify panel for cameras: Lens / FOV, stock lenses, type, clipping
-//! planes and display options (3ds Max Parameters rollout).
+//! planes and display options (Parameters rollout).
 
-use super::CONTENT_W;
+use super::content_w;
 use crate::editor::Editor;
 use crate::scene::camera::{Camera, CameraKind, STOCK_LENSES};
 use crate::ui::widgets::{Track, dim, num_row, rollout};
@@ -52,7 +52,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.horizontal(|ui| {
             ui.label("Type");
-            egui::ComboBox::from_id_salt("cam_type").width(CONTENT_W - 50.0).selected_text(kind.label()).show_ui(ui, |ui| {
+            egui::ComboBox::from_id_salt("cam_type").width(content_w() - 50.0).selected_text(kind.label()).show_ui(ui, |ui| {
                 for k in CameraKind::ALL {
                     if ui.selectable_label(k == kind, k.label()).clicked() {
                         pick = Some(k);
@@ -82,7 +82,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     }
     let vi = ed.viewports.active;
     let id = ed.current();
-    if ui.add_sized([CONTENT_W, 26.0], egui::Button::new("Look Through Camera   C")).clicked() {
+    if ui.add_sized([content_w(), 26.0], egui::Button::new("Look Through Camera   C")).clicked() {
         ed.look_through(vi, id);
     }
 }

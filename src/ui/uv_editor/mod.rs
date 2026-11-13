@@ -146,14 +146,13 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut UvEditorState) {
         return;
     }
     let mut open = true;
-    egui::Window::new(RichText::new("Edit UVWs").strong())
+    let win = egui::Window::new(RichText::new("Edit UVWs").strong())
         .id(egui::Id::new("uv_editor"))
-        .open(&mut open)
         .default_size([640.0, 600.0])
         .min_size([360.0, 320.0])
         .resizable(true)
-        .collapsible(true)
-        .show(ctx, |ui| {
+        .collapsible(true);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::UvEditor, win, &mut open, |ui| {
             let state = ed.current_obj().map(|o| match (o.active_modifier(), o.active_level) {
                 (Some(ModifierKind::Unwrap(u)), Some(i)) => Some(u.matches(&o.input_of(i))),
                 _ => None,

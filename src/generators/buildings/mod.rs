@@ -1,12 +1,13 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
-//! GhostTown Material IDs (`kit::ids`).
+//! Settlement Material IDs (`kit::ids`).
 
 pub mod arch;
 mod doodads;
+mod houses;
 pub mod infra;
 mod kinds;
 mod medieval_a;
@@ -14,10 +15,17 @@ mod medieval_b;
 mod modern_a;
 mod modern_b;
 pub mod parts;
+mod residential_a;
+mod residential_b;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_residential;
+#[cfg(test)]
+mod tests_shots;
 
 pub use arch::StairKind;
+pub use houses::Lot;
 pub use kinds::{BuildingKind, Category};
 pub use parts::Parts;
 
@@ -27,7 +35,26 @@ use crate::mesh::EditablePoly;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
-/// Material style of the assigned GhostTown pack.
+/// Prefab detail level: Standard is the light settlement look; Mid adds
+/// window frames and sills, roof trims and other small parts.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum Detail {
+    #[default]
+    Standard,
+    Mid,
+}
+
+impl Detail {
+    pub const ALL: [Detail; 2] = [Self::Standard, Self::Mid];
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Standard => "Standard",
+            Self::Mid => "Mid",
+        }
+    }
+}
+
+/// Material style of the assigned Settlement pack.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MatStyle {
     #[default]
@@ -45,8 +72,8 @@ impl MatStyle {
     }
     pub fn pack(self) -> crate::materials::MultiPreset {
         match self {
-            Self::Procedural => crate::materials::MultiPreset::GhostTown,
-            Self::Photo => crate::materials::MultiPreset::GhostTownPhoto,
+            Self::Procedural => crate::materials::MultiPreset::Settlement,
+            Self::Photo => crate::materials::MultiPreset::SettlementPhoto,
         }
     }
 }
@@ -68,6 +95,10 @@ pub struct BuildingParams {
     /// PR 7 Destruction: level, era, rubble, embers and gore (also the
     /// Rubble Pile's density, height and era).
     pub ruin: RuinParams,
+    /// Standard or Mid detail (frames, sills, trims).
+    pub detail: Detail,
+    /// Garden, driveway, garage and fence (Residential prefabs).
+    pub lot: Lot,
 }
 
 impl Default for BuildingParams {
@@ -91,6 +122,8 @@ impl BuildingParams {
             style: MatStyle::Procedural,
             stairs: StairKind::Straight,
             ruin: RuinParams::default(),
+            detail: Detail::Standard,
+            lot: Lot::default(),
         }
     }
 
@@ -109,6 +142,7 @@ impl BuildingParams {
     fn build_intact(&self) -> EditablePoly {
         let mut b = Ctx { kit: Kit::new(), p: self.clone(), r: rng(self.seed, 0xB01D + self.kind as u64) };
         b.kit.sg = 0;
+        b.kit.mid = self.detail == Detail::Mid;
         let hx = (self.width.max(0.2)) * 0.5;
         let hy = (self.length.max(0.2)) * 0.5;
         let floors = self.floors.clamp(1, 200);
@@ -133,6 +167,13 @@ impl BuildingParams {
             }
             Category::Infrastructure => infra::build(&mut b, hx, hy, floors),
             Category::Props => doodads::build(&mut b, hx, hy),
+            Category::Residential => {
+                if matches!(self.kind, K::Cottage | K::Bungalow | K::Farmhouse | K::LogCabin | K::AFrame | K::BeachHut) {
+                    residential_a::build(&mut b, hx, hy, floors)
+                } else {
+                    residential_b::build(&mut b, hx, hy, floors)
+                }
+            }
         }
         b.kit.finish()
     }

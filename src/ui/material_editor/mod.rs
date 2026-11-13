@@ -1,5 +1,5 @@
-//! 3ds Max Compact Material Editor (M): 24 sample slots, material toolbar,
-//! preset / shading-model pickers and the Compact or Slate parameter views.
+//! Compact Material Editor (M): 24 sample slots, material toolbar,
+//! preset / shading-model pickers and the Compact or Node Graph parameter views.
 
 mod craft_params;
 pub mod library;
@@ -21,7 +21,7 @@ const CELL: f32 = 58.0;
 const PREVIEW_PX: u32 = 64;
 const COLS: usize = 6;
 
-/// UI-only state: cached slot previews and the Slate canvas layout.
+/// UI-only state: cached slot previews and the Node Graph canvas layout.
 #[derive(Default)]
 pub struct MatEditorUi {
     previews: HashMap<MatId, (Material, egui::TextureHandle)>,
@@ -30,6 +30,11 @@ pub struct MatEditorUi {
 }
 
 impl MatEditorUi {
+    /// Drops the slot previews (they belong to the window that made them).
+    pub fn clear_textures(&mut self) {
+        self.previews.clear();
+    }
+
     /// Preview texture for a material, re-rendered only when it changed.
     fn preview(&mut self, ctx: &egui::Context, id: MatId, m: &Material) -> egui::TextureId {
         if let Some((cached, tex)) = self.previews.get(&id) {
@@ -90,22 +95,14 @@ fn slot_grid(ui: &mut egui::Ui, ed: &mut Editor, st: &mut MatEditorUi) {
                 let (rect, resp) = ui.allocate_exact_size(egui::vec2(CELL, CELL), egui::Sense::click());
                 let p = ui.painter();
                 p.image(tex, rect, egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)), Color32::WHITE);
+                crate::ui::viewport_ui::round_corners(p, rect, 10.0, ui.visuals().window_fill);
                 if ed.material_is_hot(id) {
-                    // Hot material: white corner triangles like 3ds Max.
-                    let k = 9.0;
-                    for (corner, dx, dy) in [
-                        (rect.left_top(), 1.0, 1.0),
-                        (rect.right_top(), -1.0, 1.0),
-                        (rect.left_bottom(), 1.0, -1.0),
-                        (rect.right_bottom(), -1.0, -1.0),
-                    ] {
-                        let pts = vec![corner, corner + egui::vec2(k * dx, 0.0), corner + egui::vec2(0.0, k * dy)];
-                        p.add(egui::Shape::convex_polygon(pts, Color32::WHITE, egui::Stroke::NONE));
-                    }
+                    // Hot material (used in the scene): a white dot in the corner.
+                    p.circle_filled(rect.left_top() + egui::vec2(9.0, 9.0), 3.5, Color32::WHITE);
                 }
                 let active = ed.mat_editor.slot == i;
-                let stroke = if active { egui::Stroke::new(2.0, theme::amber()) } else { egui::Stroke::new(1.0, theme::border()) };
-                p.rect_stroke(rect, 2.0, stroke, egui::StrokeKind::Inside);
+                let stroke = if active { egui::Stroke::new(2.0, theme::accent()) } else { egui::Stroke::new(1.0, theme::border()) };
+                p.rect_stroke(rect, 10.0, stroke, egui::StrokeKind::Inside);
                 if resp.clicked() && ed.mat_editor.slot != i {
                     (ed.mat_editor.slot, ed.mat_editor.sub) = (i, 0);
                 }
@@ -143,7 +140,7 @@ fn material_toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         if toggle_button(ui, !ed.mat_editor.slate, "Compact").clicked() {
             ed.mat_editor.slate = false;
         }
-        if toggle_button(ui, ed.mat_editor.slate, "Slate Node Graph").clicked() {
+        if toggle_button(ui, ed.mat_editor.slate, "Node Graph").clicked() {
             ed.mat_editor.slate = true;
         }
     });
@@ -231,15 +228,14 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
     }
     let mut open = true;
     let width = COLS as f32 * (CELL + 4.0) + 12.0;
-    egui::Window::new(RichText::new("Material Editor").strong())
+    let win = egui::Window::new(RichText::new("Material Editor").strong())
         .id(egui::Id::new("material_editor"))
-        .open(&mut open)
         .default_pos([300.0, 70.0])
         .default_width(width)
         .min_width(width)
         .default_height(780.0)
-        .resizable(true)
-        .show(ctx, |ui| {
+        .resizable(true);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::MaterialEditor, win, &mut open, |ui| {
             slot_grid(ui, ed, st);
             material_toolbar(ui, ed);
             ui.separator();

@@ -1,13 +1,13 @@
 //! Shape rollouts: parametric shape Parameters, Interpolation, Rendering,
 //! Editable Spline Selection / Geometry, plus Lathe and Extrude.
 
-use super::HALF;
+use super::half;
 use crate::editor::Editor;
 use crate::mesh::SubObject;
 use crate::modifiers::{LatheAlign, ModSub, ModifierKind};
 use crate::splines::edit::SplineLevel;
 use crate::splines::{KnotType, ShapeObject, ShapeParams, ShapeSource};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::theme;
 use crate::ui::widgets::{Track, action, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
@@ -105,7 +105,7 @@ pub fn shape_base(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             });
         });
-        if action(ui, "Convert to Editable Spline", true, CONTENT_W) {
+        if action(ui, "Convert to Editable Spline", true, content_w()) {
             ed.convert_to_editable_spline();
         }
     }
@@ -141,7 +141,7 @@ pub fn shape_base(ui: &mut egui::Ui, ed: &mut Editor) {
 
 fn level_buttons(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.horizontal(|ui| {
-        let w = CONTENT_W / 3.0 - 6.0;
+        let w = content_w() / 3.0 - 6.0;
         for (s, label) in [(SubObject::Vertex, "1: Vertex"), (SubObject::Edge, "2: Segment"), (SubObject::Border, "3: Spline")] {
             let on = ed.sub == s;
             let text = if on { RichText::new(label).color(theme::input()).strong() } else { RichText::new(label) };
@@ -155,7 +155,7 @@ fn level_buttons(ui: &mut egui::Ui, ed: &mut Editor) {
 pub(crate) fn spin_action(ui: &mut egui::Ui, label: &str, v: &mut f32, default: f32) -> bool {
     let mut go = false;
     ui.horizontal(|ui| {
-        go = action(ui, label, true, HALF);
+        go = action(ui, label, true, half());
         max_spinner_range(ui, v, 0.005, default, 0.0..=1e3);
     });
     go
@@ -178,7 +178,7 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.label(RichText::new("Vertex type:").strong());
             egui::Grid::new("knot_types").num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
                 for (i, k) in KnotType::ALL.iter().enumerate() {
-                    if action(ui, k.label(), true, HALF) {
+                    if action(ui, k.label(), true, half()) {
                         ed.set_knot_type(*k);
                     }
                     if i % 2 == 1 {
@@ -203,14 +203,14 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
                 });
             }
             ui.horizontal(|ui| {
-                if action(ui, "Make First", true, HALF) {
+                if action(ui, "Make First", true, half()) {
                     ed.edit_shape("Make First", |s| {
                         for (si, ki) in s.selected_knots(SplineLevel::Vertex).into_iter().take(1) {
                             s.splines[si].make_first(ki);
                         }
                     });
                 }
-                if action(ui, "Delete", true, HALF) {
+                if action(ui, "Delete", true, half()) {
                     ed.delete_selection();
                 }
             });
@@ -219,13 +219,13 @@ fn editable_spline(ui: &mut egui::Ui, ed: &mut Editor) {
         }
         SplineLevel::Segment => {
             ui.horizontal(|ui| {
-                let go = action(ui, "Divide", true, HALF);
+                let go = action(ui, "Divide", true, half());
                 max_spinner_range(ui, &mut ui_st.divide, 0.1, 1, 1..=100);
                 if go {
                     ed.edit_shape("Divide", |s| s.divide_selected(ui_st.divide));
                 }
             });
-            if action(ui, "Delete", true, CONTENT_W) {
+            if action(ui, "Delete", true, content_w()) {
                 ed.delete_selection();
             }
             super::spline_tools::constraint_buttons(ui, ed, level);
@@ -257,7 +257,7 @@ pub fn lathe(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Lathe Parameters", true, |ui| {
         let on = ed.active_mod_sub() == Some(ModSub::Axis);
         let text = if on { RichText::new("1: Axis").color(theme::input()).strong() } else { RichText::new("1: Axis") };
-        if ui.add_sized([CONTENT_W, 28.0], egui::Button::new(text).selected(on)).on_hover_text("Move the revolution axis with W").clicked()
+        if ui.add_sized([content_w(), 28.0], egui::Button::new(text).selected(on)).on_hover_text("Move the revolution axis with W").clicked()
         {
             ed.set_mod_sub(Some(ModSub::Axis));
         }
@@ -284,7 +284,7 @@ pub fn lathe(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.label(RichText::new("Align").strong());
             ui.horizontal(|ui| {
                 for (a, n) in [(LatheAlign::Min, "Min"), (LatheAlign::Center, "Center"), (LatheAlign::Max, "Max")] {
-                    if ui.add_sized([CONTENT_W / 3.0 - 6.0, 24.0], egui::Button::new(n).selected(l.align == a)).clicked() {
+                    if ui.add_sized([content_w() / 3.0 - 6.0, 24.0], egui::Button::new(n).selected(l.align == a)).clicked() {
                         l.align = a;
                         l.axis_offset = Default::default();
                         t.started = true;

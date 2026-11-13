@@ -123,7 +123,7 @@ impl Default for CharacterParams {
             macros: Macros::default(),
             micro: BTreeMap::new(),
             anime: 0.0,
-            eyes: Eyes::Low,
+            eyes: Eyes::High,
             hair: Hair::Crop,
             hair_length: 0.5,
             outfit: Outfit::Bodysuit,

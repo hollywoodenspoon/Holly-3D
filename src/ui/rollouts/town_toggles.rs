@@ -1,9 +1,9 @@
-//! PR 6 GhostTown toggles: the preset's Buildings & Props checkboxes,
+//! PR 6 Settlement toggles: the preset's Buildings & Props checkboxes,
 //! building parts, town features, Emissive Lights and Prop Style.
 
 use crate::generators::buildings::BuildingKind;
 use crate::generators::{PropStyle, SettlementParams};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui::{self, RichText};
 
@@ -40,7 +40,7 @@ pub fn toggles(ui: &mut egui::Ui, t: &mut Track, p: &mut SettlementParams) {
     t.r(ui.checkbox(&mut p.emissive, "Emissive Lights (lit windows, lamps, neon)"));
     ui.horizontal(|ui| {
         ui.label("Prop Style:");
-        egui::ComboBox::from_id_salt("town_props").width(CONTENT_W * 0.55).selected_text(p.prop_style.label()).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt("town_props").width(content_w() * 0.55).selected_text(p.prop_style.label()).show_ui(ui, |ui| {
             for s in PropStyle::ALL {
                 t.r(ui.selectable_value(&mut p.prop_style, s, s.label()));
             }

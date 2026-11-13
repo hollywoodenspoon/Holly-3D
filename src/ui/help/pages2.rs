@@ -33,7 +33,7 @@ pub const SKY: Page = Page {
             "Area lights cast soft shadows that grow with their size; tick Visible to Camera to see the softbox or neon bar in F9.",
             "Spot and area lights take an IES Light Profile (wall scallop, streetlamp, flashlight, high-bay, stage beam).",
             "Target lights and cameras take two clicks: the light, then its target.",
-            "With no lights, a 3ds Max-style headlight rig lights the scene. Ctrl+L forces it on.",
+            "With no lights, a headlight rig lights the scene. Ctrl+L forces it on.",
             "C looks through the selected camera.",
         ]),
         H("Godrays and mist"),
@@ -85,6 +85,7 @@ pub const RENDER: Page = Page {
             "F10 > Luxon Lens FX (Bokeh, Anamorphic & Glare): 5 to 9 aperture blades (with rotation) shape the depth-of-field bokeh; Cat's-Eye squeezes it near the frame edges.",
             "Anamorphic Streak Flare and a 4 / 6 / 8 point Starburst add glare to highlights above the Flare Threshold.",
             "Material Editor > Ink / Toon Outline > Interior Pen Lines draws soft folds and Panel Groove seams. Toon materials have Manga Halftone Shadows.",
+            "Material Editor > Alpha: Blend shows texture alpha as see-through; Cut-out makes it solid or a hole (hair cards, leaves, fences), with no sorting problems and no haze. Holes let light and AO through.",
             "Display tab > Shadow & Reflection Catcher: the ground renders transparent except for shadows, AO and reflections, ready for a photo backplate.",
             "🎞 Turntable / Sprites (F9 toolbar or F10): a 360° PNG sequence, or an N / NE / E ... sprite atlas PNG + .json at a 30°, 35.264° or 45° pitch.",
         ]),
@@ -97,14 +98,14 @@ pub const RENDER: Page = Page {
 
 pub const GHOSTTOWN: Page = Page {
     id: "ghosttown",
-    title: "11. Demiurge: GhostTown, Medieval Architect and destruction",
+    title: "11. Demiurge: Settlement, Medieval Architect and destruction",
     blocks: &[
         Shot(
             "ghosttown",
             &[
                 m(1356.0, 464.0, "Settlement preset: 14 towns, from downtown to star fort"),
                 m(1486.0, 518.0, "New Seed: a different town"),
-                m(1396.0, 864.0, "Assign the GhostTown Material Pack"),
+                m(1396.0, 864.0, "Assign the Settlement Material Pack"),
             ],
         ),
         Steps(&[
@@ -113,7 +114,8 @@ pub const GHOSTTOWN: Page = Page {
             "New presets: River City, Harbour Town, Industrial, Old Town + Modern Sprawl, Square Walled City, River Town, Castle & Town, Star Fort, Crossroads Hamlet and Monastery.",
             "Buildings: uncheck any type to leave it out. Building Parts, Town Features (river, bridges, walls, moat, rail...), Emissive Lights and Prop Style (Generated / Low-poly / Realistic) shape the town.",
             "Damaged / Battlefield Mode, or the Demiurge Battlefield & Ruin modifier, wrecks the buildings. Blast Zones aim the damage.",
-            "Buildings & Props Browser (Tools menu or the 🏠 toolbar button): click a thumbnail, then drag a footprint to place one of 44 buildings or props on its own.",
+            "Prefab Library (Tools menu, the Demiurge tab or the 🏠 Prefabs button): thumbnails of every house, building, bridge and street prop, with categories (Residential has cottages to towers, each with Lot checkboxes: Garden, Driveway, Garage, Fence), search and Favourites (click the star on a tile). Click a tile, then click in a viewport: the prefab lands on the surface under the cursor (a roof, terrain, a table) standing upright. The mouse wheel turns it, [ and ] scale it, Shift-click stamps more copies and right-click ends. The bar on top has the same Rotation and Scale with buttons, Vary Seed (each copy looks different), Drop on Surfaces, and Drag to Size (drag out the footprint instead).",
+            "Every prefab has Detail: Standard (light) or Mid (window frames, sills, mullions and trims), and the Destruction rollout from Intact to Rubble.",
             "Destruction Level (on a building, the town and the Battlefield modifier): Intact, Light Damage, Heavy Damage, Warzone Collapse, Apocalyptic Ruin or Pure Rubble. Each building in a town varies by one step.",
             "Rubble Density, Era (Modern concrete and rebar, Medieval stone and charred timber, Ancient stone and moss), Glowing Embers with Ember Glow (ID 25) and Gore / Blood Smears (ID 28) dress the rubble mounds.",
             "The Rubble Pile type places a mound on its own: Width and Length set the spread, Pile Height its height.",
@@ -121,7 +123,7 @@ pub const GHOSTTOWN: Page = Page {
             "Spawn Rising Smoke Plumes (damaged town or Battlefield modifier) raises plumes from the tallest wrecks and the blast zones.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
-        ShowMe("Open the Buildings & Props Browser", Show::Act(Action::BuildingsBrowser)),
+        ShowMe("Open the Prefab Library", Show::Act(Action::BuildingsBrowser)),
     ],
 };
 
@@ -189,7 +191,7 @@ pub const PREFS: Page = Page {
         Shot("prefs", &[m(836.0, 75.0, "Preferences (⚙)"), m(418.0, 68.0, "Tabs: Theme, Hotkeys, Viewports, General, Rendering, Assets")]),
         Steps(&[
             "Theme: pick a preset or make your own colours. Text is checked for readability.",
-            "Hotkeys: click a key and press the new one. Choose the 3ds Max key set if you prefer it.",
+            "Hotkeys: click a key and press the new one. Choose the Classic key set if you prefer it.",
             "Changes save as soon as you let go of the mouse.",
         ]),
         ShowMe("Open Preferences", Show::Act(Action::Preferences)),
@@ -256,7 +258,7 @@ pub const CREDITS: Page = Page {
         ),
         H("MakeHuman"),
         P(
-            "The Character & Creature Studio uses the MakeHuman hm08 base mesh, its morph targets, modifiers, eyes, skeleton and system assets (hair, clothes, eyebrows, eyelashes, teeth, tongue, body proxies, skins and eye colours) by the MakeHuman Team (makehumancommunity.org). These assets are CC0 1.0 (public domain); see assets/makehuman/LICENSE.ASSETS.md.",
+            "The MakeHuman window uses the MakeHuman hm08 base mesh, its morph targets, modifiers, eyes, skeleton and system assets (hair, clothes, eyebrows, eyelashes, teeth, tongue, body proxies, skins and eye colours) by the MakeHuman Team (makehumancommunity.org). These assets are CC0 1.0 (public domain); see assets/makehuman/LICENSE.ASSETS.md.",
         ),
         H("Strolle"),
         P(
@@ -276,9 +278,9 @@ pub const CREDITS: Page = Page {
         P(
             "The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl).",
         ),
-        H("Fira Code"),
+        H("Font"),
         P(
-            "The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. Licensed under the SIL Open Font License 1.1.",
+            "The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. It is licensed under the SIL Open Font License 1.1.",
         ),
         P("The licence texts ship with Ilex in the licenses folder."),
     ],

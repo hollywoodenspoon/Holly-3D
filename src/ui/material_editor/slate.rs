@@ -1,4 +1,4 @@
-//! Optional Slate node view: map nodes wired into the material's channel
+//! Optional Node Graph view: map nodes wired into the material's channel
 //! sockets. Drag from a node's output socket onto a channel (or onto an
 //! input socket of a Color Correction, Levels, Height Blend, Slope Blur or
 //! Normal From Height node) to wire it; drop on empty canvas to unwire.

@@ -1,4 +1,4 @@
-//! The Modifier List catalog: every modifier under a 3ds Max-style group
+//! The Modifier List catalog: every modifier under a group
 //! heading, with a one-line description and whether it fits an object.
 
 use crate::scene::SceneObject;
@@ -78,7 +78,7 @@ pub const GROUPS: &[(&str, &[ModifierInfo])] = &[
     (
         "Demiurge Settlements & Destruction",
         &[
-            m("Demiurge GhostTown", "A whole settlement on a plane or inside a closed spline"),
+            m("Demiurge Settlement", "A whole settlement on a plane or inside a closed spline"),
             m("Demiurge Medieval Architect", "Medieval buildings on a plane or along a spline"),
             m("Demiurge Battlefield & Ruin", "Craters, rubble and damage"),
         ],
@@ -91,7 +91,7 @@ pub fn current_name(name: &str) -> &str {
     match name {
         "Terrain" => "Demiurge Terrain",
         "Ocean" => "Demiurge Ocean",
-        "GhostTown" => "Demiurge GhostTown",
+        "GhostTown" | "Demiurge GhostTown" => "Demiurge Settlement",
         "Medieval Architect" => "Demiurge Medieval Architect",
         "Battlefield / Ruin" => "Demiurge Battlefield & Ruin",
         n => n,
@@ -111,7 +111,7 @@ pub enum Fit {
 /// Modifiers that build a mesh from a spline flowing up the stack.
 const SHAPE_ONLY: [&str; 3] = ["Lathe", "Extrude", "Loft"];
 /// Modifiers that accept either a spline or a mesh.
-const SHAPE_OR_MESH: [&str; 2] = ["Demiurge GhostTown", "Demiurge Medieval Architect"];
+const SHAPE_OR_MESH: [&str; 2] = ["Demiurge Settlement", "Demiurge Medieval Architect"];
 
 pub fn fit(name: &str, o: Option<&SceneObject>) -> Fit {
     let name = current_name(name);
@@ -167,7 +167,7 @@ mod tests {
                 (true, _) => assert!(matches!(fit("Bend", Some(o)), Fit::No(_))),
                 (false, true) => {
                     assert_eq!(fit("Lathe", Some(o)), Fit::Yes);
-                    assert_eq!(fit("Demiurge GhostTown", Some(o)), Fit::Yes);
+                    assert_eq!(fit("Demiurge Settlement", Some(o)), Fit::Yes);
                     assert!(matches!(fit("Bend", Some(o)), Fit::Dim(_)));
                 }
                 (false, false) => {

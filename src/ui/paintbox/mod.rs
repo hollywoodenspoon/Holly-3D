@@ -1,4 +1,4 @@
-//! PaintBox floater (3ds Max VertexPaint palette) for Viewport Paint, plus
+//! PaintBox floater (VertexPaint palette) for Viewport Paint, plus
 //! the VertexPaint modifier rollout in the Modify panel. Texture Paint
 //! adds the layer list, damage stamps, mesh map baking and Smart Masks.
 
@@ -9,7 +9,7 @@ mod layers;
 use crate::editor::Editor;
 use crate::modifiers::ModifierKind;
 use crate::paint::PaintMode;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, action, dim, max_spinner_range, rollout, toggle_button};
 use bevy_egui::egui::{self, RichText};
 
@@ -58,13 +58,12 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
         return;
     }
     let mut open = true;
-    egui::Window::new(RichText::new("PaintBox").strong())
+    let win = egui::Window::new(RichText::new("PaintBox").strong())
         .id(egui::Id::new("paint_box"))
-        .open(&mut open)
         .default_pos([260.0, 90.0])
         .default_width(W + 16.0)
-        .resizable(false)
-        .show(ctx, |ui| {
+        .resizable(false);
+    crate::ui::popout::window(ctx, crate::ui::popout::Dock::PaintBox, win, &mut open, |ui| {
             let h = (ctx.content_rect().height() - 160.0).max(200.0);
             egui::ScrollArea::vertical().max_height(h).min_scrolled_height(h).show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -105,7 +104,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
 pub fn modifier_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "VertexPaint", true, |ui| {
         let label = if ed.paint.active { "Close PaintBox" } else { "🎨 Open PaintBox" };
-        if action(ui, label, true, CONTENT_W) {
+        if action(ui, label, true, content_w()) {
             ed.paint.mode = PaintMode::Vertex;
             ed.toggle_paint();
         }

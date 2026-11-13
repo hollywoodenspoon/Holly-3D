@@ -2,7 +2,7 @@
 
 use crate::editor::Editor;
 use crate::mesh::ops::PolyOp;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::theme;
 use crate::ui::widgets::{max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
@@ -34,7 +34,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
                 if sel.is_empty() { (0, 0) } else { (sel.iter().fold(u32::MAX, |a, b| a & b), sel.iter().fold(0, |a, b| a | b)) }
             })
             .unwrap_or((0, 0));
-        let cell = (CONTENT_W - 7.0 * 3.0) / 8.0;
+        let cell = (content_w() - 7.0 * 3.0) / 8.0;
         egui::Grid::new("sg_grid").num_columns(8).spacing([3.0, 3.0]).show(ui, |ui| {
             for bit in 0..32u32 {
                 let on = all & (1 << bit) != 0;

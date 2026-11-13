@@ -54,13 +54,16 @@ pub(super) fn intersect(t: &Tri, o: Vec3, d: Vec3) -> Option<(f32, f32, f32)> {
     }
     let inv = 1.0 / det;
     let s = o - t.p[0];
+    // A hair of slack on the edges: a ray exactly on an edge shared by two
+    // triangles would otherwise slip between both (black pin-holes).
+    const EDGE: f32 = 1e-6;
     let u = s.dot(pv) * inv;
-    if !(0.0..=1.0).contains(&u) {
+    if !(-EDGE..=1.0 + EDGE).contains(&u) {
         return None;
     }
     let q = s.cross(e1);
     let v = d.dot(q) * inv;
-    if v < 0.0 || u + v > 1.0 {
+    if v < -EDGE || u + v > 1.0 + EDGE {
         return None;
     }
     Some((e2.dot(q) * inv, u, v))

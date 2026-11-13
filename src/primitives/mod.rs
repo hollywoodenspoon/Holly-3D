@@ -1,5 +1,5 @@
-//! Parametric primitives (3ds Max Create -> Geometry -> Standard Primitives).
-//! World is Z-up like 3ds Max; every primitive's pivot sits at its base center.
+//! Parametric primitives (Create -> Geometry -> Standard Primitives).
+//! World is Z-up; every primitive's pivot sits at its base center.
 
 mod boxes;
 mod round;

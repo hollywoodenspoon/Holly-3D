@@ -1,4 +1,4 @@
-//! Tools -> Array... (3ds Max Array dialog): incremental Move / Rotate /
+//! Tools -> Array... (Array dialog): incremental Move / Rotate /
 //! Scale per copy in 1D, plus row (2D) and layer (3D) offsets, with a live
 //! preview that is rebuilt whenever a setting changes.
 

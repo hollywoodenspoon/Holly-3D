@@ -20,7 +20,7 @@ impl Preset {
 
     pub fn label(self) -> &'static str {
         match self {
-            Preset::Clay => "3ds Max Default Modeling Clay",
+            Preset::Clay => "Default Modeling Clay",
             Preset::BrushedSteel => "Brushed Steel / Gunmetal",
             Preset::PolishedGold => "Polished Gold / Chrome",
             Preset::MatteRubber => "Matte Rubber / Vulcanized Plastic",

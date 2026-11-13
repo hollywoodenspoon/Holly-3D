@@ -1,6 +1,6 @@
 //! VertexPaint modifier: a paint layer of per-vertex RGBA (alpha =
 //! coverage) composited over the input's vertex colors with a Layer Opacity
-//! (3ds Max VertexPaint, no UVs required).
+//! (VertexPaint, no UVs required).
 
 use crate::mesh::{EditablePoly, VertexId};
 use bevy::math::{Vec3, Vec4};

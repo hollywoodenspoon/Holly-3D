@@ -48,7 +48,7 @@ pub const BASICS: Page = Page {
     id: "basics",
     title: "1. Getting Started",
     blocks: &[
-        P("Ilex works like 3ds Max. The screen has five fixed zones, and every tool has a button: hotkeys are only shortcuts."),
+        P("The screen has five fixed zones, and every tool has a button: hotkeys are only shortcuts."),
         Shot(
             "layout",
             &[
@@ -71,6 +71,19 @@ pub const BASICS: Page = Page {
             "F3: wireframe or shaded. F4: edged faces. G: grid.",
         ]),
         Tip("No middle mouse button? Click Pan, Orbit or Zoom at the bottom right, then left-drag in a viewport. Right-click stops."),
+        H("Orientation Cube"),
+        Steps(&[
+            "Click a face, edge or corner of the cube (top right of each view) to turn the view to it.",
+            "Drag the cube to orbit. Drag the compass ring to spin around the vertical axis.",
+            "The house icon goes back to Home. Right-click the cube to set Home, switch Perspective / Orthographic or turn on Fit to View.",
+            "Views > Orientation Cube shows or hides it.",
+        ]),
+        H("Pop-out windows"),
+        Steps(&[
+            "Big dialogs (Material Editor, Material Library, Rendered Frame Window, Edit UVWs, MakeHuman, Face Cloner, Buildings browser, PaintBox, Help, Preferences) have a ↗ button in their title bar: it moves the dialog into its own OS window, so your window manager can place or tile it.",
+            "Each pop-out has its own app id, ilex-<name> (for example ilex-material-editor), for window-manager rules.",
+            "Close that window, or click ↙ in its top-right corner, to dock the dialog back. Ilex remembers which dialogs you popped out.",
+        ]),
         ShowMe("Show me the Create tab", Show::Tab(CommandTab::Create)),
     ],
 };
@@ -79,7 +92,7 @@ pub const CREATE: Page = Page {
     id: "create",
     title: "2. Creating objects",
     blocks: &[
-        P("Pick a type on the Create tab (or in the Create menu), then draw it in a viewport, just like 3ds Max."),
+        P("Pick a type on the Create tab (or in the Create menu), then draw it in a viewport."),
         Shot(
             "create",
             &[
@@ -98,7 +111,7 @@ pub const CREATE: Page = Page {
         ]),
         Tip("A plain click places a default-size object. Right-click a Create button to place one at the origin."),
         H("What you can create"),
-        P("Standard Primitives (Box, Sphere, Cylinder, Plane, Torus, Cone), GeoGen rocks, crystals, cliffs and stalagmites, Worlds (Terrain, Ocean, Planet), GhostTown settlements, Mech parts (Gear, Piston, Hose), Shapes / Splines, Lights and Cameras."),
+        P("Standard Primitives (Box, Sphere, Cylinder, Plane, Torus, Cone), GeoGen rocks, crystals, cliffs and stalagmites, Worlds (Terrain, Ocean, Planet), settlements, Mech parts (Gear, Piston, Hose), Shapes / Splines, Lights and Cameras."),
         P("Objects drawn in Top or Perspective sit on the ground grid. In Front or Left they stand on that view's plane. Snaps (S) work while drawing."),
     ],
 };
@@ -227,7 +240,7 @@ pub const MATERIALS: Page = Page {
             "Procedural maps include Bricks / Tiles, Stripes (road lines), Cracks and Grunge (dirt, rust, scratches).",
             "Material Library (📚 Library): over 300 ready-made materials in 16 categories. Click a swatch to load it into the active slot; ☆ marks a favourite.",
             "Library filter: Procedural, Photo or Both. Photo materials appear after you download the Photo Textures pack (Preferences > Assets).",
-            "Mapping rollout: World / Triplanar projects the material from three sides, so it tiles on objects without UVs (GhostTown, Terrain, rocks).",
+            "Mapping rollout: World / Triplanar projects the material from three sides, so it tiles on objects without UVs (Settlement, Terrain, rocks).",
             "Preserve Texture Appearance (under Emission Multiplier): the material still lights the scene, but the camera sees its own colours at Direct Camera Brightness.",
         ]),
         H("Procedural Pattern & Weathering"),
@@ -249,7 +262,7 @@ pub const MATERIALS: Page = Page {
             "Every pattern tiles seamlessly, so it repeats across any surface with no seams.",
         ]),
         Tip("Maps cook on background threads. While you drag a spinner the old look stays on screen and updates a moment later."),
-        Tip("In the Maps rollout (or the Slate view) any channel can also take a Tileable Pattern, Levels (with a histogram), Height Blend, Slope Blur or Normal From Height map."),
+        Tip("In the Maps rollout (or the Node Graph view) any channel can also take a Tileable Pattern, Levels (with a histogram), Height Blend, Slope Blur or Normal From Height map."),
         Shot(
             "library",
             &[

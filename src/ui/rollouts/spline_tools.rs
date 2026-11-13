@@ -1,11 +1,11 @@
 //! Editable Spline Geometry tools: Refine (click on a segment) and the
 //! Spline level (Outline, Mirror, Boolean, Reverse, Close, Delete).
 
-use super::HALF;
+use super::half;
 use super::spline::spin_action;
 use crate::editor::{Editor, Tool, types::SplineUi};
 use crate::splines::boolean::SplineBoolOp;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{action, dim};
 use bevy_egui::egui;
 
@@ -18,7 +18,7 @@ fn toggle(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tool: Tool, width: f3
 
 /// Vertex level: Refine adds a vertex where a segment is clicked.
 pub fn refine_button(ui: &mut egui::Ui, ed: &mut Editor) {
-    toggle(ui, ed, "Refine", Tool::RefineSpline, CONTENT_W, "Click on segments to add vertices without changing the curve");
+    toggle(ui, ed, "Refine", Tool::RefineSpline, content_w(), "Click on segments to add vertices without changing the curve");
 }
 
 pub fn spline_level(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SplineUi) {
@@ -52,14 +52,14 @@ pub fn spline_level(ui: &mut egui::Ui, ed: &mut Editor, st: &mut SplineUi) {
     });
     ui.label(dim(&format!("Boolean ({}): select a closed spline, then click the other one.", st.bool_op.label())));
     ui.horizontal(|ui| {
-        if action(ui, "Reverse", true, HALF) {
+        if action(ui, "Reverse", true, half()) {
             ed.edit_shape("Reverse", |s| s.splines.iter_mut().filter(|s| s.selected).for_each(|s| s.reverse()));
         }
-        if action(ui, "Close", true, HALF) {
+        if action(ui, "Close", true, half()) {
             ed.edit_shape("Close", |s| s.splines.iter_mut().filter(|s| s.selected && s.knots.len() > 2).for_each(|s| s.closed = true));
         }
     });
-    if action(ui, "Delete", true, CONTENT_W) {
+    if action(ui, "Delete", true, content_w()) {
         ed.delete_selection();
     }
     constraint_buttons(ui, ed, crate::splines::edit::SplineLevel::Spline);
@@ -74,7 +74,7 @@ pub fn constraint_buttons(ui: &mut egui::Ui, ed: &mut Editor, level: crate::spli
     ui.separator();
     ui.label(egui::RichText::new("Constraints").strong());
     ui.horizontal_wrapped(|ui| {
-        let w = if list.len() == 1 { CONTENT_W } else { (CONTENT_W - 12.0) / list.len() as f32 };
+        let w = if list.len() == 1 { content_w() } else { (content_w() - 12.0) / list.len() as f32 };
         for c in list {
             if ui.add(egui::Button::new(c.label()).min_size(egui::vec2(w, 24.0))).on_hover_text(c.tip()).clicked() {
                 Action::Constrain(c).run(ed);

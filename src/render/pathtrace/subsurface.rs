@@ -1,4 +1,4 @@
-//! Random-walk subsurface scattering (as in Cycles / SolidCraft): light
+//! Random-walk subsurface scattering (as in SolidCraft): light
 //! that enters an SSS surface takes exponential free-flight steps with
 //! isotropic scattering, losing energy by the van de Hulst albedo of the
 //! SSS Scatter Color, until it leaves through any surface — so thin ears,

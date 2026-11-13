@@ -1,6 +1,6 @@
 //! Cameras: Create -> Cameras tool, camera parameters, looking through a
 //! camera in a viewport (`C`) and camera-view navigation, which moves the
-//! camera itself like 3ds Max (dolly / orbit / truck).
+//! camera itself (dolly / orbit / truck).
 
 use super::*;
 use crate::render::lighting::aim;

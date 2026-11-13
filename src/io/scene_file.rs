@@ -47,9 +47,19 @@ pub fn from_str(s: &str) -> Result<Scene, String> {
     }
     let mut scene = f.scene;
     for o in scene.objects.values_mut() {
+        o.modifiers.iter_mut().for_each(rename_old_modifier);
         o.evaluate();
     }
     Ok(scene)
+}
+
+/// A modifier still showing its kind's pre-rename default name (e.g.
+/// "Demiurge GhostTown") gets the current one; names the user typed stay.
+fn rename_old_modifier(m: &mut crate::modifiers::ModifierEntry) {
+    let now = crate::modifiers::catalog::current_name(&m.name);
+    if now != m.name && now == m.kind.default_name() {
+        m.name = now.to_string();
+    }
 }
 
 /// True for `.ilex` and the legacy `.mmax` (any letter case).
@@ -90,5 +100,19 @@ mod tests {
         assert!(s.contains("format: \"Ilex\""), "new files carry the Ilex header");
         assert!(from_str(&s.replacen("\"Ilex\"", "\"MiniMax\"", 1)).is_ok(), "old MiniMax header still loads");
         assert!(from_str(&s.replacen("\"Ilex\"", "\"Other\"", 1)).is_err());
+    }
+
+    #[test]
+    fn old_modifier_names_are_renamed_on_load() {
+        use crate::modifiers::{ModifierEntry, ModifierKind, make_modifier};
+        let mut town = ModifierEntry::new(ModifierKind::Settlement(Default::default()));
+        town.name = "Demiurge GhostTown".into();
+        rename_old_modifier(&mut town);
+        assert_eq!(town.name, "Demiurge Settlement");
+        // A name the user typed is kept, even if it is an old default.
+        let mut smooth = make_modifier("TurboSmooth").unwrap();
+        smooth.name = "GhostTown".into();
+        rename_old_modifier(&mut smooth);
+        assert_eq!(smooth.name, "GhostTown");
     }
 }
