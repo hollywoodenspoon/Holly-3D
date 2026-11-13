@@ -1810,3 +1810,41 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **No sky importance sampling (the "pick table"):** the CPU path tracer doesn't sample the sky directly either, so adding it to only one would break the comparison. It's a later noise improvement for both tracers.
   - **Fine detail in reflections:** stars and the sun disc are softened by the bake size.
   - **Textures and map baking (PR 1b)** are next.
+
+## 58. GPU kernel parity, PR 1b: texture and procedural maps on the GPU
+- **Mapped materials no longer send the scene to the CPU.** This covers bitmaps, map nodes, node graphs, procedural surfaces, paint layers and World / Triplanar projection.
+- **`gpu_pathtrace/bake.rs`:**
+  - Each mapped material is baked once over a UV grid. A texel holds 12 halves: base + alpha, emission + metallic, roughness + tangent-space normal.
+  - The grid is the largest bitmap's own size, or 1024 when any map is procedural, capped at 4096.
+  - Baking runs on all cores and is cached by material (the last 24), so re-renders skip it.
+  - Probes decide what can be baked:
+    - maps that change with the 3D position (Cracks, Grunge, 3D Noise) stay on the CPU;
+    - triplanar materials need maps that repeat every 1 UV and no paint layers;
+    - UV maps that don't repeat are baked over the UV bounds of the triangles that use them and clamped instead of wrapped.
+- **`gpu_pathtrace/textures.rs`:** one new storage binding (9, `aux`) holds:
+  - per triangle: corner UVs, a texture index and the object's projection frame;
+  - a 12-word table per texture;
+  - the texels.
+  
+  The whole store is capped at 1.5 GB and checked against the GPU's buffer limit. Past either limit the scene falls back to the CPU with the reason shown.
+- **Kernel (`wgsl/textures.wgsl`):**
+  - bilinear f16 lookups;
+  - normal maps tilt the shading normal along the triangle's UV frame, the same as `relief::perturb` and `uv_frame`;
+  - World / Triplanar blends three projections by the object-space geometric normal, with the same weights, live-side cut-off and frames as `Projection::blend` / `triplanar_normal`.
+  
+  Textured hits multiply by the interpolated linear vertex paint. Emitting triangles now carry the CPU's per-triangle emitter radiance, so NEE matches.
+- **Tests (`tests_tex.rs`):**
+  - GPU vs CPU parity:
+    - UV maps: a clamped gradient floor, a brick box with checker metal and roughness, and a checker emission panel (29.93 vs 29.94);
+    - procedural wood with relief (30.78 vs 30.68);
+    - triplanar procedural bricks with relief (32.80 vs 32.77);
+  - 3D maps stay on the CPU;
+  - non-repeating triplanar maps are refused;
+  - bitmap sizes, the f16 texel layout and the cache;
+  - an untextured scene gets an empty store.
+- **Not done yet:**
+  - **Some materials still render on the CPU:** 3D (position-based) maps, triplanar with paint layers, and non-repeating triplanar maps. A later step could evaluate those per hit on the GPU.
+  - **Textures over 4096 are downsampled** to 4096 for the GPU bake.
+  - **Interpolated vertex paint, then lit:** vertex paint on a mapped material is turned to linear at each corner and then blended. The CPU blends first and converts afterwards, so smooth vertex-paint gradients can differ slightly.
+  - **Cavity AO isn't baked:** only the CPU's ambient term uses it, and the GPU kernel has no ambient-occlusion term yet.
+  - **Cut-out alpha is baked but unused:** see-through surfaces still need the CPU (PR 4).

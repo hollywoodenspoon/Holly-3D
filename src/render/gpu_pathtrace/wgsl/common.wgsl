@@ -21,6 +21,7 @@ struct Params {
     ambient: vec4<f32>,
     fog: vec4<f32>,      // rgb, density (0 = none)
     env: vec4<f32>,      // environment image w, h, turn (0..1), strength
+    tex: vec4<u32>,      // texture table word index, texture count
 }
 
 struct Tri {

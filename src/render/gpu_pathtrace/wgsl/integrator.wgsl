@@ -34,7 +34,18 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         let ng = select(-geo, geo, entering);
         var n = normalize(t.n0.xyz * w.x + t.n1.xyz * w.y + t.n2.xyz * w.z);
         if (dot(n, ng) < 0.0) { n = -n; }
-        let base = t.c0.xyz * w.x + t.c1.xyz * w.y + t.c2.xyz * w.z;
+        var base = t.c0.xyz * w.x + t.c1.xyz * w.y + t.c2.xyz * w.z;
+        var mr = t.mat.xy;
+        var emit = t.emit.xyz;
+        if (FEAT_TEXTURES) {
+            let tx = tex_shade(h.tri, w, p, ng, n);
+            if (tx.ok) {
+                base *= tx.base;
+                emit = tx.emit;
+                mr = tx.mr;
+                n = tx.n;
+            }
+        }
         if (camera) { alpha = 1.0; }
         l += beta * volume_segment(o, d, h.t, &beta);
         if (u.fog.w > 0.0) {
@@ -46,20 +57,20 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         if (!entering && model == 2u) {
             beta *= pow(max(t.att.xyz, vec3<f32>(1e-3)), vec3<f32>(h.t / max(t.att.w, 1e-3)));
         }
-        if (max(t.emit.x, max(t.emit.y, t.emit.z)) > 0.0) {
+        if (max(emit.x, max(emit.y, emit.z)) > 0.0) {
             var mis = 1.0;
             if (!prev_delta && u.counts.y > 0u && (u.counts.w & F_NEE) != 0u && t.light.x > 0.0) {
                 let lp = t.light.x / max(t.light.y, 1e-12) * h.t * h.t / max(abs(dot(geo, d)), 1e-6);
                 mis = power(prev_pdf, lp);
             }
-            l += beta * t.emit.xyz * mis;
+            l += beta * emit * mis;
         }
         if (model == 1u) {
             l += beta * base;
             break;
         }
         camera = false;
-        let s = shade_hook(Surf(n, base, t.mat.x, max(t.mat.y * t.mat.y, 2e-3), t.mat.z, max(t.mat.w, 1.0), entering), h.tri, w);
+        let s = shade_hook(Surf(n, base, mr.x, max(mr.y * mr.y, 2e-3), t.mat.z, max(t.mat.w, 1.0), entering), h.tri, w);
         let v = -d;
         l += beta * (punctual(p, ng, s, v) + emitter_nee(p, ng, h.tri, s, v) + area_nee(p, ng, s, v));
         let bs = bsdf_sample(s, v);
@@ -85,8 +96,9 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= u.dims.z || id.y >= u.dims.w) { return; }
-    // Keeps the env binding in every variant's layout (the host always binds it).
+    // Keeps the env and texture bindings in every variant's layout (the host always binds them).
     _ = envmap[0];
+    _ = aux[0];
     let i = id.y * u.dims.z + id.x;
     if (done[i] != 0u) { return; }
     let x = u.origin.x + id.x;

@@ -101,9 +101,6 @@ fn power(a: f32, b: f32) -> f32 {
 // surface unchanged until those land.
 fn shade_hook(s: Surf, tri: u32, w: vec3<f32>) -> Surf {
     var o = s;
-    if (FEAT_TEXTURES) {
-        // PR 1: base colour, metallic / roughness and normal from the texture store.
-    }
     if (FEAT_PRINCIPLED || FEAT_SSS) {
         // PR 2: clearcoat, sheen, anisotropy, absorption, dispersion, SSS.
     }

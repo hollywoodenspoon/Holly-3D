@@ -3,7 +3,7 @@
 //! binary BVH nodes, punctual lights and the emitter CDF.
 
 use crate::materials::ShadingModel;
-use crate::materials::shading::{lin3, surface};
+use crate::materials::shading::{lin, lin3, surface};
 use crate::render::scene_build::{RShape, RenderScene};
 use bevy::math::{Vec3, Vec4};
 
@@ -56,7 +56,12 @@ pub fn pack(rs: &RenderScene) -> Packed {
         let s = [surf(0), surf(1), surf(2)];
         t.p.iter().for_each(|p| tris.v3(*p, 0.0));
         t.n.iter().for_each(|n| tris.v3(*n, 0.0));
-        s.iter().for_each(|s| tris.v3(s.base, s.alpha));
+        if super::textures::textured(m) {
+            // The texture store has the maps; the corners keep the vertex paint.
+            t.col.iter().for_each(|c| tris.v3(lin(c.truncate()), c.w));
+        } else {
+            s.iter().for_each(|s| tris.v3(s.base, s.alpha));
+        }
         let s0 = s[0];
         tris.v4(Vec4::new(s0.metallic, s0.roughness, s0.transmission, s0.ior));
         let model = match m.model {
@@ -64,7 +69,9 @@ pub fn pack(rs: &RenderScene) -> Packed {
             ShadingModel::Crystal => 2.0,
             _ => 0.0,
         };
-        tris.v3(s0.emissive, model);
+        // Emitters glow with the CPU's per-triangle radiance (what its NEE uses).
+        let emit = rs.emitters.lookup(i).map_or(s0.emissive, |(e, _)| e.radiance);
+        tris.v3(emit, model);
         tris.v3(lin3(m.attenuation_color), m.thickness);
         let (prob, area) = rs.emitters.lookup(i).map_or((0.0, 0.0), |(e, p)| (p, e.area));
         tris.v4(Vec4::new(prob, area, 0.0, 0.0));
