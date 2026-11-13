@@ -55,3 +55,9 @@ fn units_and_zoom_helpers() {
     v.invert_zoom = true;
     assert_eq!(v.zoom_steps(1.0), -2.0);
 }
+
+#[test]
+fn the_removed_inter_font_loads_as_fira_code() {
+    let p = Preferences::from_ron("(theme: (font: Inter))").unwrap();
+    assert_eq!(p.theme.font, UiFont::FiraCode);
+}

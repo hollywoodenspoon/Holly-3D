@@ -1,7 +1,6 @@
-//! UI fonts. Fira Code and Inter (both OFL-1.1) are built into the program.
-//! Fira Code is the default for all text; Inter takes proportional text and
-//! headings while numbers and code stay Fira Code. egui's own fonts stay
-//! behind them as fallbacks, so emoji and icon glyphs still draw.
+//! UI fonts. Fira Code (OFL-1.1) is built into the program and is the
+//! default for all text. egui's own fonts stay behind it as fallbacks, so
+//! emoji and icon glyphs still draw.
 
 use crate::prefs::UiFont;
 use bevy_egui::egui::{self, FontData, FontDefinitions, FontFamily};
@@ -10,24 +9,18 @@ use std::sync::Arc;
 const REGULAR: &[u8] = include_bytes!("../../assets/fonts/FiraCode-Regular.ttf");
 const BOLD: &[u8] = include_bytes!("../../assets/fonts/FiraCode-Bold.ttf");
 
-const INTER: &[u8] = include_bytes!("../../assets/fonts/Inter-Regular.otf");
-const INTER_BOLD: &[u8] = include_bytes!("../../assets/fonts/Inter-SemiBold.otf");
-
 /// Family name of the bold face (headings).
 pub const BOLD_FAMILY: &str = "FiraCode-Bold";
-/// Family name of Inter's heading face.
-pub const INTER_BOLD_FAMILY: &str = "Inter-SemiBold";
 
 fn installed_id() -> egui::Id {
     egui::Id::new("minimax_ui_font")
 }
 
 /// The font family headings use: the bold face once [`install`] has put
-/// Fira Code or Inter into this context, the plain family otherwise.
+/// Fira Code into this context, the plain family otherwise.
 pub fn heading_family(ctx: &egui::Context) -> FontFamily {
     match ctx.data(|d| d.get_temp::<UiFont>(installed_id())) {
         Some(UiFont::FiraCode) => FontFamily::Name(BOLD_FAMILY.into()),
-        Some(UiFont::Inter) => FontFamily::Name(INTER_BOLD_FAMILY.into()),
         _ => FontFamily::Proportional,
     }
 }
@@ -48,18 +41,10 @@ pub fn definitions(font: UiFont) -> FontDefinitions {
     for family in [FontFamily::Proportional, FontFamily::Monospace] {
         d.families.entry(family).or_default().insert(0, "FiraCode".into());
     }
-    if font == UiFont::Inter {
-        d.font_data.insert("Inter".into(), Arc::new(FontData::from_static(INTER)));
-        d.font_data.insert(INTER_BOLD_FAMILY.into(), Arc::new(FontData::from_static(INTER_BOLD)));
-        d.families.entry(FontFamily::Proportional).or_default().insert(0, "Inter".into());
-    }
     // Bold first, then everything the regular family falls back to.
-    let fallback = d.families.get(&FontFamily::Proportional).cloned().unwrap_or_default();
-    for name in [BOLD_FAMILY, INTER_BOLD_FAMILY].into_iter().filter(|n| d.font_data.contains_key(*n)) {
-        let mut bold = vec![name.to_string()];
-        bold.extend(fallback.iter().cloned());
-        d.families.insert(FontFamily::Name(name.into()), bold);
-    }
+    let mut bold = vec![BOLD_FAMILY.to_string()];
+    bold.extend(d.families.get(&FontFamily::Proportional).cloned().unwrap_or_default());
+    d.families.insert(FontFamily::Name(BOLD_FAMILY.into()), bold);
     d
 }
 
@@ -104,19 +89,6 @@ mod tests {
         // Icons and emoji the UI uses still draw (from the fallback fonts).
         let blank = width(&ctx, "\u{E000}", FontFamily::Proportional);
         assert!(blank >= 0.0 && width(&ctx, "🎨📚★", FontFamily::Proportional) > 20.0);
-    }
-
-    #[test]
-    fn inter_is_proportional_with_fira_code_numbers() {
-        let d = definitions(UiFont::Inter);
-        assert_eq!(d.families[&FontFamily::Proportional][0], "Inter");
-        assert_eq!(d.families[&FontFamily::Monospace][0], "FiraCode");
-        let ctx = context(UiFont::Inter);
-        assert_eq!(heading_family(&ctx), FontFamily::Name(INTER_BOLD_FAMILY.into()));
-        assert!(width(&ctx, "iiii", FontFamily::Proportional) < width(&ctx, "MMMM", FontFamily::Proportional));
-        assert!(width(&ctx, "Hello", heading_family(&ctx)) > 10.0);
-        let mono = FontFamily::Monospace;
-        assert!((width(&ctx, "1111", mono.clone()) - width(&ctx, "8888", mono)).abs() < 0.01);
     }
 
     #[test]

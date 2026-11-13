@@ -276,9 +276,9 @@ pub const CREDITS: Page = Page {
         P(
             "The optional downloads in Preferences > Assets are CC0 (public domain): photo textures and models from Poly Haven (polyhaven.com), low-poly models from Kenney (kenney.nl).",
         ),
-        H("Fonts"),
+        H("Font"),
         P(
-            "The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. The optional Inter font is by The Inter Project Authors: github.com/rsms/inter. Both are licensed under the SIL Open Font License 1.1.",
+            "The interface font is Fira Code by The Fira Code Project Authors: github.com/tonsky/FiraCode. It is licensed under the SIL Open Font License 1.1.",
         ),
         P("The licence texts ship with Ilex in the licenses folder."),
     ],

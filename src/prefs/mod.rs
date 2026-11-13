@@ -24,21 +24,19 @@ pub struct Preferences {
 /// The interface font (Preferences > Theme).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UiFont {
-    /// Fira Code, built into the program.
+    /// Fira Code, built into the program (the removed Inter option loads as this).
     #[default]
+    #[serde(alias = "Inter")]
     FiraCode,
     /// egui's own proportional font.
     Classic,
-    /// Inter, a rounded sans built into the program (numbers stay Fira Code).
-    Inter,
 }
 
 impl UiFont {
-    pub const ALL: [UiFont; 3] = [UiFont::FiraCode, UiFont::Inter, UiFont::Classic];
+    pub const ALL: [UiFont; 2] = [UiFont::FiraCode, UiFont::Classic];
     pub fn label(self) -> &'static str {
         match self {
             UiFont::FiraCode => "Fira Code (default)",
-            UiFont::Inter => "Inter (rounded sans)",
             UiFont::Classic => "Classic (proportional)",
         }
     }
