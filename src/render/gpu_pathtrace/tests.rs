@@ -62,6 +62,13 @@ fn block_means(px: &[Pixel]) -> Vec<Vec3> {
     }).collect()
 }
 
+fn block_alpha(px: &[Pixel]) -> Vec<f32> {
+    (0..16).map(|b| {
+        let (bx, by) = (b % 4 * 6, b / 4 * 6);
+        (0..36).map(|i| px[(by + i / 6) * 24 + bx + i % 6].layers.geom.w).sum::<f32>() / 36.0
+    }).collect()
+}
+
 /// How far the GPU image is from the CPU one: mean absolute error of the
 /// 6x6 block means, and the mean signed difference per channel (a bias
 /// shows up there even when noise hides it in single pixels).
@@ -119,6 +126,10 @@ pub(super) fn parity_with(name: &str, rs: &RenderScene, tweak: impl Fn(&mut Rend
     }
     let cov = |px: &[Pixel]| px.iter().map(|p| p.layers.geom.w).sum::<f32>();
     assert!((cov(&gpu_px) - cov(&cpu_px)).abs() < 1.0, "{name}: same coverage");
+    // Alpha per block too: catchers and see-through surfaces live there.
+    for (i, (x, y)) in block_alpha(&gpu_px).iter().zip(&block_alpha(&cpu_px)).enumerate() {
+        assert!((x - y).abs() < 0.06, "{name} block {i}: GPU alpha {x} vs CPU {y}");
+    }
     Some(d)
 }
 
