@@ -92,6 +92,8 @@ pub enum BuildingKind {
     FloorLamp, PendantLight, RugAndPouf, Curtains, WallMirror, FloorPlant,
     // Appliances & electronics (16)
     Fridge, Cooker, Microwave, Dishwasher, WashingMachine, KettleToaster, CoffeeMachine, Television, PcSetup, Laptop, Speakers, AirConditioner, Radiator, Fan, VendingMachine, ArcadeCabinet,
+    // Room shells (4)
+    RoomShell, OpenPlanRoom, BathroomShell, Hallway,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -111,10 +113,11 @@ pub enum Category {
     KitchenBath,
     Decor,
     Appliances,
+    Rooms,
 }
 
 impl Category {
-    pub const ALL: [Category; 15] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Rural, Self::Furniture, Self::KitchenBath, Self::Decor, Self::Appliances, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 16] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Rural, Self::Furniture, Self::KitchenBath, Self::Decor, Self::Appliances, Self::Rooms, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -132,6 +135,7 @@ impl Category {
             Self::KitchenBath => "Kitchen & Bath",
             Self::Decor => "Lighting & Decor",
             Self::Appliances => "Appliances & Electronics",
+            Self::Rooms => "Room Shells",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -140,7 +144,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 187] = {
+    pub const ALL: [BuildingKind; 191] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -205,6 +209,7 @@ impl BuildingKind {
             KitchenUnits, WallCabinets, KitchenIsland, Toilet, VanitySink, Bathtub, ShowerCubicle,
             FloorLamp, PendantLight, RugAndPouf, Curtains, WallMirror, FloorPlant,
             Fridge, Cooker, Microwave, Dishwasher, WashingMachine, KettleToaster, CoffeeMachine, Television, PcSetup, Laptop, Speakers, AirConditioner, Radiator, Fan, VendingMachine, ArcadeCabinet,
+            RoomShell, OpenPlanRoom, BathroomShell, Hallway,
         ]
     };
 
@@ -225,7 +230,8 @@ impl BuildingKind {
             139..=157 => Category::Furniture,
             158..=164 => Category::KitchenBath,
             165..=170 => Category::Decor,
-            _ => Category::Appliances,
+            171..=186 => Category::Appliances,
+            _ => Category::Rooms,
         }
     }
 
@@ -238,6 +244,6 @@ impl BuildingKind {
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden | Category::Rural | Category::Furniture | Category::KitchenBath | Category::Decor | Category::Appliances) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
+        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden | Category::Rural | Category::Furniture | Category::KitchenBath | Category::Decor | Category::Appliances | Category::Rooms) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
     }
 }

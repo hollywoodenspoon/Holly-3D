@@ -194,6 +194,10 @@ impl BuildingKind {
             Fan => (0.5, 0.5, 1),
             VendingMachine => (0.9, 0.8, 1),
             ArcadeCabinet => (0.65, 0.8, 1),
+            RoomShell => (4.0, 3.5, 1),
+            OpenPlanRoom => (7.0, 5.0, 1),
+            BathroomShell => (2.5, 2.2, 1),
+            Hallway => (1.4, 5.0, 1),
         }
     }
 }

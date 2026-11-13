@@ -193,6 +193,10 @@ impl BuildingKind {
             Fan => "Fan",
             VendingMachine => "Vending Machine",
             ArcadeCabinet => "Arcade Cabinet",
+            RoomShell => "Room",
+            OpenPlanRoom => "Open-Plan Room",
+            BathroomShell => "Bathroom Shell",
+            Hallway => "Hallway",
         }
     }
 }

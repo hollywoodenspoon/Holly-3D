@@ -25,7 +25,8 @@ fn prefab_check_renders() {
         let size = (b.max - b.min).length();
         let mut cam = ViewCamera::new(ViewKind::Perspective);
         let target = (b.min + b.max) * 0.5;
-        (cam.target, cam.distance, cam.yaw, cam.pitch) = (target, size * 1.15, (62f32).to_radians(), (-22f32).to_radians());
+        let pitch: f32 = std::env::var("PREFAB_PITCH").ok().and_then(|s| s.parse().ok()).unwrap_or(-22.0);
+        (cam.target, cam.distance, cam.yaw, cam.pitch) = (target, size * 1.15, (62f32).to_radians(), pitch.to_radians());
         let cfg = RenderSettings { width: 480, height: 360, aa: 2, ..Default::default() };
         let rs = RenderScene::build(&ed.scene, cam, true);
         let px = raytrace_region(&rs, &cfg, [0, 0, cfg.width, cfg.height], &AtomicBool::new(false), |_, _| {});

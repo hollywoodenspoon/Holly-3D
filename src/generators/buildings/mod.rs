@@ -35,6 +35,7 @@ mod modern_b;
 pub mod parts;
 mod residential_a;
 mod residential_b;
+mod rooms;
 mod rural;
 mod services;
 mod services_b;
@@ -261,6 +262,7 @@ impl BuildingParams {
                     _ => appliances::build(&mut b, hx, hy),
                 }
             }
+            Category::Rooms => rooms::build(&mut b, hx, hy),
         }
         b.kit.finish()
     }

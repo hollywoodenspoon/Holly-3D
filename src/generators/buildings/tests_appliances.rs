@@ -49,3 +49,28 @@ fn appliances_have_real_heights_and_parts() {
     let off = BuildingParams { emissive: false, ..BuildingParams::of(BuildingKind::Television) }.build();
     assert!(off.polygons.values().all(|p| ![ids::LIT, ids::NEON].contains(&p.material_id)), "screens switch off");
 }
+
+#[test]
+fn room_shells_have_walls_openings_and_a_floor_at_zero() {
+    assert_eq!(BuildingKind::RoomShell as usize, 187);
+    assert_eq!(Category::Rooms.kinds().count(), 4);
+    for k in Category::Rooms.kinds() {
+        let p = BuildingParams::of(k);
+        let m = p.build();
+        m.validate().unwrap_or_else(|e| panic!("{k:?}: {e}"));
+        let b = m.bounds().unwrap();
+        assert!((2.5..2.8).contains(&b.max.z), "{k:?} wall height: {b:?}");
+        assert!(b.min.z > -0.2, "{k:?} floor slab is thin: {b:?}");
+        // The walls stand outside the lot, so its full area is usable.
+        assert!(b.min.x < -p.width * 0.5 && b.max.y > p.length * 0.5, "{k:?} walls outside the lot");
+        // The floor finish tops out at z = 0 inside the room.
+        let top = m.polygons.values().filter(|poly| poly.corners.iter().all(|c| m.vertices[c.vertex_id].position.z.abs() < 1e-4));
+        assert!(top.count() > 0, "{k:?} has a floor at z = 0");
+        assert!(!k.has_floors());
+    }
+    assert!(ids_of(BuildingKind::RoomShell).contains(&ids::GLASS), "room window glass");
+    assert!(ids_of(BuildingKind::BathroomShell).contains(&ids::SIDEWALK), "bathroom tiles");
+    // Openings: the door gap leaves the room's front wall in pieces, so a
+    // shell has many more faces than four solid walls would.
+    assert!(BuildingParams::of(BuildingKind::RoomShell).build().counts().2 > 100);
+}

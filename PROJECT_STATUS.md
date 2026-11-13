@@ -1734,3 +1734,23 @@ Not done yet:
   - fridge and cooker have no interiors;
   - the vending machine has no glass pane, because the thumbnail renderer draws GLASS opaque and it hid the products;
   - the room-shell generator is next.
+
+## 54. Prefab Library, part H3e: room shells
+- **New category "Room Shells"** (indices 187–190), built in `rooms.rs`:
+  - Room: a door with an open leaf, and windows in the back and side walls.
+  - Open-Plan Room: a door, three windows, glazed patio doors, and a partition stub with a breakfast bar over a tiled kitchen floor.
+  - Bathroom Shell: a tile floor, walls tiled to 1.2 m, and a small high frosted window.
+  - Hallway: doors at both ends and off each side, a small window and a runner.
+- **How a shell is made:**
+  - The lot is the room's inside. The 0.15 m walls stand outside it, so the full width × length is usable floor.
+  - A `layer` helper cuts real openings through each wall.
+  - Every opening gets architraves; windows also get a sill, frame, mullion and glass. Skirting runs between the doors.
+  - The floor finish tops out at z = 0, so furniture dropped in sits on it.
+  - It's a cutaway: no ceiling.
+- `tests_shots.rs` takes `PREFAB_PITCH` (degrees) for a higher camera, so room interiors show on the review sheet.
+- **Tests:** wall height, thin slab, walls outside the lot, a floor face at z = 0, glass, bathroom tiles, and a face count above solid walls.
+- **Not done yet:**
+  - no ceiling option or ceiling sockets;
+  - furniture doesn't snap to walls yet (sockets are a later step);
+  - door and window positions are fixed per kind (no sliders);
+  - rooms don't join into a floor plan.
