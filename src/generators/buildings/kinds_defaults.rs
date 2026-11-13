@@ -198,6 +198,14 @@ impl BuildingKind {
             OpenPlanRoom => (7.0, 5.0, 1),
             BathroomShell => (2.5, 2.2, 1),
             Hallway => (1.4, 5.0, 1),
+            Sedan => (1.82, 4.75, 1),
+            Hatchback => (1.76, 4.1, 1),
+            Suv => (1.95, 4.8, 1),
+            Pickup => (2.0, 5.5, 1),
+            Van => (2.0, 5.3, 1),
+            SportsCar => (1.95, 4.5, 1),
+            Taxi => (1.82, 4.75, 1),
+            PoliceCar => (1.9, 4.9, 1),
         }
     }
 }

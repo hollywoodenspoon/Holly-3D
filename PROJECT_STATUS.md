@@ -1754,3 +1754,25 @@ Not done yet:
   - furniture doesn't snap to walls yet (sockets are a later step);
   - door and window positions are fixed per kind (no sliders);
   - rooms don't join into a floor plan.
+
+## 55. Prefab Library, part H4a: road cars
+- **New category "Vehicles"** (indices 191–198), built in `vehicles.rs` (shared body, wheels, cabin, interior, trim) and `cars.rs` (designs and extras).
+- **Eight kinds, three designs each** (stored in the Floors value and picked with new **Design:** buttons in the Modify panel):
+  - Sedan: Family Sedan, Executive Saloon (chrome strip), Compact Coupe.
+  - Hatchback: City Hatch, Hot Hatch (spoiler), Estate (roof rails).
+  - SUV: Compact Crossover, Boxy Off-Roader (spare wheel on the back), Full-Size SUV.
+  - Pickup Truck: Single Cab, Double Cab, Flatbed Work Truck.
+  - Van: Panel Van, Minivan, Camper Van (pop-top).
+  - Sports Car: Mid-Engine (side intakes), Grand Tourer, Roadster (open, low seats).
+  - Taxi: City Cab, Tall Cab, Minivan Cab, all with chequer band and roof sign.
+  - Police Car: Patrol Sedan, Patrol SUV, Interceptor, with a light bar and push bar.
+- **Real parts:** the side profile is extruded with semicircular wheel-arch notches and an inner wheel well; separate wheels (tyre, rim, hub, spokes at Mid); a glass cabin (GLASS ID) with roof panel and A/B/C pillars; head and tail lights (glow when Emissive is on), grille, bumpers, front and rear plate areas, mirrors, door seams and handles. Mid detail adds seats, a dashboard and a steering wheel.
+- No brands, badges or copies of a specific model.
+- Paint is seeded and also varies by design.
+- **Tests (`tests_vehicles.rs`):** appended indices, three designs per kind, valid deterministic meshes at both details, glass and tyres, standing on the road, designs differ, Mid adds parts, and real heights (the van is taller than the sedan, the sports car lower, the police light bar on top).
+- **Not done yet:**
+  - doors, bonnet and boot don't open, and wheels aren't separate objects that can turn;
+  - interiors only appear at Mid detail (or on the roadster);
+  - the spare wheel is a simple cylinder;
+  - Library thumbnails show design 1 only;
+  - bus, lorry, tractor, forklift, motorbike, bicycle and scooter come next (H4b), then trains, a boat, a small plane and a helicopter (H4c).

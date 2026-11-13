@@ -6,6 +6,8 @@
 //! Settlement Material IDs (`kit::ids`).
 
 pub mod arch;
+mod cars;
+mod vehicles;
 mod appliances;
 mod appliances_b;
 mod commercial_a;
@@ -64,6 +66,8 @@ mod tests_residential;
 mod tests_services;
 #[cfg(test)]
 mod tests_shots;
+#[cfg(test)]
+mod tests_vehicles;
 
 pub use arch::StairKind;
 pub use houses::Lot;
@@ -263,6 +267,7 @@ impl BuildingParams {
                 }
             }
             Category::Rooms => rooms::build(&mut b, hx, hy),
+            Category::Vehicles => cars::build(&mut b, hx, hy),
         }
         b.kit.finish()
     }

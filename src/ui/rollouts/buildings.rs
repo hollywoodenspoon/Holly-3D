@@ -29,6 +29,19 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
             row(ui, t, label, &mut p.floors, 1..=200, p.kind.defaults().2, 0.05);
         }
     });
+    let designs = p.kind.designs();
+    if !designs.is_empty() {
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Design:");
+            for (i, name) in designs.iter().enumerate() {
+                let n = i as u32 + 1;
+                if ui.selectable_label(p.floors.clamp(1, designs.len() as u32) == n, *name).clicked() && p.floors != n {
+                    p.floors = n;
+                    (t.started, t.changed) = (true, true);
+                }
+            }
+        });
+    }
     t.r(ui.checkbox(&mut p.emissive, "Emissive Lights"))
         .on_hover_text("Lit windows, lamps, lanterns, neon signs and forge fires glow; off = dark glass");
     ui.horizontal(|ui| {

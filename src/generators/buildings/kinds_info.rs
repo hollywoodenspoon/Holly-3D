@@ -197,6 +197,14 @@ impl BuildingKind {
             OpenPlanRoom => "Open-Plan Room",
             BathroomShell => "Bathroom Shell",
             Hallway => "Hallway",
+            Sedan => "Sedan",
+            Hatchback => "Hatchback",
+            Suv => "SUV",
+            Pickup => "Pickup Truck",
+            Van => "Van",
+            SportsCar => "Sports Car",
+            Taxi => "Taxi",
+            PoliceCar => "Police Car",
         }
     }
 }
