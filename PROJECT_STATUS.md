@@ -1848,3 +1848,43 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Interpolated vertex paint, then lit:** vertex paint on a mapped material is turned to linear at each corner and then blended. The CPU blends first and converts afterwards, so smooth vertex-paint gradients can differ slightly.
   - **Cavity AO isn't baked:** only the CPU's ambient term uses it, and the GPU kernel has no ambient-occlusion term yet.
   - **Cut-out alpha is baked but unused:** see-through surfaces still need the CPU (PR 4).
+
+## 59. GPU kernel parity, PR 2: Principled lobes on the GPU
+- **Principled materials and Preserve Texture Appearance no longer send the scene to the CPU.** Two reasons are gone from the CPU-only list (now 8 entries).
+- **Material records (`gpu_pathtrace/textures.rs`):** materials with Principled lobes or a camera glow of their own get a 16-word record in the `aux` store:
+  - anisotropy and rotation;
+  - clearcoat and its roughness;
+  - sheen and tint;
+  - SSS weight and Abbe number;
+  - the Beer absorption exponent per unit length;
+  - the camera glow brightness;
+  - the random walk's extinction and single-scatter albedo.
+  
+  Each triangle's word 7 points to its record, and `Params.tex.zw` gives the table and its count. A scene with records but no maps still builds the per-triangle words.
+- **Kernel (`wgsl/principled.wgsl`):** a port of `bsdf/mod.rs` and `microfacet.rs`:
+  - anisotropic GGX in the same tangent frame (`Frame::new`), with the Disney alphas, Smith masking and Heitz VNDF sampling;
+  - the clearcoat layer with its lobe pick and base attenuation;
+  - cloth sheen on the diffuse layer;
+  - the SSS entry lobe, then the random walk (exponential free flights, isotropic scattering, Russian roulette, up to 256 steps), then a white Lambert exit with NEE (`subsurface.rs`).
+  
+  Also covered:
+  - **Glass:** `sample_glass` follows one colour channel per path with its own Cauchy IOR (weight ×3, the same as the CPU), and the integrator keeps the path's channel.
+  - **Beer absorption** applies when leaving a transmissive surface.
+  - **Preserve Texture Appearance:** camera hits glow with the surface's own colour × Direct Camera Brightness.
+  
+  `Surf` gained the frame, the alphas and the lobe weights. With the switches off, the plain BSDF code is unchanged.
+- **Tests:**
+  - **`tests_lobes.rs`** runs the kernel's `pr_eval` / `pr_sample` on the GPU for 48 random materials and directions (every lobe combination):
+    - evaluation matches `Bsdf::eval` to 0.2%;
+    - the mean sample weight (directional albedo, a white-furnace check) and the SSS entry share match the CPU's sampling.
+    - Mutation checks catch a 20% sheen change, a different anisotropy aspect, a wrong clearcoat alpha and swapped VNDF alphas.
+  - **`tests_principled.rs`:** GPU vs CPU renders, all within 1% energy:
+    - brushed / car paint / velvet: 38.41 vs 38.26;
+    - wax sphere and a thin leaf slab with SSS: 40.82 vs 40.70;
+    - a dispersive, absorbing glass slab over a glowing floor: 74.34 vs 73.62. It catches a dropped ×3 spectral weight and missing absorption.
+    - a Preserve Texture Appearance sign: 48.76 vs 48.80;
+    - plus the record layout.
+- **Not done yet:**
+  - **Random-walk exits ignore opacity:** the CPU ignores it too, but once see-through surfaces come to the GPU (PR 4), the walk should match whatever the CPU does then.
+  - **Absorption needs a transmissive surface:** the GPU, like the CPU, applies it only when leaving one. Volumes (PR 3) are separate.
+  - **Per-pixel parity at 24 px is coarse for small highlights.** The per-lobe test carries the exact check.

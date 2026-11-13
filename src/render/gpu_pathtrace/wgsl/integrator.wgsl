@@ -19,6 +19,8 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
     var prev_pdf = 0.0;
     var prev_delta = true;
     var depth = vec4<u32>(0u);
+    // Dispersion: the colour channel this path follows once split (-1 = none).
+    var channel = -1;
     let eps = u.background.w;
     for (var guard = 0; guard < 64; guard++) {
         let h = closest(o, d, 1e30);
@@ -46,7 +48,12 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
                 n = tx.n;
             }
         }
-        if (camera) { alpha = 1.0; }
+        let rec = rec_of(h.tri);
+        if (camera) {
+            alpha = 1.0;
+            // Preserve Texture Appearance: the camera sees the surface's own colour.
+            if (rec != NO_REC && auxf(rec + 11u) >= 0.0) { emit = base * auxf(rec + 11u); }
+        }
         l += beta * volume_segment(o, d, h.t, &beta);
         if (u.fog.w > 0.0) {
             let f = exp(-u.fog.w * h.t);
@@ -56,6 +63,10 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         let model = u32(t.emit.w + 0.5);
         if (!entering && model == 2u) {
             beta *= pow(max(t.att.xyz, vec3<f32>(1e-3)), vec3<f32>(h.t / max(t.att.w, 1e-3)));
+        }
+        if (FEAT_PRINCIPLED && !entering && t.mat.z > 0.0 && rec != NO_REC) {
+            // Beer-Lambert absorption inside the transmissive volume.
+            beta *= exp(vec3<f32>(auxf(rec + 8u), auxf(rec + 9u), auxf(rec + 10u)) * h.t);
         }
         if (max(emit.x, max(emit.y, emit.z)) > 0.0) {
             var mis = 1.0;
@@ -70,15 +81,37 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             break;
         }
         camera = false;
-        let s = shade_hook(Surf(n, base, mr.x, max(mr.y * mr.y, 2e-3), t.mat.z, max(t.mat.w, 1.0), entering), h.tri, w);
+        var s = surf(n, base, mr.x, max(mr.y * mr.y, 2e-3), t.mat.z, max(t.mat.w, 1.0), entering);
+        if (FEAT_PRINCIPLED || FEAT_SSS) {
+            s = principled(s, rec, mr.y);
+            s.channel = channel;
+        }
         let v = -d;
         l += beta * (punctual(p, ng, s, v) + emitter_nee(p, ng, h.tri, s, v) + area_nee(p, ng, s, v));
-        let bs = bsdf_sample(s, v);
+        var bs = bsdf_sample(s, v);
         if (!bs.ok) { break; }
         depth.x += 1u;
         depth[bs.lobe + 1u] += 1u;
         if (depth.x > u.limits.x || depth[bs.lobe + 1u] > max(u.limits[bs.lobe + 1u], 1u)) { break; }
         beta *= bs.weight;
+        if (channel < 0) { channel = bs.channel; }
+        var at = p;
+        var at_ng = ng;
+        if (FEAT_SSS && bs.sss) {
+            // Random walk inside, then a white Lambert exit with NEE.
+            let wk = random_walk(rec, p, ng, n);
+            if (!wk.ok) { break; }
+            beta *= wk.w;
+            var ex = surf(wk.n, vec3<f32>(1.0), 0.0, 1.0, 0.0, 1.5, false);
+            ex.t = frame_t(wk.n, 0.0);
+            ex.b = cross(wk.n, ex.t);
+            ex.white = true;
+            l += beta * (punctual(wk.p, wk.ng, ex, wk.n) + emitter_nee(wk.p, wk.ng, wk.tri, ex, wk.n) + area_nee(wk.p, wk.ng, ex, wk.n));
+            bs = bsdf_sample(ex, wk.n);
+            if (!bs.ok) { break; }
+            at = wk.p;
+            at_ng = wk.ng;
+        }
         if (depth.x > u.counts.z) {
             let survive = clamp(max(beta.x, max(beta.y, beta.z)), 0.0, 0.95);
             if (rnd() >= survive) { break; }
@@ -87,7 +120,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         if (max(beta.x, max(beta.y, beta.z)) <= 0.0) { break; }
         prev_pdf = bs.pdf;
         prev_delta = bs.delta;
-        o = p + ng * select(-eps, eps, dot(bs.dir, ng) >= 0.0);
+        o = at + at_ng * select(-eps, eps, dot(bs.dir, at_ng) >= 0.0);
         d = bs.dir;
     }
     return vec4<f32>(l, alpha);
