@@ -1552,3 +1552,35 @@ Not done yet:
   - pipes are straight runs without elbows;
   - the cooling towers have no inner shading;
   - wind turbine blades are flat beams, not twisted aerofoils.
+
+## 46. Prefab Library, part H2d: services and transport
+- **17 new kinds** under a new **Services & Transport** category. They are appended after Industrial (indices 88–104), so saved scenes and seeds keep their meaning.
+  - **Services:**
+    - Fire Station: brick appliance bays with glazed doors, an apron, a hose tower and an office wing.
+    - Police Station: flat-roofed block behind a car park, glazed entrance, blue lamp and a flag.
+    - Clinic: single storey with ribbon windows, a drop-off canopy, a glowing cross and parking.
+    - University Block: long brick block with a columned entrance, a clock tower and a lawn quad with paths and trees.
+    - Library: glazed ground floor under a cantilevered finned box, a clerestory and a plaza with benches.
+    - Town Hall: raised centre block with a portico and domed clock tower, lower wings, steps, flags and a plaza.
+    - Post Office: brick counter hall, post boxes, and a delivery van at the loading door.
+    - Temple: stone platform with steps, a columned hall under two tiers of wide roofs, a gate and lanterns.
+    - Cemetery: walled lawn with rows of headstones, trees and a small chapel.
+  - **Transport:**
+    - Bus Stop: glass shelter with a roof, bench, timetable and stop sign.
+    - Bus Depot: gabled garage with roller doors, parked buses, an office and a fuel island.
+    - Train Station: barrel-vaulted hall with a clock and canopy, two-storey wings, and platforms with canopies over tracks.
+    - Metro Entrance: stairs down about 3 m through an opening in the paving, railings, a glass canopy and a lit sign mast.
+    - Tram Stop: island platform with a canopy, bench and ticket machine, tracks on both sides and overhead-wire poles.
+    - Airport Terminal: glazed hall under a sawtooth roof, drop-off road and canopy, jet bridges and an airliner at each gate.
+    - Control Tower: tapered shaft with a flared glass cab, antennas and a base building. Floors make it taller.
+    - Harbour Office: hipped-roof office on a quay with a lookout, a flag, bollards and water in front.
+- Settlements count Services kinds as buildings, so they take ruin damage.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot (only the metro stairs go below ground, by at most 3.5 m);
+  - heights are sensible, the harbour has water and the station has rails.
+- **Not done yet:**
+  - the metro stairs end at a blank wall, with no ticket hall below;
+  - the airliner is simple (no windows, a flat tail);
+  - the train station has no rail lines leaving the lot, and tram tracks don't join up between stops;
+  - there is no hospital, school or parking garage yet; these come with the parks and rural batch or later.

@@ -1,5 +1,5 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 13 residential, 17 commercial & office, 14 industrial & utility, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 17 commercial & office, 14 industrial & utility, 17 services & transport, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
@@ -23,7 +23,10 @@ mod modern_b;
 pub mod parts;
 mod residential_a;
 mod residential_b;
+mod services;
+mod services_b;
 mod shops;
+mod transport;
 mod utilities;
 #[cfg(test)]
 mod tests;
@@ -33,6 +36,8 @@ mod tests_commercial;
 mod tests_industrial;
 #[cfg(test)]
 mod tests_residential;
+#[cfg(test)]
+mod tests_services;
 #[cfg(test)]
 mod tests_shots;
 
@@ -194,6 +199,11 @@ impl BuildingParams {
             Category::Industrial => match self.kind {
                 K::Factory | K::TruckDepot | K::SiloCluster | K::GrainElevator | K::Refinery | K::TankFarm | K::RecyclingYard => industrial::build(&mut b, hx, hy),
                 _ => utilities::build(&mut b, hx, hy),
+            },
+            Category::Services => match self.kind {
+                K::Temple | K::Cemetery => services_b::build(&mut b, hx, hy),
+                K::FireStation | K::PoliceStation | K::Clinic | K::University | K::Library | K::TownHall | K::PostOffice => services::build(&mut b, hx, hy, floors),
+                _ => transport::build(&mut b, hx, hy, floors),
             },
         }
         b.kit.finish()

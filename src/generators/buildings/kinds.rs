@@ -72,6 +72,9 @@ pub enum BuildingKind {
     // Industrial & utilities (14)
     Factory, TruckDepot, SiloCluster, GrainElevator, Refinery, TankFarm, RecyclingYard,
     PowerPlant, WindTurbine, SolarFarm, PumpStation, Substation, PowerPylon, CellTower,
+    // Services & transport (17)
+    FireStation, PoliceStation, Clinic, University, Library, TownHall, PostOffice, Temple, Cemetery,
+    BusStop, BusDepot, TrainStation, MetroEntrance, TramStop, AirportTerminal, ControlTower, HarbourOffice,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -83,10 +86,11 @@ pub enum Category {
     Residential,
     Commercial,
     Industrial,
+    Services,
 }
 
 impl Category {
-    pub const ALL: [Category; 7] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 8] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -96,6 +100,7 @@ impl Category {
             Self::Residential => "Residential",
             Self::Commercial => "Commercial & Office",
             Self::Industrial => "Industrial & Utilities",
+            Self::Services => "Services & Transport",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -104,7 +109,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 88] = {
+    pub const ALL: [BuildingKind; 105] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -158,6 +163,8 @@ impl BuildingKind {
             CarDealer, DriveThru, LowRiseOffice, MidRiseOffice, OfficeCampus,
             Factory, TruckDepot, SiloCluster, GrainElevator, Refinery, TankFarm, RecyclingYard,
             PowerPlant, WindTurbine, SolarFarm, PumpStation, Substation, PowerPylon, CellTower,
+            FireStation, PoliceStation, Clinic, University, Library, TownHall, PostOffice, Temple, Cemetery,
+            BusStop, BusDepot, TrainStation, MetroEntrance, TramStop, AirportTerminal, ControlTower, HarbourOffice,
         ]
     };
 
@@ -170,7 +177,8 @@ impl BuildingKind {
             31..=43 => Category::Props,
             44..=56 => Category::Residential,
             57..=73 => Category::Commercial,
-            _ => Category::Industrial,
+            74..=87 => Category::Industrial,
+            _ => Category::Services,
         }
     }
 
@@ -183,6 +191,6 @@ impl BuildingKind {
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (!matches!(self.category(), Category::Props | Category::Industrial) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru)
+        (!matches!(self.category(), Category::Props | Category::Industrial) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
     }
 }
