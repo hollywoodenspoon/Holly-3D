@@ -74,6 +74,17 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                         v.shading = Shading::Wireframe;
                     }
                     ui.checkbox(&mut v.edged_faces, "Edged Faces   F4");
+                    ui.separator();
+                    ui.label(small("Background"));
+                    let env = &mut ed.prefs.viewport.use_env_background;
+                    let was = *env;
+                    ui.horizontal(|ui| {
+                        ui.selectable_value(env, false, "Viewport").on_hover_text("Neutral viewport grey (Preferences -> Viewports)");
+                        ui.selectable_value(env, true, "Environment").on_hover_text("The Environment (8) background colour used by renders");
+                    });
+                    if *env != was {
+                        ed.iface.layout_dirty = true;
+                    }
                 });
             });
         },

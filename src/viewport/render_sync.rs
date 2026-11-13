@@ -20,7 +20,7 @@ pub fn view_layer(i: usize) -> usize {
     1 + i
 }
 
-pub const VIEWPORT_BG: Color = Color::srgb(0.235, 0.24, 0.255);
+pub const VIEWPORT_BG: Color = Color::srgb(0.24, 0.24, 0.24);
 
 #[derive(Component)]
 pub struct ViewportCam(pub usize);

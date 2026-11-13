@@ -125,7 +125,8 @@ pub struct KeyPrefs {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ViewportPrefs {
-    /// Viewports show the Environment (8) background colour.
+    /// Viewports show the Environment (8) background colour instead of the
+    /// neutral viewport grey (renders always use the Environment colour).
     pub use_env_background: bool,
     /// Viewport background when `use_env_background` is off (sRGB 0–1).
     pub background: [f32; 3],
@@ -142,10 +143,10 @@ pub struct ViewportPrefs {
 impl Default for ViewportPrefs {
     fn default() -> Self {
         Self {
-            use_env_background: true,
-            background: [0.235, 0.24, 0.255],
-            grid: [0.32, 0.33, 0.35],
-            grid_axis: [0.12, 0.12, 0.13],
+            use_env_background: false,
+            background: [0.24, 0.24, 0.24],
+            grid: [0.33, 0.33, 0.33],
+            grid_axis: [0.13, 0.13, 0.13],
             vertex: [0x3D, 0x8B, 0xFF],
             vertex_selected: [0xFF, 0x2E, 0x1F],
             invert_zoom: false,
@@ -287,6 +288,7 @@ impl Preferences {
 
     pub fn from_ron(text: &str) -> Result<Self, String> {
         let mut p: Self = ron::from_str(text).map_err(|e| format!("Preferences: {e}"))?;
+        p.viewport.migrate(p.theme.look_version);
         p.theme.migrate();
         Ok(p)
     }

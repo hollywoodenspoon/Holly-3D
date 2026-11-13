@@ -159,17 +159,37 @@ impl ThemePreset {
 }
 
 /// Raised whenever the default look changes, so saved prefs move over once.
-pub const LOOK_VERSION: u32 = 1;
+pub const LOOK_VERSION: u32 = 2;
 
 impl super::ThemePrefs {
     /// Version 1 made Graphite & Teal the default: prefs still on the old
     /// default (Slate & Amber) switch once; a later pick of Slate & Amber stays.
     pub fn migrate(&mut self) {
-        if self.look_version < LOOK_VERSION {
-            if self.preset == ThemePreset::SlateAmber {
-                self.preset = ThemePreset::GraphiteTeal;
+        if self.look_version < 1 && self.preset == ThemePreset::SlateAmber {
+            self.preset = ThemePreset::GraphiteTeal;
+        }
+        self.look_version = self.look_version.max(LOOK_VERSION);
+    }
+}
+
+/// The version 1 viewport colours (slightly blue).
+const V1_BACKGROUND: [f32; 3] = [0.235, 0.24, 0.255];
+const V1_GRID: [f32; 3] = [0.32, 0.33, 0.35];
+const V1_GRID_AXIS: [f32; 3] = [0.12, 0.12, 0.13];
+
+impl super::ViewportPrefs {
+    /// Version 2 gave viewports their own neutral grey instead of the
+    /// Environment colour; colours still on the old defaults move over once.
+    pub fn migrate(&mut self, from: u32) {
+        if from >= 2 {
+            return;
+        }
+        let d = Self::default();
+        self.use_env_background = false;
+        for (v, old, new) in [(&mut self.background, V1_BACKGROUND, d.background), (&mut self.grid, V1_GRID, d.grid), (&mut self.grid_axis, V1_GRID_AXIS, d.grid_axis)] {
+            if *v == old {
+                *v = new;
             }
-            self.look_version = LOOK_VERSION;
         }
     }
 }
@@ -245,6 +265,20 @@ mod tests {
         assert_eq!(picked.theme.preset, ThemePreset::SlateAmber);
         let other = Preferences::from_ron("(theme: (preset: MidnightBlue))").unwrap();
         assert_eq!(other.theme.preset, ThemePreset::MidnightBlue);
+    }
+
+    #[test]
+    fn old_viewport_colours_become_neutral_grey_once() {
+        use super::super::{Preferences, ViewportPrefs};
+        let old = Preferences::from_ron("(theme: (look_version: 1), viewport: (use_env_background: true, background: (0.235, 0.24, 0.255)))").unwrap();
+        assert!(!old.viewport.use_env_background);
+        assert_eq!(old.viewport.background, ViewportPrefs::default().background);
+        let custom = Preferences::from_ron("(theme: (look_version: 1), viewport: (background: (0.5, 0.1, 0.1)))").unwrap();
+        assert_eq!(custom.viewport.background, [0.5, 0.1, 0.1]);
+        let picked = Preferences::from_ron(&format!("(theme: (look_version: {LOOK_VERSION}), viewport: (use_env_background: true))")).unwrap();
+        assert!(picked.viewport.use_env_background);
+        let picked = Preferences::from_ron("(theme: (preset: SlateAmber, look_version: 1))").unwrap();
+        assert_eq!(picked.theme.preset, ThemePreset::SlateAmber);
     }
 
     #[test]
