@@ -75,10 +75,10 @@ pub const RENDER: Page = Page {
         ]),
         H("Luxon LightMix, Veach denoiser and render passes"),
         Steps(&[
-            "Render with the Veach Path Tracer, then click 💡 Luxon LightMix: every group (Sun & Sky, Environment, Emissive, Godrays, each light) has On, Solo, Intensity and Tint. The image re-mixes at once, no re-render.",
+            "Render with the Veach Path Tracer (CPU or GPU), then click 💡 Luxon LightMix: every group (Sun & Sky, Environment, Emissive, Godrays, each light) has On, Solo, Intensity and Tint. The image re-mixes at once, no re-render.",
             "💡 Apply Luxon LightMix to Scene Lights bakes the faders into the lights (Ctrl + Z undoes it).",
             "The Veach À-Trous Wavelet Denoiser divides out the surface albedo, smooths only the lighting with a 5-pass A-Trous filter (normal, depth, roughness and object aware), then puts the crisp texture back.",
-            "The pass list next to R / G / B / A shows Direct, Indirect GI, Volumetric, Specular, Subsurface, Albedo, World Normal, Linear Depth, Cavity / AO and the adaptive sample heatmap.",
+            "The pass list next to R / G / B / A shows Direct, Indirect GI, Volumetric, Specular, Subsurface, Albedo, World Normal, Linear Depth, Cavity / AO and the adaptive sample heatmap (CPU tracer; GPU renders keep LightMix but not these passes yet).",
         ]),
         H("Lens effects, ink and catchers"),
         Steps(&[

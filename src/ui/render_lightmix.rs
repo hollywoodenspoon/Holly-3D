@@ -10,7 +10,7 @@ pub fn sidebar(ui: &mut egui::Ui, ed: &mut Editor) {
     egui::Panel::right("rfw_lightmix").resizable(false).exact_size(290.0).show(ui, |ui| {
         ui.heading("Luxon LightMix");
         let Some(mix) = ed.rfw.lightmix.as_mut() else {
-            ui.label(dim("Render with the CPU Veach Path Tracer (F10 > Path Tracing, LightMix on) to relight the image here without re-rendering."));
+            ui.label(dim("Render with the Veach Path Tracer on the CPU or GPU (F10 > Path Tracing, LightMix on) to relight the image here without re-rendering."));
             return;
         };
         ui.label(dim("Re-weights each light group's buffer — no re-render."));

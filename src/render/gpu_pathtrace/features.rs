@@ -19,7 +19,9 @@ impl Features {
     pub const ENV_MAP: u32 = 16;
     pub const AREA: u32 = 32;
     pub const OPACITY: u32 = 64;
-    pub const NAMES: [&'static str; 7] = ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY"];
+    /// Per-light-group buffers for the Frame Window's LightMix (set by the render, not the scene).
+    pub const LIGHTMIX: u32 = 128;
+    pub const NAMES: [&'static str; 8] = ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY", "FEAT_LIGHTMIX"];
     /// Every mask the kernel can be built with.
     pub const COUNT: u32 = 1 << Self::NAMES.len();
 

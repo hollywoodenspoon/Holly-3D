@@ -63,7 +63,9 @@ fn punctual(p: vec3<f32>, ng: vec3<f32>, s: Surf, v: vec3<f32>) -> vec3<f32> {
         if (l.pos.w > 2.5) { continue; }
         let inc = incident(l, p);
         if (inc.k <= 0.0 || dot(s.n, inc.dir) <= 0.0) { continue; }
-        c += bsdf_eval(s, v, inc.dir).f * l.rad.xyz * inc.k * shadow(l, p, o, inc.dir, inc.dist);
+        let li = bsdf_eval(s, v, inc.dir).f * l.rad.xyz * inc.k * shadow(l, p, o, inc.dir, inc.dist);
+        c += li;
+        mix_add(light_group(l), mix_beta * li);
     }
     return c;
 }
@@ -101,5 +103,7 @@ fn emitter_nee(p: vec3<f32>, ng: vec3<f32>, self_tri: u32, s: Surf, v: vec3<f32>
     let ev = bsdf_eval(s, v, dir);
     if (max(ev.f.x, max(ev.f.y, ev.f.z)) <= 0.0) { return vec3<f32>(0.0); }
     if ((u.counts.w & F_SHADOWS) != 0u && occluded(o, dir, sqrt(d2) - u.background.w * 4.0)) { return vec3<f32>(0.0); }
-    return ev.f * t.emit.xyz * power(light_pdf, ev.pdf) / light_pdf;
+    let le = ev.f * t.emit.xyz * power(light_pdf, ev.pdf) / light_pdf;
+    mix_add(G_EMISSIVE, mix_beta * le);
+    return le;
 }

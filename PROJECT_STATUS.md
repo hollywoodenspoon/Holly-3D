@@ -1948,5 +1948,32 @@ No new GPU features yet; this makes the next parity steps safe and visible.
 - **Not done yet:**
   - **3D maps mixed with bitmaps, node graphs (Levels, Color Correct, Height Blend, …), procedural surfaces or paint still use the CPU.** Live maps take single map leaves only, which is all the prefab packs use.
   - **Opacity maps** (e.g. Settlement ID 29 smoke) still need the CPU; that comes with PR 4b.
-  - **LightMix only works with the CPU path tracer** (Holly's report). It is queued next: per-group buffers on the GPU.
+  - ~~LightMix only works with the CPU path tracer~~: done in §63.
   - **Speed:** live maps cost more per hit than a baked lookup (Cracks runs 27 Voronoi cells plus several fbm calls, and bump adds four more evaluations). I haven't timed this on her RX 9060 XT; only lavapipe here.
+
+## 63. GPU kernel parity: Luxon LightMix on the GPU
+- **LightMix now works with the GPU path tracer** (Holly's report: "Luxon LightMix only works with CPU Pathtracer right now"). With `Luxon LightMix Buffers` on, a GPU render keeps its light groups, and the Frame Window's 💡 LightMix sidebar relights it with no re-render, just like a CPU render.
+- **Kernel (`FEAT_LIGHTMIX`, mask bit 128):** every place the integrator adds light also adds that share to the light's group. The groups are in the CPU's order:
+  - Sun & Dynamic Sky (the sky when it is procedural);
+  - Environment (HDRI or flat background, ambient, fog);
+  - Emissive Materials (emission, Unlit, emitter NEE);
+  - Volumetric Godrays & Mist;
+  - one group per scene light (punctual, spot, sun and area NEE, and area lights seen by the camera).
+  - The per-light shares are weighted by the path throughput at that vertex (`mix_beta`), including the subsurface exit.
+  - A sample that isn't finite adds to no group, as on the CPU.
+  - Per-pixel group sums go to a storage buffer (binding 12), read back once at the end and normalised by `extras::lightmix`, the same code the CPU uses. Coverage and the G-buffer come from the GPU image too.
+- **Host (`gpu_pathtrace/mix.rs`):**
+  - The group count is passed in `vol4.y` and each light's group in `misc.w`.
+  - A one-word buffer is bound when LightMix is off, so the variant without LightMix costs nothing.
+  - A group buffer larger than the GPU's storage-buffer limit falls back to the CPU with the reason given.
+- **Tests (`tests_mix.rs`):**
+  - **Red and blue omnis, a sun, a glowing panel and fog:** every group's image mean matches the CPU within 4%.
+  - **A rect area light visible to the camera, a spot and mist under the Earth sky:** Sun & Sky, Volume and per-light groups match.
+  - **LightMix off:** no groups and a one-word buffer.
+  - **Pipeline masks:** the mask test also builds LightMix on its own and on top of every scene feature.
+  - Mutation checks are listed in the PR.
+- **Not done yet:**
+  - **AOV passes** (Direct, Indirect, Specular, Albedo, Normal, Depth and the rest) and the **albedo-guided À-Trous denoiser** are still CPU-only. A GPU render with LightMix uses the bilateral denoiser, like any GPU render.
+  - **Memory:** at 3840×2160 with 12 groups the buffer takes about 1.2 GB. A GPU whose buffer limit is smaller falls back to the CPU instead of splitting the render into tiles.
+  - **Speed** with LightMix on hasn't been timed on her RX 9060 XT; only lavapipe here.
+  - Opacity, the Shadow & Reflection Catcher and toon still need the CPU (PR 4b).

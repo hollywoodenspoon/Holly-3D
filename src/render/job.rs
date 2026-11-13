@@ -43,7 +43,7 @@ pub struct RenderJob {
     pub px_total: u64,
     /// Latest progressive pass report (empty for the classic tracer).
     pub pass_label: String,
-    /// LightMix buffers once a path-traced render finished on the CPU.
+    /// LightMix buffers once a path-traced render finished (CPU or GPU).
     pub lightmix: Option<Box<super::lightmix::Buffers>>,
     pub aovs: Option<Box<super::aov::AovBuffers>>,
 }

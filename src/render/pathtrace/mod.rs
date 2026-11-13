@@ -26,7 +26,7 @@ pub fn run(rs: &RenderScene, cfg: &RenderSettings, region: Region, cancel: &Atom
     (px, device)
 }
 
-/// [`run`] plus the AOV passes and LightMix group buffers (CPU tracer only).
+/// [`run`] plus the LightMix group buffers and (CPU tracer only) the AOV passes.
 pub fn run_mix(
     rs: &RenderScene,
     cfg: &RenderSettings,
@@ -44,7 +44,7 @@ pub fn run_mix(
     };
     let fallback = match gpu {
         Ok(g) => match crate::render::gpu_pathtrace::render(g, rs, cfg, region, cancel, &mut on_pass) {
-            Ok(px) => return (px, g.name.clone(), Default::default()),
+            Ok((px, lightmix)) => return (px, g.name.clone(), extras::Extras { lightmix, aovs: None }),
             Err(e) => e,
         },
         Err(e) => e,

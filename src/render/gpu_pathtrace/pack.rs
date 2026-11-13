@@ -125,7 +125,7 @@ pub fn pack(rs: &RenderScene, shadow_samples: u32) -> Packed {
         let (na, nb) = l.atten.near.unwrap_or((-1.0, -1.0));
         let (fa, fb) = l.atten.far.unwrap_or((-1.0, -1.0));
         lights.v4(Vec4::new(na, nb, fa, fb));
-        lights.v4(Vec4::new(l.range, f32::from(u8::from(l.shadows)), l.softness, 0.0));
+        lights.v4(Vec4::new(l.range, f32::from(u8::from(l.shadows)), l.softness, f32::from(l.group)));
         lights.v3(l.shadow_tint, 0.0);
         area(&mut lights, l, shadow_samples);
     }

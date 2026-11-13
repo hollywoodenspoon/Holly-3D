@@ -88,7 +88,7 @@ pub(super) fn parity(name: &str, rs: &RenderScene) -> Option<Diff> {
     assert_eq!(pack::unsupported(rs), None, "{name} renders on the GPU");
     let r = settings(ComputeDevice::Gpu);
     let mut passes = 0;
-    let gpu_px = super::render(g, rs, &r, [0, 0, 24, 24], &AtomicBool::new(false), |_, _| passes += 1).expect("GPU render");
+    let gpu_px = super::render(g, rs, &r, [0, 0, 24, 24], &AtomicBool::new(false), |_, _| passes += 1).expect("GPU render").0;
     assert_eq!(passes, r.path.schedule().len(), "progressive passes stream from the GPU too");
     let (cpu_px, label) = pathtrace::run(rs, &settings(ComputeDevice::Cpu), [0, 0, 24, 24], &AtomicBool::new(false), |_, _| {});
     assert_eq!(label, "CPU");

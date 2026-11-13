@@ -68,6 +68,8 @@ const F_ORTHO: u32 = 1u;
 const F_SHADOWS: u32 = 2u;
 const F_SOFTBOX: u32 = 4u;
 const F_NEE: u32 = 8u;
+// The sky is the procedural one (LightMix: Sun & Sky, else Environment).
+const F_PROC_SKY: u32 = 16u;
 
 // Feature switches, set per scene by the host as pipeline-overridable
 // constants (`super::features`), so a scene only compiles what it uses and a
@@ -80,8 +82,30 @@ override FEAT_VOLUME: bool = false;
 override FEAT_ENV_MAP: bool = false;
 override FEAT_AREA: bool = false;
 override FEAT_OPACITY: bool = false;
+override FEAT_LIGHTMIX: bool = false;
 
 var<private> rng_state: u32;
+
+// LightMix (`FEAT_LIGHTMIX`): one path's light split by group, in the CPU's
+// order (0 sun & sky, 1 environment, 2 emissive, 3 volume, 4.. scene lights),
+// summed per pixel into `groups` (`u.vol4.y` groups, 3 floats each).
+@group(0) @binding(12) var<storage, read_write> groups: array<f32>;
+const G_SUN_SKY: u32 = 0u;
+const G_ENV: u32 = 1u;
+const G_EMISSIVE: u32 = 2u;
+const G_VOLUME: u32 = 3u;
+var<private> mix_l: array<vec3<f32>, 12>;
+// Path throughput the light functions weight their per-light share by.
+var<private> mix_beta: vec3<f32>;
+
+fn mix_add(g: u32, c: vec3<f32>) {
+    if (FEAT_LIGHTMIX) { mix_l[min(g, 11u)] += c; }
+}
+
+// Group of light `l` (packed in `misc.w`).
+fn light_group(l: Light) -> u32 {
+    return u32(l.misc.w + 0.5);
+}
 
 fn pcg(v: u32) -> u32 {
     let s = v * 747796405u + 2891336453u;

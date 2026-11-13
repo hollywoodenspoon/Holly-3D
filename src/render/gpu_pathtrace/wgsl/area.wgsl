@@ -89,7 +89,9 @@ fn area_nee(p: vec3<f32>, ng: vec3<f32>, s: Surf, v: vec3<f32>) -> vec3<f32> {
         for (var j = 0u; j < n; j++) {
             let inc = area_incident(l, p);
             if (inc.k <= 0.0 || dot(s.n, inc.dir) <= 0.0) { continue; }
-            c += bsdf_eval(s, v, inc.dir).f * l.rad.xyz * (inc.k / f32(n)) * shadow(l, p, o, inc.dir, inc.dist);
+            let li = bsdf_eval(s, v, inc.dir).f * l.rad.xyz * (inc.k / f32(n)) * shadow(l, p, o, inc.dir, inc.dist);
+            c += li;
+            mix_add(light_group(l), mix_beta * li);
         }
     }
     return c;
@@ -130,7 +132,7 @@ fn area_hit(l: Light, o: vec3<f32>, d: vec3<f32>) -> f32 {
 }
 
 // Radiance of the nearest camera-visible area light closer than `tmax`
-// (w = 1 when one is seen).
+// (w = 1 + its LightMix group when one is seen, 0 otherwise).
 fn area_seen(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> vec4<f32> {
     var best = tmax;
     var out = vec4<f32>(0.0);
@@ -143,7 +145,7 @@ fn area_seen(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> vec4<f32> {
             best = t;
             let shape = u32(l.area.x + 0.5);
             let proj = select(4.0 * l.au.w * l.av.w, PI * l.au.w * l.au.w, shape == 1u || shape == 2u);
-            out = vec4<f32>(l.rad.xyz / proj, 1.0);
+            out = vec4<f32>(l.rad.xyz / proj, 1.0 + f32(light_group(l)));
         }
     }
     return out;

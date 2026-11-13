@@ -26,18 +26,25 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         let h = closest(o, d, 1e30);
         if (FEAT_VOLUME) {
             let b0 = beta;
-            l += b0 * volume_segment(o, d, h.t, &beta);
+            let lv = b0 * volume_segment(o, d, h.t, &beta);
+            l += lv;
+            mix_add(G_VOLUME, lv);
         }
         if (FEAT_AREA && camera) {
             let a = area_seen(o, d, h.t);
             if (a.w > 0.5) {
                 l += beta * a.xyz;
+                mix_add(u32(a.w - 0.5), beta * a.xyz);
                 alpha = 1.0;
                 break;
             }
         }
         if (h.tri == 0xffffffffu) {
-            if (!camera) { l += beta * environment(d); }
+            if (!camera) {
+                let le = beta * environment(d);
+                l += le;
+                mix_add(select(G_ENV, G_SUN_SKY, (u.counts.w & F_PROC_SKY) != 0u), le);
+            }
             break;
         }
         let t = tris[h.tri];
@@ -69,6 +76,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         if (u.fog.w > 0.0) {
             let f = exp(-u.fog.w * h.t);
             l += beta * u.fog.xyz * (1.0 - f);
+            mix_add(G_ENV, beta * u.fog.xyz * (1.0 - f));
             beta *= f;
         }
         let model = u32(t.emit.w + 0.5);
@@ -86,9 +94,11 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
                 mis = power(prev_pdf, lp);
             }
             l += beta * emit * mis;
+            mix_add(G_EMISSIVE, beta * emit * mis);
         }
         if (model == 1u) {
             l += beta * base;
+            mix_add(G_EMISSIVE, beta * base);
             break;
         }
         camera = false;
@@ -98,6 +108,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             s.channel = channel;
         }
         let v = -d;
+        mix_beta = beta;
         l += beta * (punctual(p, ng, s, v) + emitter_nee(p, ng, h.tri, s, v) + area_nee(p, ng, s, v));
         var bs = bsdf_sample(s, v);
         if (!bs.ok) { break; }
@@ -117,6 +128,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             ex.t = frame_t(wk.n, 0.0);
             ex.b = cross(wk.n, ex.t);
             ex.white = true;
+            mix_beta = beta;
             l += beta * (punctual(wk.p, wk.ng, ex, wk.n) + emitter_nee(wk.p, wk.ng, wk.tri, ex, wk.n) + area_nee(wk.p, wk.ng, ex, wk.n));
             bs = bsdf_sample(ex, wk.n);
             if (!bs.ok) { break; }
@@ -147,17 +159,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (done[i] != 0u) { return; }
     let x = u.origin.x + id.x;
     let y = u.origin.y + id.y;
+    _ = groups[0];
     var a = accum[i];
     var st = stats[i];
+    var gsum: array<vec3<f32>, 12>;
     for (var k = 0u; k < u.origin.z; k++) {
+        if (FEAT_LIGHTMIX) { mix_l = array<vec3<f32>, 12>(); }
         rng_state = pcg(pcg(x * 1973u + y * 9277u + 26699u) ^ pcg(u.origin.w * 7919u + k + u32(st.z) * 31u));
         let ray = camera_ray(vec2<f32>(f32(x) + rnd(), f32(y) + rnd()));
         var c = radiance(ray[0], ray[1]);
-        if (any(c != c) || any(abs(c) > vec4<f32>(1e30))) { c = vec4<f32>(0.0, 0.0, 0.0, c.w); }
+        let bad = any(c != c) || any(abs(c) > vec4<f32>(1e30));
+        if (bad) { c = vec4<f32>(0.0, 0.0, 0.0, c.w); }
+        // Like the CPU, a sample that is not finite adds to no group.
+        if (FEAT_LIGHTMIX && !bad) {
+            for (var g = 0u; g < 12u; g++) { gsum[g] += mix_l[g]; }
+        }
         a += c;
         let lum = dot(c.xyz, vec3<f32>(0.2126, 0.7152, 0.0722));
         st += vec4<f32>(lum, lum * lum, 1.0, 0.0);
     }
     accum[i] = a;
     stats[i] = st;
+    if (FEAT_LIGHTMIX) {
+        let k = u32(u.vol4.y + 0.5);
+        for (var g = 0u; g < k; g++) {
+            let j = (i * k + g) * 3u;
+            groups[j] += gsum[g].x;
+            groups[j + 1u] += gsum[g].y;
+            groups[j + 2u] += gsum[g].z;
+        }
+    }
 }
