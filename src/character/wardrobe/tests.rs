@@ -184,3 +184,15 @@ fn old_characters_load_without_assets() {
     let old: CharacterParams = ron::from_str("(hair: Long)").unwrap();
     assert_eq!(old.mh, MhAssets::default());
 }
+
+#[test]
+fn hair_dye_recolours_but_keeps_alpha_and_strand_contrast() {
+    use crate::materials::texture::{TexHandle, Texture};
+    let data = (0..64u32).map(|i| { let v = (40 + i * 3) as u8; [v, v, v, if i % 4 == 0 { 0 } else { 255 }] }).collect();
+    let tex = TexHandle::new(Texture { width: 8, height: 8, data });
+    let red = super::materials::recolor(&tex, [0.8, 0.1, 0.1]);
+    let px = &red.tex.data;
+    assert!(px.iter().zip(&tex.tex.data).all(|(a, b)| a[3] == b[3]));
+    assert!(px.iter().filter(|p| p[3] > 0).all(|p| p[0] > p[1] && p[0] > p[2]));
+    assert!(px[63][0] > px[1][0], "light tips stay lighter than dark roots");
+}

@@ -52,9 +52,14 @@ fn centre(s: &Scene, id: ObjId, mid: u16) -> Vec3 {
 fn character_look_renders() {
     let Ok(dir) = std::env::var("LOOK_SHOTS") else { return };
     let tag = std::env::var("LOOK_TAG").unwrap_or_else(|_| "now".into());
+    // LOOK_DYE="0.8,0.4,0.18" renders with that hair colour.
+    let dye = std::env::var("LOOK_DYE").ok().and_then(|d| {
+        let v: Vec<f32> = d.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+        (v.len() == 3).then(|| [v[0], v[1], v[2]])
+    });
     for (who, hair, gender) in [("f", "ponytail01", 0.0), ("m", "short02", 1.0)] {
         let mut s = Scene::default();
-        let mh = MhAssets { hair: Some(hair.into()), eye_color: Some("brown".into()), ..MhAssets::face_kit() };
+        let mh = MhAssets { hair: Some(hair.into()), eye_color: Some("brown".into()), hair_color: dye, ..MhAssets::face_kit() };
         let mut p = CharacterParams { eyes: Eyes::High, mh, ..Default::default() };
         (p.hair, p.outfit) = (Default::default(), Default::default());
         p.macros.gender = gender;

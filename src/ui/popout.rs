@@ -64,7 +64,7 @@ impl Dock {
             Dock::MaterialLibrary => "Material Library",
             Dock::FrameWindow => "Rendered Frame Window",
             Dock::UvEditor => "Edit UVWs",
-            Dock::CharacterStudio => "Character & Creature Studio",
+            Dock::CharacterStudio => "MakeHuman",
             Dock::FaceCloner => "Face Cloner",
             Dock::BuildingsBrowser => "Buildings & Props Browser",
             Dock::PaintBox => "PaintBox",

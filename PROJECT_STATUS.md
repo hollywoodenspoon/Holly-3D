@@ -1397,3 +1397,17 @@ Not done yet:
 - **Eyes:** the iris colour matches the MakeHuman texture (the "brown" texture is a warm red-brown). The old blocky look came from the low-res eyes.
 - Check renders: `LOOK_SHOTS=dir cargo test --lib character_look_renders -- --ignored`.
 - Not done yet: hair and eye colour tint pickers (part B, MakeHuman window).
+
+## 41. MakeHuman, part B1: the MakeHuman window, imports, hair colour
+
+- **MakeHuman window** (header `MakeHuman`, Tools > MakeHuman..., can pop out). It replaces the Character & Creature Studio and has tabs: Main (archetype and creature tiles, Archetype/Creature, **Randomise**), Body, Face & Body Detail, Hair, Eyes, Clothes, Skin, Pose, Face Cloner, Stylised and Library. The Modify tab shows the same sections as rollouts.
+- **Hair tab:** style tiles. **Hair Colour** has Natural, 12 dye swatches and a colour button. The dye recolours the texture by brightness, keeping roots and tips, rolls highlights off to white, and also colours the brows (`MhAssets.hair_color`, `wardrobe::materials::recolor`). It is only re-baked when the colour changes.
+- **Eyes tab:** Low/High mesh buttons, eye colour tiles, teeth and tongue.
+- **Stylised parts hidden:** the procedural low-poly hair, outfit and weapon now live only under Stylised (and a collapsed Modify rollout), behind "Show stylised low-poly parts". Characters that already use them always show them. Picking an archetype in the window also gives it MakeHuman hair.
+- **Randomise** (`character::randomise`): Everything, Body only or Face only, Keep gender, a face-variation amount and a seed. It is deterministic (tested).
+- **Library tab, user imports** (`makehuman::user_lib`): import a folder, a `.zip` (own small reader on `miniz_oxide`, `makehuman::unzip`) or a `.mhclo`. Assets are copied flat to `~/.local/share/ilex/makehuman/<category>/<name>/`.
+  - The category is auto-detected from folder names (with an "Import as" override).
+  - Names never clash with bundled ones.
+  - Textures may use another extension than the `.mhmat` names.
+  - Imports appear next to the bundled items in every picker, fitted the same way. Remove (click twice) deletes Ilex's copy.
+- Not done yet (part B2): bundled extra CC0 community assets, asset thumbnails, eye-colour tint, the Mesh2Motion animation library.

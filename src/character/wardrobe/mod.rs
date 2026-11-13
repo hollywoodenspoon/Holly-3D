@@ -30,6 +30,9 @@ pub struct MhAssets {
     pub eye_color: Option<String>,
     /// A low-poly body proxy in place of the full hm08 body.
     pub topology: Option<String>,
+    /// Dyes the hair (and brows) this sRGB colour, keeping the strand
+    /// detail of the texture. None keeps the texture's own colour.
+    pub hair_color: Option<[f32; 3]>,
 }
 
 /// The most clothes one character wears (Material IDs 12..=23).

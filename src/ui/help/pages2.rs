@@ -257,7 +257,7 @@ pub const CREDITS: Page = Page {
         ),
         H("MakeHuman"),
         P(
-            "The Character & Creature Studio uses the MakeHuman hm08 base mesh, its morph targets, modifiers, eyes, skeleton and system assets (hair, clothes, eyebrows, eyelashes, teeth, tongue, body proxies, skins and eye colours) by the MakeHuman Team (makehumancommunity.org). These assets are CC0 1.0 (public domain); see assets/makehuman/LICENSE.ASSETS.md.",
+            "The MakeHuman window uses the MakeHuman hm08 base mesh, its morph targets, modifiers, eyes, skeleton and system assets (hair, clothes, eyebrows, eyelashes, teeth, tongue, body proxies, skins and eye colours) by the MakeHuman Team (makehumancommunity.org). These assets are CC0 1.0 (public domain); see assets/makehuman/LICENSE.ASSETS.md.",
         ),
         H("Strolle"),
         P(
