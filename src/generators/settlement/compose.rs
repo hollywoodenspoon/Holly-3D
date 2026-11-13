@@ -95,7 +95,7 @@ impl Plan {
             ..BuildingParams::of(kind)
         };
         // Bridges, quays and street props are left standing.
-        let house = matches!(kind.category(), Category::Modern | Category::Medieval | Category::Residential | Category::Commercial);
+        let house = matches!(kind.category(), Category::Modern | Category::Medieval | Category::Residential | Category::Commercial | Category::Industrial);
         let bp = if house { BuildingParams { ruin: self.ruin_for(bp.seed), ..bp } } else { bp };
         let z = z.unwrap_or_else(|| lot.corners().iter().chain([&lot.c]).map(|q| self.h(*q)).fold(f32::MAX, f32::min));
         let mut m = bp.build();

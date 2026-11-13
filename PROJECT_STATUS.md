@@ -1519,3 +1519,36 @@ Not done yet:
   - flat roofs all use the roof colour, so the big boxes read a bit alike from above;
   - the showroom glass reads as lit white in thumbnails;
   - no interiors.
+
+## 45. Prefab Library, part H2c: industrial and utility buildings
+- **14 new kinds** under a new **Industrial & Utilities** category. They are appended after Commercial (indices 74–87), so saved scenes and seeds keep their meaning. They have no Floors slider.
+  - **Industrial:**
+    - Factory: gabled brick halls, an office block, chimneys and a loading dock.
+    - Truck Depot: cross-dock shed with a row of dock doors, trailers backed up to them, a guard hut, a gate barrier and a fence.
+    - Silo Cluster: silos with a conveyor gallery, a lattice tower, a chute and a ladder.
+    - Grain Elevator: tall headhouse, twin rows of bins, and a truck bay with a spout.
+    - Refinery: distillation columns with platforms, a glowing flare stack, heaters, a pipe rack and tanks.
+    - Tank Farm: tanks in bund walls, joined by pipes to a header.
+    - Recycling Yard: shed, scrap heaps, shipping containers, a conveyor and hopper, and a scrap crane.
+  - **Utilities:**
+    - Power Plant: turbine hall, boiler house, two hyperbolic cooling towers, a 90 m stack, transformers and a coal heap.
+    - Wind Turbine: the Width slider is the rotor diameter; the hub sits at 1.9× the blade length.
+    - Solar Farm: tilted panel rows on posts, an inverter cabin and a fence.
+    - Pump Station: brick pump house, pipes with valve wheels, a surge tank and an intake basin.
+    - Substation: gravel pad, transformers, gantries with insulators, a control building and a fence.
+    - Power Pylon: lattice tower with three cross-arms and insulator strings.
+    - Cell Tower: monopole, three-sector antennas, a dish, an equipment cabin and a fence.
+- **Shared pieces** in `buildings/industry.rs`:
+  - post-and-wire fences with a gate gap, tanks, silos, ladders, pipes and pipe racks, smoke stacks;
+  - lattice towers (lifted so their braces never dip below ground), dock doors, heaps and shipping containers.
+- `kinds.rs` was split: labels and default sizes moved to `kinds_info.rs`, keeping both files under 350 lines.
+- Settlements count Industrial kinds as buildings, so they take ruin damage.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot;
+  - heights are sensible, and the turbine scales with its rotor;
+  - fenced yards have fences, and solar panels are glass.
+- **Not done yet:**
+  - pipes are straight runs without elbows;
+  - the cooling towers have no inner shading;
+  - wind turbine blades are flat beams, not twisted aerofoils.

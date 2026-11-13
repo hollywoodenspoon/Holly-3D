@@ -1,5 +1,5 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 13 residential, 17 commercial & office, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 17 commercial & office, 14 industrial & utility, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
@@ -11,8 +11,11 @@ mod commercial_b;
 mod commercial_c;
 mod doodads;
 mod houses;
+mod industrial;
+mod industry;
 pub mod infra;
 mod kinds;
+mod kinds_info;
 mod medieval_a;
 mod medieval_b;
 mod modern_a;
@@ -21,10 +24,13 @@ pub mod parts;
 mod residential_a;
 mod residential_b;
 mod shops;
+mod utilities;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod tests_commercial;
+#[cfg(test)]
+mod tests_industrial;
 #[cfg(test)]
 mod tests_residential;
 #[cfg(test)]
@@ -184,6 +190,10 @@ impl BuildingParams {
                 K::CornerShop | K::Cafe | K::Diner | K::Restaurant | K::Bakery | K::Pharmacy => commercial_a::build(&mut b, hx, hy, floors),
                 K::Supermarket | K::Mall | K::Hotel | K::Motel | K::Bank | K::Cinema => commercial_b::build(&mut b, hx, hy, floors),
                 _ => commercial_c::build(&mut b, hx, hy, floors),
+            },
+            Category::Industrial => match self.kind {
+                K::Factory | K::TruckDepot | K::SiloCluster | K::GrainElevator | K::Refinery | K::TankFarm | K::RecyclingYard => industrial::build(&mut b, hx, hy),
+                _ => utilities::build(&mut b, hx, hy),
             },
         }
         b.kit.finish()
