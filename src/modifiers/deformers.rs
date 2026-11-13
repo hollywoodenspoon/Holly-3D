@@ -1,8 +1,8 @@
-//! Classic 3ds Max deformers: Bend, Twist, Taper and Push. Bend, Twist and
+//! Classic deformers: Bend, Twist, Taper and Push. Bend, Twist and
 //! Taper work in the space of their Gizmo (`gizmo`, object space, moved /
 //! rotated / scaled with W/E/R) around its `center` (gizmo space, the pivot
 //! by default), measured along the chosen axis over the extent of the input
-//! mesh, like 3ds Max's gizmo fitted to the bounding box.
+//! mesh.
 
 use crate::mesh::EditablePoly;
 use bevy::math::{Mat4, Vec3};
@@ -28,7 +28,7 @@ fn frame(axis: usize) -> [usize; 3] {
 }
 
 /// The deformer gizmo box (object space): fitted to the input's bounds,
-/// then carried by the gizmo (W/E/R), as in 3ds Max.
+/// then carried by the gizmo (W/E/R).
 pub fn gizmo_box(m: &EditablePoly, gizmo: Mat4) -> Option<Mat4> {
     let b = m.bounds()?;
     Some(gizmo * Mat4::from_translation(b.center()) * Mat4::from_scale(b.size().max(Vec3::splat(1e-3))))

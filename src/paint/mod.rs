@@ -1,4 +1,4 @@
-//! Direct 3D model painting: 3ds Max VertexPaint (per-vertex color layer,
+//! Direct 3D model painting: VertexPaint (per-vertex color layer,
 //! no UVs needed) and texture projection paint onto a Base Color canvas.
 //! Pure brush math lives here; the editor wires strokes to the viewport.
 
@@ -45,7 +45,7 @@ impl BrushTool {
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Brush {
-    /// Brush radius in world units (3ds Max PaintBox "Size").
+    /// Brush radius in world units (PaintBox "Size").
     pub size: f32,
     /// 0..=1 maximum coverage per stroke.
     pub opacity: f32,

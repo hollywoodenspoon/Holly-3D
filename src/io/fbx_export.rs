@@ -1,6 +1,6 @@
-//! Autodesk FBX export: ASCII FBX 7.4, Z-up like 3ds Max, 1 unit = 1 metre.
+//! Autodesk FBX export: ASCII FBX 7.4, Z-up, 1 unit = 1 metre.
 //! Geometry keeps its polygons (n-gons), per-polygon smoothing-group
-//! bitmasks (the 3ds Max convention), UVs, vertex colours and material IDs.
+//! bitmasks, UVs, vertex colours and material IDs.
 
 use super::{MatInfo, MeshItem};
 use crate::mesh::VertexId;

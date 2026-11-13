@@ -188,7 +188,7 @@ fn color_key(c: [f32; 3]) -> u32 {
     q(c[0]) << 16 | q(c[1]) << 8 | q(c[2])
 }
 
-/// Default look: wire color (or the UV checker), like 3ds Max without a material.
+/// Default look: wire color (or the UV checker).
 fn wire_material(o: &crate::scene::SceneObject, checker_tex: &Handle<Image>) -> StandardMaterial {
     let [cr, cg, cb] = o.wire_color;
     let alpha = if o.see_through { 0.35 } else { 1.0 };

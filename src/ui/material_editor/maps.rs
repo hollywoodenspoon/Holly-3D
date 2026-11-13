@@ -1,5 +1,5 @@
 //! Maps rollout (channel slots with amount spinners) and the shared map-node
-//! parameter editor used by both Compact and Slate views.
+//! parameter editor used by both Compact and Node Graph views.
 
 use super::params::{color, num};
 use super::{craft_params, edit};

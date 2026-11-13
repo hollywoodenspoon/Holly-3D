@@ -1,4 +1,4 @@
-//! 3ds Max smoothing-group bitmasks straight from an FBX file. ufbx turns the
+//! Smoothing-group bitmasks straight from an FBX file. ufbx turns the
 //! `Smoothing` layer into booleans, so this small reader pulls the raw
 //! integers per Geometry name (ASCII and binary FBX, compressed arrays too).
 

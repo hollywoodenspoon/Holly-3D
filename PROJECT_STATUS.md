@@ -6,7 +6,7 @@ _Status as of 12 November 2026, measured against the spec in `CLAUDE.md`._
 
 | | |
 |---|---|
-| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (GhostTown settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
+| Build phases | **All done and merged to `main`**: Phases 1–5 from `CLAUDE.md` (PRs #1–#3), Phase 6 (gap closure and hardware optimisation) and Phase 7 (mech assembly) (PRs #4–#5), **Phase 8A** (Multi/Sub-Object materials, renderer overhaul, dynamic sky; PR #6, tested by hand in the running app), **Phase 8B** (§11 polish, Terrain, Gerstner Ocean, Planet Studio; PR #7, status update in PR #8, unit-tested, not yet tested by hand), **Phase 8C** (Demiurge settlements, Medieval Architect, Battlefield & Ruin; PR #9, unit-tested, not yet tested by hand), **Phase 9 PR 1** (a button for everything; see §15) **Phase 9 PR 2** (Preferences; see §16) and **Phase 9 PR 3** (click-and-drag creation; see §17) |
 | Source | 507 `.rs` files, about 76,300 lines; the largest is 350 lines (limit 350) |
 | Tests | 581 headless tests, all passing (`cargo test --lib`) |
 | Lint | `cargo clippy --all-targets` reports no warnings |
@@ -14,7 +14,7 @@ _Status as of 12 November 2026, measured against the spec in `CLAUDE.md`._
 | Licence | GPL-3.0-or-later (`LICENSE`, Cargo.toml, PKGBUILD, README, Help → Credits). Third-party code and assets in `licenses/` are MIT, Apache-2.0, OFL-1.1 or CC0, all GPLv3-compatible; the Rust dependencies were checked too (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode / MPL-2.0 / CDLA-Permissive-2.0) |
 | Stack | Bevy 0.20, bevy_egui 0.43.1, transform-gizmo-egui, slotmap, boolmesh, meshopt, uvunwrap, noise, rand/rand_chacha, image |
 
-**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio. **Phase 8C done** (§13): GhostTown settlements in four eras, the scale-aware Medieval Architect, and period-accurate Battlefield & Ruin destruction with movable Blast Zones. **Packaging done** (§14): a pacman package and a local `[minimax]` repository, plus a fix for release builds, which did not compile before.
+**Phases 6 and 7 merged in PR #4.** **Phase 6 done:** all §9 gaps are closed (✅ marks below), plus copy-on-write undo, a tiled renderer and a SIMD BVH. **Phase 7 done:** the bone-free mech assembly system, mech primitives and Panel Groove (§10). File I/O is done: `.mmax` scenes plus OBJ, glTF/GLB and FBX import and export. **Phase 8A done** (§11): Multi/Sub-Object materials with emissive area lights, AO / 1-bounce GI / denoiser / softbox / bloom / DOF / live tonemapping, and a time-of-day sky with clouds plus a deep-space mode. Show End Result now works. **Phase 8B done** (§12): the four §11 issues are fixed, plus procedural worlds under `Create -> Geometry -> Worlds`: biome Terrain with erosion and slope / altitude Material IDs, a Gerstner Ocean with crest foam, and the layered Planet Studio. **Phase 8C done** (§13): Demiurge settlements in four eras, the scale-aware Medieval Architect, and period-accurate Battlefield & Ruin destruction with movable Blast Zones. **Packaging done** (§14): a pacman package and a local `[minimax]` repository, plus a fix for release builds, which did not compile before.
 
 Legend: ✅ done · 🟡 partly done · ❌ not done
 
@@ -24,8 +24,8 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 
 | Rule | Status | Notes |
 |---|---|---|
-| 3ds Max conventions only | ✅ | Q/W/E/R, 1–5, M, F9, F10, Shift+Drag clone; no Blender-style modal keys |
-| Clean five-zone UI | ✅ | Slate `#222327` with amber `#E59C24` |
+| conventions only | ✅ | Q/W/E/R, 1–5, M, F9, F10, Shift+Drag clone; no modal keys |
+| Clean five-zone UI | ✅ | Graphite & Teal (`#242424` with `#26B8B0`); Slate & Amber still selectable |
 | No `.rs` file over 350 lines | ✅ | Largest: `src/mesh/ops/chamfer.rs` at 347 lines |
 | No `Rc<RefCell>` / `Arc<Mutex>` in topology | ✅ | `slotmap` arenas |
 | Headless tests for every mesh operation and modifier | ✅ | Counts plus normal and UV validity |
@@ -113,7 +113,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 - Four shading models and all seven presets.
 - The Universal Ink Outline on every material (width, colour, crease lines).
 - The Maps rollout and Import PBR Texture Folder.
-- A Slate node view with Noise, Checker, Gradient Ramp and Color Correction nodes.
+- A Node Graph view with Noise, Checker, Gradient Ramp and Color Correction nodes.
 
 ### E. Direct 3D painting
 ✅ All of it:
@@ -123,13 +123,13 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 ### F. Rendering (`F9` / `F10`)
 - ✅ **Render Setup:**
   - Resolution presets, aspect lock, transparent background.
-  - Choice of the built-in raytracer (32x32 parallel tiles, 4-wide SIMD BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the Cycles bridge. By default the bridge runs `blender --background -E CYCLES` with a Python loader; it can also write Cycles XML for the standalone `cycles` tool.
+  - Choice of the built-in raytracer (32x32 parallel tiles, 4-wide SIMD BVH, soft shadows, reflection and refraction, anti-aliasing, tonemapping, outline pass) or the external renderer bridge. By default the bridge runs `blender --background -E CYCLES` with a Python loader; it can also write the external renderer XML for the standalone `cycles` tool.
 - ✅ **Rendered Frame Window:**
   - Render, a viewport/camera picker, Region.
   - Save as PNG, EXR or JPG; Copy to Clipboard; Clone Render Window.
   - R, G, B, A and Mono channel buttons.
 - ✅ **Cameras:** Target and Free Camera objects; Render Setup and the Frame Window list them next to the viewports.
-- ✅ Cycles bridge, verified against a real Blender 4.0 install. F10 defaults to Blender at `/usr/bin/blender`, the HIP device with HIP-RT, and OpenImageDenoise. A missing GPU device falls back to the CPU, and a Blender build without OIDN renders undenoised.
+- ✅ external renderer bridge, verified against a real install of the external renderer. F10 defaulted to its executable, the HIP device with HIP-RT, and OpenImageDenoise. A missing GPU device falls back to the CPU, and a the external renderer build without OIDN renders undenoised.
 
 ### G. Lighting
 - ✅ The default two-light headlight rig, with `Ctrl+L` and automatic switching to scene lights.
@@ -138,7 +138,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 - ✅ Hotspot and falloff cone gizmos.
 - ✅ Near and far attenuation (Use Near / Near Start / Near End plus the far range), each drawn as a pair of wire spheres when Show Attenuation is on.
 - ✅ The Environment dialog (`8`): five lighting rig presets, background colour, ambient tint, exponential fog.
-- ✅ **HDRI environment map** (`.hdr` / `.exr`, equirectangular): Strength, Rotation, Use for Lighting, Show in Perspective Viewports. It is the F9 background and reflection source, the Cycles world texture, and a skybox in perspective viewports.
+- ✅ **HDRI environment map** (`.hdr` / `.exr`, equirectangular): Strength, Rotation, Use for Lighting, Show in Perspective Viewports. It is the F9 background and reflection source, the external renderer's world texture, and a skybox in perspective viewports.
 
 ---
 
@@ -176,7 +176,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | Boolean (boolmesh) | ✅ | Union, A−B, B−A, Intersect; Pick Operand B; an operand list with Remove, Extract and on/off toggles; Merge Coplanar Faces. Open meshes are skipped with a warning |
 | ProOptimizer (meshopt) | ✅ | Calculate, linked Vertex % and Vertex Count, keeps material, UV, colour and normal boundaries, Protect Borders |
 | Terrain, Ocean (Phase 8B) | ✅ | Objects under `Create -> Geometry -> Worlds` and stack modifiers; see §12. Planet Studio is an object only |
-| GhostTown, Medieval Architect, Battlefield / Ruin (Phase 8C) | ✅ | Settlement objects under `Create -> Geometry -> Settlement` and stack modifiers; see §13 |
+| Settlement, Medieval Architect, Battlefield / Ruin (Phase 8C) | ✅ | Settlement objects under `Create -> Geometry -> Settlement` and stack modifiers; see §13 |
 
 ---
 
@@ -208,13 +208,13 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 | 1 | Viewports, camera, theme, five-zone layout, gizmos, clone dialog, primitives | #1 ✅ merged |
 | 2 | Editable Poly, the full Edit Poly toolkit, caddies, quad menu | #1 ✅ merged |
 | 3 | FFD, UVW Map, Unwrap UVW, UV editor, Smart UV | #2 ✅ merged |
-| 4 | Materials, painting, lighting, Render Setup, Frame Window, raytracer, Cycles bridge | #3 ✅ merged |
+| 4 | Materials, painting, lighting, Render Setup, Frame Window, raytracer, external renderer bridge | #3 ✅ merged |
 | 5 | Splines, Lathe, Extrude, Array, Mirror, GeoGen, Greeble, Chamfer, Symmetry, Shell, TurboSmooth, deformers, Edit Normals, Boolean, ProOptimizer | #3 ✅ merged |
-| 6 | File I/O (`.mmax`, OBJ, glTF/GLB, FBX), cameras, Align, Edit Poly gap tools, modifier gizmos, Spline Boolean / Refine, 3D Snaps, selection regions, HDRI, Cycles through Blender, copy-on-write undo, tiled renderer, SIMD BVH (§9) | #4 ✅ merged |
+| 6 | File I/O (`.mmax`, OBJ, glTF/GLB, FBX), cameras, Align, Edit Poly gap tools, modifier gizmos, Spline Boolean / Refine, 3D Snaps, selection regions, HDRI, the external renderer bridge, copy-on-write undo, tiled renderer, SIMD BVH (§9) | #4 ✅ merged |
 | 7 | Bone-free mech assembly: joints and the J tool, FK / IK drag, Mirror Mech Limb, Contact Sets, Motion Links, Gear / Piston / Hose primitives, Panel Groove (§10) | #4 ✅ merged |
 | 8A | Show End Result, Multi/Sub-Object materials, emissive area lights, GI & Post-FX, dynamic sky / clouds / deep space (§11) | #6 ✅ merged |
 | 8B | §11 polish, procedural Terrain (6 biomes, erosion, auto Material IDs), Gerstner Ocean with crest foam, Planet Studio (surface, clouds, atmosphere, rings) (§12) | #7 ✅ merged |
-| 8C | GhostTown settlements (4 eras), Medieval Architect (5 presets, scale-aware), Battlefield & Ruin (3 period-accurate modes, Blast Zones) (§13) | #9 ✅ merged |
+| 8C | Demiurge settlements (4 eras), Medieval Architect (5 presets, scale-aware), Battlefield & Ruin (3 period-accurate modes, Blast Zones) (§13) | #9 ✅ merged |
 | Packaging | pacman PKGBUILD, desktop entry, icon, `.mmax` file type, `publish-repo.sh` local repository, release-build fix (§14) | #11 (open) |
 
 ---
@@ -231,7 +231,7 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Parameters: Lens (mm) and FOV linked on a 36 mm film back, stock lenses 15–200 mm, Show Cone, Type (Target / Free, adds or removes the target), Target Distance, Clip Manually with Near / Far Clip.
    - Viewport: camera icon, target line, view cone and clip planes when selected.
    - `C` looks through the selected camera (or cycles through the cameras); the `[ View ]` label menu has a Cameras list. Navigating a camera view moves the camera, and Alt+MMB orbits around its target.
-   - Render Setup and the Frame Window list the cameras, and F9 renders through them. The raytracer and Cycles honour the lens; near clip applies in the raytracer and viewports. In the viewports, the far clip only culls whole objects, because Bevy's projection is infinite.
+   - Render Setup and the Frame Window list the cameras, and F9 renders through them. The raytracer and the external renderer honour the lens; near clip applies in the raytracer and viewports. In the viewports, the far clip only culls whole objects, because Bevy's projection is infinite.
    - Tests: lens/FOV maths, target aiming, deleting the target, looking straight down, look-through, orbit write-back, Target <-> Free, and undoing a lens change.
 3. ✅ **Align Selection dialog** (Tools → Align, `Alt+A`). `src/editor/align.rs`, `src/ui/align_dialog.rs`.
    - Pick the target object with a click (Esc cancels). Targets of lights and cameras are never moved.
@@ -271,11 +271,11 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
    - Near attenuation: Use Near / Near Start / Near End on Omni and Spot lights. The raytracer ramps light up from Near Start to Near End and down over the far range. Show Attenuation draws both pairs of spheres.
    - Bitmap Fit in UVW Map; Pin Stack in the stack action row.
    - Tests: equirect sampling, rotation, average and cube faces; HDRI background and image-based ambient in F9; HDRI save / open round trip; near and far attenuation ramps; Bitmap Fit aspect; Pin Stack.
-10. ✅ **Checks and the Cycles bridge.** `src/render/blender.rs`, `src/render/blender_loader.py`, `src/render/cycles.rs`, `src/ui/render_setup.rs`.
+10. ✅ **Checks and the external renderer bridge.** `src/render/blender.rs`, `src/render/blender_loader.py`, `src/render/cycles.rs`, `src/ui/render_setup.rs`.
    - Edit Normals `E` rotation tried in the app: the gizmo sits on the selected normals and the ring drag turns them. A test drives the same drag path on a rotated object (world X rotation, top normals end up at world -Y).
-   - Cycles through Blender (the default): the scene is exported as JSON (one mesh per object and material, with corner normals; Principled materials; point, spot and sun lights; camera; color or HDRI world). A bundled Python loader rebuilds it in `blender --background --factory-startup -E CYCLES` and writes a PNG. A real Blender 4.0 render of a box under a spot light came back into the frame buffer correctly.
-   - F10 Cycles options: Run Through (Blender / Standalone cycles), executable path, Device (HIP, OptiX, CUDA, oneAPI, Metal, CPU; default HIP), HIP-RT (default on), Denoise with OpenImageDenoise (default on), Samples, Max Bounces. The standalone route passes `--device` too.
-   - Tests: defaults, including old scene files without the new fields; the JSON (triangle count, camera axes, spot light, HIP-RT only on HIP); the loader reads every exported key; a round trip with a stand-in `blender` script; readable errors for a missing executable. `real_blender_renders_the_scene` (ignored by default) renders through a real Blender.
+   - The external renderer bridge (the default): the scene is exported as JSON (one mesh per object and material, with corner normals; Principled materials; point, spot and sun lights; camera; color or HDRI world). A bundled Python loader rebuilds it in `blender --background --factory-startup -E CYCLES` and writes a PNG. A real the external renderer 4.0 render of a box under a spot light came back into the frame buffer correctly.
+   - F10 external-renderer options: Run Through (bridge / standalone), executable path, Device (HIP, OptiX, CUDA, oneAPI, Metal, CPU; default HIP), HIP-RT (default on), Denoise with OpenImageDenoise (default on), Samples, Max Bounces. The standalone route passes `--device` too.
+   - Tests: defaults, including old scene files without the new fields; the JSON (triangle count, camera axes, spot light, HIP-RT only on HIP); the loader reads every exported key; a round trip with a stand-in `blender` script; readable errors for a missing executable. `real_blender_renders_the_scene` (ignored by default) renders through a real external renderer.
 11. ✅ **Hardware optimisation.** `src/scene/shared.rs`, `src/render/job.rs`, `src/render/bvh_wide.rs`.
    - Copy-on-write undo: Editable Poly base meshes and the cached evaluated / level meshes are held in `Shared<T>` (an `Arc` that copies on the first write). An undo checkpoint clones pointers, not meshes; an edit copies only the mesh it changes, and every untouched object stays shared with the snapshots.
    - F9 raytracer: worker threads (one per core) pull 32x32 tiles from an atomic counter and stream each finished tile to the Frame Window. Progress is counted in pixels.
@@ -315,22 +315,22 @@ Legend: ✅ done · 🟡 partly done · ❌ not done
 
 ## 11. Phase 8A: Multi/Sub-Object materials, renderer overhaul, dynamic sky
 
-0. ✅ **Show End Result.** The Modify panel's toggle shows the stack evaluated only up to the current modifier (viewport and sub-object display), like 3ds Max.
+0. ✅ **Show End Result.** The Modify panel's toggle shows the stack evaluated only up to the current modifier (viewport and sub-object display).
 1. ✅ **Multi/Sub-Object materials and emissive area lights.** `src/materials/multi.rs`, `src/ui/material_editor/multi.rs`, `src/render/emitters.rs`, `src/viewport/multi_sync.rs`.
    - Any of the 24 slots switches between Standard and **Multi/Sub-Object**. A scrollable list of IDs 1..N with `[Set Number]`, ID #, name, colour swatch and `[On/Off]`; click a row to edit that sub-material with the full parameter rollouts (PBR, Toon, Crystal, Unlit, Ink Outline per ID).
-   - Polygons render with the sub-material their `material_id` picks (3ds Max wrap-around; switched-off IDs use the default grey) in the viewport, the F9 raytracer and both Cycles paths.
+   - Polygons render with the sub-material their `material_id` picks (wrap-around; switched-off IDs use the default grey) in the viewport, the F9 raytracer and both external-renderer paths.
    - Presets: *Medieval Castle Pack*, *Modern City Pack*, *Alpine Terrain Pack*.
-   - Every material has **Luminance / Emission Colour** and **Emission Multiplier (0..100)**. Polygons with a multiplier above 0 are area-light emitters: F9 samples them with next-event estimation; Cycles and Blender get real emission shaders.
+   - Every material has **Luminance / Emission Colour** and **Emission Multiplier (0..100)**. Polygons with a multiplier above 0 are area-light emitters: F9 samples them with next-event estimation; the external renderer and the external renderer get real emission shaders.
 2. ✅ **Built-in renderer upgrades.** `src/render/gi.rs`, `postfx.rs`, `post.rs`, `sample.rs`, `src/ui/render_fx.rs`.
    - F10 **GI & Post-FX** tab. *GI & AO:* Ambient Occlusion (Samples 4..64, Radius, Strength); 1-bounce indirect GI (cosine-weighted bounce rays with next-event estimation on scene lights and emitters); Emitter Samples; an edge-preserving bilateral denoiser (normal, depth and object aware); a procedural **Studio Softbox** reflection dome when no HDRI is loaded.
    - *Post-FX:* Bloom / Glare (Threshold, Intensity, Radius), Depth of Field (Focus Distance, `[Pick Focus Object]`, f-stop), tonemapping (AgX, ACES Filmic, Reinhard, Standard sRGB) with Exposure (EV) and Contrast.
-   - The F9 window keeps the render's layers, so the tone operator, EV and contrast in its toolbar update the image live without re-rendering. The Blender bridge maps DOF and the view transform / exposure / look.
+   - The F9 window keeps the render's layers, so the tone operator, EV and contrast in its toolbar update the image live without re-rendering. The external renderer bridge maps DOF and the view transform / exposure / look.
 3. ✅ **Dynamic time-of-day sky, clouds and deep space** (`8` dialog). `src/render/sky.rs`, `src/editor/sky.rs`, `src/ui/sky_dialog.rs`.
    - Sky Mode: Off, **Dynamic Earth Sky**, **Deep Space**. Earth: Time of Day slider (00:00..24:00) moves the sun and moon; the analytic Rayleigh / Mie look gives a blue noon, golden-hour sunsets and an indigo starlit night. Sun path azimuth and sky intensity.
    - `[✓] Link Main Directional Sun to Sky Time` aims the first directional light (creating a "Sun" if needed) along the sun, with warm golden-hour colour, and switches to cool moonlight at night.
    - **Procedural Clouds** rollout: Coverage, Density, Altitude, Wind Drift Speed (clouds drift with the time of day), tinted by sunset and moonlight.
    - **Deep Space:** high-contrast starfield (density, brightness), two-colour nebula bands with density, and one bright star (azimuth, elevation, colour) that lights the scene.
-   - F9 evaluates the sky per ray, so stars and the sun stay sharp in the background and reflections. The sky is also baked to a 1024-wide equirect image, used for ambient light, the skybox in perspective viewports, and a temporary `.hdr` for Cycles / Blender.
+   - F9 evaluates the sky per ray, so stars and the sun stay sharp in the background and reflections. The sky is also baked to a 1024-wide equirect image, used for ambient light, the skybox in perspective viewports, and a temporary `.hdr` for the external renderer / the external renderer.
    - Tests: noon blue zenith, sunset glow on the sun's side, dark night with stars and moonlight, cloud coverage and wind drift, deep-space stars / nebula / star, bake layout and cache key, `.hdr` round trip, an F9 render using the sky, the linked sun following the time, and the HH:MM clock label.
 
 ### Hands-on test (10 November 2026)
@@ -385,15 +385,15 @@ Merged to `main` in PR #7. Covered by headless tests only so far; a hands-on tes
 
 ---
 
-## 13. Phase 8C: GhostTown settlements, Medieval Architect and Battlefield destruction
+## 13. Phase 8C: Demiurge settlements, Medieval Architect and Battlefield destruction
 
 Merged to `main` in PR #9. Covered by headless tests only; a hands-on test in the running app is still to do.
 
-0. ✅ **Building kit** (`src/generators/kit/`): a shared mesh builder (blocks, cuboids, beams, prisms, frustums, tubes, strips, gable / hipped roofs, arched walls and panels, ground grids) with seeded RNG and the GhostTown Material IDs. All three features build on it.
-1. ✅ **GhostTown** (`Create -> Geometry -> Settlement`, and a **GhostTown** stack modifier that fills a flat Plane / Editable Poly or a closed spline's outline). `src/generators/settlement/`.
+0. ✅ **Building kit** (`src/generators/kit/`): a shared mesh builder (blocks, cuboids, beams, prisms, frustums, tubes, strips, gable / hipped roofs, arched walls and panels, ground grids) with seeded RNG and the Settlement Material IDs. All three features build on it.
+1. ✅ **Settlement** (`Create -> Geometry -> Settlement`, and a **Settlement** stack modifier that fills a flat Plane / Editable Poly or a closed spline's outline). `src/generators/settlement/`.
    - Presets: **Modern Downtown** (setback towers with lit window bays, rooftop AC units and helipads, streetlamps), **Modern Suburbs** (houses with wings, garages, porches, fenced yards), **Medieval Walled City** (cobbled plaza with a well and lindens, radial and ring lanes, curtain wall with towers and gates, half-timbered townhouses), **Medieval Village** (hilltop church, cottages, crop fields, fences, wells).
    - Parameters: Seed with `[🎲]`, Area Width / Length (object only), Block Size, Street Width, Sidewalk Width, Building Density, Min / Max Floors, Roof Pitch, Tree / Prop Density, and `[✓] Damaged / Battlefield Mode` with the Battlefield parameters.
-   - New **GhostTown Settlement Pack** (`[ Assign GhostTown Material Pack ]`): 1 Road / Cobblestone, 2 Lot / Dirt, 3 Facade, 4 Timber / Brick Trim, 5 Roof, 6 Glass, 7 Lit Window, 8 Foliage, 9 Charred Wood, 10 Iron, 11 Plaster, 12 Rusted Rebar.
+   - New **Settlement Pack** (`[ Assign Settlement Material Pack ]`): 1 Road / Cobblestone, 2 Lot / Dirt, 3 Facade, 4 Timber / Brick Trim, 5 Roof, 6 Glass, 7 Lit Window, 8 Foliage, 9 Charred Wood, 10 Iron, 11 Plaster, 12 Rusted Rebar.
 2. ✅ **Medieval Architect** modifier. `src/modifiers/medieval/`.
    - Presets: Watchtower, Curtain Wall / Gatehouse, Half-Timbered House, Bridge / Aqueduct, Gothic Cathedral (vaulted nave, flying buttresses, portal and rose window). Plan shape Auto / Round / Square (Auto detects cylinders); a closed spline input builds a curtain wall along it.
    - Toggles: 3D Stone Bricks, Crenellations, Machicolations, Arrow Slits / Windows, Door / Portcullis, Buttresses, Roof / Spire. Spinners: Master Brick Scale, Floor Height, Wall Thickness, Merlon / Crenel Ratio, Window Spacing, Spline Wall Height, Seed.
@@ -404,7 +404,7 @@ Merged to `main` in PR #9. Covered by headless tests only; a hands-on test in th
    - **Ancient Overgrown Ruins:** eroded wall tops, caved roofs, snapped pillars with fallen drums, sinkholes, moss (ID 8 with green vertex colour) and ivy at wall feet.
    - Spinners: Intensity 0–100 %, Seed, Crater Count, Crater Radius, Crater Depth, Rubble Density, Soot Darkening.
    - **Blast Zones** sub-object (`1`): `[➕ Add Zone]` / `[🗑 Remove Zone]` and a zone list with radius spinners; zones draw as three yellow great circles (orange when selected), are picked by click or marquee, move with W and scale with R. With no zones, seeded blasts hit the structures.
-4. Tests (`src/generators/kit/tests.rs`, `src/generators/settlement/tests.rs`, `src/modifiers/medieval/tests.rs`, `src/modifiers/battlefield/tests.rs`, `src/modifiers/tests_gizmo.rs`, `src/editor/worlds.rs`): every era is valid, deterministic, seed-dependent, stays in its area and only uses IDs 1–12; era signatures (downtown towers with lit glass, low suburban houses, timber and plaster medieval towns with no concrete); density and floor counts; the modifier on a plane and a closed spline; damaged medieval towns have charred wood and no rebar, damaged modern towns have rebar, all have craters; every Architect preset is valid, deterministic and sits on its base; toggles remove their details; resizing keeps brick size and recounts details; round / square detection; spline curtain walls; each destruction mode's signature (rebar and shards, charred rafters and no rebar, moss and erosion); zero intensity changes nothing; a user zone only damages its area; zone select / move / scale in the editor; assigning the GhostTown pack with undo.
+4. Tests (`src/generators/kit/tests.rs`, `src/generators/settlement/tests.rs`, `src/modifiers/medieval/tests.rs`, `src/modifiers/battlefield/tests.rs`, `src/modifiers/tests_gizmo.rs`, `src/editor/worlds.rs`): every era is valid, deterministic, seed-dependent, stays in its area and only uses IDs 1–12; era signatures (downtown towers with lit glass, low suburban houses, timber and plaster medieval towns with no concrete); density and floor counts; the modifier on a plane and a closed spline; damaged medieval towns have charred wood and no rebar, damaged modern towns have rebar, all have craters; every Architect preset is valid, deterministic and sits on its base; toggles remove their details; resizing keeps brick size and recounts details; round / square detection; spline curtain walls; each destruction mode's signature (rebar and shards, charred rafters and no rebar, moss and erosion); zero intensity changes nothing; a user zone only damages its area; zone select / move / scale in the editor; assigning the Settlement pack with undo.
 
 ---
 
@@ -447,7 +447,7 @@ The first of the seven PRs in `docs/PHASE_9_PLAN.md`. New rule in `CLAUDE.md` §
 | Action registry | `src/ui/actions/`: one `Action` enum with label, short glyph, tooltip, run, checked and enabled state. The default keymap is built from it, and toolbar, menus, quad menu and hotkeys all call the same code |
 | Menu bar | File · Edit · Tools · Views · Create · Modifiers · Rendering · Help. Shortcuts show next to each entry and toggles have tick marks. Create lists every object type; Modifiers lists every modifier, grouped |
 | Main Toolbar | Built from `actions::layout`. Adds Undo/Redo, Selection Filter, the region-shape dropdown, Window/Crossing, Lock Selection, Select From Scene, Mirror/Align/Array, a one-click Sky menu (day, sunset, overcast, night, deep space, nebula), Material Editor and Render. Wraps onto a second row on narrow windows instead of hiding buttons |
-| Command Panel | Five tabs as in 3ds Max: Create, Modify, Hierarchy (was Pivot), Display (Hide by Category, Hide/Freeze, Display Properties) and Utilities (Reset XForm, Collapse, Measure and more) |
+| Command Panel | Five tabs: Create, Modify, Hierarchy (was Pivot), Display (Hide by Category, Hide/Freeze, Display Properties) and Utilities (Reset XForm, Collapse, Measure and more) |
 | Modifier List | One tall scrolling list of every modifier, grouped under headings with an optional filter. Modifiers that don't fit the selection are dimmed and explain why. Show Buttons gives a grid of favourite modifiers; right-click its header to edit the set |
 | Modeling Ribbon | Toggle with 🛠 Ribbon. Big buttons for every Edit Poly tool, which change with the sub-object level. Caddy tools apply their last settings on click; right-click opens the caddy |
 | Viewport navigation | Eight buttons at the bottom right: Zoom, Zoom All, Field of View, Pan, Orbit, Zoom Extents, Zoom Extents All, Maximize. Drag in a viewport to use one; right-click leaves it |
@@ -462,18 +462,18 @@ Opened with the toolbar ⚙ button or **Edit -> Preferences...**. Changes apply 
 
 | Tab | What it does |
 |---|---|
-| 🎨 Theme | Six presets (Slate & Amber, 3ds Max Classic Gray, Midnight Blue, Light, High Contrast, Custom) with colour strips. Custom has ten colour pickers and warns when text would be hard to read (WCAG contrast check). UI size 90–150 % and font size 9–20 pt |
-| ⌨ Hotkeys | Key set: MiniMax default or 3ds Max (H = Select by Name, Shift+Q = Render, Alt+Z = Zoom). Searchable list of every action: click a key, press a new one. A key that is already used asks Swap / Replace / Cancel. Per-action default and clear buttons, Reset, Export and Import (.ron) |
+| 🎨 Theme | Six presets (Slate & Amber, Classic Gray, Midnight Blue, Light, High Contrast, Custom) with colour strips. Custom has ten colour pickers and warns when text would be hard to read (WCAG contrast check). UI size 90–150 % and font size 9–20 pt |
+| ⌨ Hotkeys | Key set: Ilex default or Classic (H = Select by Name, Shift+Q = Render, Alt+Z = Zoom). Searchable list of every action: click a key, press a new one. A key that is already used asks Swap / Replace / Cancel. Per-action default and clear buttons, Reset, Export and Import (.ron) |
 | ⊞ Viewports | Background (or the Environment colour), grid and axis colours, vertex and selected-vertex colours, invert zoom, zoom / orbit / pan speed |
 | ⚙ General | Autosave every N minutes (0 = off) to `~/.local/share/minimax/autosave/`, undo steps (1–500), units (m / cm / ft for Measure and the grid readout), show the tour on startup |
-| ▶ Rendering | Default renderer, Blender path, resolution presets, and "Use these now" for Render Setup |
+| ▶ Rendering | Default renderer, external renderer path, resolution presets, and "Use these now" for Render Setup |
 | 📦 Assets | Download folder and the three CC0 packs (Photo Textures 1K, Low-poly Models, Realistic Models). The download buttons come in PR 5 |
 
-The Hotkey List window has a "⚙ Change hotkeys..." button. Tests cover the RON round trip, partial files, units, zoom, theme readability, keymap edit / swap / import / export, the 3ds Max key set, autosave and the undo limit.
+The Hotkey List window has a "⚙ Change hotkeys..." button. Tests cover the RON round trip, partial files, units, zoom, theme readability, keymap edit / swap / import / export, the key set, autosave and the undo limit.
 
 ## 17. Phase 9 PR 3: click-and-drag creation
 
-Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on the Create tab or in the Create menu, then:
+Objects are drawn (`src/editor/create_drag.rs`). Pick a type on the Create tab or in the Create menu, then:
 
 | Object | Drag | Then move and click |
 |---|---|---|
@@ -520,7 +520,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
     8. Painting
     9. Lights, cameras, sky and deep space
     10. Rendering
-    11. GhostTown, Medieval Architect and destruction
+    11. Settlement, Medieval Architect and destruction
     12. Mech assembly
     13. Files
     14. Preferences and hotkeys
@@ -576,7 +576,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - **Click a swatch** to load it into the active slot (one undo step). The slot takes the material's name.
   - **☆ / ★ Favourites** are kept in Preferences (`favourite_materials`) and listed on their own shelf.
   - Buttons: **Assign to Selection** and **Editor**. The Material Editor's Quick Preset list also ends with "📚 More in the Material Library...".
-- **New procedural map nodes** (Maps rollout and Slate). They work in the viewport, the raytracer and the previews alike:
+- **New procedural map nodes** (Maps rollout and Node Graph). They work in the viewport, the raytracer and the previews alike:
   - **Bricks / Tiles:** running bond, stack bond, planks or cobbles. Settings: columns, rows, gap, colour variation and seed.
   - **Stripes:** count, width, dashes and soft edges, along U or V. This is what makes road markings.
   - **Cracks / Voronoi:** scale, width, variation and seed.
@@ -615,12 +615,12 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 - **Normal maps and AO now render.** Before this PR the Bump / Normal slot had no effect anywhere.
   - **F9 raytracer and sample slots:** shading normals are tilted in the triangle's UV frame; AO darkens ambient light.
   - **Viewport:** baked normal and occlusion textures, with per-vertex tangents on every mesh.
-  - **Cycles via Blender:** base colour, roughness / metallic and normal maps are written as PNGs and wired into the Principled BSDF; meshes now export UVs. This covers every map type, not only the new ones. Not run against a real Blender in this session (none installed); the JSON, the PNGs and the loader script are tested.
+  - **External renderer bridge:** base colour, roughness / metallic and normal maps are written as PNGs and wired into the Principled BSDF; meshes now export UVs. This covers every map type, not only the new ones. Not run against a real external renderer in this session (none installed); the JSON, the PNGs and the loader script are tested.
   - A height map on the Bump slot is turned into normals; a Normal From Height node on the slot is used as a normal map.
-- **Maps rollout and Slate view:**
+- **Maps rollout and Node Graph view:**
   - Five new map kinds on any channel: **Tileable Pattern** (all 20 generators), **Levels** (with a histogram of its input), **Height Blend**, **Slope Blur**, **Normal From Height**.
-  - Nodes with inputs show each socket with its own map picker and parameters, in both Compact and Slate (the two views share one parameter editor).
-  - Slate draws and wires up to three input sockets per node. Inputs nested deeper than one level are edited in the inspector, not as separate canvas nodes.
+  - Nodes with inputs show each socket with its own map picker and parameters, in both Compact and Node Graph (the two views share one parameter editor).
+  - The Node Graph draws and wires up to three input sockets per node. Inputs nested deeper than one level are edited in the inspector, not as separate canvas nodes.
 - **Material Library:** new category **Weathered Surfaces (Procedural)** with 32 presets (Mossy Brick Wall, Wet Cobblestone Street, Rusty Diamond Plate, Charred Timber Planks...). The library now has 313 materials in 16 categories.
 - **Fira Code is the default interface font** (proportional and monospace; bold for headings):
   - Built into the program from `assets/fonts/` (release 5.2). egui's fonts stay behind it as fallbacks, so emoji and icons still draw.
@@ -635,7 +635,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
   - recipes and map nodes are content-addressed: equal keys cook once, any edit changes the key, filters share baked inputs;
   - the worker cooks in the background until the maps are ready;
   - Compact-mode edits: picking a pattern is one undo step, fills base colour / roughness / AO / normal, and weathering survives a style change;
-  - tangents follow U and their sign follows V; the Blender export writes its PNGs;
+  - tangents follow U and their sign follows V; the external-renderer export writes its PNGs;
   - Fira Code is first in every font family, is monospaced, and icons still draw.
 - **Checked in the running app:** the rollout, the brick pattern with moss on a box in the viewport, the sample slot, and the Fira Code interface. A contact sheet of eight weathered presets showed relief, AO, puddles and rust as intended.
 - **Not done:**
@@ -667,14 +667,14 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 - **Rendering of painted materials:**
   - **F9:** layers are folded over the base at every shading point, so the base keeps its full detail.
   - **Viewport:** one composite (colour, ORM, normal, emission). A stroke re-composites and re-uploads only the tiles it changed. A painted Multi/Sub-Object is drawn whole.
-  - **Cycles via Blender:** the composite is exported, with its emission map.
+  - **External renderer bridge:** the composite is exported, with its emission map.
 - **World / Triplanar mapping (PR 5b):**
   - New **Mapping** rollout on every material and sub-material: UV Channel or World / Triplanar, with Tile Size (scene units) and Edge Blend.
   - **F9:** three projections blended by the surface normal, including relief.
   - **Viewport:** box-mapped UVs (one side per vertex), since the GPU material has one UV set. Seam-free on flat faces; the exact blend shows in F9.
-  - **Cycles via Blender:** box projection driven by exported projection-space positions.
+  - **External renderer bridge:** box projection driven by exported projection-space positions.
   - The projection space is the object's own space at world scale, so the texture stays put when the object moves or turns.
-  - The Medieval Castle, Modern City, Alpine Terrain and GhostTown packs now use it by default.
+  - The Medieval Castle, Modern City, Alpine Terrain and Settlement packs now use it by default.
 - **CC0 asset downloader (PR 5b), Preferences → Assets:**
   - Each pack has a checkbox, **Download / Resume / Update**, **Cancel**, **Remove** and a progress bar. Downloads run in the background into `~/.local/share/minimax/assets/`.
   - **📷 Photo Textures (1K or 2K):** the most downloaded Poly Haven textures per shelf (ground, roads, walls, roofs, wood, stone, metal), found through Poly Haven's public API.
@@ -686,7 +686,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 - **Decoupled emission, per material and per sub-material:**
   - Under Emission Multiplier: **[✓] Preserve Texture Appearance (Decouple Luminance)** and **Direct Camera Brightness (0–2)**.
   - Checked: the material still lights the scene at the full multiplier (GI, emitter sampling, reflections), but camera rays, the sample sphere and the viewport show its own colours at Direct Camera Brightness.
-  - Blender: a Light Path "Is Camera Ray" mix does the same.
+  - External renderer: a Light Path "Is Camera Ray" mix does the same.
 - **Help and credits:** the Painting page covers layers, stamps, baking and Smart Masks, with a new screenshot. The Materials page covers Mapping, the library filter and the emission toggle. Credits list TextureCraft and the asset packs; licence texts are in `licenses/`.
 - **Tests (440 in total, 38 new):**
   - tiles: nothing allocated until painted, snapshots share tiles, a write copies one tile, save / load round trip;
@@ -701,7 +701,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 - **Checked in the running app:** Texture Paint on a wood box showed the base material under bullet hole, ember, blood and blast stamps, with Metal Chipping on the edges and Snow on top; the PaintBox listed the layers above "Layer 0: Base Material".
 - **Not verified, or limited:**
   - **The live asset hosts were not reached.** Poly Haven and Kenney's zip host are blocked in this session, so the downloader was tested only against a local stand-in. The Poly Haven API reply format is taken from its documentation as I remember it; if a field name differs, the photo and realistic packs will fail with a clear message and need a small fix. The Kenney repositories were confirmed to exist.
-  - Blender output (Triplanar box projection, painted emission, camera-ray mix) was not run against a real Blender; the scene file and loader script are tested.
+  - External renderer output (Triplanar box projection, painted emission, camera-ray mix) was not run against a real external renderer; the scene file and loader script are tested.
   - TextureCraft's source could not be opened here (only its README), so the painter is written from its published design, not ported file by file.
   - In the viewport, a painted material with a Triplanar base shows the base without its relief; F9 shows it.
   - Painted glow is visible and bounces light in F9, but is not sampled as an area light unless the material's Emission Multiplier is above 0.
@@ -710,7 +710,7 @@ Objects are drawn as in 3ds Max (`src/editor/create_drag.rs`). Pick a type on th
 
 ## 22. Phase 11 PR A: F9 Color Grading & Camera RAW (LightCraft)
 
-The Rendered Frame Window has a collapsible **Color Grading & Camera RAW** sidebar (`🎨 Grading` on the RFW toolbar, or Rendering → Color Grading & Camera RAW). Every control re-grades the image at once without re-rendering, for the built-in raytracer and for Cycles images alike.
+The Rendered Frame Window has a collapsible **Color Grading & Camera RAW** sidebar (`🎨 Grading` on the RFW toolbar, or Rendering → Color Grading & Camera RAW). Every control re-grades the image at once without re-rendering, for the built-in raytracer and for the external renderer images alike.
 
 - **Tone & Presence:** Highlights, Shadows, Whites, Blacks, Clarity (local contrast against a soft blur), Vibrance, Saturation.
 - **White Balance & Split Toning:** Temperature in Kelvin (6500 K neutral, higher is warmer, as in Camera RAW), Tint (green ↔ magenta), and Shadows / Midtones / Highlights colour wheels (angle = hue, distance = amount).
@@ -795,9 +795,9 @@ Known limits:
 - The emergency scene is the last snapshot. It can be up to 5 s behind an edit that is still being dragged.
 - The signal handlers are Unix-only. On other systems only panics are recorded.
 
-## 25. Phase 11.5A: Native GPU/CPU path tracer (Cycles bridge removed)
+## 25. Phase 11.5A: Native GPU/CPU path tracer (external renderer bridge removed)
 
-**Removed:** the Cycles / Blender bridge: `blender.rs`, `blender_loader.py`, `blender_tex.rs`, `cycles.rs`, its tests, the F10 Cycles rollout, and the Preferences → Rendering Blender path. Scenes saved with `engine: Cycles` still load. Serde ignores the old fields, and they render with the native path tracer. A legacy-RON test covers this.
+**Removed:** the external renderer bridge: `blender.rs`, `blender_loader.py`, `blender_tex.rs`, `cycles.rs`, its tests, the F10 external-renderer rollout, and the Preferences → Rendering external renderer path. Scenes saved with `engine: the external renderer` still load. Serde ignores the old fields, and they render with the native path tracer. A legacy-RON test covers this.
 
 **F10 Render Setup:**
 - `Renderer`: Path Tracer (default) or Classic Raytracer, which is the old fast tracer, unchanged.
@@ -836,7 +836,7 @@ Known limits:
 - BSDF sampled albedo equals the integrated albedo.
 - Glass tint.
 - MIS weights, Welford statistics and convergence.
-- Legacy Cycles scenes load.
+- Legacy external-renderer scenes load.
 - **GPU/CPU parity:** on llvmpipe Vulkan, image energy is 57.23 vs 57.26, with every 6×6 block matching. The test skips without an adapter; `MINIMAX_REQUIRE_GPU=1` makes that a failure.
 - CPU fallback.
 
@@ -858,7 +858,7 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 
 **2. Principled BSDF** (`src/materials/principled.rs`, `src/render/bsdf/`, `src/render/pathtrace/subsurface.rs`):
 - A new **Principled BSDF** rollout on every Physical and Crystal material.
-- Subsurface Scattering: Weight, Scatter Color, per-channel Radius and Scale. Rendered as a Cycles-style random walk: exponential free flights, isotropic scattering, van de Hulst albedo inversion and Russian Roulette.
+- Subsurface Scattering: Weight, Scatter Color, per-channel Radius and Scale. Rendered as a random walk: exponential free flights, isotropic scattering, van de Hulst albedo inversion and Russian Roulette.
 - Anisotropic GGX with rotation and Heitz visible-normal sampling.
 - Clearcoat with its own roughness, layered over the base with Fresnel energy loss.
 - Cloth Sheen with Tint.
@@ -957,7 +957,7 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 - Sprite sheets render one pose. Animation-cycle phases are not supported yet.
 - The Classic raytracer renders catchers as normal surfaces.
 
-## 28. PR 6: Buildings & Props spawner + GhostTown variety
+## 28. PR 6: Buildings & Props spawner + Settlement variety
 
 **1. Standalone Buildings & Props** (`src/generators/buildings/`, Create ▸ Geometry ▸ Buildings & Props, the Create menu, Tools ▸ **Buildings & Props Browser...**, the 🏠 toolbar button and the ribbon's *Populate* group):
 - 43 types, each its own object. Click a type, then drag the footprint in a viewport. Right-click a type to create it at the origin.
@@ -973,7 +973,7 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 - **Parametric architectural families** (`arch.rs`): walls along a path with mitred corners; door and window openings that frame themselves and leave their own hole (built as wall pieces around the opening, so no Boolean pass is needed); straight, L-shaped and spiral staircases; cross-gable roofs for L / T plans.
   - The prompt named BIMCraft as a source. **BIMCraft was not inspected.** These algorithms are written natively for this project, and no BIMCraft code is used.
 
-**2. GhostTown settlement expansion** (`src/generators/settlement/`):
+**2. Settlement settlement expansion** (`src/generators/settlement/`):
 - 14 presets. The original four (Grid Downtown, Suburbs, Round Walled City, Village) are joined by ten new ones:
   - River City: a river with quays, lamps and trees, alternating truss and arch bridges, and a modern grid.
   - Harbour Town: a sea band, quay wall, piers, cranes on rails, warehouse frontage and an inland grid.
@@ -985,13 +985,13 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
   - Star Fort: five bastions, a moat, a gatehouse and drawbridge, a parade ground and barracks.
   - Crossroads Hamlet: two crossing roads with an inn, forge, stable, well house and granary on the corners, cottages, fenced crop fields and a windmill.
   - Monastery: a precinct wall, cloister garth and arcade, chapel, dormitory, granary, stable, kitchen gardens and an orchard.
-- New toggles on the GhostTown rollout (base object and modifier):
+- New toggles on the Settlement rollout (base object and modifier):
   - **Buildings**: one checkbox per palette type; unchecked types are left out.
   - **Building Parts**: the same part toggles as the standalone buildings.
   - **Town Features**: River / Sea, Bridges, Docks / Quays, Town Walls, Moat, Rail Yard, Market Square, Trees / Parks, Farm Plots.
   - `[✓] Emissive Lights` master toggle. When it is off, lit windows, lamps and neon become plain glass.
   - **Prop Style**: Generated (the preset's own props), Low-poly pack (box stand-ins) or Realistic pack (the detailed doodads along every street).
-- **24-ID GhostTown Material Pack** (`src/materials/ghost_pack.rs`): IDs 13–24 add Asphalt, Lane Lines, Sidewalk Slabs, Curbs, Cobbles, River Water, Brick, Stucco, Slate / Metal Roof, Rusted Metal, Broken Glass and Neon / Lantern Glow. They use PR 5.5 MaterialCraft textures with Triplanar mapping. **Assign Photo Pack** is the photo-style variant. The rollout shows a collapsible legend of all 24 IDs.
+- **24-ID Settlement Material Pack** (`src/materials/ghost_pack.rs`): IDs 13–24 add Asphalt, Lane Lines, Sidewalk Slabs, Curbs, Cobbles, River Water, Brick, Stucco, Slate / Metal Roof, Rusted Metal, Broken Glass and Neon / Lantern Glow. They use PR 5.5 MaterialCraft textures with Triplanar mapping. **Assign Photo Pack** is the photo-style variant. The rollout shows a collapsible legend of all 24 IDs.
 
 **Tests (now 535):**
 - All 43 building types build valid, deterministic geometry that stays near its footprint, uses IDs 1–24 and has a browser thumbnail.
@@ -1008,7 +1008,7 @@ Credit: path-tracing design after SolidCraft (MIT / Apache-2.0).
 
 ## 29. PR 7: 5-state building destruction, rubble mounds & battlefield textures
 
-**1. Destruction levels** (`src/generators/ruin/`). Six states, offered on every building (Buildings & Props), on the GhostTown settlement (base object and modifier) and in the Battlefield & Ruin modifier's new **Building Destruction** section:
+**1. Destruction levels** (`src/generators/ruin/`). Six states, offered on every building (Buildings & Props), on the Settlement settlement (base object and modifier) and in the Battlefield & Ruin modifier's new **Building Destruction** section:
 - **Intact**: untouched.
 - **Light Damage**: cracked or missing glass with shards below, soot above the windows, bullet-scar decals and a little debris. Lit windows go dark when their glass breaks.
 - **Heavy Damage**: a blown-out corner (the mesh is sliced and the corner removed), shell holes, exposed slabs with rebar or joists, a caved-in roof (sagging slab or broken rafters), a slight lean, and barricades (sandbags and tank traps for Modern, carts and barrels for Medieval).
@@ -1032,7 +1032,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - `[✓] Gore / Blood Smears` (ID 28) with an **Amount** slider: blood pools and drag smears on the rubble and the ground.
 - **Rubble Pile** is a new standalone Buildings & Props type (now 44 types). Width and Length set the spread, and Pile Height sets the height.
 
-**4. Battlefield textures.** The GhostTown Material Pack grows to **28 IDs**: 25 Glowing Embers (emissive), 26 Bullet Scars / Soot, 27 Rubble Dust / Ash, 28 Blood Smears. Objects that still carry an older 24-ID pack get ID 25 added when the Ember Glow is applied.
+**4. Battlefield textures.** The Settlement Material Pack grows to **28 IDs**: 25 Glowing Embers (emissive), 26 Bullet Scars / Soot, 27 Rubble Dust / Ash, 28 Blood Smears. Objects that still carry an older 24-ID pack get ID 25 added when the Ember Glow is applied.
 
 **5. Battlefield & Ruin modifier.** The modifier now finds each building in its input mesh (connected elements whose footprints overlap, ignoring flat ground) and wrecks each one with the Building Destruction settings, before its existing blast-zone pass.
 
@@ -1054,7 +1054,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 ## 30. PR 8: Procedural smoke & fire plumes + dynamic weather & storm clouds
 
 **1. Smoke Plume generator** (`src/generators/smoke/`; Create > Worlds > Smoke Plume, or the Worlds menu). Drag out the source radius, then the height.
-- **Shape:** the plume is a stack of noise-displaced lobe shells (soft, metaball-like puffs). Alpha-eroded **Turbulence Cards** (fans whose rim fades to zero alpha) and a **Mushroom Cap** ring vortex at the top can be turned on or off. Density is stored in the vertex alpha and the tint in the vertex colour. The new **Battlefield Smoke** material (GhostTown ID 29) and the **Smoke & Fire Pack** (Multi/Sub-Object preset) are translucent, so plumes cast soft partial shadows in F9.
+- **Shape:** the plume is a stack of noise-displaced lobe shells (soft, metaball-like puffs). Alpha-eroded **Turbulence Cards** (fans whose rim fades to zero alpha) and a **Mushroom Cap** ring vortex at the top can be turned on or off. Density is stored in the vertex alpha and the tint in the vertex colour. The new **Battlefield Smoke** material (Settlement ID 29) and the **Smoke & Fire Pack** (Multi/Sub-Object preset) are translucent, so plumes cast soft partial shadows in F9.
 - **Styles:** Oily Battlefield Smoke (black, thick), Chimney Smoke (grey) and Steam (white, thin).
 - **Parameters:** Seed, Plume Height, Base Radius, Top Spread, Billow Turbulence, Wind Lean Angle and Direction, Lobes, Time / Rise Phase (scrubs the puffs up the column and loops) and **Fire Base Intensity %**. The fire setting adds glowing flame tongues and a burning base (emissive Fire Core / Embers) with an orange under-glow on the smoke above. At 0% the plume is smoke only.
 - **Plume physics** (`smoke/column.rs`) is written natively from classic closed-form plume theory:
@@ -1064,7 +1064,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
   - **Karman vortex shedding:** a Strouhal-0.2 side-to-side sway that travels up with the Rise Phase.
 - **FieldCraft was not inspected.** This is not a CFD, LBM or particle-simulation solver, and no external fluid code is used. The plume is static geometry shaped by those laws.
 
-**2. Battlefield auto-spawn.** `[✓] Spawn Rising Smoke Plumes`, a **Smoke Plume Count** and a **Plume Look** sub-rollout were added to the GhostTown Damaged / Battlefield mode and to the Battlefield & Ruin modifier. Plumes rise from the tallest wrecks (a coarse height grid) and from the user's blast zones, standing on the local ground. The defaults depend on the era: Modern uses black battlefield smoke; Medieval and Ancient use grey chimney smoke, with less fire for Ancient. The GhostTown pack grows to **29 IDs**.
+**2. Battlefield auto-spawn.** `[✓] Spawn Rising Smoke Plumes`, a **Smoke Plume Count** and a **Plume Look** sub-rollout were added to the Settlement Damaged / Battlefield mode and to the Battlefield & Ruin modifier. Plumes rise from the tallest wrecks (a coarse height grid) and from the user's blast zones, standing on the local ground. The defaults depend on the era: Modern uses black battlefield smoke; Medieval and Ancient use grey chimney smoke, with less fire for Ancient. The Settlement pack grows to **29 IDs**.
 
 **3. Weather & Storm Clouds** (`src/render/weather.rs`; the `8` dialog, Dynamic Sky, then the **Weather & Storm Clouds** rollout):
 - **Weather Preset** dropdown: Clear Sky, Partly Cloudy, Heavy Overcast, Dark Gathering Storm, Thunderstorm, Battlefield Ash & Smoke Haze, Heavy Fog / Mist, Rainstorm and Blizzard / Snow. A preset sets the cloud coverage, density and altitude, the thickness, the precipitation and the exponential fog in one click.
@@ -1076,7 +1076,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
   - **F9:** a depth-aware overlay (`src/render/precip.rs`). Particles sit at seeded depths, nearer ones are bigger, and each is drawn only where it is in front of the geometry. Cinders are emissive, so Bloom picks them up.
 
 **Tests (now 559):**
-- **Plumes:** they are valid, deterministic and tall, and widen with height. Fire sits at the base, and the smoke is translucent with zero-alpha card rims. Height, wind, cards, cap, phase and style all change the plume. Town plumes use the GhostTown IDs.
+- **Plumes:** they are valid, deterministic and tall, and widen with height. Fire sits at the base, and the smoke is translucent with zero-alpha card rims. Height, wind, cards, cap, phase and style all change the plume. Town plumes use the Settlement IDs.
 - **Plume physics:** the column widens, slows and bends downwind, and the vortex sway alternates and travels with the phase.
 - **Battlefield:** the modifier spawns rising plumes.
 - **Weather:**
@@ -1138,7 +1138,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 ## 32. Ilex / Veach / Luxon / Demiurge rebrand
 
 **Application → Ilex.**
-- **Names:** the crate and binary are now `ilex`. The window title is "Ilex — 3ds Max-style Modeler", the About dialog says "Ilex 3D", and the menu bar, welcome status, tour, help, crash reports and exporter headers (OBJ, glTF, FBX) all say Ilex.
+- **Names:** the crate and binary are now `ilex`. The window title is "Ilex", the About dialog says "Ilex 3D", and the menu bar, welcome status, tour, help, crash reports and exporter headers (OBJ, glTF, FBX) all say Ilex.
 - **Logo:** a white Common Holly tree (*Ilex aquifolium*) with spiny leaf-edged tiers and cut-out berries, on a blue-green (`#127A72`) tile (`packaging/ilex.svg`).
 
 **Backward compatibility.** Old files and setups keep working:
@@ -1150,7 +1150,7 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - **Crash recovery:** both `crash_recovery.ilex` and the older `crash_recovery.mmax` are found.
 - **glTF:** files write `extras.ilex` and still read `extras.minimax`.
 - **Crash reports:** frames from both `ilex::` and `minimax::` count as the app's own.
-- **Modifiers:** the old modifier names (Terrain, Ocean, GhostTown, Medieval Architect, Battlefield / Ruin) still resolve, so saved Show Buttons sets work.
+- **Modifiers:** the old modifier names (Terrain, Ocean, Settlement, Medieval Architect, Battlefield / Ruin) still resolve, so saved Show Buttons sets work.
 - **Keymap:** the "MiniMax" key set keeps its stored name and is now labelled "Ilex default".
 
 **Packaging:**
@@ -1172,12 +1172,12 @@ In a town or on the battlefield, each building gets the chosen level or one step
 - **Luxon Lens FX (Bokeh, Anamorphic & Glare)** in F10.
 
 **Demiurge** (world building):
-- **Create tab:** the rollouts are now **Demiurge Worlds: Terrain, Ocean, Planet, Smoke Plume** and **Demiurge Settlements: GhostTown, Buildings & Props**.
+- **Create tab:** the rollouts are now **Demiurge Worlds: Terrain, Ocean, Planet, Smoke Plume** and **Demiurge Settlements: Settlement, Buildings & Props**.
 - **Create menu:** Demiurge Worlds, Demiurge Settlements and Demiurge Buildings & Props.
 - **Modifier List:** new "Demiurge Worlds" and "Demiurge Settlements & Destruction" groups.
-- **Modifiers:** **Demiurge Terrain**, **Demiurge Ocean**, **Demiurge GhostTown**, **Demiurge Medieval Architect** and **Demiurge Battlefield & Ruin**.
+- **Modifiers:** **Demiurge Terrain**, **Demiurge Ocean**, **Demiurge Settlement**, **Demiurge Medieval Architect** and **Demiurge Battlefield & Ruin**.
 
-**Help:** new pages "17. Characters and creatures (MakeHuman)" and "18. Ilex, Veach, Luxon and Demiurge" (20 pages in all), the renamed labels in the render, sky and GhostTown pages, and a MakeHuman CC0 credit (also in `licenses/README.md`).
+**Help:** new pages "17. Characters and creatures (MakeHuman)" and "18. Ilex, Veach, Luxon and Demiurge" (20 pages in all), the renamed labels in the render, sky and Settlement pages, and a MakeHuman CC0 credit (also in `licenses/README.md`).
 
 **Tests:**
 - Scene extension and header detection, both new and legacy.
@@ -1375,3 +1375,14 @@ Not done yet:
 - The hole the strut leaves in the shin is not capped; the collar covers the place it left.
 - The piston housing eyelet floats at the strut's old thigh end; no mounting tab is added on the thigh.
 - The Missile/AA spiders in the same file have not been tried.
+
+## 39. UI redesign: look, layout, Orientation Cube, pop-out windows, rebrand
+
+1. ✅ **Graphite & Teal** is the default theme (`src/prefs/palette.rs`): neutral greys with a `#26B8B0` accent. Slate & Amber and the other presets stay in Preferences → Theme. Old prefs migrate once (`look_version`).
+2. ✅ **Soft look:** rounded controls, cards and windows, soft shadows, viewports as rounded cards with gaps and pill labels.
+3. ✅ **Layout:** one header row (`src/ui/header.rs`), and a right **Properties** column (`src/ui/properties/`) with the Scene Explorer on top, a drag bar, and a vertical tab strip (Create, Modify, Hierarchy, Display, Utilities, Render, Environment, Demiurge, Characters). Width and Explorer height are saved.
+4. ✅ **Orientation Cube** (`src/viewport/view_cube.rs`, `src/ui/viewport_ui/view_cube.rs`) top-right in every view: click a face, edge or corner to fly there (26 targets), drag to orbit, drag the ring to spin, Home, and a right-click menu (Set Home, Reset Home, Perspective / Orthographic, Fit to View on Change). Views → Orientation Cube hides it.
+5. ✅ **Pop-out windows** (`src/ui/popout.rs`, `src/ui/popout_windows.rs`): Material Editor, Material Library, Rendered Frame Window, Edit UVWs, MakeHuman, Face Cloner, Buildings browser, PaintBox, Help and Preferences have a ↗ button that moves them into their own OS window, with app id `ilex-<name>` for window-manager rules. Each window has its own egui context with the theme, fonts and hotkeys. Closing it, or ↙, docks the dialog back. The popped set is saved in `prefs.layout.popouts`.
+   - Checked under Xvfb (X11): pop out, previews drawn in the new window, M in the pop-out closes it, M in the main window reopens it popped, closing the OS window docks it back and updates prefs.
+   - **Not checked:** Wayland / niri (app ids, tiling). The right-pane tabs cannot pop out yet.
+6. ✅ **Rebrand:** source, help, README, CLAUDE.md and packaging no longer name other modelling apps or plugins. GhostTown is now **Demiurge Settlement** (old scenes and saved button sets still load; a modifier still carrying its old default name is renamed on load), the Slate view is the **Node Graph** view, the second key set is **Classic**, and the window title is "Ilex". Licence notices and credits keep the names they need. `src/brand_tests.rs` fails if an old name comes back outside the legacy-loading files.

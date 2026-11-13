@@ -1,4 +1,4 @@
-//! Tools -> Array... : the classic 3ds Max Array dialog (Incremental /
+//! Tools -> Array... : the classic Array dialog (Incremental /
 //! Totals grid, Type of Object, 1D / 2D / 3D dimensions, live Preview).
 
 use super::widgets::{dim, max_spinner, max_spinner_range, toggle_button};

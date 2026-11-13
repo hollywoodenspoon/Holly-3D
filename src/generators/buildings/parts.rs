@@ -1,5 +1,5 @@
 //! Building part toggles and the part builders shared by every building
-//! type (and the GhostTown generator): balconies, fire escapes, awnings,
+//! type (and the Settlement generator): balconies, fire escapes, awnings,
 //! chimneys, dormers, shutters, rooftop clutter (AC units, tanks,
 //! antennas), signs, and stairs & porches. Facade parts are built in a
 //! `kit::sides` face frame: face at y = 0 facing -Y, centred on x = 0.

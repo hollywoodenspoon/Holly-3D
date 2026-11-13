@@ -33,7 +33,7 @@ pub const SKY: Page = Page {
             "Area lights cast soft shadows that grow with their size; tick Visible to Camera to see the softbox or neon bar in F9.",
             "Spot and area lights take an IES Light Profile (wall scallop, streetlamp, flashlight, high-bay, stage beam).",
             "Target lights and cameras take two clicks: the light, then its target.",
-            "With no lights, a 3ds Max-style headlight rig lights the scene. Ctrl+L forces it on.",
+            "With no lights, a headlight rig lights the scene. Ctrl+L forces it on.",
             "C looks through the selected camera.",
         ]),
         H("Godrays and mist"),
@@ -97,14 +97,14 @@ pub const RENDER: Page = Page {
 
 pub const GHOSTTOWN: Page = Page {
     id: "ghosttown",
-    title: "11. Demiurge: GhostTown, Medieval Architect and destruction",
+    title: "11. Demiurge: Settlement, Medieval Architect and destruction",
     blocks: &[
         Shot(
             "ghosttown",
             &[
                 m(1356.0, 464.0, "Settlement preset: 14 towns, from downtown to star fort"),
                 m(1486.0, 518.0, "New Seed: a different town"),
-                m(1396.0, 864.0, "Assign the GhostTown Material Pack"),
+                m(1396.0, 864.0, "Assign the Settlement Material Pack"),
             ],
         ),
         Steps(&[
@@ -189,7 +189,7 @@ pub const PREFS: Page = Page {
         Shot("prefs", &[m(836.0, 75.0, "Preferences (⚙)"), m(418.0, 68.0, "Tabs: Theme, Hotkeys, Viewports, General, Rendering, Assets")]),
         Steps(&[
             "Theme: pick a preset or make your own colours. Text is checked for readability.",
-            "Hotkeys: click a key and press the new one. Choose the 3ds Max key set if you prefer it.",
+            "Hotkeys: click a key and press the new one. Choose the Classic key set if you prefer it.",
             "Changes save as soon as you let go of the mouse.",
         ]),
         ShowMe("Open Preferences", Show::Act(Action::Preferences)),

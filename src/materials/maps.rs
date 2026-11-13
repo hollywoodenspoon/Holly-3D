@@ -1,5 +1,5 @@
 //! Maps rollout channels and the procedural / bitmap map nodes that feed
-//! them (also the nodes shown in the Slate view).
+//! them (also the nodes shown in the Node Graph view).
 
 use super::patterns::{self as pat, BrickKind, GrungeKind};
 use super::proc_engine::{TileKind, adjust, generators, node_key};
@@ -47,7 +47,7 @@ impl MapChannel {
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct MapSlot {
     pub enabled: bool,
-    /// 0..=100 like the 3ds Max Maps rollout amount spinners.
+    /// 0..=100 like the Maps rollout amount spinners.
     pub amount: f32,
     pub node: Option<MapNode>,
 }

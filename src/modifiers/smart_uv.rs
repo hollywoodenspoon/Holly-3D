@@ -1,4 +1,4 @@
-//! Blender-style Smart UV Project powered by `uvunwrap`: charts are grown by
+//! Smart UV Project powered by `uvunwrap`: charts are grown by
 //! normal angle, flattened (LSCM / planar) and packed into 0..1.
 
 use crate::mesh::EditablePoly;
@@ -48,7 +48,7 @@ pub fn smart_uv_project(m: &EditablePoly, angle_limit: f32, margin: f32, correct
     for (t, &(pi, corners)) in tri_owner.iter().enumerate() {
         for k in 0..3 {
             let ov = &mesh.vertices[mesh.indices[t * 3 + k] as usize];
-            // uvunwrap's v grows downward (image rows); 3ds Max UV v points up.
+            // uvunwrap's v grows downward (image rows); UV v points up.
             out[pi][corners[k]] = Vec2::new(ov.uv[0], 1.0 - ov.uv[1] * v_scale);
         }
     }

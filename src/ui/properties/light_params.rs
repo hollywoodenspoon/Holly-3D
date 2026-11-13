@@ -105,7 +105,7 @@ fn shape(ui: &mut egui::Ui, ed: &mut Editor) {
                     num_row(ui, t, "Hotspot / Beam", &mut l.hotspot, 0.5..=178.5, 43.0);
                     num_row(ui, t, "Falloff / Field", &mut l.falloff, 1.0..=179.0, 45.0);
                 });
-                // Dragging hotspot past falloff pushes falloff along (3ds Max).
+                // Dragging hotspot past falloff pushes falloff along.
                 if l.hotspot > l.falloff - 0.5 {
                     l.falloff = (l.hotspot + 0.5).min(179.0);
                 }

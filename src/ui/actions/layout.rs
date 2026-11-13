@@ -228,7 +228,7 @@ pub const OVERFLOW: &[Slot] = &[
     Slot::A(Help),
 ];
 
-/// Bottom-right viewport navigation buttons (2 rows, like 3ds Max).
+/// Bottom-right viewport navigation buttons (2 rows).
 pub const NAV_BUTTONS: [[Action; 4]; 2] = [
     [Nav(NavMode::Zoom), Nav(NavMode::ZoomAll), ZoomExtents, ZoomExtentsAll],
     [Nav(NavMode::Fov), Nav(NavMode::Pan), Nav(NavMode::Orbit), Maximize],

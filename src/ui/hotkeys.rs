@@ -1,4 +1,4 @@
-//! 3ds Max keyboard shortcuts (never Blender's modal G/R/S). Every hotkey is looked up in the action keymap, so each one also has a
+//! Keyboard shortcuts (no modal G/R/S keys). Every hotkey is looked up in the action keymap, so each one also has a
 //! button or menu entry.
 
 use super::actions::keymap;

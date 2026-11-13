@@ -1,4 +1,4 @@
-//! Phase 8C rollouts: GhostTown settlement parameters (base object and
+//! Phase 8C rollouts: Settlement parameters (base object and
 //! modifier), the Medieval Architect, and Battlefield / Ruin (standalone,
 //! and nested under each `[✓] Damaged / Battlefield Mode` toggle).
 
@@ -15,14 +15,14 @@ use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, action, dim, rollout};
 use bevy_egui::egui::{self, RichText};
 
-/// `[ Assign GhostTown Material Pack ]` + the ID legend.
+/// `[ Assign Settlement Material Pack ]` + the ID legend.
 pub fn pack_button(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.horizontal(|ui| {
-        if action(ui, "Assign GhostTown Pack", true, content_w() * 0.5 - 4.0) {
-            ed.assign_pack(MultiPreset::GhostTown);
+        if action(ui, "Assign Settlement Pack", true, content_w() * 0.5 - 4.0) {
+            ed.assign_pack(MultiPreset::Settlement);
         }
         if action(ui, "Assign Photo Pack", true, content_w() * 0.5 - 4.0) {
-            ed.assign_pack(MultiPreset::GhostTownPhoto);
+            ed.assign_pack(MultiPreset::SettlementPhoto);
         }
     });
     ui.collapsing("Material ID legend (29 IDs)", |ui| {
@@ -119,9 +119,9 @@ pub fn battle_params(ui: &mut egui::Ui, t: &mut Track, p: &mut BattleParams, sal
     }
 }
 
-/// GhostTown stack modifier.
+/// Settlement stack modifier.
 pub fn settlement_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
-    rollout(ui, "Demiurge GhostTown", true, |ui| {
+    rollout(ui, "Demiurge Settlement", true, |ui| {
         ui.label(dim("Fills a flat Plane / Editable Poly, or a closed spline's outline."));
         let mut out = super::ruin::Out::default();
         mod_params(ui, ed, |ui, k, t| {

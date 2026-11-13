@@ -49,7 +49,7 @@ pub enum CommandTab {
     Characters,
 }
 
-/// Interactive viewport tools (modal, like 3ds Max pick modes).
+/// Interactive viewport tools (modal pick modes).
 #[derive(Clone, Debug, PartialEq, Default)]
 pub enum Tool {
     #[default]
@@ -208,7 +208,7 @@ pub struct MatEditor {
     pub open: bool,
     /// Active sample slot (0..24).
     pub slot: usize,
-    /// `[ Mode: Compact | Slate Node Graph ]`.
+    /// `[ Mode: Compact | Node Graph ]`.
     pub slate: bool,
     /// Folder typed for Import PBR Texture Folder.
     pub pbr_folder: String,

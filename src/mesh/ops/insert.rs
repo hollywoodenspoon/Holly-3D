@@ -29,7 +29,7 @@ pub fn poke_polygon(m: &mut EditablePoly, pid: PolyId, point: Vec3) -> VertexId 
 
 /// Cuts a new edge path across the surface from vertex `a` to vertex `b`.
 /// The cutting plane contains the segment and `view_dir` (the camera ray), so
-/// the cut follows the straight screen-space line just like 3ds Max.
+/// the cut follows the straight screen-space line.
 /// Returns the vertices along the path (including both ends).
 pub fn cut(m: &mut EditablePoly, a: VertexId, b: VertexId, view_dir: Vec3) -> Vec<VertexId> {
     let mut path = vec![a];

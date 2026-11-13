@@ -1,4 +1,4 @@
-//! Selection region shapes cycled with `Q` (3ds Max): Rectangular, Circular,
+//! Selection region shapes cycled with `Q`: Rectangular, Circular,
 //! Fence (click a polygon) and Lasso (drag a free-hand outline).
 
 use bevy::math::Vec2;

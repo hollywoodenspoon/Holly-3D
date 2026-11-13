@@ -1,4 +1,4 @@
-//! Tools -> Mirror (3ds Max Mirror dialog): mirror axis X / Y / Z / XY /
+//! Tools -> Mirror (Mirror dialog): mirror axis X / Y / Z / XY /
 //! YZ / ZX about the transform center, with an offset and No Clone / Copy /
 //! Instance / Reference, previewed live.
 

@@ -1,9 +1,9 @@
-# CLAUDE.md — Ilex (formerly MiniMax): Clean 3ds Max-Style Modeler, Painter & Renderer in Rust
+# CLAUDE.md — Ilex (formerly MiniMax): Clean Modeler, Painter & Renderer in Rust
 
 ## 1. Core Philosophy & Rules
 This is a personal 3D polygon modeling, painting, and rendering application built in Rust.
-- **3ds Max Mental Model Only:** All UX, camera controls, hotkeys (`W/E/R`, `1-5`, `M`, `F9`, `F10`, `Shift+Drag`), gizmos, and data structures MUST strictly follow **3ds Max conventions**, NEVER Blender conventions (no modal `G`/`R`/`S` keys, no mandatory node graphs for basic tasks).
-- **Clean, Spacious UI:** Replicate the spatial predictability of 3ds Max (Top Toolbar, 4-Way Viewport, Right-Hand Command Panel with Modifier Stack, Compact Material Editor, Rendered Frame Window), stripped of legacy clutter. Use generous padding, clean typography, and flat slate colors.
+- **Ilex Conventions Only:** All UX, camera controls, hotkeys (`W/E/R`, `1-5`, `M`, `F9`, `F10`, `Shift+Drag`), gizmos, and data structures MUST follow the **Ilex conventions** in this file: no modal `G`/`R`/`S` keys, no mandatory node graphs for basic tasks. Never describe Ilex as "like" another app; only licences and credits may name other projects.
+- **Clean, Spacious UI:** Keep the layout spatially predictable (Header row, 4-Way Viewport, Right-Hand Properties column with Modifier Stack, Compact Material Editor, Rendered Frame Window), free of clutter. Use generous padding, clean typography, and flat graphite colors.
 - **A Button for Everything:** Every feature MUST be reachable from a visible button, dropdown, ribbon or menu entry. Hotkeys are shortcuts only, never the sole way in. Register commands as an `Action` in `src/ui/actions/` and place them in `actions::layout`; the `every_action_has_a_button` test in `src/ui/actions/tests.rs` fails if any action has no button.
 - **Strict Modularity:** NO `.rs` file may exceed **350 lines**. Split code cleanly into submodules (`src/mesh/`, `src/modifiers/`, `src/materials/`, `src/paint/`, `src/render/`, `src/splines/`, `src/ui/`, `src/viewport/`).
 - **No Cyclic Pointers:** NEVER use `Rc<RefCell<T>>` or `Arc<Mutex<T>>` for mesh topology. Use index-based storage or `slotmap` arenas.
@@ -15,20 +15,20 @@ This is a personal 3D polygon modeling, painting, and rendering application buil
 Use these crates instead of writing low-level rendering, gizmo math, booleans, or UV packers from scratch:
 - `bevy = "0.20.0"` — Core engine, PBR/Transmission/Toon rendering, picking, and viewport management.
 - `bevy_egui = "0.43.1"` — UI panels, Command Panel, Floating Caddies, Quad Menus, Material Editor (`M`), and Render Setup (`F10`).
-- `transform-gizmo-egui` (or `transform-gizmo-bevy`) — Explicit 3ds Max-style 3-axis Move, Rotate, and Scale gizmo handles with planar squares.
+- `transform-gizmo-egui` (or `transform-gizmo-bevy`) — Explicit 3-axis Move, Rotate, and Scale gizmo handles with planar squares.
 - `slotmap = "1.0"` — Arena storage for `EditablePoly` vertices, edges, and polygons.
 - `glam` — Linear algebra (re-exported via Bevy's `bevy::math`).
 - `noise = "0.9"` — Perlin, Worley/Cellular, and FBM 3D noise for the **Rock / Crystal / Stalagmite Generator**.
 - `rand = "0.8"` & `rand_chacha = "0.3"` — Deterministic seeded RNG for Greeble and Rock/Crystal generators.
 - `boolmesh = "0.2.2"` — Manifold 3D Boolean operations (Union, Subtract, Intersect).
 - `meshoptimizer-rs = "0.2"` (or `meshopt`) — Quadric error metric decimation for the **ProOptimizer** modifier.
-- `uvunwrap = "0.2.0"` — Automatic chart generation and island packing for **Blender-style Smart UV Unwrap** inside the **Unwrap UVW** modifier.
+- `uvunwrap = "0.2.0"` — Automatic chart generation and island packing for **Smart UV Unwrap** inside the **Unwrap UVW** modifier.
 - `image = "0.25"` — Texture canvas buffer manipulation (for 3D Viewport Painting) and PNG/EXR render output.
 - `obj` / `gltf` — Mesh import and export.
 
 ---
 
-## 3. 3ds Max Controls & Hotkeys (Non-Negotiable)
+## 3. Controls & Hotkeys (Non-Negotiable)
 
 ### Viewport & Camera Navigation
 - `Middle Mouse Button (MMB) Drag`: Pan viewport.
@@ -46,7 +46,7 @@ Use these crates instead of writing low-level rendering, gizmo math, booleans, o
 - `W`: Select and Move (shows explicit 3-axis translation gizmo + XY/YZ/XZ plane handles).
 - `E`: Select and Rotate (shows gimbal rotation rings).
 - `R`: Select and Scale (uniform + axis/plane scale handles).
-- **`Shift + Drag` on Move/Rotate/Scale Gizmo:** **3ds Max Clone Action!**
+- **`Shift + Drag` on Move/Rotate/Scale Gizmo:** **Clone Action!**
   - In **Object Mode**: Dragging an object while holding `Shift` duplicates it and pops up the **Clone Options** modal (`Copy`, `Instance`, `Reference`, plus `Number of Copies` spinner).
   - In **Edit Poly Edge/Border Mode (`2` or `3`)**: Holding `Shift` while dragging open edges extrudes new adjacent polygons directly out of those edges!
 - `S`: Toggle 3D Grid/Vertex/Midpoint Snap.
@@ -55,9 +55,9 @@ Use these crates instead of writing low-level rendering, gizmo math, booleans, o
 - `Delete`: Delete selected object (in Object mode) or selected sub-objects (in Vertex/Edge/Poly mode).
 
 ### Material & Rendering Shortcuts
-- `M`: Toggle **3ds Max Compact Material Editor** window.
-- `F9`: **Render Last / Quick Render** — Opens the **3ds Max Rendered Frame Window (RFW)** and renders the active camera/viewport immediately.
-- `F10`: Toggle **Render Setup** window (Resolution, Anti-Aliasing, Environment/Lighting, Renderer Engine selector: *Built-in High-Quality Raytracer* vs *Cycles Bridge*).
+- `M`: Toggle **Compact Material Editor** window.
+- `F9`: **Render Last / Quick Render** — Opens the **Rendered Frame Window (RFW)** and renders the active camera/viewport immediately.
+- `F10`: Toggle **Render Setup** window (Resolution, Anti-Aliasing, Environment/Lighting, Renderer: native CPU/GPU path tracer with a Compute Device selector).
 - `8`: Environment & Effects dialog (Background color, HDRI skybox, Ambient light, Fog).
 
 ### Editable Poly / Edit Poly Sub-Object Modes
@@ -74,7 +74,7 @@ When an `EditablePoly` base object or `Edit Poly` modifier is active in the stac
 ## 4. Mesh & Scene Architecture (`src/mesh/`)
 
 ### Face-Corner Architecture (Crucial for Edit Normals, Vertex Paint & Unwrap UVW)
-To behave like 3ds Max, 3D vertex positions MUST be decoupled from per-face-corner attributes so hard edges, smoothing groups, and UV seams work without physically duplicating 3D vertices:
+3D vertex positions MUST be decoupled from per-face-corner attributes so hard edges, smoothing groups, and UV seams work without physically duplicating 3D vertices:
 
     pub struct Vertex {
         pub position: Vec3,
@@ -90,7 +90,7 @@ To behave like 3ds Max, 3D vertex positions MUST be decoupled from per-face-corn
 
     pub struct Polygon {
         pub corners: Vec<FaceCorner>, // Supports Triangles, Quads, and N-gons (>= 3 corners)
-        pub smoothing_group: u32,     // 32-bit bitmask representing 3ds Max Smoothing Groups 1..=32
+        pub smoothing_group: u32,     // 32-bit bitmask representing Smoothing Groups 1..=32
         pub material_id: u16,
         pub selected: bool,
     }
@@ -169,11 +169,11 @@ Must include collapsible rollouts in the Right Command Panel that dynamically ad
   - `MSmooth` (applies local subdivision smoothing to selected polygons) & `Tessellate` `[□]` (`Edge` vs `Face-Center`).
   - **`Make Planar` + `[ X ]` `[ Y ]` `[ Z ]` buttons:**
     - `Make Planar` flattens selected vertices/edges/polygons onto their average plane.
-    - `[ X ]`, `[ Y ]`, and `[ Z ]` immediately flatten the selection to the exact average X, Y, or Z coordinate (essential 3ds Max hard-surface workflow!).
+    - `[ X ]`, `[ Y ]`, and `[ Z ]` immediately flatten the selection to the exact average X, Y, or Z coordinate (essential hard-surface workflow!).
 
 - **Polygon: Material IDs & Smoothing Groups Rollout (Mode `4`):**
   - `Set ID` spinner (`1..=64`) + `Select ID` button (for multi/sub-object materials).
-  - **3ds Max 32-Bit Smoothing Group Grid:** The iconic 4x8 grid of numbered toggle buttons (`1` through `32`), plus `[ Clear All ]` and `[ Auto Smooth ]` button with threshold angle spinner (default `45.0°`).
+  - **32-Bit Smoothing Group Grid:** The iconic 4x8 grid of numbered toggle buttons (`1` through `32`), plus `[ Clear All ]` and `[ Auto Smooth ]` button with threshold angle spinner (default `45.0°`).
 
 ---
 
@@ -193,19 +193,19 @@ Must include collapsible rollouts in the Right Command Panel that dynamically ad
   - Expanding `UVW Map` in the stack selects the **Gizmo** sub-object so the user can move, rotate, or scale the yellow projection wireframe in the viewport.
 - **Unwrap UVW Modifier:**
   - `[ Open UV Editor... ]` button opens a clean floating 2D UV window with a toggleable UV Checkerboard pattern in the 3D viewport, 2D Vertex/Edge/Polygon selection, and 2D Move/Rotate/Scale/Relax/Stitch tools.
-  - **Blender-Style Smart UV Project Rollout:** Powered by `uvunwrap`. Includes a single-click `[ ✨ Smart UV Unwrap ]` button with `Angle Limit` (default `66.0°`), `Island Margin` (`0.02`), and `Correct Aspect` toggle—automatically cuts seams by angle, flattens charts, and packs islands cleanly into `0..1` space.
+  - **Smart UV Project Rollout:** Powered by `uvunwrap`. Includes a single-click `[ ✨ Smart UV Unwrap ]` button with `Angle Limit` (default `66.0°`), `Island Margin` (`0.02`), and `Correct Aspect` toggle—automatically cuts seams by angle, flattens charts, and packs islands cleanly into `0..1` space.
 
 ---
 
-### D. Materials (`M` Key) — Classic 3ds Max Slots + Presets + Outlines (`src/materials/`)
-- **3ds Max Compact Material Editor (`M`):**
+### D. Materials (`M` Key) — Classic Slots + Presets + Outlines (`src/materials/`)
+- **Compact Material Editor (`M`):**
   - Top grid of **24 Material Sample Slots** (4x6 grid showing live shaded preview spheres/swatches).
   - Classic Material Toolbar directly beneath the slots:
     - `[ Assign Material to Selection ]` | `[ Show Shaded Material in Viewport ]` | `[ Reset Material Slot ]` | `[ Make Material Copy ]` | `[ Pick Material from Object (Eyedropper) ]`.
 - **Shading Model & One-Click Preset Library:**
   - **Shading Model Selector:** `Standard / Physical PBR`, `Cel / Toon Ramp`, `Refractive Crystal / Glass`, `Unlit / Emissive`.
   - **Quick Preset Dropdown (1-Click Setup):**
-    1. *3ds Max Default Modeling Clay*
+    1. *Default Modeling Clay*
     2. *Brushed Steel / Gunmetal* (`Metallic: 0.90, Roughness: 0.25`)
     3. *Polished Gold / Chrome* (`Metallic: 1.00, Roughness: 0.05`)
     4. *Matte Rubber / Vulcanized Plastic* (`Metallic: 0.00, Roughness: 0.85`)
@@ -215,38 +215,38 @@ Must include collapsible rollouts in the Right Command Panel that dynamically ad
 - **Universal Ink / Toon Outline Rollout (Available on EVERY Material!):**
   - Every material—whether Cel-Shaded, Realistic Metal, Wood, or Crystal—has an `[✓] Render Ink Outline` checkbox with `Outline Width` (`0.0..=10.0`), `Outline Color` picker, and `[✓] Draw Crease / Sharp Angle Lines` (with angle threshold spinner).
   - Implemented via an inverted-hull back-face extrusion pass + sharp-edge wireframe pass so outlines work seamlessly on realistic PBR materials and toon materials alike.
-- **Maps Rollout & Optional Slate Node View:**
-  - Classic 3ds Max **Maps Rollout** with checkboxes, amount spinners (`0..100`), and file/procedural map slots for `Base Color / Diffuse`, `Metallic`, `Roughness`, `Bump / Normal`, `Opacity`, and `Emission`, plus a 1-click `[ Import PBR Texture Folder ]` button.
-  - Toggle button `[ Mode: Compact | Slate Node Graph ]` for users who want to wire procedural `Noise`, `Checker`, `Gradient Ramp`, or `Color Correction` nodes into material inputs.
+- **Maps Rollout & Optional Node Graph View:**
+  - Classic **Maps Rollout** with checkboxes, amount spinners (`0..100`), and file/procedural map slots for `Base Color / Diffuse`, `Metallic`, `Roughness`, `Bump / Normal`, `Opacity`, and `Emission`, plus a 1-click `[ Import PBR Texture Folder ]` button.
+  - Toggle button `[ Mode: Compact | Node Graph ]` for users who want to wire procedural `Noise`, `Checker`, `Gradient Ramp`, or `Color Correction` nodes into material inputs.
 
 ---
 
 ### E. Direct 3D Model Painting (`src/paint/`)
 Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by adding a **VertexPaint Modifier**:
-- **Mode 1: 3ds Max VertexPaint (Zero UVs Required):**
+- **Mode 1: VertexPaint (Zero UVs Required):**
   - Paint RGBA color, metallic, or roughness directly onto mesh vertices (`Vertex.color`).
-  - Floating **PaintBox Palette** (just like 3ds Max's VertexPaint floater): Brush `Size`, `Opacity`, `Falloff` curve, `Color Swatch`, `[ All / Selected Faces Only ]` mask, `[ Fill Object ]` bucket, `[ Blur ]` brush, and `Layer Opacity` slider.
+  - Floating **PaintBox Palette** (the VertexPaint floater): Brush `Size`, `Opacity`, `Falloff` curve, `Color Swatch`, `[ All / Selected Faces Only ]` mask, `[ Fill Object ]` bucket, `[ Blur ]` brush, and `Layer Opacity` slider.
 - **Mode 2: Direct 3D Texture Projection Paint:**
   - Paint directly onto a `2048x2048` (or `4096x4096`) BaseColor texture map in the 3D viewport via raycast UV lookup.
   - If the model has no UVs yet, clicking `[ Auto-Setup Paint Canvas ]` automatically runs a non-overlapping Smart UV Project and attaches a fresh blank texture so you can start painting on any raw mesh in 1 second.
 
 ---
 
-### F. Rendering (`F9` & `F10` — 3ds Max Render Setup & Frame Buffer) (`src/render/`)
+### F. Rendering (`F9` & `F10` — Render Setup & Frame Buffer) (`src/render/`)
 - **`F10` Render Setup Dialog:**
   - **Common Tab:** Output Resolution presets (`800x600`, `1280x720`, `1920x1080`, `2048x2048`, `3840x2160`), `Image Aspect` lock, `[✓] Transparent Background (Alpha)` toggle, Frame/Camera selector.
   - **Renderer Engine Selector:**
     1. **Built-in High-Quality Raytracer / PBR Engine (Default):** High-sample offscreen render target with Soft Shadows, Screen-Space Reflections/GI, Refraction for Crystals, Anti-Aliasing, Tonemapping, and the Universal Outline Pass.
-    2. **Cycles Standalone Bridge:** Exports the evaluated scene, lights, camera, and PBR materials to a temporary scene description and invokes headless Cycles CLI in the background, streaming the rendered image directly into the Frame Buffer window.
+    2. **Native Path Tracer (CPU / GPU):** Progressive multi-bounce path tracing with MIS, adaptive sampling and a denoiser, run on the CPU or a wgpu compute GPU device, streaming into the Frame Buffer window.
 - **`F9` Rendered Frame Window (RFW):**
-  - Replicates the classic **3ds Max Rendered Frame Window** with top toolbar controls:
+  - Replicates the classic **Rendered Frame Window** with top toolbar controls:
     - `[ Render ]` button | `Viewport / Camera` dropdown | `[ Region / Crop ]` toggle | `[ 💾 Save Image (.PNG / .EXR / .JPG) ]` | `[ Copy to Clipboard ]` | `[ Clone Render Window ]` (to compare two renders side-by-side) | `[ R ] [ G ] [ B ] [ A ] [ Monochrome ]` channel buttons.
 
 ---
 
-### G. 3ds Max Lighting System & Viewport Illumination (`src/render/lighting.rs`)
+### G. Lighting System & Viewport Illumination (`src/render/lighting.rs`)
 - **Default Modeling Lights (`Ctrl + L` toggle):**
-  - When no user lights exist in the scene (or when `Ctrl + L` Default Lights mode is active), illuminate the viewport with a 3ds Max-style **2-Light Headlight Rig** (a primary key light slightly offset from the active camera + a warm/cool opposite fill light) so polygons are clearly shaded from every orbit angle while modeling.
+  - When no user lights exist in the scene (or when `Ctrl + L` Default Lights mode is active), illuminate the viewport with a **2-Light Headlight Rig** (a primary key light slightly offset from the active camera + a warm/cool opposite fill light) so polygons are clearly shaded from every orbit angle while modeling.
   - As soon as the user places an active light from `Create -> Lights`, automatically switch viewport illumination to **Scene Lights** (unless `Ctrl + L` is toggled).
 - **Create Tab -> Lights (`💡` icon):**
   - **Omni (Point Light):** Emits in all directions with optional Near/Far Attenuation spheres.
@@ -267,7 +267,7 @@ Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by add
 - **Create Tab -> Shapes (Splines):**
   - `Line` (click to place sharp Corner points, click-and-drag to pull smooth Bezier handles, right-click to finish, prompt to close spline if clicking first vertex).
   - Parametric Shapes: `Circle`, `Arc`, `NGon`, `Rectangle`, `Ellipse`, `Star`, `Helix`.
-  - **Rendering Rollout (on every Spline):** Classic 3ds Max `[ ] Enable in Renderer` and `[ ] Enable in Viewport` checkboxes with `Radial` (`Thickness`, `Sides`, `Angle`) vs `Rectangular` (`Length`, `Width`, `Angle`) profile options so any spline can immediately become a 3D pipe, cable, or bar!
+  - **Rendering Rollout (on every Spline):** Classic `[ ] Enable in Renderer` and `[ ] Enable in Viewport` checkboxes with `Radial` (`Thickness`, `Sides`, `Angle`) vs `Rectangular` (`Length`, `Width`, `Angle`) profile options so any spline can immediately become a 3D pipe, cable, or bar!
 - **Editable Spline Sub-Objects:**
   - `1: Vertex` (Right-click to switch vertex tangent type: `Bezier Corner`, `Bezier`, `Corner`, `Smooth`; plus `Fillet` `[□]`, `Chamfer` `[□]`, `Weld`, `Refine / Insert`, `Make First`).
   - `2: Segment` (`Divide`).
@@ -280,9 +280,9 @@ Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by add
 
 ---
 
-### B. 3ds Max Array Dialog (`src/ui/array_dialog.rs`)
+### B. Array Dialog (`src/ui/array_dialog.rs`)
 - Accessible from `Tools -> Array...` or the top toolbar `[ Array... ]` button.
-- Replicates the classic **3ds Max Array Dialog**:
+- Replicates the classic **Array Dialog**:
   - **Array Transformation Grid:** Two side-by-side sections for **Incremental** (step per copy) and **Totals** (total offset across all copies) with `X`, `Y`, `Z` spinners for `Move`, `Rotate`, and `Scale` + `[ Re-Orient ]` and `[ Uniform ]` checkboxes.
   - **Type of Object:** `Copy` | `Instance` | `Reference`.
   - **Array Dimensions:**
@@ -309,7 +309,7 @@ Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by add
      - `Facet Sharpness / Planar Cuts` (`0..=30`), `Noise Strength`, `Noise Scale`, `Auto-Assign Smoothing Groups` toggle (keeps crystal facets sharp and rock ridges defined).
 
 2. **Greeble (`greeble.rs`):**
-   - Classic Tom Hudson-style sci-fi hull/city detail generator applied to all polygons (or selected polygons passed up the stack).
+   - Classic sci-fi hull/city detail generator applied to all polygons (or selected polygons passed up the stack).
    - **Panels Rollout:** `Random Seed`, `Min Height`, `Max Height`, `Taper` (inward bevel on panel tops), `[✓] Select Tops`, `[✓] Generate Panels`.
    - **Widgets / Nurnies Rollout:** `Subdivide Levels` (`1..=3`), `Widget Density` (`0.0..=1.0`), `Min/Max Widget Size`, Widget Types (`Boxes`, `Cylinders`, `Ribs/Ledges`), and separate `Panel Material ID` vs `Widget Material ID`.
 
@@ -340,10 +340,10 @@ Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by add
    - Operations: `[ Break ]` (splits shared vertex normals into independent corner normals for hard shading), `[ Unify / Average ]` (smooths selected normals), `[ Reset ]` (returns normals to Smoothing Group control), `[ Make Explicit ]`, plus direct rotation using the `E` Rotate Gizmo.
 
 9. **Boolean (`boolean.rs` via `boolmesh`) & ProOptimizer (`pro_optimizer.rs` via `meshoptimizer-rs`):**
-   - **Boolean:** `Union`, `Subtract (A-B)`, `Subtract (B-A)`, `Intersect`, `[ Pick Operand B ]` button, plus a live operand list so multiple boolean operands can be stacked like 3ds Max `ProBoolean`.
+   - **Boolean:** `Union`, `Subtract (A-B)`, `Subtract (B-A)`, `Intersect`, `[ Pick Operand B ]` button, plus a live operand list so multiple boolean operands can be stacked.
    - **ProOptimizer:** `[ Calculate ]` button, `Vertex %` (`1.0%..=100.0%`) and `Vertex Count` linked spinners, `[✓] Keep Material Boundaries`, `[✓] Keep UV Boundaries`, `[✓] Keep Vertex Colors`, `[✓] Keep Normals`.
 
-## 7. UI & Visual Design ("Clean 3ds Max" Specification)
+## 7. UI & Visual Design ("Clean Ilex" Specification)
 
 Configure `egui::Style` and `egui::Visuals` on startup in `src/ui/theme.rs`:
 
@@ -355,7 +355,7 @@ Configure `egui::Style` and `egui::Visuals` on startup in `src/ui/theme.rs`:
 - **Accent Teal (`#26B8B0`):** Use for active `Q/W/E/R` buttons, active Sub-Object buttons (`1–5`), active Snap toggles, the currently highlighted row in the Modifier Stack, and the logo mark. Read it through `theme::accent()`, never a hard-coded colour.
 - **Hover Teal (`#3FD0C7`):** lighter teal for hover/focus (`theme::hover()`).
 - **Soft, rounded look:** round corners everywhere (`theme::R_CONTROL = 8` for controls, `R_CARD = 12` for cards/rollouts, `R_WINDOW = 16` for windows), soft drop shadows on windows and popups instead of hard outlines, viewports drawn as rounded cards with a gap between quadrants, and translucent pill labels over the views. Spacing: `item_spacing = vec2(7.0, 7.0)`, `button_padding = vec2(10.0, 6.0)`.
-- **3ds Max Spinner Behavior (Crucial Helper Function):**
+- **Spinner Behavior (Crucial Helper Function):**
   Wrap every numeric `egui::DragValue` in a helper `max_spinner(ui, &mut value, speed, default_val)` so that **Right-Clicking any numeric spinner immediately resets its value to `default_val` (usually `0.0`)**.
 
 ### Layout (`src/ui/mod.rs`)
@@ -377,7 +377,7 @@ Configure `egui::Style` and `egui::Visuals` on startup in `src/ui/theme.rs`:
      3. **Modifier Stack Box (`150px` height):** Renders top-to-bottom. Each row has `[👁]` toggle, `[▸]` sub-object expander (`Vertex`, `Edge`, `Border`, `Polygon`, `Element`, or `Gizmo`/`Mirror Plane`/`Control Points`), and Modifier Name.
      4. **Stack Action Row:** `[ 📌 Pin ]` `[ Show End Result ]` `[ Make Unique ]` `[ 🗑 Delete Modifier ]` `[ Collapse To Editable Poly ]`.
      5. **Collapsible Rollouts (`egui::CollapsingHeader`):**
-        - *Selection Rollout:* 5 big, clean buttons `[1: Vtx]` `[2: Edg]` `[3: Brd]` `[4: Pol]` `[5: Elm]` that light up in `#E59C24` when active.
+        - *Selection Rollout:* 5 big, clean buttons `[1: Vtx]` `[2: Edg]` `[3: Brd]` `[4: Pol]` `[5: Elm]` that light up in the accent colour when active.
         - *Edit Geometry / Sub-Object Rollouts:* 2-column grid of **Split Caddy Buttons** (`80%` width main button `[ Extrude ]` + `20%` width settings button `[ □ ]`).
         - *Parameters Rollout:* Sliders and right-click-resettable spinners for the currently selected modifier or base primitive.
    - **Pivot Tab:** `[ Affect Pivot Only ]` toggle, `[ Center to Object ]`, `[ Align to World ]`, `[ Bottom-Center Pivot (Z=0) ]`, and `[ Reset XForm ]`.
@@ -398,8 +398,8 @@ Configure `egui::Style` and `egui::Visuals` on startup in `src/ui/theme.rs`:
 ## 8. Phased Build Order (Strictly Prioritized for User Workflow)
 When building or extending the application, execute these phases in exact sequence and verify compilation (`cargo check` and `cargo test`) after each step:
 
-- **Phase 1 (Viewport, Clean 3ds Max UI & Base Primitives):**
-  Scaffold Cargo project, custom `#222327` + `#E59C24` theme, 5-zone UI layout, 3ds Max Camera (`MMB` Pan, `Alt+MMB` Orbit, `Z` Zoom Extents, `Alt+W` 4-view, `F3`/`F4` Wireframe/Edged Faces), `Q/W/E/R` gizmos, `Shift+Drag` Clone dialog, and Parametric Primitives (`Box`, `Cylinder`, `Sphere`, `Plane`, `Cone`, `Torus`).
+- **Phase 1 (Viewport, Clean UI & Base Primitives):**
+  Scaffold Cargo project, custom theme (now Graphite & Teal, §7), 5-zone UI layout, Camera (`MMB` Pan, `Alt+MMB` Orbit, `Z` Zoom Extents, `Alt+W` 4-view, `F3`/`F4` Wireframe/Edged Faces), `Q/W/E/R` gizmos, `Shift+Drag` Clone dialog, and Parametric Primitives (`Box`, `Cylinder`, `Sphere`, `Plane`, `Cone`, `Torus`).
 
 - **Phase 2 (Turn to Editable Poly & Complete Right-Pane Edit Poly Toolkit):**
   Implement `EditablePoly` Face-Corner structure, Modifier Stack UI, `Convert to Editable Poly`, **Edit Poly modifier**, sub-object raycast selection (`1–5`), and the full right-pane modeling tools: **Extrude, Chamfer, Bevel, Inset, Connect, Target Weld, Weld, Break, Remove, Insert Vertex (on Edges/Polys), Cut, Slice Plane, QuickSlice, Cap, Bridge, Make Planar X/Y/Z, Attach/Detach, and 1–32 Smoothing Groups**. Include Floating `[□]` Caddies and Right-Click Quad Menu.
@@ -408,7 +408,7 @@ When building or extending the application, execute these phases in exact sequen
   Implement **FFD 2x2x2 / 3x3x3 / 4x4x4** (with interactive lattice control points), **UVW Map** (Planar, Cylindrical, Spherical, Box with interactive gizmo), and **Unwrap UVW** (2D UV Editor window + 1-click **Smart UV Project** via `uvunwrap`).
 
 - **Phase 4 (Materials `M`, 3D Model Painting, Lighting & `F9`/`F10` Rendering):**
-  Implement the **Compact Material Editor (`M`)** with 24 sample slots, PBR/Crystal/Wood/Rubber/Metal/Cel-Shade presets, Universal Ink Outlines on any material, **3D Viewport Vertex & Texture Painting**, **Render Setup (`F10`)**, and the **Rendered Frame Window (`F9`)** with PNG/EXR export + Cycles CLI bridge option, plus the **3ds Max Lighting System** (`Ctrl + L` Default Headlight Rig, Omni / Target & Free Spot / Directional / Skylight lights, Light Parameters rollout, and `8`-key Quick Studio Rig presets — see §5.G).
+  Implement the **Compact Material Editor (`M`)** with 24 sample slots, PBR/Crystal/Wood/Rubber/Metal/Cel-Shade presets, Universal Ink Outlines on any material, **3D Viewport Vertex & Texture Painting**, **Render Setup (`F10`)**, and the **Rendered Frame Window (`F9`)** with PNG/EXR export + native CPU/GPU path tracer, plus the **Lighting System** (`Ctrl + L` Default Headlight Rig, Omni / Target & Free Spot / Directional / Skylight lights, Light Parameters rollout, and `8`-key Quick Studio Rig presets — see §5.G).
 
 - **Phase 5 (Splines, Lathe, Array, Rock/Crystal Generator & Remaining Modifiers):**
-  Implement **Splines + Lathe + Spline Extrude**, the **3ds Max Array Dialog**, **GeoGen (Crystals, Rocks, Stalagmites)**, **Greeble**, **Symmetry**, **Shell**, **TurboSmooth**, **Bend/Twist/Taper/Push**, **Edit Normals**, **Boolean (`boolmesh`)**, and **ProOptimizer (`meshoptimizer-rs`)**.
+  Implement **Splines + Lathe + Spline Extrude**, the **Array Dialog**, **GeoGen (Crystals, Rocks, Stalagmites)**, **Greeble**, **Symmetry**, **Shell**, **TurboSmooth**, **Bend/Twist/Taper/Push**, **Edit Normals**, **Boolean (`boolmesh`)**, and **ProOptimizer (`meshoptimizer-rs`)**.

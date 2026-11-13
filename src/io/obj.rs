@@ -1,4 +1,4 @@
-//! Wavefront OBJ + MTL. Written Y-up like 3ds Max's "Flip YZ-axis" default;
+//! Wavefront OBJ + MTL. Written Y-up (the usual OBJ convention);
 //! n-gons stay n-gons, vertex colours use the common `v x y z r g b` form,
 //! and smoothing groups go out as `s N` (plus `#sg <mask>` for faces in
 //! several groups, which this importer reads back).

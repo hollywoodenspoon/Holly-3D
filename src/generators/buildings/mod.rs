@@ -3,7 +3,7 @@
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
-//! GhostTown Material IDs (`kit::ids`).
+//! Settlement Material IDs (`kit::ids`).
 
 pub mod arch;
 mod doodads;
@@ -27,7 +27,7 @@ use crate::mesh::EditablePoly;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
-/// Material style of the assigned GhostTown pack.
+/// Material style of the assigned Settlement pack.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MatStyle {
     #[default]
@@ -45,8 +45,8 @@ impl MatStyle {
     }
     pub fn pack(self) -> crate::materials::MultiPreset {
         match self {
-            Self::Procedural => crate::materials::MultiPreset::GhostTown,
-            Self::Photo => crate::materials::MultiPreset::GhostTownPhoto,
+            Self::Procedural => crate::materials::MultiPreset::Settlement,
+            Self::Photo => crate::materials::MultiPreset::SettlementPhoto,
         }
     }
 }

@@ -11,7 +11,7 @@ fn grid(ui: &mut egui::Ui, id: &str, body: impl FnOnce(&mut egui::Ui)) {
     egui::Grid::new(id).num_columns(2).spacing([10.0, 6.0]).min_col_width(110.0).show(ui, body);
 }
 
-/// Luminance / Emission: above 0 the surface lights the scene in F9 and Cycles.
+/// Luminance / Emission: above 0 the surface lights the scene in F9.
 fn emission(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     color(ui, t, "Luminance / Emission", &mut m.emissive);
     num(ui, t, "Emission Multiplier", &mut m.emissive_strength, 0.0..=100.0, 0.0);
@@ -93,7 +93,7 @@ pub fn basic(ui: &mut egui::Ui, ed: &mut Editor) {
 }
 
 /// Mapping: the mesh's UVs, or World / Triplanar projection for meshes
-/// without UVs (GhostTown, Terrain, GeoGen rocks, Battlefield rubble).
+/// without UVs (Settlement, Terrain, GeoGen rocks, Battlefield rubble).
 pub fn mapping(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Mapping", ed.editing_material().projection.on(), |ui| {
         edit(ed, |m, t| {

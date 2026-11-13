@@ -1,4 +1,4 @@
-//! 3ds Max-style light objects (Omni, Target / Free Spot, Target / Free
+//! Light objects (Omni, Target / Free Spot, Target / Free
 //! Directional, Skylight, Rect / Disc / Sphere / Tube area lights) and the Default Modeling Lights headlight rig.
 //! Pure data + math; the Bevy side lives in `viewport::light_sync`.
 
@@ -119,7 +119,7 @@ pub struct Light {
     #[serde(default)]
     pub near_end: f32,
     pub show_atten: bool,
-    /// Spot cone angles in degrees (full angle, like 3ds Max).
+    /// Spot cone angles in degrees (full angle).
     pub hotspot: f32,
     pub falloff: f32,
     /// Directional beam radius (display + F9 renderer).
@@ -188,13 +188,13 @@ impl Light {
         Vec3::from_array(self.color.map(crate::materials::shading::srgb_to_linear)) * self.multiplier
     }
 
-    /// Keeps hotspot inside falloff (3ds Max pushes one against the other).
+    /// Keeps hotspot inside falloff (pushes one against the other).
     pub fn clamp_cone(&mut self) {
         self.falloff = self.falloff.clamp(1.0, 179.0);
         self.hotspot = self.hotspot.clamp(0.5, self.falloff - 0.5);
     }
 
-    /// Near / far attenuation ramps (3ds Max: dark before Near Start, full
+    /// Near / far attenuation ramps (dark before Near Start, full
     /// from Near End to Far Start, dark again at Far End).
     pub fn atten(&self) -> Atten {
         Atten {
@@ -217,7 +217,7 @@ pub struct Atten {
 }
 
 impl Atten {
-    /// Intensity factor at distance `d`: linear ramps, like 3ds Max.
+    /// Intensity factor at distance `d`: linear ramps.
     pub fn factor(&self, d: f32) -> f32 {
         let ramp = |a: f32, b: f32| if b - a < 1e-6 { if d >= b { 1.0 } else { 0.0 } } else { ((d - a) / (b - a)).clamp(0.0, 1.0) };
         let near = self.near.map_or(1.0, |(a, b)| ramp(a, b));
@@ -226,7 +226,7 @@ impl Atten {
     }
 }
 
-/// Rotation pointing a light's emission axis (local -Z, like 3ds Max) from
+/// Rotation pointing a light's emission axis (local -Z) from
 /// `from` towards `to`, keeping world Z as up when possible.
 pub fn aim(from: Vec3, to: Vec3) -> Quat {
     let dir = (to - from).normalize_or_zero();
@@ -255,7 +255,7 @@ pub struct RigLight {
     pub strength: f32,
 }
 
-/// 3ds Max 2-light headlight rig for a camera: a key slightly above and to
+/// 2-light headlight rig for a camera: a key slightly above and to
 /// the left of the eye, plus a cooler fill from the opposite side.
 pub fn headlight_rig(cam_forward: Vec3, cam_right: Vec3, cam_up: Vec3) -> [RigLight; 2] {
     let key = (cam_forward + cam_right * 0.35 - cam_up * 0.45).normalize();

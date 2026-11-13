@@ -120,7 +120,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     });
 }
 
-/// Creation Method (3ds Max): Box / Cube for the Box, Edge / Center for round objects.
+/// Creation Method: Box / Cube for the Box, Edge / Center for round objects.
 fn creation_method(ui: &mut egui::Ui, ed: &mut Editor) {
     use crate::editor::create_drag::CreateKind;
     let Some(kind) = CreateKind::of(&ed.tool) else { return };

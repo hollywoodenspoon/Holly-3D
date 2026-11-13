@@ -15,7 +15,7 @@
 pkgname=ilex
 pkgver=0.0.g0000000
 pkgrel=1
-pkgdesc='Clean 3ds Max-style polygon modeler, painter and renderer'
+pkgdesc='Clean polygon modeler, painter and renderer'
 arch=('x86_64')
 url='https://github.com/hollywoodenspoon/Holly-3D'
 license=('GPL-3.0-or-later')
@@ -31,7 +31,6 @@ depends=(
   'xdg-desktop-portal'
 )
 makedepends=('cargo' 'git')
-optdepends=('blender: Cycles renderer bridge in Render Setup (F10)')
 # !debug: Bevy debug info needs many GB of RAM and disk; !lto: cargo's own thin LTO is used.
 options=('!debug' '!lto')
 _src="${ILEX_SRC:-${MINIMAX_SRC:-$(cd "$startdir/.." && pwd)}}"

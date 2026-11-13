@@ -177,7 +177,7 @@ pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                 });
             });
         }
-        ui.label(dim("Each piece stands alone with the 29-ID GhostTown pack. Drag sets Width x Length; right-click places at the origin."));
+        ui.label(dim("Each piece stands alone with the 29-ID Settlement pack. Drag sets Width x Length; right-click places at the origin."));
     });
 }
 

@@ -1,4 +1,4 @@
-//! Boolean (ProBoolean-style) modifier: a stack of picked operands combined
+//! Boolean modifier: a stack of picked operands combined
 //! with the input mesh via manifold CSG (`boolmesh`). UVs, material IDs and
 //! smoothing groups ride along as per-corner values.
 
@@ -124,7 +124,7 @@ pub fn compute(a: &EditablePoly, b: &EditablePoly, op: BoolOp, merge: bool) -> R
 impl BooleanMod {
     pub fn apply(&self, m: &mut EditablePoly) {
         for o in self.operands.iter().filter(|o| o.enabled) {
-            // a failed operand (not closed / not manifold) is skipped, like ProBoolean
+            // a failed operand (not closed / not manifold) is skipped
             if let Ok(r) = compute(m, &o.mesh, o.op, self.merge_coplanar) {
                 *m = r;
             }

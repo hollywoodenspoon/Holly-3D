@@ -5,7 +5,7 @@ use crate::mesh::{EditablePoly, VertexId};
 use bevy::math::{Vec2, Vec3};
 use std::f32::consts::{PI, TAU};
 
-/// UV sphere centered at the origin (3ds Max sphere pivot is its center).
+/// UV sphere centered at the origin (sphere pivot is its center).
 /// `hemisphere` in 0..1 chops that fraction off the bottom and caps it.
 pub fn build_sphere(radius: f32, segments: u32, hemisphere: f32) -> EditablePoly {
     let mut m = EditablePoly::new();

@@ -1,5 +1,5 @@
 //! "Modifier List ⏷": every modifier in one tall scrolling list, grouped
-//! under headings, plus 3ds Max's Show Buttons modifier set.
+//! under headings, plus the Show Buttons modifier set.
 
 use super::content_w;
 use crate::editor::Editor;

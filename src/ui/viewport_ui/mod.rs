@@ -1,4 +1,4 @@
-//! Center 3D viewports: layout, 3ds Max navigation, gizmo, selection,
+//! Center 3D viewports: layout, navigation, gizmo, selection,
 //! marquee, modal tools and the right-click quad menu.
 
 mod frame;

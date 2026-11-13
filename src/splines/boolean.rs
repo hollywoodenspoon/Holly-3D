@@ -24,7 +24,7 @@ impl SplineBoolOp {
             Self::Intersection => "Intersection",
         }
     }
-    /// Compact button label (3ds Max shows icons here).
+    /// Compact button label.
     pub fn symbol(self) -> &'static str {
         match self {
             Self::Union => "Un",

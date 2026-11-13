@@ -1,4 +1,4 @@
-//! PR 7 Destruction rollout, shared by Buildings & Props, the GhostTown
+//! PR 7 Destruction rollout, shared by Buildings & Props, the Settlement
 //! settlement and the Battlefield / Ruin modifier: destruction level,
 //! era, rubble density, `[✓] Glowing Embers` + Ember Glow and
 //! `[✓] Gore / Blood Smears` + Amount.

@@ -135,7 +135,7 @@ fn staircases_climb_their_rise() {
 
 #[test]
 fn photo_style_picks_the_photo_pack() {
-    assert_eq!(MatStyle::Procedural.pack(), crate::materials::MultiPreset::GhostTown);
-    assert_eq!(MatStyle::Photo.pack(), crate::materials::MultiPreset::GhostTownPhoto);
-    assert_eq!(crate::materials::MultiPreset::GhostTown.build().subs.len(), 29);
+    assert_eq!(MatStyle::Procedural.pack(), crate::materials::MultiPreset::Settlement);
+    assert_eq!(MatStyle::Photo.pack(), crate::materials::MultiPreset::SettlementPhoto);
+    assert_eq!(crate::materials::MultiPreset::Settlement.build().subs.len(), 29);
 }

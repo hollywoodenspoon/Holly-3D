@@ -1,4 +1,4 @@
-//! The 29-ID GhostTown Material Pack, rebuilt from the Material Library's
+//! The 29-ID Settlement Material Pack, rebuilt from the Material Library's
 //! MaterialCraft procedural textures (PR 5.5) with Triplanar mapping, and a
 //! Photo variant that swaps in installed Poly Haven photo textures where a
 //! matching group is installed (falling back to the procedural look).

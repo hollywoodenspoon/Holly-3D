@@ -28,7 +28,7 @@ impl Editor {
         self.scene.objects[id].material = Some(self.scene.materials.mats.insert(m));
     }
 
-    /// `[ Assign GhostTown Material Pack ]` (and the other packs): a fresh
+    /// `[ Assign Settlement Material Pack ]` (and the other packs): a fresh
     /// Multi/Sub-Object copy of `pack` on the current object, one undo step.
     pub fn assign_pack(&mut self, pack: MultiPreset) {
         let Some(id) = self.current() else { return };
@@ -49,11 +49,11 @@ impl Editor {
     }
 
     /// `[✓] Glowing Embers` / Ember Glow: sets the emission of the
-    /// object's own GhostTown sub-material 25 (0 = embers off). Adds the
+    /// object's own Settlement sub-material 25 (0 = embers off). Adds the
     /// row when the object still carries an older 24-ID pack.
     pub fn set_ember_glow(&mut self, id: ObjId, strength: f32) {
         use crate::generators::kit::ids::EMBERS;
-        let mid = self.own_multi(id, MultiPreset::GhostTown);
+        let mid = self.own_multi(id, MultiPreset::Settlement);
         let Some(ms) = self.scene.materials.mats[mid].multi.as_mut() else { return };
         if !ms.subs.iter().any(|s| s.id == EMBERS) {
             let mat = crate::materials::ghost_pack::materials(false).swap_remove(EMBERS as usize - 1);
@@ -157,10 +157,10 @@ mod tests {
         let id = ed.current().unwrap();
         let o = &ed.scene.objects[id];
         let m = &ed.scene.materials.mats[o.material.unwrap()];
-        assert_eq!(m.multi, Some(MultiPreset::GhostTown.build()));
+        assert_eq!(m.multi, Some(MultiPreset::Settlement.build()));
         // Assigning the pack again (from the modifier rollouts) makes a fresh slot.
         let before = o.material;
-        ed.assign_pack(MultiPreset::GhostTown);
+        ed.assign_pack(MultiPreset::Settlement);
         let after = ed.scene.objects[id].material;
         assert!(after.is_some() && after != before);
         ed.undo();

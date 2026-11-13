@@ -48,7 +48,7 @@ impl Editor {
             self.checkpoint("Transform");
             let edge_like = self.sub.is_edge_like();
             if shift && edge_like && self.mode == TransformMode::Move {
-                // 3ds Max: Shift+Drag open edges extrudes new polygons from them.
+                // Shift+Drag on open edges extrudes new polygons from them.
                 let o = &mut self.scene.objects[id];
                 if o.apply_op(PolyOp::ShiftExtrudeEdges) {
                     self.status = "Shift+Drag: extruding border edges".into();

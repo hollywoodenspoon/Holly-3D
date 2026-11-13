@@ -1,5 +1,5 @@
 //! Boolean modifier editing: picking operand objects into the active Boolean
-//! (the picked object is consumed, like ProBoolean) and extracting them again.
+//! (the picked object is consumed) and extracting them again.
 
 use super::*;
 use crate::modifiers::{ModifierKind, boolean};

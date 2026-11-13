@@ -110,7 +110,7 @@ fn fbx_round_trip_through_ufbx() {
     assert_eq!(back[0].name, "Box001");
     assert_eq!(back[0].mesh.counts(), (8, 12, 6));
     same_world(&item(), &back[0]);
-    assert_eq!(signature(&back[0].mesh), signature(&item().mesh), "3ds Max smoothing masks kept");
+    assert_eq!(signature(&back[0].mesh), signature(&item().mesh), "smoothing masks kept");
     assert_eq!(back[0].materials.len(), 2);
     assert!((back[0].materials[1].base_color[0] - 0.8).abs() < 1e-4);
 }

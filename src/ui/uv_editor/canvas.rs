@@ -228,7 +228,7 @@ pub(super) fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UvEditorState) {
                     UvTool::Move => {
                         let mut m = Vec2::new(d.x, -d.y) / v.s;
                         if shift {
-                            // Shift constrains to the dominant axis (3ds Max UV editor)
+                            // Shift constrains to the dominant axis
                             if m.x.abs() > m.y.abs() { m.y = 0.0 } else { m.x = 0.0 }
                         }
                         u.move_selected(m);

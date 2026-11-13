@@ -68,7 +68,7 @@ pub struct RenderScene {
     /// HDRI seen by camera misses and reflections (strength applied).
     pub hdri: Option<crate::render::hdri::Hdri>,
     /// Procedural sky evaluated per ray (crisp stars / sun); `hdri` then
-    /// holds its bake for ambient and the Cycles world.
+    /// holds its bake for ambient light.
     pub procedural: Option<super::sky::SkySettings>,
     pub fog: Option<(Vec3, f32)>,
     /// Volumetric godrays / height mist medium (Environment `8`).

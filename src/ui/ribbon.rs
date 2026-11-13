@@ -1,5 +1,5 @@
 //! Modeling Ribbon (toggle with the ▭ Ribbon button): big buttons for every
-//! Edit Poly tool, grouped like 3ds Max's ribbon. The groups follow the
+//! Edit Poly tool, grouped. The groups follow the
 //! sub-object level (1–5); right-click a caddy tool to open its settings.
 
 use super::action_ui::sized_button;

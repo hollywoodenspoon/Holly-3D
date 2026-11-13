@@ -1,4 +1,4 @@
-//! Ilex — clean 3ds Max-style modeler, painter and renderer.
+//! Ilex — clean modeler, painter and renderer.
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
@@ -60,7 +60,7 @@ fn main() {
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "Ilex — 3ds Max-style Modeler".into(),
+                    title: "Ilex".into(),
                     // WM_CLASS / Wayland app ID: matches `StartupWMClass` in
                     // packaging/ilex.desktop so the taskbar shows the icon.
                     name: Some("ilex".into()),

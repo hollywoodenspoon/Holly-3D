@@ -101,7 +101,7 @@ impl ThemePrefs {
 pub enum KeySet {
     #[default]
     MiniMax,
-    /// Closer to 3ds Max's own Default UI keyboard shortcuts.
+    /// The Classic key set: alternative default shortcuts.
     Max,
 }
 
@@ -110,7 +110,7 @@ impl KeySet {
     pub fn label(self) -> &'static str {
         match self {
             KeySet::MiniMax => "Ilex default",
-            KeySet::Max => "3ds Max standard",
+            KeySet::Max => "Classic",
         }
     }
 }
@@ -223,7 +223,7 @@ impl Default for GeneralPrefs {
 #[serde(default)]
 pub struct RenderPrefs {
     /// Renderer for new scenes (old `engine` / `blender_exe` keys from the
-    /// removed Cycles bridge are ignored on load).
+    /// removed external renderer bridge are ignored on load).
     pub integrator: Integrator,
     pub device: ComputeDevice,
     pub width: u32,

@@ -1,4 +1,4 @@
-//! PaintBox floater (3ds Max VertexPaint palette) for Viewport Paint, plus
+//! PaintBox floater (VertexPaint palette) for Viewport Paint, plus
 //! the VertexPaint modifier rollout in the Modify panel. Texture Paint
 //! adds the layer list, damage stamps, mesh map baking and Smart Masks.
 

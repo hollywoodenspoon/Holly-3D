@@ -1,7 +1,7 @@
 //! Tools -> Align (Alt+A): pick a target object, then align the selection's
 //! X / Y / Z position (Minimum / Center / Pivot Point / Maximum on the
 //! current and target objects), local orientation axes and scale, with a
-//! live preview like the 3ds Max Align Selection dialog.
+//! live preview like the Align Selection dialog.
 
 use super::*;
 use crate::mesh::Aabb;

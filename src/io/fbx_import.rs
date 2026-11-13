@@ -1,5 +1,5 @@
 //! FBX import through `ufbx` (binary and ASCII, any version). The scene is
-//! converted to Z-up metres; polygons stay n-gons. 3ds Max smoothing-group
+//! converted to Z-up metres; polygons stay n-gons. Smoothing-group
 //! bitmasks come from [`super::fbx_smoothing`] (ufbx only reports a smooth /
 //! faceted flag per face).
 

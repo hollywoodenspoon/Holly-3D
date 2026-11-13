@@ -1,4 +1,4 @@
-//! Interface state behind the button-rich 3ds Max toolbar: Lock Selection,
+//! Interface state behind the button-rich toolbar: Lock Selection,
 //! Window / Crossing, the Selection Filter, Percent Snap, the viewport
 //! navigation buttons, the Display tab's hide / freeze actions and the
 //! small tool windows (Select From Scene, Measure, Hotkeys, About).

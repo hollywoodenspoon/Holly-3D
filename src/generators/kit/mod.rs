@@ -1,4 +1,4 @@
-//! Architectural geometry kit shared by the GhostTown settlement generator,
+//! Architectural geometry kit shared by the settlement generator,
 //! the Medieval Architect and the Battlefield / Ruin modifiers: boxes,
 //! beams, prisms, cylinders, cones and roofs appended straight into one
 //! `EditablePoly` (edges are rebuilt once in `finish`), with world-scale
@@ -297,7 +297,7 @@ pub fn sides(kit: &mut Kit, hx: f32, hy: f32, mut f: impl FnMut(&mut Kit, usize,
     }
 }
 
-/// The GhostTown Multi/Sub-Object Material IDs shared by the settlement
+/// The Settlement Multi/Sub-Object Material IDs shared by the settlement
 /// generator, the Medieval Architect and the Battlefield / Ruin modifier.
 pub mod ids {
     pub const ROAD: u16 = 1;
@@ -333,7 +333,7 @@ pub mod ids {
     /// PR 8 rising smoke plumes (translucent; tint and density in the
     /// vertex colours).
     pub const SMOKE: u16 = 29;
-    /// Highest GhostTown ID.
+    /// Highest Settlement ID.
     pub const MAX: u16 = 29;
 }
 

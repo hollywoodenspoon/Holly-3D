@@ -1,4 +1,4 @@
-//! Pure viewport camera math (3ds Max navigation, Z-up). Matrices match
+//! Pure viewport camera math (navigation, Z-up). Matrices match
 //! Bevy's reverse-Z conventions so picking agrees with what is rendered.
 
 use bevy::math::{Mat4, Vec2, Vec3, Vec4Swizzles, proj};
@@ -10,7 +10,7 @@ pub enum ViewKind {
     Top,
     Front,
     Left,
-    /// Ortho view that has been orbited (3ds Max "Orthographic").
+    /// Ortho view that has been orbited ("Orthographic").
     User,
     /// Looking through a Target / Free Camera object.
     Camera,
@@ -39,7 +39,7 @@ pub struct ViewCamera {
     pub fov: f32,
     /// Visible world height for orthographic views.
     pub ortho_height: f32,
-    /// `fov` is horizontal (camera objects, 3ds Max style) instead of vertical.
+    /// `fov` is horizontal (camera objects) instead of vertical.
     pub hfov: bool,
     /// Perspective clipping planes (`far` = infinity: no far clip).
     pub near: f32,
@@ -177,7 +177,7 @@ impl ViewCamera {
         h / height_px.max(1.0)
     }
 
-    // ---- 3ds Max navigation ------------------------------------------------
+    // ---- navigation ------------------------------------------------
 
     /// MMB drag: pan by pixel delta.
     pub fn pan(&mut self, delta_px: Vec2, height_px: f32) {

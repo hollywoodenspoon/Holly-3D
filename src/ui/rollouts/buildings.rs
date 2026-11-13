@@ -72,8 +72,8 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
 
 fn style_tip(s: MatStyle) -> &'static str {
     match s {
-        MatStyle::Procedural => "GhostTown pack built from MaterialCraft procedural textures (no downloads)",
-        MatStyle::Photo => "GhostTown pack using installed Poly Haven photo textures where available",
+        MatStyle::Procedural => "Settlement pack built from MaterialCraft procedural textures (no downloads)",
+        MatStyle::Photo => "Settlement pack using installed Poly Haven photo textures where available",
     }
 }
 

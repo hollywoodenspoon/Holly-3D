@@ -48,7 +48,7 @@ pub const BASICS: Page = Page {
     id: "basics",
     title: "1. Getting Started",
     blocks: &[
-        P("Ilex works like 3ds Max. The screen has five fixed zones, and every tool has a button: hotkeys are only shortcuts."),
+        P("The screen has five fixed zones, and every tool has a button: hotkeys are only shortcuts."),
         Shot(
             "layout",
             &[
@@ -92,7 +92,7 @@ pub const CREATE: Page = Page {
     id: "create",
     title: "2. Creating objects",
     blocks: &[
-        P("Pick a type on the Create tab (or in the Create menu), then draw it in a viewport, just like 3ds Max."),
+        P("Pick a type on the Create tab (or in the Create menu), then draw it in a viewport."),
         Shot(
             "create",
             &[
@@ -111,7 +111,7 @@ pub const CREATE: Page = Page {
         ]),
         Tip("A plain click places a default-size object. Right-click a Create button to place one at the origin."),
         H("What you can create"),
-        P("Standard Primitives (Box, Sphere, Cylinder, Plane, Torus, Cone), GeoGen rocks, crystals, cliffs and stalagmites, Worlds (Terrain, Ocean, Planet), GhostTown settlements, Mech parts (Gear, Piston, Hose), Shapes / Splines, Lights and Cameras."),
+        P("Standard Primitives (Box, Sphere, Cylinder, Plane, Torus, Cone), GeoGen rocks, crystals, cliffs and stalagmites, Worlds (Terrain, Ocean, Planet), settlements, Mech parts (Gear, Piston, Hose), Shapes / Splines, Lights and Cameras."),
         P("Objects drawn in Top or Perspective sit on the ground grid. In Front or Left they stand on that view's plane. Snaps (S) work while drawing."),
     ],
 };
@@ -240,7 +240,7 @@ pub const MATERIALS: Page = Page {
             "Procedural maps include Bricks / Tiles, Stripes (road lines), Cracks and Grunge (dirt, rust, scratches).",
             "Material Library (📚 Library): over 300 ready-made materials in 16 categories. Click a swatch to load it into the active slot; ☆ marks a favourite.",
             "Library filter: Procedural, Photo or Both. Photo materials appear after you download the Photo Textures pack (Preferences > Assets).",
-            "Mapping rollout: World / Triplanar projects the material from three sides, so it tiles on objects without UVs (GhostTown, Terrain, rocks).",
+            "Mapping rollout: World / Triplanar projects the material from three sides, so it tiles on objects without UVs (Settlement, Terrain, rocks).",
             "Preserve Texture Appearance (under Emission Multiplier): the material still lights the scene, but the camera sees its own colours at Direct Camera Brightness.",
         ]),
         H("Procedural Pattern & Weathering"),
@@ -262,7 +262,7 @@ pub const MATERIALS: Page = Page {
             "Every pattern tiles seamlessly, so it repeats across any surface with no seams.",
         ]),
         Tip("Maps cook on background threads. While you drag a spinner the old look stays on screen and updates a moment later."),
-        Tip("In the Maps rollout (or the Slate view) any channel can also take a Tileable Pattern, Levels (with a histogram), Height Blend, Slope Blur or Normal From Height map."),
+        Tip("In the Maps rollout (or the Node Graph view) any channel can also take a Tileable Pattern, Levels (with a histogram), Height Blend, Slope Blur or Normal From Height map."),
         Shot(
             "library",
             &[

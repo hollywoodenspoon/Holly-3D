@@ -118,7 +118,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         WorldGen::Ocean(p) => rollout(ui, "Demiurge Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
         WorldGen::Planet(p) => tex = super::planet::params(ui, &mut t, p),
         WorldGen::Settlement(p) => {
-            rollout(ui, "Demiurge GhostTown Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
+            rollout(ui, "Demiurge Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
         }
         WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
         WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),

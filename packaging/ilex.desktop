@@ -2,7 +2,7 @@
 Type=Application
 Name=Ilex 3D
 GenericName=3D Modeler
-Comment=3ds Max-style polygon modeler, painter and renderer (formerly MiniMax)
+Comment=Polygon modeler, painter and renderer (formerly MiniMax)
 Exec=ilex %f
 Icon=ilex
 Terminal=false

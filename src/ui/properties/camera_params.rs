@@ -1,5 +1,5 @@
 //! Modify panel for cameras: Lens / FOV, stock lenses, type, clipping
-//! planes and display options (3ds Max Parameters rollout).
+//! planes and display options (Parameters rollout).
 
 use super::content_w;
 use crate::editor::Editor;

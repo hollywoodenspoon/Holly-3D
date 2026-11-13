@@ -1,5 +1,5 @@
-//! 3ds Max Compact Material Editor (M): 24 sample slots, material toolbar,
-//! preset / shading-model pickers and the Compact or Slate parameter views.
+//! Compact Material Editor (M): 24 sample slots, material toolbar,
+//! preset / shading-model pickers and the Compact or Node Graph parameter views.
 
 mod craft_params;
 pub mod library;
@@ -21,7 +21,7 @@ const CELL: f32 = 58.0;
 const PREVIEW_PX: u32 = 64;
 const COLS: usize = 6;
 
-/// UI-only state: cached slot previews and the Slate canvas layout.
+/// UI-only state: cached slot previews and the Node Graph canvas layout.
 #[derive(Default)]
 pub struct MatEditorUi {
     previews: HashMap<MatId, (Material, egui::TextureHandle)>,
@@ -140,7 +140,7 @@ fn material_toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
         if toggle_button(ui, !ed.mat_editor.slate, "Compact").clicked() {
             ed.mat_editor.slate = false;
         }
-        if toggle_button(ui, ed.mat_editor.slate, "Slate Node Graph").clicked() {
+        if toggle_button(ui, ed.mat_editor.slate, "Node Graph").clicked() {
             ed.mat_editor.slate = true;
         }
     });

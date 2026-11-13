@@ -86,7 +86,7 @@ impl SceneObject {
         self.evaluate();
     }
 
-    /// Adds a modifier above the active level (3ds Max inserts above the
+    /// Adds a modifier above the active level (inserts above the
     /// highlighted entry) and makes it active.
     pub fn add_modifier(&mut self, mut md: ModifierEntry) {
         let at = self.active_level.map(|i| i + 1).unwrap_or(0).min(self.modifiers.len());

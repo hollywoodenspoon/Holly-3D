@@ -155,7 +155,7 @@ impl Hdri {
     }
 
     /// Makes sure `path` holds the image (a baked procedural sky is written
-    /// as Radiance `.hdr` the first time Cycles / Blender needs it).
+    /// as Radiance `.hdr` the first time a renderer needs it).
     pub fn ensure_file(&self) -> Result<(), String> {
         let Some(img) = self.image.as_ref().filter(|_| !self.path.exists()) else { return Ok(()) };
         let px: Vec<image::Rgb<f32>> = img.px.iter().map(|c| image::Rgb(c.to_array())).collect();

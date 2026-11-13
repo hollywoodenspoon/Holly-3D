@@ -1,5 +1,5 @@
-//! "GhostTown" procedural settlements (Create -> Geometry -> Settlement and
-//! the GhostTown modifier): Modern Downtown, Modern Suburbs, Medieval
+//! Procedural settlements (Create -> Geometry -> Settlement and
+//! the Settlement modifier): Modern Downtown, Modern Suburbs, Medieval
 //! Walled City and Medieval Village presets with automatic Multi/Sub-Object
 //! Material IDs (`kit::ids`), plus the `[✓] Damaged / Battlefield Mode`
 //! toggle that runs the Battlefield / Ruin modifier over the result.
@@ -200,7 +200,7 @@ impl SettlementParams {
     }
 }
 
-/// GhostTown as a stack modifier: fills the input's XY footprint (a flat
+/// Settlement as a stack modifier: fills the input's XY footprint (a flat
 /// single polygon's outline, otherwise its bounds) and sits on its top.
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]

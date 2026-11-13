@@ -1,9 +1,9 @@
-//! Reusable 3ds Max-style widgets.
+//! Reusable widgets.
 
 use super::theme;
 use bevy_egui::egui::{self, Color32, Response, RichText, Ui, emath::Numeric};
 
-/// 3ds Max spinner: drag/type a number; **right-click resets to `default`**.
+/// Spinner: drag/type a number; **right-click resets to `default`**.
 pub fn max_spinner<T: Numeric>(ui: &mut Ui, value: &mut T, speed: f64, default: T) -> Response {
     let mut r = ui.add(egui::DragValue::new(value).speed(speed));
     if r.secondary_clicked() {

@@ -1,4 +1,4 @@
-# MiniMax Phase 9 Plan: 3ds Max Workflow, Materials and GhostTown
+# MiniMax Phase 9 Plan: Workflow, Materials and Settlement
 
 _Agreed 10 November 2026. Each step is one PR, merged before the next one starts._
 
@@ -21,17 +21,17 @@ _Agreed 10 November 2026. Each step is one PR, merged before the next one starts
 |---|---|---|
 | 1 | Button-rich interface | Main toolbar, top menus, Command Panel tabs, Modeling Ribbon, viewport navigation buttons, the full grouped Modifier List, and the "button for everything" rule with its test |
 | 2 | Preferences | Themes, the hotkey editor, and viewport, general and rendering settings, plus the Assets tab (its downloads arrive with PR 5) |
-| 3 | Click-and-drag creation | Every Create button builds its object with the mouse, as in 3ds Max |
+| 3 | Click-and-drag creation | Every Create button builds its object with the mouse |
 | 4 | Help | A Help window with step-by-step pages and screenshots of the real program |
 | 5 | Material library | About 280 presets (procedural and photo), new pattern maps, triplanar mapping, the asset downloader |
-| 6 | GhostTown variety | New settlement types and building types, building and part toggles, rivers and bridges, the emissive toggle, prop styles |
+| 6 | Settlement variety | New settlement types and building types, building and part toggles, rivers and bridges, the emissive toggle, prop styles |
 | 7 | Destruction | Much heavier destruction: toppled buildings, twisted rebar and more |
 
 The general basics of how the program works (PRs 1–4) come first. Help follows them so its screenshots show the finished interface, and each later PR adds its own Help pages.
 
 ---
 
-## PR 1: A button-rich, 3ds Max-style interface
+## PR 1: A button-rich, interface
 
 ### Main toolbar (icon buttons with tooltips that show the hotkey)
 - **Undo / Redo**
@@ -78,7 +78,7 @@ The general basics of how the program works (PRs 1–4) come first. Help follows
 | Joint tool (`J`) | Assembly rollout and Tools menu |
 | Undo / Redo, Save / Open | Toolbar buttons plus the menus |
 
-### Viewport navigation buttons (bottom-right, like 3ds Max)
+### Viewport navigation buttons (bottom-right)
 - Zoom, Zoom All
 - Zoom Extents, Zoom Extents All
 - Field of View, Pan, Orbit
@@ -94,7 +94,7 @@ The general basics of how the program works (PRs 1–4) come first. Help follows
 - **Utilities:** Reset XForm, Collapse, Measure, Asset Packs.
 
 ### Modeling Ribbon (optional, toggled from a button)
-A bar of big buttons for every Edit Poly tool, grouped like the ribbon in 3ds Max. The buttons change with the sub-object level you're in (1–5).
+A bar of big buttons for every Edit Poly tool, grouped by task. The buttons change with the sub-object level you're in (1–5).
 
 ### Status bar
 - Lock Selection, Absolute / Offset
@@ -117,7 +117,7 @@ A bar of big buttons for every Edit Poly tool, grouped like the ribbon in 3ds Ma
 | Spline → Mesh | Lathe, Extrude |
 | Booleans | Boolean |
 | Generators | GeoGen, Greeble, Terrain, Ocean |
-| Architecture & Destruction | GhostTown, Medieval Architect, Battlefield / Ruin |
+| Architecture & Destruction | Settlement, Medieval Architect, Battlefield / Ruin |
 
 - **One click adds a modifier.** Hovering over one shows a single-line description of it.
 - **The search box stays at the top, but you never have to use it.**
@@ -137,11 +137,11 @@ Open it from the **⚙ Preferences** toolbar button or **Edit → Preferences**.
 
 | Tab | What you can change |
 |---|---|
-| **Theme** | Presets: Slate & Amber (today's), 3ds Max Classic Gray, Midnight Blue, Light, High Contrast. Or Custom: pick the accent, panel and text colours. Also UI size (90–150 %) and font size. |
-| **Hotkeys** | Every action in one searchable list. Click a key, press a new one, and it's changed. Conflicts are flagged ("F is used by Zoom Extents, swap?"). Reset one key or all. Key sets: MiniMax default and 3ds Max standard. Export and import keymaps. |
+| **Theme** | Presets: Slate & Amber (today's), Classic Gray, Midnight Blue, Light, High Contrast. Or Custom: pick the accent, panel and text colours. Also UI size (90–150 %) and font size. |
+| **Hotkeys** | Every action in one searchable list. Click a key, press a new one, and it's changed. Conflicts are flagged ("F is used by Zoom Extents, swap?"). Reset one key or all. Key sets: MiniMax default and standard. Export and import keymaps. |
 | **Viewports** | Background colour or gradient, grid colour and spacing, selection colours, invert zoom, orbit and zoom speed |
 | **General** | Autosave every N minutes, number of undo steps, units (m / cm / ft), show the tour on startup |
-| **Rendering** | Default renderer, Blender location, default resolution |
+| **Rendering** | Default renderer, external renderer location, default resolution |
 | **Assets** | The three download packs (see PR 5) |
 
 - **Under the hood:** theme colours and hotkeys move from fixed code into runtime tables, so changes apply instantly.
@@ -153,7 +153,7 @@ Open it from the **⚙ Preferences** toolbar button or **Edit → Preferences**.
 
 ---
 
-## PR 3: Click-and-drag creation (like 3ds Max)
+## PR 3: Click-and-drag creation
 
 | Object | Step 1: drag | Step 2: move, then click | Step 3: move, then click |
 |---|---|---|---|
@@ -202,8 +202,8 @@ Open it from the **⚙ Preferences** toolbar button or **Edit → Preferences**.
 7. Materials and the preset library
 8. Painting
 9. Lights, cameras, sky and deep space
-10. Rendering: F9 / F10, Cycles through Blender
-11. GhostTown, Medieval Architect and destruction
+10. Rendering: F9 / F10, the external renderer bridge
+11. Settlement, Medieval Architect and destruction
 12. Mech assembly
 13. Files: open, save, import, export
 14. Preferences and hotkeys
@@ -245,7 +245,7 @@ Open it from the **⚙ Preferences** toolbar button or **Edit → Preferences**.
 - **Every** ground, road, wall, roof, wood, stone and metal preset has a procedural version that always works.
 - **A 📷 Photo version** is added when the photo pack is installed.
 - **The browser has a [ Procedural | Photo | Both ] filter.**
-- **New "World / Triplanar" mapping** projects photos from three sides, so they tile on generated objects that have no UVs (GhostTown, Terrain, rocks). It works in the viewport, the built-in renderer and Cycles.
+- **New "World / Triplanar" mapping** projects photos from three sides, so they tile on generated objects that have no UVs (Settlement, Terrain, rocks). It works in the viewport, the built-in renderer and the external renderer.
 
 ### The Material Editor (`M`)
 - A preset browser with category tabs, search and preview spheres, plus a ★ Favourites list.
@@ -271,7 +271,7 @@ Each pack has its own ✓ checkbox, **[ Download ]** and **[ Remove ]** buttons,
 
 ---
 
-## PR 6: GhostTown variety
+## PR 6: Settlement variety
 
 ### New settlement types (in addition to today's four)
 
@@ -306,7 +306,7 @@ Each pack has its own ✓ checkbox, **[ Download ]** and **[ Remove ]** buttons,
 `[✓] Emissive Lights` controls lit windows, street lamps, lanterns, neon signs and fires. With it off, windows are plain glass and nothing glows.
 
 ### Materials and props
-- **The GhostTown material pack is rebuilt from the PR 5 library**, growing from 12 to about 24 IDs. New IDs include:
+- **The Settlement material pack is rebuilt from the PR 5 library**, growing from 12 to about 24 IDs. New IDs include:
   - asphalt, painted lane lines
   - sidewalk slabs, curbs, cobbles
   - river water

@@ -14,7 +14,7 @@ use crate::scene::camera::CameraKind;
 use crate::splines::ShapeKind;
 use bevy_egui::egui::{self, RichText};
 
-/// Picks a Create tool (and shows the Create tab, like 3ds Max).
+/// Picks a Create tool (and shows the Create tab).
 fn pick(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tip: &str, tool: Tool) {
     let r = ui.button(label);
     let r = if tip.is_empty() { r } else { r.on_hover_text(tip) };
@@ -44,7 +44,7 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }
     });
-    ui.menu_button("Demiurge Settlements (GhostTown)", |ui| {
+    ui.menu_button("Demiurge Settlements", |ui| {
         for k in WorldKind::SETTLEMENTS {
             pick(ui, ed, k.label(), k.tip(), Tool::CreateWorld(k));
         }

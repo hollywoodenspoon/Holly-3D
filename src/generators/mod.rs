@@ -41,7 +41,7 @@ pub enum WorldGen {
     Terrain(TerrainParams),
     Ocean(OceanParams),
     Planet(Box<PlanetParams>),
-    /// GhostTown settlement (Create -> Geometry -> Settlement).
+    /// Procedural settlement (Create -> Geometry -> Settlement).
     Settlement(Box<SettlementParams>),
     /// One building / prop (Create -> Geometry -> Buildings & Props).
     Building(Box<buildings::BuildingParams>),
@@ -136,7 +136,7 @@ impl WorldGen {
             Self::Terrain(_) => MultiPreset::AlpineTerrain,
             Self::Ocean(_) => MultiPreset::OceanWater,
             Self::Planet(_) => MultiPreset::PlanetStudio,
-            Self::Settlement(_) => MultiPreset::GhostTown,
+            Self::Settlement(_) => MultiPreset::Settlement,
             Self::Building(p) => p.style.pack(),
             Self::Smoke(_) => MultiPreset::SmokeFire,
         }

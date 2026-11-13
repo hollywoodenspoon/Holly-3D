@@ -2,7 +2,7 @@
 name = "ilex"
 version = "0.1.0"
 edition = "2024"
-description = "Ilex: a clean 3ds Max-style polygon modeler in Rust"
+description = "Ilex: a clean polygon modeler, painter and renderer in Rust"
 license = "GPL-3.0-or-later"
 
 [dependencies]

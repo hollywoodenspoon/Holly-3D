@@ -1,4 +1,4 @@
-//! PR 6 GhostTown toggles: the preset's Buildings & Props checkboxes,
+//! PR 6 Settlement toggles: the preset's Buildings & Props checkboxes,
 //! building parts, town features, Emissive Lights and Prop Style.
 
 use crate::generators::buildings::BuildingKind;

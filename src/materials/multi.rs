@@ -1,5 +1,5 @@
 //! Multi/Sub-Object material: a list of sub-materials keyed by polygon
-//! material ID (3ds Max conventions: IDs above the highest wrap around the
+//! material ID (IDs above the highest wrap around the
 //! list, a sub-material that is switched off renders as the default gray),
 //! plus the pre-built Medieval Castle, Modern City and Alpine Terrain packs.
 
@@ -9,7 +9,7 @@ use std::sync::LazyLock;
 /// Highest sub-material count `Set Number` accepts.
 pub const MAX_SUBS: usize = 100;
 
-/// Fresh Multi/Sub-Object materials start with 10 slots, like 3ds Max.
+/// Fresh Multi/Sub-Object materials start with 10 slots.
 pub const DEFAULT_SUBS: usize = 10;
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -136,9 +136,9 @@ pub enum MultiPreset {
     AlpineTerrain,
     OceanWater,
     PlanetStudio,
-    GhostTown,
-    /// GhostTown with installed photo textures where available.
-    GhostTownPhoto,
+    Settlement,
+    /// Settlement with installed photo textures where available.
+    SettlementPhoto,
     /// PR 8 Smoke & Fire plumes: fire core, smoke, wisps.
     SmokeFire,
     /// Phase 10A Character Pack: skin, eyes, hair, cloth, metal, leather.
@@ -167,8 +167,8 @@ impl MultiPreset {
         Self::AlpineTerrain,
         Self::OceanWater,
         Self::PlanetStudio,
-        Self::GhostTown,
-        Self::GhostTownPhoto,
+        Self::Settlement,
+        Self::SettlementPhoto,
         Self::SmokeFire,
         Self::Character,
     ];
@@ -180,8 +180,8 @@ impl MultiPreset {
             Self::AlpineTerrain => "Alpine Terrain Pack",
             Self::OceanWater => "Ocean Water Pack",
             Self::PlanetStudio => "Planet Studio Pack",
-            Self::GhostTown => "GhostTown Settlement Pack",
-            Self::GhostTownPhoto => "GhostTown Pack (Photo Textures)",
+            Self::Settlement => "Settlement Pack",
+            Self::SettlementPhoto => "Settlement Pack (Photo Textures)",
             Self::SmokeFire => "Smoke & Fire Pack",
             Self::Character => "Character Pack",
         }
@@ -235,9 +235,9 @@ impl MultiPreset {
                 Material { model: ShadingModel::Unlit, opacity: 0.999, ..pbr("Atmosphere Halo", [1.0, 1.0, 1.0], 0.0, 1.0) },
                 Material { opacity: 0.999, ..pbr("Planetary Rings", [1.0, 1.0, 1.0], 0.0, 0.8) },
             ],
-            // `generators::kit::ids`: GhostTown, Medieval Architect, Battlefield.
-            Self::GhostTown => super::ghost_pack::materials(false),
-            Self::GhostTownPhoto => super::ghost_pack::materials(true),
+            // `generators::kit::ids`: Settlement, Medieval Architect, Battlefield.
+            Self::Settlement => super::ghost_pack::materials(false),
+            Self::SettlementPhoto => super::ghost_pack::materials(true),
             // Plume tint and density live in the vertex colours.
             Self::SmokeFire => vec![
                 glow("Fire Core / Embers", [1.0, 0.5, 0.15], 8.0),
@@ -256,7 +256,7 @@ impl MultiPreset {
         };
         // Generated buildings and terrain have no UV layout: their packs
         // use World / Triplanar mapping, so patterns and photos tile.
-        let triplanar = matches!(self, Self::MedievalCastle | Self::ModernCity | Self::AlpineTerrain | Self::GhostTown | Self::GhostTownPhoto);
+        let triplanar = matches!(self, Self::MedievalCastle | Self::ModernCity | Self::AlpineTerrain | Self::Settlement | Self::SettlementPhoto);
         let place = |mut m: Material| {
             if triplanar {
                 m.projection = super::Projection::triplanar(2.0);
