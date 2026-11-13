@@ -1682,3 +1682,27 @@ Not done yet:
 - **Tests:** the wardrobe and bunk bed are tall, the nightstand is low, and all the shared furniture checks pass.
 - **Not done yet:** furniture uses the shared Settlement pack, so big wood panels show the weathered timber's plank bands. A clean furniture material pack (smooth wood, fabric, lacquer) is a follow-up.
 
+## 52. Prefab Library, part H3c: kitchen & bath, lighting & decor
+- **Two new categories**, appended after Furniture.
+  - **Kitchen & Bath** (indices 158–164):
+    - Kitchen Units: a run of base units with plinth, worktop, splashback, sink and tap, a four-ring hob and an oven.
+    - Wall Cabinets: hung at 1.45 m with an under-cabinet light strip, and a cooker hood when wide.
+    - Kitchen Island: cabinets, an overhanging top, a prep sink and bar stools along the front.
+    - Toilet: close-coupled, with seat, cistern and flush button.
+    - Vanity Sink: vanity with basin and tap, a mirror cabinet above and a light bar.
+    - Bathtub: built-in, with a tiled panel, water, a mixer and a shower riser.
+    - Shower Cubicle: tray, tiled walls, glass enclosure, riser rail, head and mixer.
+  - **Lighting & Decor** (indices 165–170):
+    - Floor Lamp: a standard lamp with a drum shade, or an arc lamp (by seed).
+    - Pendant Light: ceiling rose at 2.5 m, flex, and a cone or dome shade.
+    - Rug & Pouf: patterned rug with border and fringe, plus a pouf.
+    - Curtains: pole with finials, pleated drapes tied back, and a sheer.
+    - Wall Mirror: rectangular or round, with a shelf.
+    - Floor Plant: a planter with palm blades or a small tree crown.
+  - Wall and ceiling pieces are built at their real height, so they place on the floor under where they hang.
+- `BuildingKind::defaults()` moved to `kinds_defaults.rs` to keep `kinds_info.rs` under 350 lines.
+- **Tests:** toilet height, pendant hang height, bath water, plant foliage, and all the shared furniture checks for the 32 indoor kinds.
+- **Not done yet:**
+  - no room shell yet, and no wall/ceiling sockets: wall cabinets, mirrors and curtains must be placed by hand;
+  - the appliance batch (fridge, washer, electronics…) is next.
+

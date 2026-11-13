@@ -1,14 +1,17 @@
 use super::*;
 
 fn furniture() -> impl Iterator<Item = BuildingKind> {
-    Category::Furniture.kinds()
+    [Category::Furniture, Category::KitchenBath, Category::Decor].into_iter().flat_map(Category::kinds)
 }
 
 #[test]
 fn furniture_kinds_are_appended_and_build_valid_meshes() {
     // Appended after Rural so saved scenes and seeds keep their meaning.
     assert_eq!(BuildingKind::DiningChair as usize, 139);
-    assert_eq!(furniture().count(), 19);
+    assert_eq!(Category::Furniture.kinds().count(), 19);
+    assert_eq!(BuildingKind::KitchenUnits as usize, 158);
+    assert_eq!(BuildingKind::FloorLamp as usize, 165);
+    assert_eq!(furniture().count(), 32);
     for k in furniture() {
         assert!(!k.has_floors(), "{k:?} has no floors slider");
         for detail in Detail::ALL {
@@ -42,6 +45,12 @@ fn furniture_kinds_stand_on_the_ground_inside_their_lot() {
     assert!(tall(BuildingKind::CoffeeTable) < 0.6, "coffee table is low");
     assert!(tall(BuildingKind::Wardrobe) > 1.9 && tall(BuildingKind::BunkBed) > 1.6, "tall storage and bunks");
     assert!(tall(BuildingKind::Nightstand) < 0.9, "nightstand is low");
+    assert!(tall(BuildingKind::Toilet) < 0.9, "toilet height");
+    let pendant = BuildingParams::of(BuildingKind::PendantLight).build().bounds().unwrap();
+    assert!(pendant.min.z > 1.5 && pendant.max.z < 2.6, "pendant hangs from a 2.5 m ceiling: {pendant:?}");
+    let ids_of = |k| BuildingParams::of(k).build().polygons.values().map(|p| p.material_id).collect::<std::collections::HashSet<u16>>();
+    assert!(ids_of(BuildingKind::Bathtub).contains(&crate::generators::kit::ids::WATER), "bath water");
+    assert!(ids_of(BuildingKind::FloorPlant).contains(&crate::generators::kit::ids::FOLIAGE), "plant leaves");
     // Mid detail rounds the cushions, so it adds faces.
     let faces = |k, detail| BuildingParams { detail, ..BuildingParams::of(k) }.build().counts().2;
     assert!(faces(BuildingKind::Sofa, Detail::Mid) > faces(BuildingKind::Sofa, Detail::Standard));

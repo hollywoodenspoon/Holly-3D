@@ -9,6 +9,7 @@ pub mod arch;
 mod commercial_a;
 mod commercial_b;
 mod commercial_c;
+mod decor;
 mod doodads;
 mod furniture;
 mod furniture_b;
@@ -18,8 +19,10 @@ mod garden_b;
 mod houses;
 mod industrial;
 mod industry;
+mod kitchen_bath;
 pub mod infra;
 mod kinds;
+mod kinds_defaults;
 mod kinds_info;
 mod medieval_a;
 mod medieval_b;
@@ -238,6 +241,14 @@ impl BuildingParams {
                     K::DiningChair | K::OfficeChair | K::Armchair | K::BarStool | K::Sofa | K::SectionalSofa => furniture::build(&mut b, hx, hy),
                     _ => furniture_c::build(&mut b, hx, hy),
                 }
+            }
+            Category::KitchenBath => {
+                b.kit.uv_scale = 2.0;
+                kitchen_bath::build(&mut b, hx, hy)
+            }
+            Category::Decor => {
+                b.kit.uv_scale = 2.0;
+                decor::build(&mut b, hx, hy)
             }
         }
         b.kit.finish()
