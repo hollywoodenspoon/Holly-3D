@@ -1606,3 +1606,29 @@ Not done yet:
   - the pond and the pools are flat water surfaces, not dug basins;
   - the skate bowl is stepped rings, not a smooth curve;
   - the stadium stands have no seats or stairways modelled.
+
+## 48. Prefab Library, part H2f: garden and lot details
+- **16 new kinds** under a new **Garden & Lot** category, appended after Parks & Leisure (indices 115–130). They are small life-sim items for dressing a house lot, and have no Floors slider. Width runs along X, so a hedge or fence stretches with Width.
+  - Mailbox: post, rounded box, door and flag.
+  - Garden Beds: raised timber beds with gravel paths, crops (leafy rows, shrubs or canes, by seed) and a water butt.
+  - Hedge: clipped hedge with a lumpy top.
+  - Picket Fence: pointed pickets on two rails, posts, and a half-open gate when the fence is long enough.
+  - Patio Set: paving slabs, a table and four chairs under a parasol, a bench and potted plants.
+  - Barbecue: a kettle grill or a brick barbecue with a hood and chimney (by seed).
+  - Swing Set: A-frame with two swings and a slide.
+  - Trampoline: legs, padded frame, mat and safety net.
+  - Garden Shed: clad timber shed with a gable or pent roof, a door and a window.
+  - Doghouse: kennel with an arched opening, a name board and a bowl.
+  - Washing Line: a T-post line with clothes, or a rotary dryer (by seed).
+  - Wheelie Bins: up to four coloured bins with lids (one may stand open) and wheels.
+  - Garden Gnome: boots, body, beard, face and pointed hat, sometimes with a fishing rod.
+  - Hose Reel: drum on a frame with a crank, hose and nozzle.
+  - Backyard Pool: an above-ground pool with a ladder, or a paved in-ground pool with steps and grab rails (by seed).
+  - Porch & Steps: raised deck with steps, posts, railings and a lean-to roof, meant to push against a house wall at +Y.
+- **Tests:**
+  - every kind builds valid, deterministic meshes within budget;
+  - every kind stands on the ground and fits its lot;
+  - the gnome is small, the shed is tall enough, the pool has water and the hedge is foliage.
+- **Not done yet:**
+  - no socket snapping yet: the porch, fence and hedge don't snap to houses or to each other;
+  - the in-ground pool is a flat water surface, not a dug basin.
