@@ -84,6 +84,8 @@ pub enum BuildingKind {
     Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
     // Furniture: seating & tables (10)
     DiningChair, OfficeChair, Armchair, BarStool, Sofa, SectionalSofa, DiningTable, CoffeeTable, SideTable, Desk,
+    // Furniture: bedroom & storage (9)
+    SingleBed, DoubleBed, BunkBed, Wardrobe, Dresser, Nightstand, Bookshelf, TvStand, DisplayCabinet,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -126,7 +128,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 149] = {
+    pub const ALL: [BuildingKind; 158] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -187,6 +189,7 @@ impl BuildingKind {
             GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
             Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
             DiningChair, OfficeChair, Armchair, BarStool, Sofa, SectionalSofa, DiningTable, CoffeeTable, SideTable, Desk,
+            SingleBed, DoubleBed, BunkBed, Wardrobe, Dresser, Nightstand, Bookshelf, TvStand, DisplayCabinet,
         ]
     };
 

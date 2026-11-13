@@ -1669,3 +1669,16 @@ Not done yet:
   - Mid detail adds faces to the sofa.
 - **Not done yet:** no snap sockets yet (chairs don't tuck under tables, sofas don't snap to walls); no room shell yet.
 
+## 51. Prefab Library, part H3b: furniture (bedroom and storage)
+- **9 more Furniture kinds** (indices 149–157). Each has a seeded wood, white or dark carcass, and drawer fronts with handles.
+  - Single Bed and Double Bed: frame, headboard, footboard, mattress, one or two pillows, and a turned-down duvet.
+  - Bunk Bed: corner posts, two bunks with bedding, a guard rail, and a ladder at the foot.
+  - Wardrobe: two or three doors (three when wide), one mirrored door, a plinth, a cornice and a drawer.
+  - Dresser: drawers in one or two columns, with a mirror on top.
+  - Nightstand: two drawers, a lamp and a book.
+  - Bookshelf: five shelves of seeded books, with varied heights, colours and gaps.
+  - TV Stand: media unit with doors, an open bay and a console, a flat TV on a stand (the screen glows when emissive) and a sound bar.
+  - Display Cabinet: cupboard base, glass front, glass shelves with plates and vases.
+- **Tests:** the wardrobe and bunk bed are tall, the nightstand is low, and all the shared furniture checks pass.
+- **Not done yet:** furniture uses the shared Settlement pack, so big wood panels show the weathered timber's plank bands. A clean furniture material pack (smooth wood, fabric, lacquer) is a follow-up.
+

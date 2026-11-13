@@ -12,6 +12,7 @@ mod commercial_c;
 mod doodads;
 mod furniture;
 mod furniture_b;
+mod furniture_c;
 mod garden;
 mod garden_b;
 mod houses;
@@ -233,8 +234,9 @@ impl BuildingParams {
                 // Small parts: finer texture repeats so wood grain reads.
                 b.kit.uv_scale = 2.0;
                 match self.kind {
-                K::DiningTable | K::CoffeeTable | K::SideTable | K::Desk => furniture_b::build(&mut b, hx, hy),
-                _ => furniture::build(&mut b, hx, hy),
+                    K::DiningTable | K::CoffeeTable | K::SideTable | K::Desk => furniture_b::build(&mut b, hx, hy),
+                    K::DiningChair | K::OfficeChair | K::Armchair | K::BarStool | K::Sofa | K::SectionalSofa => furniture::build(&mut b, hx, hy),
+                    _ => furniture_c::build(&mut b, hx, hy),
                 }
             }
         }

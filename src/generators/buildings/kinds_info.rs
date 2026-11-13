@@ -155,6 +155,15 @@ impl BuildingKind {
             CoffeeTable => "Coffee Table",
             SideTable => "Side Table",
             Desk => "Desk",
+            SingleBed => "Single Bed",
+            DoubleBed => "Double Bed",
+            BunkBed => "Bunk Bed",
+            Wardrobe => "Wardrobe",
+            Dresser => "Dresser",
+            Nightstand => "Nightstand",
+            Bookshelf => "Bookshelf",
+            TvStand => "TV Stand",
+            DisplayCabinet => "Display Cabinet",
         }
     }
 
@@ -311,6 +320,15 @@ impl BuildingKind {
             CoffeeTable => (1.1, 0.6, 1),
             SideTable => (0.45, 0.45, 1),
             Desk => (1.4, 0.7, 1),
+            SingleBed => (1.0, 2.05, 1),
+            DoubleBed => (1.6, 2.1, 1),
+            BunkBed => (1.0, 2.05, 1),
+            Wardrobe => (1.5, 0.6, 1),
+            Dresser => (1.2, 0.5, 1),
+            Nightstand => (0.5, 0.4, 1),
+            Bookshelf => (0.9, 0.32, 1),
+            TvStand => (1.6, 0.45, 1),
+            DisplayCabinet => (1.0, 0.42, 1),
         }
     }
 }

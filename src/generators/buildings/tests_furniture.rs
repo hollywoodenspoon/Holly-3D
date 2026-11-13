@@ -8,7 +8,7 @@ fn furniture() -> impl Iterator<Item = BuildingKind> {
 fn furniture_kinds_are_appended_and_build_valid_meshes() {
     // Appended after Rural so saved scenes and seeds keep their meaning.
     assert_eq!(BuildingKind::DiningChair as usize, 139);
-    assert_eq!(furniture().count(), 10);
+    assert_eq!(furniture().count(), 19);
     for k in furniture() {
         assert!(!k.has_floors(), "{k:?} has no floors slider");
         for detail in Detail::ALL {
@@ -40,6 +40,8 @@ fn furniture_kinds_stand_on_the_ground_inside_their_lot() {
     assert!((0.85..1.2).contains(&tall(BuildingKind::DiningChair)), "chair back height");
     assert!((0.74..0.95).contains(&tall(BuildingKind::DiningTable)), "table height");
     assert!(tall(BuildingKind::CoffeeTable) < 0.6, "coffee table is low");
+    assert!(tall(BuildingKind::Wardrobe) > 1.9 && tall(BuildingKind::BunkBed) > 1.6, "tall storage and bunks");
+    assert!(tall(BuildingKind::Nightstand) < 0.9, "nightstand is low");
     // Mid detail rounds the cushions, so it adds faces.
     let faces = |k, detail| BuildingParams { detail, ..BuildingParams::of(k) }.build().counts().2;
     assert!(faces(BuildingKind::Sofa, Detail::Mid) > faces(BuildingKind::Sofa, Detail::Standard));
