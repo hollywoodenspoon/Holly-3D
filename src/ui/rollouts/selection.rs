@@ -1,9 +1,9 @@
 //! Selection & Soft Selection rollouts.
 
-use super::HALF;
+use super::half;
 use crate::editor::Editor;
 use crate::mesh::SubObject;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::theme;
 use crate::ui::widgets::{dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
@@ -12,7 +12,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Selection", true, |ui| {
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
-            let w = (CONTENT_W - 16.0) / 5.0 - 3.0;
+            let w = (content_w() - 16.0) / 5.0 - 3.0;
             for (s, label, tip) in [
                 (SubObject::Vertex, "1: Vtx", "Vertex (1)"),
                 (SubObject::Edge, "2: Edg", "Edge (2)"),
@@ -34,16 +34,16 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         let sub = ed.in_sub_object();
         ui.add_enabled_ui(sub, |ui| {
             ui.horizontal(|ui| {
-                if ui.add_sized([HALF, 24.0], egui::Button::new("Shrink")).clicked() {
+                if ui.add_sized([half(), 24.0], egui::Button::new("Shrink")).clicked() {
                     ed.edit_selection(|m, s| m.shrink_selection(s));
                 }
-                if ui.add_sized([HALF, 24.0], egui::Button::new("Grow")).clicked() {
+                if ui.add_sized([half(), 24.0], egui::Button::new("Grow")).clicked() {
                     ed.edit_selection(|m, s| m.grow_selection(s));
                 }
             });
             ui.add_enabled_ui(ed.sub.is_edge_like(), |ui| {
                 ui.horizontal(|ui| {
-                    let w = CONTENT_W / 2.0 - 50.0;
+                    let w = content_w() / 2.0 - 50.0;
                     if ui.add_sized([w, 24.0], egui::Button::new("Ring")).on_hover_text("Alt+R").clicked() {
                         ed.edit_selection(|m, _| m.select_ring());
                     }

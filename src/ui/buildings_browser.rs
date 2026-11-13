@@ -7,7 +7,7 @@ use crate::editor::{Editor, Tool};
 use crate::generators::WorldKind;
 use crate::generators::buildings::{BuildingKind, BuildingParams, Category};
 use crate::materials::ghost_pack::swatch;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{dim, rollout};
 use bevy::math::{Vec2, Vec3};
 use bevy_egui::egui::{self, Color32, Pos2, RichText, Sense, Stroke};
@@ -149,7 +149,7 @@ fn thumb(k: BuildingKind) -> &'static Thumb {
 pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Demiurge Settlements — Buildings & Props", true, |ui| {
         if ui
-            .add_sized([CONTENT_W, 26.0], egui::Button::new("Open Buildings & Props Browser...").selected(ed.buildings_browser_open))
+            .add_sized([content_w(), 26.0], egui::Button::new("Open Buildings & Props Browser...").selected(ed.buildings_browser_open))
             .clicked()
         {
             ed.buildings_browser_open ^= true;
@@ -161,7 +161,7 @@ pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                         let kind = WorldKind::Building(k);
                         let active = ed.tool == Tool::CreateWorld(kind);
                         let r = ui
-                            .add_sized([CONTENT_W / 2.0 - 12.0, 24.0], egui::Button::new(k.label()).selected(active))
+                            .add_sized([content_w() / 2.0 - 12.0, 24.0], egui::Button::new(k.label()).selected(active))
                             .on_hover_text(c.label());
                         if r.clicked() {
                             ed.tool = if active { Tool::None } else { Tool::CreateWorld(kind) };

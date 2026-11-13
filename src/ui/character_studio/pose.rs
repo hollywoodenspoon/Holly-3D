@@ -9,7 +9,7 @@ use crate::character::rig::pose::{mirror, twin, CONTROLS};
 use crate::character::rig::presets::PosePreset;
 use crate::character::rig::{pose_file, Pose};
 use crate::io::scene_file::{LEGACY_POSE_EXTS, POSE_EXT};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy_egui::egui;
 
@@ -33,7 +33,7 @@ pub fn rollout_ui(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
         let mut st: PoseUi = ui.data_mut(|d| d.get_temp(id).unwrap_or_default());
         let msg_id = id.with("msg");
         ui.label(egui::RichText::new("Pose Presets").strong());
-        let w = CONTENT_W / 2.0 - 6.0;
+        let w = content_w() / 2.0 - 6.0;
         egui::Grid::new("pose_presets").num_columns(2).show(ui, |ui| {
             for (i, preset) in PosePreset::ALL.iter().enumerate() {
                 if ui.add_sized([w, 24.0], egui::Button::new(preset.label())).clicked() {

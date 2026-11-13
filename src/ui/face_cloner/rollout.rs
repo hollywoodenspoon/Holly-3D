@@ -5,17 +5,17 @@
 use crate::character::face_cloner::clone::reset;
 use crate::character::params::CharacterParams;
 use crate::editor::interface::InterfaceState;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy_egui::egui;
 
 pub fn show(ui: &mut egui::Ui, iface: &mut InterfaceState, t: &mut Track, p: &mut CharacterParams) {
     rollout(ui, "📸 Clone Face from Photos / Videos", false, |ui| {
-        if ui.add_sized([CONTENT_W, 26.0], egui::Button::new("📂 Load Photos / Frame Folder...")).on_hover_text("Opens the Face Cloner and asks for photos").clicked() {
+        if ui.add_sized([content_w(), 26.0], egui::Button::new("📂 Load Photos / Frame Folder...")).on_hover_text("Opens the Face Cloner and asks for photos").clicked() {
             iface.face_cloner_open = true;
             iface.face_load_request = true;
         }
-        if ui.add_sized([CONTENT_W, 22.0], egui::Button::new("Open Face Cloner...").selected(iface.face_cloner_open)).clicked() {
+        if ui.add_sized([content_w(), 22.0], egui::Button::new("Open Face Cloner...").selected(iface.face_cloner_open)).clicked() {
             iface.face_cloner_open ^= true;
         }
         if p.face.views == 0 {
@@ -33,7 +33,7 @@ pub fn show(ui: &mut egui::Ui, iface: &mut InterfaceState, t: &mut Track, p: &mu
             }
         });
         ui.label(dim("The fitted slider values are in Detail Sliders (head, nose, mouth, eyes…)."));
-        if ui.add_sized([CONTENT_W, 22.0], egui::Button::new("Reset Cloned Face")).on_hover_text("Clears the face sliders, the fine warp and the photo skin").clicked() {
+        if ui.add_sized([content_w(), 22.0], egui::Button::new("Reset Cloned Face")).on_hover_text("Clears the face sliders, the fine warp and the photo skin").clicked() {
             *p = reset(p);
             t.started = true;
             t.changed = true;

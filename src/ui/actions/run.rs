@@ -2,7 +2,7 @@
 //! accent colour) and whether it can run right now (greyed-out buttons).
 
 use super::Action;
-use crate::editor::{Editor, Tool, TransformMode};
+use crate::editor::{CommandTab, Editor, Tool, TransformMode};
 use crate::mesh::SubObject;
 use crate::mesh::ops::PolyOp;
 use crate::render::sky::SkyMode;
@@ -96,7 +96,7 @@ impl Action {
             Ribbon => flip(&mut ed.iface.ribbon),
             Nav(m) => ed.toggle_nav_mode(m),
             Render => ed.start_render(),
-            RenderSetup => flip(&mut ed.rfw.setup_open),
+            RenderSetup => ed.toggle_tab(CommandTab::Render),
             FrameWindow => flip(&mut ed.rfw.rfw_open),
             Turntable => flip(&mut ed.rfw.sheet.open),
             BuildingsBrowser => flip(&mut ed.buildings_browser_open),
@@ -112,11 +112,13 @@ impl Action {
             }
             MaterialEditor => flip(&mut ed.mat_editor.open),
             MaterialLibrary => flip(&mut ed.mat_editor.library),
-            Environment => flip(&mut ed.env_open),
+            Environment => ed.toggle_tab(CommandTab::Environment),
             DefaultLights => ed.toggle_default_lights(),
             Sky(p) => {
                 ed.apply_sky_preset(p);
-                ed.env_open |= p != SkyPreset::Off;
+                if p != SkyPreset::Off {
+                    ed.tab = CommandTab::Environment;
+                }
             }
             Help => {
                 flip(&mut ed.iface.help_open);
@@ -160,7 +162,7 @@ impl Action {
             SceneExplorer => ed.explorer_visible,
             Ribbon => ed.iface.ribbon,
             Nav(m) => ed.iface.nav_mode == Some(m),
-            RenderSetup => ed.rfw.setup_open,
+            RenderSetup => ed.tab == CommandTab::Render,
             FrameWindow => ed.rfw.rfw_open,
             ColorGrading => ed.rfw.rfw_open && ed.rfw.grading_open,
             LightMix => ed.rfw.rfw_open && ed.rfw.lightmix_open,
@@ -171,7 +173,7 @@ impl Action {
             ShadowCatcher => { let sel = ed.scene.selected(); !sel.is_empty() && sel.iter().all(|id| ed.scene.objects[*id].shadow_catcher) }
             MaterialEditor => ed.mat_editor.open,
             MaterialLibrary => ed.mat_editor.library,
-            Environment => ed.env_open,
+            Environment => ed.tab == CommandTab::Environment,
             DefaultLights => ed.uses_default_lights(),
             Sky(p) => SkyPreset::matching(&ed.scene.environment.sky) == Some(p),
             Help => ed.iface.help_open,

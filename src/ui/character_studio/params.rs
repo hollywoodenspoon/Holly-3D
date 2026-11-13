@@ -5,14 +5,14 @@
 use crate::character::makehuman::modifiers::sliders;
 use crate::character::params::*;
 use crate::editor::Editor;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy_egui::egui;
 
 fn combo<T: Copy + PartialEq>(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut T, all: &[T], name: fn(T) -> &'static str) {
     ui.horizontal(|ui| {
         ui.label(label);
-        egui::ComboBox::from_id_salt(("char", label)).width(CONTENT_W - 110.0).selected_text(name(*v)).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt(("char", label)).width(content_w() - 110.0).selected_text(name(*v)).show_ui(ui, |ui| {
             for &x in all {
                 t.r(ui.selectable_value(v, x, name(x)));
             }

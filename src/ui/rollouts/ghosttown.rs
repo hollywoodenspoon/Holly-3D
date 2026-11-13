@@ -11,17 +11,17 @@ use crate::materials::MultiPreset;
 use crate::modifiers::battlefield::{BattleParams, DestructionMode};
 use crate::modifiers::medieval::{ArchPreset, ArchitectMod, PlanShape};
 use crate::modifiers::{ModSub, ModifierKind};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, action, dim, rollout};
 use bevy_egui::egui::{self, RichText};
 
 /// `[ Assign GhostTown Material Pack ]` + the ID legend.
 pub fn pack_button(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.horizontal(|ui| {
-        if action(ui, "Assign GhostTown Pack", true, CONTENT_W * 0.5 - 4.0) {
+        if action(ui, "Assign GhostTown Pack", true, content_w() * 0.5 - 4.0) {
             ed.assign_pack(MultiPreset::GhostTown);
         }
-        if action(ui, "Assign Photo Pack", true, CONTENT_W * 0.5 - 4.0) {
+        if action(ui, "Assign Photo Pack", true, content_w() * 0.5 - 4.0) {
             ed.assign_pack(MultiPreset::GhostTownPhoto);
         }
     });
@@ -43,7 +43,7 @@ fn glow(ed: &mut Editor, out: super::ruin::Out) {
 /// takes them from its input).
 pub fn settlement_params(ui: &mut egui::Ui, t: &mut Track, p: &mut SettlementParams, sized: bool) -> super::ruin::Out {
     ui.label(RichText::new("Settlement Preset").strong());
-    egui::ComboBox::from_id_salt("ghosttown_era").width(CONTENT_W - 12.0).selected_text(p.era.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("ghosttown_era").width(content_w() - 12.0).selected_text(p.era.label()).show_ui(ui, |ui| {
         for e in Era::ALL {
             if ui.selectable_label(p.era == e, e.label()).clicked() && p.era != e {
                 // A new era starts from its defaults, keeping area and seed.
@@ -87,7 +87,7 @@ fn damaged(ui: &mut egui::Ui, t: &mut Track, on: &mut bool, d: &mut BattleParams
 
 /// Destruction mode and spinners (shared by the modifier and the toggles).
 pub fn battle_params(ui: &mut egui::Ui, t: &mut Track, p: &mut BattleParams, salt: &str) {
-    egui::ComboBox::from_id_salt(("battle_mode", salt)).width(CONTENT_W - 30.0).selected_text(p.mode.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt(("battle_mode", salt)).width(content_w() - 30.0).selected_text(p.mode.label()).show_ui(ui, |ui| {
         for m in DestructionMode::ALL {
             if ui.selectable_label(p.mode == m, m.label()).clicked() && p.mode != m {
                 *p = BattleParams { seed: p.seed, ..BattleParams::of(m) };
@@ -146,7 +146,7 @@ pub fn architect_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
 }
 
 fn architect_params(ui: &mut egui::Ui, t: &mut Track, a: &mut ArchitectMod) {
-    egui::ComboBox::from_id_salt("arch_preset").width(CONTENT_W - 12.0).selected_text(a.preset.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("arch_preset").width(content_w() - 12.0).selected_text(a.preset.label()).show_ui(ui, |ui| {
         for p in ArchPreset::ALL {
             t.r(ui.selectable_value(&mut a.preset, p, p.label()));
         }
@@ -193,12 +193,12 @@ pub fn battlefield_modifier(ui: &mut egui::Ui, ed: &mut Editor) {
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Battlefield(b) = k else { return };
             ui.horizontal(|ui| {
-                if ui.add_sized([CONTENT_W / 2.0 - 4.0, 24.0], egui::Button::new("➕ Add Zone")).clicked() {
+                if ui.add_sized([content_w() / 2.0 - 4.0, 24.0], egui::Button::new("➕ Add Zone")).clicked() {
                     b.add_zone(bounds);
                     (t.started, t.changed) = (true, true);
                 }
                 let any = b.zones.iter().any(|z| z.selected);
-                if ui.add_enabled(any, egui::Button::new("🗑 Remove Zone").min_size(egui::vec2(CONTENT_W / 2.0 - 4.0, 24.0))).clicked() {
+                if ui.add_enabled(any, egui::Button::new("🗑 Remove Zone").min_size(egui::vec2(content_w() / 2.0 - 4.0, 24.0))).clicked() {
                     b.remove_selected();
                     (t.started, t.changed) = (true, true);
                 }

@@ -4,7 +4,7 @@
 use super::spline::grid;
 use super::worlds::{row, seed_row};
 use crate::generators::buildings::{BuildingKind, BuildingParams, Category, MatStyle, StairKind};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui::{self, RichText};
 
@@ -80,7 +80,7 @@ fn style_tip(s: MatStyle) -> &'static str {
 /// Type combo grouped by category; switching type resets size to its
 /// defaults and keeps seed, parts, lights and style.
 fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
-    egui::ComboBox::from_id_salt("building_kind").width(CONTENT_W - 12.0).height(420.0).selected_text(p.kind.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("building_kind").width(content_w() - 12.0).height(420.0).selected_text(p.kind.label()).show_ui(ui, |ui| {
         for c in Category::ALL {
             ui.label(RichText::new(c.label()).strong());
             for k in c.kinds() {

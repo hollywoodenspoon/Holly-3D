@@ -35,10 +35,18 @@ pub enum CommandTab {
     #[default]
     Create,
     Modify,
-    /// Pivot and assembly (3ds Max's Hierarchy tab).
+    /// Pivot and assembly.
     Hierarchy,
     Display,
     Utilities,
+    /// Render Setup (F10).
+    Render,
+    /// Environment (8): lighting rig, background, sky, weather, fog.
+    Environment,
+    /// Worlds, settlements, buildings and GeoGen.
+    Demiurge,
+    /// Humans, creatures and the Face Cloner.
+    Characters,
 }
 
 /// Interactive viewport tools (modal, like 3ds Max pick modes).

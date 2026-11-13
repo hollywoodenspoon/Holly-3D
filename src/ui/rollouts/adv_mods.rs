@@ -1,10 +1,10 @@
 //! Edit Normals, Boolean and ProOptimizer rollouts.
 
-use super::HALF;
+use super::half;
 use super::spline::{grid, mod_params};
 use crate::editor::{Editor, Tool};
 use crate::modifiers::{BoolOp, ModifierKind, NormalSelBy};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::theme;
 use crate::ui::widgets::{action, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
@@ -35,18 +35,18 @@ pub fn edit_normals(ui: &mut egui::Ui, ed: &mut Editor) {
             });
         });
         ui.horizontal(|ui| {
-            if action(ui, "Break", true, HALF) {
+            if action(ui, "Break", true, half()) {
                 normals_cmd(ed, "Break Normals", |e, m| e.break_selected(m));
             }
-            if action(ui, "Unify", true, HALF) {
+            if action(ui, "Unify", true, half()) {
                 normals_cmd(ed, "Unify Normals", |e, m| e.unify_selected(m));
             }
         });
         ui.horizontal(|ui| {
-            if action(ui, "Reset", true, HALF) {
+            if action(ui, "Reset", true, half()) {
                 normals_cmd(ed, "Reset Normals", |e, _| e.reset_selected());
             }
-            if action(ui, "Make Explicit", true, HALF) {
+            if action(ui, "Make Explicit", true, half()) {
                 normals_cmd(ed, "Make Explicit", |e, m| e.make_explicit(m));
             }
         });
@@ -81,7 +81,7 @@ pub fn boolean(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         let picking = ed.tool == Tool::PickBoolean;
         if ui
-            .add_sized([CONTENT_W, 28.0], egui::Button::new(if picking { "Picking Operands…" } else { "Pick Operand B" }).selected(picking))
+            .add_sized([content_w(), 28.0], egui::Button::new(if picking { "Picking Operands…" } else { "Pick Operand B" }).selected(picking))
             .on_hover_text("Click objects in a viewport; each becomes an operand and is removed from the scene")
             .clicked()
         {
@@ -91,7 +91,7 @@ pub fn boolean(ui: &mut egui::Ui, ed: &mut Editor) {
         mod_params(ui, ed, |ui, k, t| {
             let ModifierKind::Boolean(b) = k else { return };
             egui::Frame::new().fill(theme::input()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
-                ui.set_width(CONTENT_W - 12.0);
+                ui.set_width(content_w() - 12.0);
                 ui.set_min_height(60.0);
                 if b.operands.is_empty() {
                     ui.label(dim("A: this object. No operands picked yet."));
@@ -116,14 +116,14 @@ pub fn boolean(ui: &mut egui::Ui, ed: &mut Editor) {
             Some(ModifierKind::Boolean(b)) if b.selected.is_some_and(|i| i < b.operands.len())
         );
         ui.horizontal(|ui| {
-            if action(ui, "Remove Operand", has_sel, HALF) {
+            if action(ui, "Remove Operand", has_sel, half()) {
                 ed.edit_active_modifier("Remove Operand", |k, _| {
                     if let ModifierKind::Boolean(b) = k {
                         b.take_selected();
                     }
                 });
             }
-            if action(ui, "Extract Operand", has_sel, HALF) {
+            if action(ui, "Extract Operand", has_sel, half()) {
                 ed.extract_boolean_operand();
             }
         });
@@ -133,7 +133,7 @@ pub fn boolean(ui: &mut egui::Ui, ed: &mut Editor) {
 
 pub fn pro_optimizer(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Optimization Level", true, |ui| {
-        if action(ui, "Calculate", true, CONTENT_W) {
+        if action(ui, "Calculate", true, content_w()) {
             ed.edit_active_modifier("Calculate", |k, input| {
                 if let ModifierKind::ProOptimizer(p) = k {
                     p.calculate(input);

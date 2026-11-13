@@ -1,7 +1,7 @@
 //! Modify panel for lights: General, Intensity / Color / Attenuation,
 //! Spotlight / Directional / Area Shape, IES Profile and Shadow Parameters rollouts.
 
-use super::CONTENT_W;
+use super::content_w;
 use crate::editor::Editor;
 use crate::render::lighting::{KELVIN_PRESETS, kelvin_to_rgb};
 use crate::render::{IesProfile, Light, LightKind};
@@ -39,7 +39,7 @@ fn general(ui: &mut egui::Ui, ed: &mut Editor) {
         });
         ui.horizontal(|ui| {
             ui.label("Type");
-            egui::ComboBox::from_id_salt("light_type").width(CONTENT_W - 50.0).selected_text(kind.label()).show_ui(ui, |ui| {
+            egui::ComboBox::from_id_salt("light_type").width(content_w() - 50.0).selected_text(kind.label()).show_ui(ui, |ui| {
                 for k in LightKind::ALL {
                     if ui.selectable_label(k == kind, k.label()).clicked() {
                         pick = Some(k);
@@ -147,7 +147,7 @@ fn ies(ui: &mut egui::Ui, ed: &mut Editor) {
     let open = l.ies != IesProfile::None;
     rollout(ui, "Luxon Photometric: IES Light Profile", open, |ui| {
         edit(ed, |l, t| {
-            egui::ComboBox::from_id_salt("light_ies").width(240.0).selected_text(l.ies.label()).show_ui(ui, |ui| {
+            egui::ComboBox::from_id_salt("light_ies").width(ui.available_width().min(240.0)).truncate().selected_text(l.ies.label()).show_ui(ui, |ui| {
                 for p in IesProfile::ALL {
                     if ui.selectable_label(l.ies == p, p.label()).clicked() && l.ies != p {
                         l.ies = p;

@@ -156,11 +156,11 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
         }
         "sky" => {
             demo(ed);
-            ed.env_open = true;
+            ed.tab = crate::editor::CommandTab::Environment;
         }
         "render" => {
             demo(ed);
-            ed.rfw.setup_open = true;
+            ed.tab = crate::editor::CommandTab::Render;
         }
         "grading" => {
             demo(ed);

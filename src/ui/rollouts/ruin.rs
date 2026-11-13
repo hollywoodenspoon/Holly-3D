@@ -6,7 +6,7 @@
 use super::spline::grid;
 use super::worlds::{row, seed_row};
 use crate::generators::ruin::{DestructionLevel, RuinEra, RuinParams};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, action, dim};
 use bevy_egui::egui::{self, RichText};
 
@@ -27,7 +27,7 @@ pub fn destruction(ui: &mut egui::Ui, t: &mut Track, p: &mut RuinParams, salt: &
         ui.label(dim("Width / Length set the spread; the mound is layered dust, chunks and the era's debris."));
     } else {
         ui.label(RichText::new("Destruction Level").strong());
-        egui::ComboBox::from_id_salt(("ruin_level", salt)).width(CONTENT_W - 30.0).selected_text(p.level.label()).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt(("ruin_level", salt)).width(content_w() - 30.0).selected_text(p.level.label()).show_ui(ui, |ui| {
             for l in DestructionLevel::ALL {
                 t.r(ui.selectable_value(&mut p.level, l, l.label()));
             }
@@ -39,7 +39,7 @@ pub fn destruction(ui: &mut egui::Ui, t: &mut Track, p: &mut RuinParams, salt: &
     }
     ui.horizontal(|ui| {
         ui.label("Era:");
-        egui::ComboBox::from_id_salt(("ruin_era", salt)).width(CONTENT_W - 70.0).selected_text(p.era.label()).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt(("ruin_era", salt)).width(content_w() - 70.0).selected_text(p.era.label()).show_ui(ui, |ui| {
             for e in RuinEra::ALL {
                 t.r(ui.selectable_value(&mut p.era, e, e.label()));
             }

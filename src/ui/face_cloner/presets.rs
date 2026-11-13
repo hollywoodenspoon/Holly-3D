@@ -3,7 +3,7 @@
 
 use crate::character::face_cloner::preset;
 use crate::character::params::CharacterParams;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{dim, Track};
 use bevy_egui::egui;
 
@@ -18,7 +18,7 @@ pub fn skin(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
     if r.changed() {
         (t.started, t.changed) = (true, true);
     }
-    if ui.add_sized([CONTENT_W, 22.0], egui::Button::new("Remove Photo Skin")).on_hover_text("Drops the baked skin and goes back to the character's own skin (the face shape stays)").clicked() {
+    if ui.add_sized([content_w(), 22.0], egui::Button::new("Remove Photo Skin")).on_hover_text("Drops the baked skin and goes back to the character's own skin (the face shape stays)").clicked() {
         p.face.texture = None;
         (t.started, t.changed) = (true, true);
     }
@@ -32,7 +32,7 @@ pub fn presets(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
     let (mut name, mut picked, mut note): (String, Option<String>, String) = ui.data_mut(|d| d.get_temp(id)).unwrap_or_default();
     let names = preset::list();
     ui.horizontal(|ui| {
-        ui.add(egui::TextEdit::singleline(&mut name).hint_text("Preset name").desired_width(CONTENT_W - 64.0));
+        ui.add(egui::TextEdit::singleline(&mut name).hint_text("Preset name").desired_width(content_w() - 64.0));
         let can = p.face.views > 0 && !name.trim().is_empty();
         if ui.add_enabled(can, egui::Button::new("💾 Save")).on_hover_text("Saves this face (sliders, warp, photo skin) for any character").clicked() {
             note = match preset::of(&name, p).map(|f| preset::save(&f)) {
@@ -44,7 +44,7 @@ pub fn presets(ui: &mut egui::Ui, t: &mut Track, p: &mut CharacterParams) {
         }
     });
     let shown = picked.clone().filter(|n| names.contains(n)).unwrap_or_else(|| if names.is_empty() { "(none saved)".into() } else { "Pick a preset".into() });
-    egui::ComboBox::from_id_salt(id.with("list")).width(CONTENT_W).selected_text(shown).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt(id.with("list")).width(content_w()).selected_text(shown).show_ui(ui, |ui| {
         for n in &names {
             ui.selectable_value(&mut picked, Some(n.clone()), n);
         }

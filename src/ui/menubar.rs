@@ -1,9 +1,7 @@
-//! The 3ds Max menu bar: File · Edit · Tools · Views · Create · Modifiers ·
-//! Rendering · Help. The action menus come from `actions::layout::MENUS`;
-//! Create and Modifiers are generated from the Create tab and the catalog.
+//! The generated header menus: Create (every object type, as on the Create,
+//! Demiurge and Characters tabs) and Modifiers (the Modifier List catalog).
+//! The other menus come from `actions::layout::MENUS` (see `header`).
 
-use super::action_ui::menu_entries;
-use super::actions::layout::MENUS;
 use super::theme;
 use crate::editor::{CommandTab, Editor, Tool};
 use crate::generators::WorldKind;
@@ -15,31 +13,6 @@ use crate::render::LightKind;
 use crate::scene::camera::CameraKind;
 use crate::splines::ShapeKind;
 use bevy_egui::egui::{self, RichText};
-
-pub const HEIGHT: f32 = 24.0;
-
-pub fn show(ui: &mut egui::Ui, ed: &mut Editor) -> egui::Rect {
-    egui::Panel::top("menu_bar")
-        .resizable(false)
-        .show_separator_line(false)
-        .exact_size(HEIGHT)
-        .frame(egui::Frame::new().fill(theme::input()).inner_margin(egui::Margin::symmetric(8, 2)))
-        .show(ui, |ui| {
-            ui.horizontal_centered(|ui| {
-                super::logo::mark(ui, 16.0).on_hover_text("Ilex");
-                ui.label(RichText::new("Ilex").color(theme::accent()).strong());
-                for (title, entries) in MENUS {
-                    if *title == "Rendering" {
-                        ui.menu_button("Create", |ui| create_menu(ui, ed));
-                        ui.menu_button("Modifiers", |ui| modifiers_menu(ui, ed));
-                    }
-                    ui.menu_button(*title, |ui| menu_entries(ui, ed, entries));
-                }
-            });
-        })
-        .response
-        .rect
-}
 
 /// Picks a Create tool (and shows the Create tab, like 3ds Max).
 fn pick(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tip: &str, tool: Tool) {

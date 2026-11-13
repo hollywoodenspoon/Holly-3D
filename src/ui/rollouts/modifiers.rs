@@ -1,9 +1,9 @@
 //! Rollouts for FFD, UVW Map and Unwrap UVW modifiers.
 
-use super::HALF;
+use super::half;
 use crate::editor::{Editor, Tool};
 use crate::modifiers::{MapType, ModSub, ModifierKind};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::theme;
 use crate::ui::widgets::{Track, action, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
@@ -28,7 +28,7 @@ fn params(ui: &mut egui::Ui, ed: &mut Editor, body: impl FnOnce(&mut egui::Ui, &
 
 pub(crate) fn sub_buttons(ui: &mut egui::Ui, ed: &mut Editor, subs: &[ModSub]) {
     ui.horizontal(|ui| {
-        let w = CONTENT_W / subs.len() as f32 - 8.0;
+        let w = content_w() / subs.len() as f32 - 8.0;
         for (i, &s) in subs.iter().enumerate() {
             let on = ed.active_mod_sub() == Some(s);
             let label = format!("{}: {}", i + 1, s.label());
@@ -50,14 +50,14 @@ pub fn ffd(ui: &mut egui::Ui, ed: &mut Editor) {
             }
         });
         ui.horizontal(|ui| {
-            if action(ui, "Conform to Shape", true, HALF) {
+            if action(ui, "Conform to Shape", true, half()) {
                 ed.edit_active_modifier("Conform to Shape", |k, input| {
                     if let ModifierKind::Ffd(f) = k {
                         f.conform(input);
                     }
                 });
             }
-            if action(ui, "Reset", true, HALF) {
+            if action(ui, "Reset", true, half()) {
                 ed.edit_active_modifier("Reset FFD", |k, _| {
                     if let ModifierKind::Ffd(f) = k {
                         f.reset();
@@ -66,7 +66,7 @@ pub fn ffd(ui: &mut egui::Ui, ed: &mut Editor) {
             }
         });
         ui.horizontal(|ui| {
-            let w = CONTENT_W / 3.0 - 6.0;
+            let w = content_w() / 3.0 - 6.0;
             for (axis, label) in ["All X", "All Y", "All Z"].iter().enumerate() {
                 if ui
                     .add_sized([w, 24.0], egui::Button::new(*label))
@@ -149,31 +149,31 @@ pub fn uvw_map(ui: &mut egui::Ui, ed: &mut Editor) {
             });
         };
         ui.horizontal(|ui| {
-            if action(ui, "Fit", true, HALF) {
+            if action(ui, "Fit", true, half()) {
                 gizmo_op(ed, "Fit", |u, i| u.fit(i));
             }
-            if action(ui, "Center", true, HALF) {
+            if action(ui, "Center", true, half()) {
                 gizmo_op(ed, "Center", |u, i| u.center_on(i));
             }
         });
         ui.horizontal(|ui| {
             if ui
-                .add(egui::Button::new("Bitmap Fit").min_size(egui::vec2(HALF, 24.0)))
+                .add(egui::Button::new("Bitmap Fit").min_size(egui::vec2(half(), 24.0)))
                 .on_hover_text("Pick a bitmap: the gizmo takes its aspect ratio")
                 .clicked()
             {
                 bitmap_fit(ed);
             }
             let on = ed.tool == Tool::NormalAlign;
-            if ui.add(egui::Button::new("Normal Align").selected(on).min_size(egui::vec2(HALF, 24.0))).clicked() {
+            if ui.add(egui::Button::new("Normal Align").selected(on).min_size(egui::vec2(half(), 24.0))).clicked() {
                 ed.tool = if on { Tool::None } else { Tool::NormalAlign };
             }
         });
         ui.horizontal(|ui| {
-            if action(ui, "View Align", true, HALF) {
+            if action(ui, "View Align", true, half()) {
                 ed.view_align();
             }
-            if action(ui, "Reset", true, HALF) {
+            if action(ui, "Reset", true, half()) {
                 gizmo_op(ed, "Reset Gizmo", |u, i| u.reset(i));
             }
         });
@@ -193,10 +193,10 @@ pub fn unwrap(ui: &mut egui::Ui, ed: &mut Editor) {
         _ => false,
     });
     rollout(ui, "Edit UVs", true, |ui| {
-        if action(ui, "Open UV Editor...", true, CONTENT_W) {
+        if action(ui, "Open UV Editor...", true, content_w()) {
             ed.uv_editor_open = true;
         }
-        if action(ui, "Reset UVWs", true, CONTENT_W) {
+        if action(ui, "Reset UVWs", true, content_w()) {
             ed.edit_active_modifier("Reset UVWs", |k, input| {
                 if let ModifierKind::Unwrap(u) = k {
                     u.capture(input);
@@ -220,7 +220,7 @@ pub fn unwrap(ui: &mut egui::Ui, ed: &mut Editor) {
             });
             t.r(ui.checkbox(&mut u.correct_aspect, "Correct Aspect"));
         });
-        if action(ui, "✨ Smart UV Unwrap", true, CONTENT_W) {
+        if action(ui, "✨ Smart UV Unwrap", true, content_w()) {
             let mut msg = String::new();
             ed.edit_active_modifier("Smart UV Unwrap", |k, input| {
                 if let ModifierKind::Unwrap(u) = k {

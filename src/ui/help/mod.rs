@@ -11,7 +11,6 @@ pub mod view;
 use crate::editor::{CommandTab, Editor};
 use crate::mesh::SubObject;
 use crate::scene::BaseObject;
-use crate::ui::command::PANEL_W;
 use bevy_egui::egui;
 use pages2::{ALL, index_of, text_of};
 
@@ -25,13 +24,11 @@ pub struct HelpUi {
 }
 
 /// Which window (by egui id) leads to which Help page.
-const WINDOW_PAGES: [(&str, &str); 14] = [
+const WINDOW_PAGES: [(&str, &str); 12] = [
     ("material_editor", "materials"),
     ("material_library", "materials"),
-    ("render_setup", "render"),
     ("rfw", "render"),
     ("paint_box", "paint"),
-    ("env_dialog", "sky"),
     ("uv_editor", "modifiers"),
     ("caddy", "editpoly"),
     ("Preferences", "prefs"),
@@ -52,7 +49,7 @@ fn context_page(ctx: &egui::Context, ed: &Editor) -> usize {
             }
         }
     }
-    if pos.x < ctx.viewport_rect().max.x - PANEL_W {
+    if pos.x < ctx.viewport_rect().max.x - ed.prefs.layout.properties_width {
         return index_of(if ed.paint.active { "paint" } else { "basics" });
     }
     let poly = ed.current().is_some_and(|id| matches!(ed.scene.objects[id].base, BaseObject::EditablePoly(_)));
@@ -60,6 +57,10 @@ fn context_page(ctx: &egui::Context, ed: &Editor) -> usize {
         CommandTab::Create => "create",
         CommandTab::Modify if poly || ed.sub != SubObject::Object => "editpoly",
         CommandTab::Modify => "modifiers",
+        CommandTab::Render => "render",
+        CommandTab::Environment => "sky",
+        CommandTab::Demiurge => "ghosttown",
+        CommandTab::Characters => "characters",
         _ => "basics",
     })
 }

@@ -1,4 +1,4 @@
-//! Where every action lives: the top menus, the main toolbar, the
+//! Where every action lives: the top menus, the header row and its `»` menu, the
 //! bottom-right navigation buttons and the Modeling Ribbon. The rule test
 //! walks these tables to prove every action has a visible button.
 
@@ -161,14 +161,16 @@ pub const MENUS: &[(&str, &[Entry])] = &[
     ("Help", &[A(Help), A(Tour), A(HotkeyList), Sep, A(CrashReports), A(About)]),
 ];
 
-/// One slot of the main toolbar.
+/// One slot of the header row or its `»` menu.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Slot {
     A(Action),
     Sep,
-    /// Selection region shape dropdown.
+    /// Buttons drawn as one segmented strip (Q W E R, the snaps).
+    Group(&'static [Action]),
+    /// Selection region shape.
     Region,
-    /// Selection Filter dropdown.
+    /// Selection Filter.
     Filter,
     /// Reference Coordinate System dropdown.
     Coord,
@@ -178,26 +180,26 @@ pub enum Slot {
     SkyMenu,
 }
 
-/// Left-aligned toolbar slots, in 3ds Max order.
-pub const TOOLBAR_LEFT: &[Slot] = &[
+/// The header's middle: the tools used all the time.
+pub const HEADER_TOOLS: &[Slot] = &[
     Slot::A(Undo),
     Slot::A(Redo),
     Slot::Sep,
-    Slot::Filter,
-    Slot::A(SelectObject),
-    Slot::A(SelectByName),
-    Slot::Region,
-    Slot::A(WindowCrossing),
-    Slot::Sep,
-    Slot::A(Move),
-    Slot::A(Rotate),
-    Slot::A(Scale),
+    Slot::Group(&[SelectObject, Move, Rotate, Scale]),
     Slot::Coord,
     Slot::Pivot,
-    Slot::Sep,
-    Slot::A(Snap),
-    Slot::A(AngleSnap),
-    Slot::A(PercentSnap),
+    Slot::Group(&[Snap, AngleSnap, PercentSnap]),
+];
+
+/// The header's right edge: quick buttons for the main windows.
+pub const HEADER_RIGHT: &[Slot] = &[Slot::A(MaterialEditor), Slot::A(CharacterStudio), Slot::A(RenderSetup), Slot::A(Render)];
+
+/// The `»` menu after the header tools: everything else the old toolbar had.
+pub const OVERFLOW: &[Slot] = &[
+    Slot::Filter,
+    Slot::Region,
+    Slot::A(SelectByName),
+    Slot::A(WindowCrossing),
     Slot::A(SnapSettings),
     Slot::Sep,
     Slot::A(Mirror),
@@ -209,23 +211,16 @@ pub const TOOLBAR_LEFT: &[Slot] = &[
     Slot::A(Paint),
     Slot::A(ContactSets),
     Slot::A(BuildingsBrowser),
-    Slot::A(CharacterStudio),
-];
-
-/// Right-aligned toolbar slots, listed left to right.
-pub const TOOLBAR_RIGHT: &[Slot] = &[
+    Slot::A(FaceCloner),
+    Slot::Sep,
     Slot::A(SceneExplorer),
     Slot::A(Ribbon),
     Slot::Sep,
-    Slot::A(DefaultLights),
     Slot::A(Environment),
+    Slot::A(DefaultLights),
     Slot::SkyMenu,
-    Slot::Sep,
-    Slot::A(MaterialEditor),
     Slot::A(MaterialLibrary),
-    Slot::A(RenderSetup),
     Slot::A(FrameWindow),
-    Slot::A(Render),
     Slot::Sep,
     Slot::A(HotkeyList),
     Slot::A(Preferences),
@@ -238,7 +233,7 @@ pub const NAV_BUTTONS: [[Action; 4]; 2] = [
     [Nav(NavMode::Fov), Nav(NavMode::Pan), Nav(NavMode::Orbit), Maximize],
 ];
 
-/// Every action reachable from a menu, the toolbar or the nav buttons.
+/// Every action reachable from a menu, the header or the nav buttons.
 pub fn placed_actions() -> Vec<Action> {
     fn walk(entries: &[Entry], out: &mut Vec<Action>) {
         for e in entries {
@@ -253,9 +248,11 @@ pub fn placed_actions() -> Vec<Action> {
     for (_, entries) in MENUS {
         walk(entries, &mut out);
     }
-    for s in TOOLBAR_LEFT.iter().chain(TOOLBAR_RIGHT) {
-        if let Slot::A(a) = s {
-            out.push(*a);
+    for s in HEADER_TOOLS.iter().chain(HEADER_RIGHT).chain(OVERFLOW) {
+        match s {
+            Slot::A(a) => out.push(*a),
+            Slot::Group(g) => out.extend(g.iter()),
+            _ => {}
         }
     }
     out.extend(NAV_BUTTONS.iter().flatten());

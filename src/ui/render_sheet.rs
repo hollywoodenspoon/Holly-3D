@@ -68,7 +68,7 @@ fn body(ui: &mut egui::Ui, ed: &mut Editor) {
     ui.separator();
     ui.horizontal(|ui| match &ed.rfw.sheet.job {
         Some(j) => {
-            ui.add(egui::ProgressBar::new(j.progress()).desired_width(200.0).show_percentage());
+            ui.add(egui::ProgressBar::new(j.progress()).desired_width(ui.available_width().min(200.0)).show_percentage());
             if ui.button("■ Cancel").clicked() {
                 ed.cancel_sheet();
             }

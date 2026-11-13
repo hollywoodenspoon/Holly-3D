@@ -7,7 +7,7 @@ use crate::editor::Editor;
 use crate::generators::{Biome, OceanParams, TerrainIds, TerrainParams, WorldGen};
 use crate::modifiers::ModifierKind;
 use crate::scene::BaseObject;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
 
@@ -54,7 +54,7 @@ fn terrain_ids(ui: &mut egui::Ui, t: &mut Track, ids: &mut TerrainIds) {
 /// Length, which the modifier takes from its input's bounds).
 pub fn terrain_params(ui: &mut egui::Ui, t: &mut Track, p: &mut TerrainParams, sized: bool) {
     ui.label(RichText::new("Biome Preset").strong());
-    egui::ComboBox::from_id_salt("terrain_biome").width(CONTENT_W - 12.0).selected_text(p.biome.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("terrain_biome").width(content_w() - 12.0).selected_text(p.biome.label()).show_ui(ui, |ui| {
         for b in Biome::ALL {
             if ui.selectable_label(p.biome == b, b.label()).clicked() && p.biome != b {
                 // A new biome starts from its defaults, keeping size and seed.

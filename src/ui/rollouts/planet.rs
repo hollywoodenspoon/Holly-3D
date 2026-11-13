@@ -5,7 +5,7 @@
 use super::spline::grid;
 use super::worlds::{row, seed_row};
 use crate::generators::{PlanetParams, PlanetPart, SurfacePreset};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy_egui::egui::{self, RichText};
 use std::path::PathBuf;
@@ -44,7 +44,7 @@ fn texture_row(ui: &mut egui::Ui, part: PlanetPart, current: &Option<String>, la
 fn surface(ui: &mut egui::Ui, t: &mut Track, p: &mut PlanetParams, req: &mut Option<TexRequest>) {
     t.r(ui.checkbox(&mut p.show_surface, "Show Planet Surface"));
     ui.label(RichText::new("Surface Preset").strong());
-    egui::ComboBox::from_id_salt("planet_surface").width(CONTENT_W - 12.0).selected_text(p.surface.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("planet_surface").width(content_w() - 12.0).selected_text(p.surface.label()).show_ui(ui, |ui| {
         for s in SurfacePreset::ALL {
             if ui.selectable_label(p.surface == s, s.label()).clicked() && p.surface != s {
                 *p = p.with_preset(s);

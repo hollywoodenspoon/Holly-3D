@@ -5,7 +5,7 @@
 use crate::character::makehuman::library::{eye_colors, items, pretty, skins, Category};
 use crate::character::params::CharacterParams;
 use crate::character::wardrobe::{MhAssets, MAX_CLOTHES};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy_egui::egui;
 
@@ -14,7 +14,7 @@ fn pick(ui: &mut egui::Ui, t: &mut Track, label: &str, v: &mut Option<String>, a
     ui.horizontal(|ui| {
         ui.add_sized([90.0, 18.0], egui::Label::new(label));
         let shown = v.as_deref().map_or("None".to_string(), pretty);
-        egui::ComboBox::from_id_salt(("mh_pick", label)).width(CONTENT_W - 110.0).selected_text(shown).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt(("mh_pick", label)).width(content_w() - 110.0).selected_text(shown).show_ui(ui, |ui| {
             t.r(ui.selectable_value(v, None, "None"));
             for &x in all {
                 t.r(ui.selectable_value(v, Some(x.to_string()), pretty(x)));

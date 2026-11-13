@@ -133,12 +133,10 @@ pub struct Observer {
 }
 
 /// Dialog name and whether it is open.
-fn dialogs(ed: &Editor) -> [(&'static str, bool); 9] {
+fn dialogs(ed: &Editor) -> [(&'static str, bool); 7] {
     [
         ("Material Editor", ed.mat_editor.open),
-        ("Render Setup", ed.rfw.setup_open),
         ("Veach Rendered Frame Window", ed.rfw.rfw_open),
-        ("Environment and Effects", ed.env_open),
         ("Preferences", ed.iface.prefs_open),
         ("Help", ed.iface.help_open),
         ("Array", ed.array_dialog.is_some()),

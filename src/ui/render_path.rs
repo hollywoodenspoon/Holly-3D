@@ -2,11 +2,12 @@
 //! Device, Progressive Preview, bounce limits and adaptive sampling.
 
 use crate::render::{ComputeDevice, Integrator, RenderSettings};
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{dim, max_spinner_range};
 use bevy_egui::egui::{self, RichText};
 
 pub fn combo<T: Copy + PartialEq>(ui: &mut egui::Ui, id: &str, width: f32, v: &mut T, all: &[T], label: fn(T) -> &'static str) {
-    egui::ComboBox::from_id_salt(id).width(width).selected_text(label(*v)).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt(id).width(width).truncate().selected_text(label(*v)).show_ui(ui, |ui| {
         for &x in all {
             ui.selectable_value(v, x, label(x));
         }
@@ -17,11 +18,11 @@ pub fn combo<T: Copy + PartialEq>(ui: &mut egui::Ui, id: &str, width: f32, v: &m
 pub fn engine_rows(ui: &mut egui::Ui, r: &mut RenderSettings) {
     egui::Grid::new("rs_engine").num_columns(2).spacing([10.0, 6.0]).show(ui, |ui| {
         ui.label("Renderer");
-        combo(ui, "rs_integrator", 220.0, &mut r.path.integrator, &Integrator::ALL, Integrator::label);
+        combo(ui, "rs_integrator", (content_w() - 120.0).max(110.0), &mut r.path.integrator, &Integrator::ALL, Integrator::label);
         ui.end_row();
         ui.label("Compute Device");
         ui.add_enabled_ui(r.path.integrator == Integrator::PathTracer, |ui| {
-            combo(ui, "rs_device", 220.0, &mut r.path.device, &ComputeDevice::ALL, ComputeDevice::label);
+            combo(ui, "rs_device", (content_w() - 120.0).max(110.0), &mut r.path.device, &ComputeDevice::ALL, ComputeDevice::label);
         });
         ui.end_row();
     });

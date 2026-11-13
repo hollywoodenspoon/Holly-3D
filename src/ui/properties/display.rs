@@ -1,7 +1,7 @@
 //! Display tab: hide and freeze by category or selection, and the display
 //! properties of the active viewport and the selected objects.
 
-use super::CONTENT_W;
+use super::content_w;
 use crate::editor::{Editor, ObjCategory};
 use crate::ui::action_ui::sized_button;
 use crate::ui::actions::Action;
@@ -10,7 +10,7 @@ use bevy_egui::egui;
 
 /// Two big action buttons per row.
 pub fn pairs(ui: &mut egui::Ui, ed: &mut Editor, id: &str, actions: &[Action]) {
-    let size = egui::vec2(CONTENT_W / 2.0 - 4.0, 26.0);
+    let size = egui::vec2(content_w() / 2.0 - 4.0, 26.0);
     egui::Grid::new(id).num_columns(2).spacing([6.0, 6.0]).show(ui, |ui| {
         for (i, a) in actions.iter().enumerate() {
             sized_button(ui, ed, *a, &a.label(), size);

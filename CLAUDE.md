@@ -358,18 +358,18 @@ Configure `egui::Style` and `egui::Visuals` on startup in `src/ui/theme.rs`:
 - **3ds Max Spinner Behavior (Crucial Helper Function):**
   Wrap every numeric `egui::DragValue` in a helper `max_spinner(ui, &mut value, speed, default_val)` so that **Right-Clicking any numeric spinner immediately resets its value to `default_val` (usually `0.0`)**.
 
-### Fixed 5-Zone Layout (`src/ui/layout.rs`)
-1. **Top Main Toolbar (`36px` height):**
-   - Left: `File` (New, Open, Save, Import OBJ/glTF, Export OBJ/glTF), `Edit` (Undo, Redo, Clone, Delete), `Tools` (Array, Mirror, Align).
-   - Center: `[Q]` `[W]` `[E]` `[R]` mode buttons | Coordinate System (`View`, `World`, `Local`) | Pivot Mode (`Pivot Point`, `Selection Center`, `Transform Coordinate Center`) | `[S] Snap` `[A] Angle Snap` | `[Mirror]` `[Array...]` `[🖌 Paint]`.
-   - Right: `[ ⚪ Material Editor (M) ]` | `[ ⚙ Render Setup (F10) ]` | `[  teapot/camera Quick Render (F9) ]`.
-2. **Left Scene Explorer (`200px` width, collapsible with `H`):**
-   - Clean outliner of Scene Objects with `[👁]` visibility toggle, `[❄]` freeze toggle, object type icon (Mesh, Spline, Light, Camera), and search filter.
-3. **Center 3D Viewport(s):**
-   - Top-Left overlay text buttons matching 3ds Max: `[ + ] [ Perspective ] [ Default Shading + Edged Faces ]`.
-   - Supports single maximized view or 2x2 split (`Alt + W`) with a gold border (`#E59C24`) around the active quadrant and an `X/Y/Z` axis tripod in the bottom-left corner.
-4. **Right Command Panel (`310px` fixed width):**
-   - **Top Tab Row:** `[ ➕ Create ]` | `[ 🌈 Modify ]` | `[ ✥ Pivot ]`.
+### Layout (`src/ui/mod.rs`)
+1. **Header row (`src/ui/header.rs`, one row, wraps on narrow windows):**
+   - Left: logo + menus `File` `Edit` `Tools` `Views` `Create` `Modifiers` `Rendering` `Help`.
+   - Middle (`actions::layout::HEADER_TOOLS`): Undo/Redo | segmented `[Q][W][E][R]` | Coordinate System | Pivot Mode | segmented `[S][A°][%]` snaps | `»` menu (`OVERFLOW`) with every other tool (Mirror, Array, Align, Paint, Selection Filter, region shape, Sky, Explorer, Ribbon, Preferences, Help…).
+   - Right (`HEADER_RIGHT`): `Materials (M)` | `MakeHuman` | `Setup (F10)` | accent-filled `▶ Render (F9)`.
+2. **Center 3D Viewport(s):**
+   - Rounded viewport cards with pill labels `+` `Perspective ⏷` `Default Shading ⏷`.
+   - Single maximized view or 2x2 split (`Alt + W`), accent border around the active view, `X/Y/Z` tripod bottom-left.
+3. **Right Properties column (`src/ui/properties/`, default `340px`, drag its left edge `260–640px`; width and Explorer height saved in `prefs.layout`):**
+   - **Top: Scene Explorer** (`src/ui/explorer.rs`, `H` hides it): search, `[👁]` visibility, `[❄]` freeze, type icons. A drag bar under it moves the split.
+   - **Bottom: vertical icon tab strip + tab body.** Tabs: `Create` `Modify` `Hierarchy` `Display` `Utilities` | `Render` (Render Setup, `F10` toggles it) `Environment` (`8` toggles it) | `Demiurge` (worlds, settlements, buildings, GeoGen) `Characters` (humans, creatures, Face Cloner).
+   - Size widgets from `properties::content_w()` (it follows the column width), never a fixed pixel width.
    - **Create Tab:** Sub-category icons for `Geometry` (`Box`, `Sphere`, `Cylinder`, `Plane`, `Torus`, `Cone`, `GeoGen Rock/Crystal`), `Shapes / Splines` (`Line`, `Circle`, `Rectangle`, `Star`, `NGon`), and `Lights / Cameras` (`Directional`, `Point`, `Spot`, `Target Camera`).
    - **Modify Tab:**
      1. Object Name text box + Wireframe Color swatch on the right.

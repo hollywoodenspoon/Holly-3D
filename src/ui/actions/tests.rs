@@ -1,5 +1,5 @@
 use super::keys::{Chord, action_of, chord_of, default_keymap};
-use super::layout::{TOOLBAR_LEFT, TOOLBAR_RIGHT, placed_actions};
+use super::layout::{HEADER_RIGHT, HEADER_TOOLS, OVERFLOW, placed_actions};
 use super::*;
 use crate::editor::Editor;
 use crate::primitives::PrimitiveKind;
@@ -55,18 +55,29 @@ fn fonts() -> egui::Context {
     ctx
 }
 
-/// Toolbar captions must not render as empty boxes.
+/// Header captions and tab icons must not render as empty boxes.
 #[test]
-fn toolbar_glyphs_exist_in_the_ui_font() {
+fn header_glyphs_exist_in_the_ui_font() {
     let ctx = fonts();
     let ok = |s: &str| s.chars().all(|c| drawable(&ctx, c));
     let mut bad = Vec::new();
-    for s in TOOLBAR_LEFT.iter().chain(TOOLBAR_RIGHT) {
-        if let layout::Slot::A(a) = s {
-            let text = a.short();
-            if !ok(&text) {
-                bad.push((*a, text));
+    for s in HEADER_TOOLS.iter().chain(HEADER_RIGHT).chain(OVERFLOW) {
+        let group = match s {
+            layout::Slot::A(a) => std::slice::from_ref(a),
+            layout::Slot::Group(g) => g,
+            _ => &[],
+        };
+        for a in group {
+            for text in [a.short(), crate::ui::header::caption(*a)] {
+                if !ok(&text) {
+                    bad.push((*a, text));
+                }
             }
+        }
+    }
+    for (_, icon, ..) in crate::ui::properties::TABS.iter().flatten() {
+        if !ok(icon) {
+            bad.push((Action::Help, icon.to_string()));
         }
     }
     for row in layout::NAV_BUTTONS {
@@ -116,7 +127,7 @@ fn toggles_report_their_state() {
     assert!(!Action::Clone.enabled(&ed), "nothing selected");
     Action::Sky(SkyPreset::Sunset).run(&mut ed);
     assert_eq!(Action::Sky(SkyPreset::Sunset).checked(&ed), Some(true));
-    assert!(ed.env_open, "a sky preset opens the Environment window");
+    assert_eq!(ed.tab, crate::editor::CommandTab::Environment, "a sky preset shows the Environment tab");
 }
 
 

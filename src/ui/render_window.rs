@@ -83,7 +83,7 @@ fn toolbar(ui: &mut egui::Ui, ed: &mut Editor) {
             ed.rfw.region_mode = !ed.rfw.region_mode;
         }
         if ui.button("⚙ Setup").on_hover_text("Render Setup (F10)").clicked() {
-            ed.rfw.setup_open = true;
+            ed.tab = crate::editor::CommandTab::Render;
         }
         if toggle_button(ui, ed.rfw.sheet.open, "🎞 Turntable / Sprites").on_hover_text("Render Turntable / Sprite Sheet...").clicked() {
             ed.rfw.sheet.open = !ed.rfw.sheet.open;

@@ -4,14 +4,14 @@
 use super::spline::grid;
 use super::worlds::{row, seed_row};
 use crate::generators::smoke::{SmokeParams, SmokeStyle};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui;
 
 pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut SmokeParams, salt: &str) {
     ui.horizontal(|ui| {
         ui.label("Smoke:");
-        egui::ComboBox::from_id_salt(("smoke_style", salt)).width(CONTENT_W - 60.0).selected_text(p.style.label()).show_ui(ui, |ui| {
+        egui::ComboBox::from_id_salt(("smoke_style", salt)).width(content_w() - 60.0).selected_text(p.style.label()).show_ui(ui, |ui| {
             for s in SmokeStyle::ALL {
                 t.r(ui.selectable_value(&mut p.style, s, s.label()));
             }

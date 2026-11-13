@@ -1,6 +1,6 @@
 //! Edit Vertices / Edit Edges & Borders / Edit Polygons & Elements rollouts.
 
-use super::{HALF, caddy_cell, op_cell};
+use super::{half, caddy_cell, op_cell};
 use crate::editor::poly_tools::{along_spline_default, hinge_default};
 use crate::editor::{Editor, Tool};
 use crate::mesh::SubObject;
@@ -10,7 +10,7 @@ use bevy_egui::egui;
 
 fn tool_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tool: Tool) {
     let on = std::mem::discriminant(&ed.tool) == std::mem::discriminant(&tool);
-    if ui.add_sized([HALF, 24.0], egui::Button::new(label).selected(on)).clicked() {
+    if ui.add_sized([half(), 24.0], egui::Button::new(label).selected(on)).clicked() {
         ed.tool = if on { Tool::None } else { tool };
     }
 }
@@ -18,7 +18,7 @@ fn tool_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, tool: Tool) {
 /// Split cell for pick-based ops: main picks and applies the remembered
 /// settings, `[□]` opens the caddy (without a pick) and starts picking.
 fn pick_cell(ui: &mut egui::Ui, ed: &mut Editor, label: &str, default: PolyOp, tool: Tool) {
-    let (main, caddy) = split_button(ui, label, true, crate::ui::command::CONTENT_W);
+    let (main, caddy) = split_button(ui, label, true, crate::ui::properties::content_w());
     if main {
         ed.tool = tool;
     } else if caddy {
@@ -50,11 +50,11 @@ pub fn vertices(ui: &mut egui::Ui, ed: &mut Editor) {
             tool_cell(ui, ed, "Target Weld", Tool::TargetWeld { first: None });
             ui.end_row();
             op_cell(ui, ed, "Connect", PolyOp::ConnectVertices, true);
-            if ui.add_sized([HALF, 24.0], egui::Button::new("Remove Isolated")).clicked() {
+            if ui.add_sized([half(), 24.0], egui::Button::new("Remove Isolated")).clicked() {
                 ed.status = "No isolated vertices: polygons always own their vertices".into();
             }
             ui.end_row();
-            if ui.add_sized([HALF, 24.0], egui::Button::new("Remove Unused Map")).clicked() {
+            if ui.add_sized([half(), 24.0], egui::Button::new("Remove Unused Map")).clicked() {
                 ed.status = "UVs are stored per face corner — nothing unused to remove".into();
             }
             ui.end_row();
@@ -70,7 +70,7 @@ pub fn edges(ui: &mut egui::Ui, ed: &mut Editor) {
             tool_cell(ui, ed, "Insert Vertex", Tool::InsertVertex);
             let ctrl = ui.input(|i| i.modifiers.ctrl || i.modifiers.command);
             if ui
-                .add_sized([HALF, 24.0], egui::Button::new("Remove"))
+                .add_sized([half(), 24.0], egui::Button::new("Remove"))
                 .on_hover_text("Ctrl+Remove also removes the orphaned vertices")
                 .clicked()
             {
@@ -93,7 +93,7 @@ pub fn edges(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.label("");
             ui.end_row();
             if ui
-                .add_sized([HALF, 24.0], egui::Button::new("Create Shape"))
+                .add_sized([half(), 24.0], egui::Button::new("Create Shape"))
                 .on_hover_text("New Editable Spline from the selected edges")
                 .clicked()
             {

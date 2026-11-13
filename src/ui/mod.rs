@@ -1,4 +1,5 @@
-//! egui front-end: fixed 5-zone 3ds Max layout + floating windows.
+//! egui front-end: header row, viewports, the right Properties column,
+//! the status bar and floating windows.
 
 pub mod action_ui;
 pub mod actions;
@@ -8,7 +9,6 @@ pub mod character_studio;
 pub mod array_dialog;
 pub mod caddy;
 pub mod clone_dialog;
-pub mod command;
 pub mod crash_dialog;
 pub mod env_dialog;
 pub mod explorer;
@@ -17,12 +17,14 @@ pub mod file_menu;
 pub mod fonts;
 pub mod help;
 pub mod logo;
+pub mod header;
 pub mod hotkeys;
 pub mod material_editor;
 pub mod menubar;
 pub mod mirror_dialog;
 pub mod paintbox;
 pub mod prefs;
+pub mod properties;
 pub mod quad_menu;
 pub mod render_fx;
 pub mod render_lens;
@@ -41,7 +43,6 @@ pub mod snaps;
 pub mod status_bar;
 pub mod theme;
 pub mod tool_windows;
-pub mod toolbar;
 pub mod uv_editor;
 pub mod viewport_ui;
 pub mod widgets;
@@ -98,17 +99,13 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     let mut root =
         Ui::new(ctx.clone(), "minimax_root".into(), UiBuilder::new().layer_id(LayerId::background()).max_rect(ctx.viewport_rect()));
     let screen = ctx.viewport_rect();
-    menubar::show(&mut root, ed);
-    let mut top = toolbar::show(&mut root, ed).max.y;
+    let mut top = header::show(&mut root, ed).max.y;
     if ed.iface.ribbon {
         top = ribbon::show(&mut root, ed).max.y;
     }
     let bottom = status_bar::show(&mut root, ed).min.y;
-    // Side panels are fixed-width (3ds Max layout), so the viewport edges are
-    // derived from those widths rather than from content-dependent rects.
-    let left = if ed.explorer_visible { explorer::show(&mut root, ed).min.x + explorer::WIDTH } else { screen.min.x };
-    let right = command::show(&mut root, ed, &mut st).max.x.min(screen.max.x) - command::PANEL_W;
-    let area = egui::Rect::from_min_max(egui::pos2(left, top), egui::pos2(right, bottom));
+    let right = properties::show(&mut root, ed, &mut st).min.x.clamp(screen.min.x, screen.max.x);
+    let area = egui::Rect::from_min_max(egui::pos2(screen.min.x, top), egui::pos2(right, bottom));
     viewport_ui::show(&mut root, ed, &mut st.viewport, area);
     caddy::show(&ctx, ed);
     clone_dialog::show(&ctx, ed);
@@ -123,12 +120,10 @@ fn ui_system(mut contexts: EguiContexts, mut ed: ResMut<Editor>, mut st: ResMut<
     uv_editor::show(&ctx, ed, &mut st.uv);
     material_editor::show(&ctx, ed, &mut st.mat);
     material_editor::library::show(&ctx, ed, &mut st.mat.library);
-    env_dialog::show(&ctx, ed);
     buildings_browser::show(&ctx, ed);
     character_studio::show(&ctx, ed);
     face_cloner::show(&ctx, ed, &mut st.face);
     paintbox::show(&ctx, ed);
-    render_setup::show(&ctx, ed, &mut st.rfw.setup_tab);
     render_window::show(&ctx, ed, &mut st.rfw);
     help::show(&ctx, ed, &mut st.help);
     crash_dialog::show(&ctx, ed);

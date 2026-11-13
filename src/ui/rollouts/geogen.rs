@@ -4,14 +4,14 @@
 use super::spline::{grid, mod_params, num_row, u_row};
 use crate::editor::Editor;
 use crate::modifiers::{GeoGenParams, GeoMode, ModifierKind};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, max_spinner_range, rollout};
 use bevy_egui::egui::{self, RichText};
 
 /// Generator Mode + Parameters, shared by the base object and the modifier.
 fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut GeoGenParams) {
     ui.label(RichText::new("Generator Mode").strong());
-    egui::ComboBox::from_id_salt("geogen_mode").width(CONTENT_W - 12.0).selected_text(p.mode.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("geogen_mode").width(content_w() - 12.0).selected_text(p.mode.label()).show_ui(ui, |ui| {
         for m in GeoMode::ALL {
             if ui.selectable_label(p.mode == m, m.label()).clicked() && p.mode != m {
                 // A new mode starts from its own defaults, keeping the seed.

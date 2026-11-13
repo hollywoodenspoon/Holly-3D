@@ -5,14 +5,14 @@
 use super::spline::{grid, num_row, u_row};
 use crate::editor::{Editor, Tool};
 use crate::mech::{Fastener, FastenerKind, Gear, GearType, Hose, HoseCurve, MechPart, PistonPart, ThreadStd};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim, rollout};
 use bevy::math::Vec3;
 use bevy_egui::egui::{self, RichText};
 
 fn gear(ui: &mut egui::Ui, t: &mut Track, g: &mut Gear) {
     ui.label(RichText::new("Type").strong());
-    egui::ComboBox::from_id_salt("gear_type").width(CONTENT_W - 12.0).selected_text(g.kind.label()).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("gear_type").width(content_w() - 12.0).selected_text(g.kind.label()).show_ui(ui, |ui| {
         for k in GearType::ALL {
             t.r(ui.selectable_value(&mut g.kind, k, k.label()));
         }
@@ -52,7 +52,7 @@ fn fastener(ui: &mut egui::Ui, t: &mut Track, f: &mut Fastener) {
             }
         }
     });
-    egui::ComboBox::from_id_salt("fastener_size").width(CONTENT_W - 12.0).selected_text(f.spec().name).show_ui(ui, |ui| {
+    egui::ComboBox::from_id_salt("fastener_size").width(content_w() - 12.0).selected_text(f.spec().name).show_ui(ui, |ui| {
         for (i, s) in f.standard.sizes().iter().enumerate() {
             t.r(ui.selectable_value(&mut f.size, i, format!("{}  (pitch {:.2} mm)", s.name, s.pitch)));
         }
@@ -126,7 +126,7 @@ fn hose_ends(ui: &mut egui::Ui, ed: &mut Editor, h: &Hose) {
         ui.label(RichText::new(label).strong());
         ui.horizontal(|ui| {
             let picking = ed.tool == Tool::PickHoseEnd { top };
-            let pick = ui.add_sized([CONTENT_W * 0.6, 24.0], egui::Button::new(format!("Pick: {name}")).selected(picking));
+            let pick = ui.add_sized([content_w() * 0.6, 24.0], egui::Button::new(format!("Pick: {name}")).selected(picking));
             if pick.clicked() {
                 ed.tool = if picking { Tool::None } else { Tool::PickHoseEnd { top } };
             }

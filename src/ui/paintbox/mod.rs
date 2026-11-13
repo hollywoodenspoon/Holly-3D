@@ -9,7 +9,7 @@ mod layers;
 use crate::editor::Editor;
 use crate::modifiers::ModifierKind;
 use crate::paint::PaintMode;
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, action, dim, max_spinner_range, rollout, toggle_button};
 use bevy_egui::egui::{self, RichText};
 
@@ -105,7 +105,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor) {
 pub fn modifier_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "VertexPaint", true, |ui| {
         let label = if ed.paint.active { "Close PaintBox" } else { "🎨 Open PaintBox" };
-        if action(ui, label, true, CONTENT_W) {
+        if action(ui, label, true, content_w()) {
             ed.paint.mode = PaintMode::Vertex;
             ed.toggle_paint();
         }

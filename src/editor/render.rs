@@ -17,7 +17,6 @@ pub struct ClonedFrame {
 
 #[derive(Default)]
 pub struct RenderUi {
-    pub setup_open: bool,
     pub rfw_open: bool,
     pub fb: Option<FrameBuffer>,
     pub job: Option<RenderJob>,

@@ -9,7 +9,7 @@ pub mod wardrobe;
 use crate::character::params::{Archetype, Creature};
 use crate::editor::characters::CharacterPick;
 use crate::editor::{Editor, Tool};
-use crate::ui::command::CONTENT_W;
+use crate::ui::properties::content_w;
 use crate::ui::widgets::{dim, rollout};
 use bevy::math::Vec3;
 use bevy_egui::egui;
@@ -47,7 +47,7 @@ fn tile(ui: &mut egui::Ui, ed: &mut Editor, w: f32, pick: CharacterPick) {
 
 /// Archetype + creature tile grids (`cols` per row).
 pub fn gallery(ui: &mut egui::Ui, ed: &mut Editor, cols: usize) {
-    let w = CONTENT_W / cols as f32 - 6.0;
+    let w = content_w() / cols as f32 - 6.0;
     ui.label(egui::RichText::new("Humanoids (MakeHuman hm08, CC0)").strong());
     egui::Grid::new("char_archetypes").num_columns(cols).show(ui, |ui| {
         for (i, &a) in Archetype::ALL.iter().enumerate() {
@@ -70,7 +70,7 @@ pub fn gallery(ui: &mut egui::Ui, ed: &mut Editor, cols: usize) {
         Tool::CreateCharacter(p) => p,
         _ => CharacterPick::Archetype(Archetype::Human),
     };
-    if ui.add_sized([CONTENT_W, 24.0], egui::Button::new(format!("Place {} at Origin", armed.label()))).clicked() {
+    if ui.add_sized([content_w(), 24.0], egui::Button::new(format!("Place {} at Origin", armed.label()))).clicked() {
         ed.create_pick(armed, Vec3::ZERO);
     }
 }
@@ -79,7 +79,7 @@ pub fn gallery(ui: &mut egui::Ui, ed: &mut Editor, cols: usize) {
 pub fn create_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Geometry — Characters & Creatures", true, |ui| {
         gallery(ui, ed, 2);
-        if ui.add_sized([CONTENT_W, 26.0], egui::Button::new("Open Character & Creature Studio...").selected(ed.iface.character_studio_open)).clicked() {
+        if ui.add_sized([content_w(), 26.0], egui::Button::new("Open Character & Creature Studio...").selected(ed.iface.character_studio_open)).clicked() {
             ed.iface.character_studio_open ^= true;
         }
     });

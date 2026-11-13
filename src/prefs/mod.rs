@@ -19,6 +19,29 @@ pub struct Preferences {
     pub general: GeneralPrefs,
     pub render: RenderPrefs,
     pub assets: AssetPrefs,
+    pub layout: LayoutPrefs,
+}
+
+/// Sizes of the resizable panels, remembered between sessions.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct LayoutPrefs {
+    /// Width of the right Properties column in points.
+    pub properties_width: f32,
+    /// Height of the Scene Explorer at the top of that column.
+    pub explorer_height: f32,
+}
+
+impl LayoutPrefs {
+    pub const MIN_W: f32 = 260.0;
+    pub const MAX_W: f32 = 640.0;
+    pub const MIN_EXPLORER: f32 = 80.0;
+}
+
+impl Default for LayoutPrefs {
+    fn default() -> Self {
+        Self { properties_width: 340.0, explorer_height: 200.0 }
+    }
 }
 
 /// The interface font (Preferences > Theme).
