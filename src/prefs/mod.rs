@@ -32,6 +32,8 @@ pub struct LayoutPrefs {
     pub explorer_height: f32,
     /// Dialogs living in their own OS windows (`popout::Dock::key` names).
     pub popouts: Vec<String>,
+    /// Prefab Library favourites (prefab type names).
+    pub prefab_favourites: Vec<String>,
 }
 
 impl LayoutPrefs {
@@ -42,7 +44,7 @@ impl LayoutPrefs {
 
 impl Default for LayoutPrefs {
     fn default() -> Self {
-        Self { properties_width: 340.0, explorer_height: 200.0, popouts: Vec::new() }
+        Self { properties_width: 340.0, explorer_height: 200.0, popouts: Vec::new(), prefab_favourites: Vec::new() }
     }
 }
 

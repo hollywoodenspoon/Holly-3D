@@ -3,7 +3,7 @@
 
 use super::spline::grid;
 use super::worlds::{row, seed_row};
-use crate::generators::buildings::{BuildingKind, BuildingParams, Category, MatStyle, StairKind};
+use crate::generators::buildings::{BuildingKind, BuildingParams, Category, Detail, MatStyle, StairKind};
 use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui::{self, RichText};
@@ -31,6 +31,19 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
     });
     t.r(ui.checkbox(&mut p.emissive, "Emissive Lights"))
         .on_hover_text("Lit windows, lamps, lanterns, neon signs and forge fires glow; off = dark glass");
+    ui.horizontal(|ui| {
+        ui.label("Detail:");
+        for d in Detail::ALL {
+            let tip = match d {
+                Detail::Standard => "Light settlement look: flat window panes, few parts",
+                Detail::Mid => "Window frames, sills and mullions, trims and extra small parts",
+            };
+            if ui.selectable_label(p.detail == d, d.label()).on_hover_text(tip).clicked() && p.detail != d {
+                p.detail = d;
+                (t.started, t.changed) = (true, true);
+            }
+        }
+    });
     ui.horizontal(|ui| {
         ui.label("Stairs:");
         egui::ComboBox::from_id_salt("building_stairs").selected_text(p.stairs.label()).show_ui(ui, |ui| {
@@ -92,6 +105,7 @@ fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
                         style: p.style,
                         stairs: p.stairs,
                         ruin: p.ruin.clone(),
+                        detail: p.detail,
                         ..BuildingParams::of(k)
                     };
                     (t.started, t.changed) = (true, true);

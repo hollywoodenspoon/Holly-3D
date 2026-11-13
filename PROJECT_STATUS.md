@@ -1411,3 +1411,37 @@ Not done yet:
   - Textures may use another extension than the `.mhmat` names.
   - Imports appear next to the bundled items in every picker, fitted the same way. Remove (click twice) deletes Ilex's copy.
 - Not done yet (part B2): bundled extra CC0 community assets, asset thumbnails, eye-colour tint, the Mesh2Motion animation library.
+
+## 42. Prefab Library, part H1: library browser, place mode, Detail
+
+- **Prefab Library** (it was the Buildings & Props Browser). Open it from Tools, the Demiurge tab or the 🏠 Prefabs button.
+  - It has categories, search and **Favourites**: click the star on a tile. Favourites are kept in Preferences (`layout.prefab_favourites`).
+  - The thumbnail cache grows with the number of prefab kinds, so new kinds need no code change there.
+- **Place mode** (`Tool::PlacePrefab`):
+  - **Placing:**
+    - Click a tile, then click in a viewport. The prefab drops onto the closest object surface under the cursor, or onto the grid or snap point. It always stands upright.
+    - The viewport shows a footprint outline with a front arrow, plus the rotation and scale.
+  - **Controls while placing:**
+    - the mouse wheel turns it in 15° steps;
+    - `[` / `]` scale it by ×1.1;
+    - Shift-click stamps more copies;
+    - right-click ends.
+  - **The library's top bar** has the same Rotation and Scale, with buttons and right-click-resettable spinners, plus three checkboxes:
+    - **Vary Seed** gives each copy a new seed;
+    - **Drop on Surfaces**;
+    - **Drag to Size** gives the old drag-a-footprint tool instead.
+- **Detail: Standard / Mid** on every building and prop (`BuildingParams.detail`, `#[serde(default)]`, so old scenes load as Standard).
+  - Mid gives every window a frame, a deeper sill and a mullion on wide panes, in Trim (ID 4).
+  - Settlements stay Standard.
+- **Destruction** (Intact → Rubble) was already on every prefab through the ruin system.
+- Tests:
+  - place options;
+  - dropping onto an object, or onto the grid when Drop on Surfaces is off;
+  - rotation and stamping;
+  - Vary Seed;
+  - Mid detail polygon counts;
+  - old-scene load.
+- **Not done yet:**
+  - snap sockets, Sets, Group/Ungroup and "My Prefabs";
+  - raytraced thumbnails (they are still flat-shaded);
+  - the new building kinds, which come next in batches.

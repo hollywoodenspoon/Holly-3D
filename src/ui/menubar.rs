@@ -50,7 +50,7 @@ pub fn create_menu(ui: &mut egui::Ui, ed: &mut Editor) {
         }
     });
     ui.menu_button("Demiurge Buildings & Props", |ui| {
-        if ui.button("Buildings & Props Browser...").clicked() {
+        if ui.button("Prefab Library...").clicked() {
             ed.buildings_browser_open = true;
             ui.close();
         }

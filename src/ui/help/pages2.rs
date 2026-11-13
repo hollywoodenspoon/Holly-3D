@@ -114,7 +114,8 @@ pub const GHOSTTOWN: Page = Page {
             "New presets: River City, Harbour Town, Industrial, Old Town + Modern Sprawl, Square Walled City, River Town, Castle & Town, Star Fort, Crossroads Hamlet and Monastery.",
             "Buildings: uncheck any type to leave it out. Building Parts, Town Features (river, bridges, walls, moat, rail...), Emissive Lights and Prop Style (Generated / Low-poly / Realistic) shape the town.",
             "Damaged / Battlefield Mode, or the Demiurge Battlefield & Ruin modifier, wrecks the buildings. Blast Zones aim the damage.",
-            "Buildings & Props Browser (Tools menu or the 🏠 toolbar button): click a thumbnail, then drag a footprint to place one of 44 buildings or props on its own.",
+            "Prefab Library (Tools menu, the Demiurge tab or the 🏠 Prefabs button): thumbnails of every building, bridge and street prop, with categories, search and Favourites (click the star on a tile). Click a tile, then click in a viewport: the prefab lands on the surface under the cursor (a roof, terrain, a table) standing upright. The mouse wheel turns it, [ and ] scale it, Shift-click stamps more copies and right-click ends. The bar on top has the same Rotation and Scale with buttons, Vary Seed (each copy looks different), Drop on Surfaces, and Drag to Size (drag out the footprint instead).",
+            "Every prefab has Detail: Standard (light) or Mid (window frames, sills, mullions and trims), and the Destruction rollout from Intact to Rubble.",
             "Destruction Level (on a building, the town and the Battlefield modifier): Intact, Light Damage, Heavy Damage, Warzone Collapse, Apocalyptic Ruin or Pure Rubble. Each building in a town varies by one step.",
             "Rubble Density, Era (Modern concrete and rebar, Medieval stone and charred timber, Ancient stone and moss), Glowing Embers with Ember Glow (ID 25) and Gore / Blood Smears (ID 28) dress the rubble mounds.",
             "The Rubble Pile type places a mound on its own: Width and Length set the spread, Pile Height its height.",
@@ -122,7 +123,7 @@ pub const GHOSTTOWN: Page = Page {
             "Spawn Rising Smoke Plumes (damaged town or Battlefield modifier) raises plumes from the tallest wrecks and the blast zones.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),
-        ShowMe("Open the Buildings & Props Browser", Show::Act(Action::BuildingsBrowser)),
+        ShowMe("Open the Prefab Library", Show::Act(Action::BuildingsBrowser)),
     ],
 };
 

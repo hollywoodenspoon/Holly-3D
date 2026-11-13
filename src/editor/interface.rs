@@ -125,6 +125,8 @@ pub struct InterfaceState {
     pub prev_tab: CommandTab,
     /// A panel was resized: save the layout once the mouse is released.
     pub layout_dirty: bool,
+    /// Prefab Library place mode options.
+    pub place: super::place::PlaceOpts,
 }
 
 /// The default Show Buttons set (the most used modifiers).

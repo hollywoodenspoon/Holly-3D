@@ -139,3 +139,20 @@ fn photo_style_picks_the_photo_pack() {
     assert_eq!(MatStyle::Photo.pack(), crate::materials::MultiPreset::SettlementPhoto);
     assert_eq!(crate::materials::MultiPreset::Settlement.build().subs.len(), 29);
 }
+
+#[test]
+fn mid_detail_adds_window_frames_and_old_scenes_default_to_standard() {
+    let std = BuildingParams::of(BuildingKind::BrickTenement);
+    let mid = BuildingParams { detail: super::Detail::Mid, ..std.clone() };
+    let (a, b) = (std.build(), mid.build());
+    assert!(b.polygons.len() > a.polygons.len() * 2, "{} vs {}", a.polygons.len(), b.polygons.len());
+    assert!(b.polygons.values().any(|p| p.material_id == crate::generators::kit::ids::TRIM));
+    for (pid, _) in &b.polygons {
+        assert!(b.poly_normal(pid).is_finite());
+    }
+    // A scene saved before Detail existed loads as Standard.
+    let json = serde_json::to_string(&std).unwrap().replace(",\"detail\":\"Standard\"", "");
+    assert!(!json.contains("detail"));
+    let back: BuildingParams = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.detail, super::Detail::Standard);
+}

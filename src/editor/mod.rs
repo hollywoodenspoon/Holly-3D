@@ -27,6 +27,7 @@ pub mod modsub;
 pub mod normals;
 pub mod paint;
 pub mod paint_layers;
+pub mod place;
 #[cfg(test)]
 mod paint_tests;
 pub mod poly_tools;
@@ -112,7 +113,7 @@ pub struct Editor {
     pub mat_editor: MatEditor,
     /// Ctrl+L: force the Default Modeling Lights rig even with scene lights.
     pub default_lights: bool,
-    /// Buildings & Props Browser window.
+    /// Prefab Library window (buildings, bridges, street props).
     pub buildings_browser_open: bool,
     /// Viewport Paint / PaintBox settings.
     pub paint: crate::paint::PaintSettings,

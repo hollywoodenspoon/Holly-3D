@@ -27,6 +27,25 @@ use crate::mesh::EditablePoly;
 use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
+/// Prefab detail level: Standard is the light settlement look; Mid adds
+/// window frames and sills, roof trims and other small parts.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum Detail {
+    #[default]
+    Standard,
+    Mid,
+}
+
+impl Detail {
+    pub const ALL: [Detail; 2] = [Self::Standard, Self::Mid];
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Standard => "Standard",
+            Self::Mid => "Mid",
+        }
+    }
+}
+
 /// Material style of the assigned Settlement pack.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MatStyle {
@@ -68,6 +87,8 @@ pub struct BuildingParams {
     /// PR 7 Destruction: level, era, rubble, embers and gore (also the
     /// Rubble Pile's density, height and era).
     pub ruin: RuinParams,
+    /// Standard or Mid detail (frames, sills, trims).
+    pub detail: Detail,
 }
 
 impl Default for BuildingParams {
@@ -91,6 +112,7 @@ impl BuildingParams {
             style: MatStyle::Procedural,
             stairs: StairKind::Straight,
             ruin: RuinParams::default(),
+            detail: Detail::Standard,
         }
     }
 
@@ -109,6 +131,7 @@ impl BuildingParams {
     fn build_intact(&self) -> EditablePoly {
         let mut b = Ctx { kit: Kit::new(), p: self.clone(), r: rng(self.seed, 0xB01D + self.kind as u64) };
         b.kit.sg = 0;
+        b.kit.mid = self.detail == Detail::Mid;
         let hx = (self.width.max(0.2)) * 0.5;
         let hy = (self.length.max(0.2)) * 0.5;
         let floors = self.floors.clamp(1, 200);

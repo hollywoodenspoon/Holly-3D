@@ -59,6 +59,9 @@ pub enum Tool {
     CreateGeoGen(crate::modifiers::GeoMode),
     /// Click-placed procedural world (Terrain, Ocean, Planet).
     CreateWorld(crate::generators::WorldKind),
+    /// Prefab Library place mode: click drops the prefab on the surface
+    /// under the cursor; Shift-click keeps stamping copies.
+    PlacePrefab(crate::generators::buildings::BuildingKind),
     /// Click-placed Mech primitive (Gear, Piston, Hose).
     CreateMech(crate::mech::MechKind),
     /// Phase 10B: click-placed (or height-dragged) character or creature.
@@ -132,6 +135,7 @@ impl Tool {
             Tool::Create(_) => Some("Drag to size the object; click for a default one"),
             Tool::CreateGeoGen(_) => Some("Drag the base radius, then move for the height"),
             Tool::CreateWorld(_) => Some("Drag out the area or radius; click for a default one"),
+            Tool::PlacePrefab(_) => Some("Click to drop the prefab, Shift-click to stamp copies; wheel rotates, [ ] scale, right-click ends"),
             Tool::CreateMech(_) => Some("Click in a viewport to place the Mech part"),
             Tool::CreateCharacter(_) => Some("Click to place the character, or drag to set its height"),
             Tool::PickHoseEnd { top: true } => Some("Hose: click the Top End Object (Esc to cancel)"),

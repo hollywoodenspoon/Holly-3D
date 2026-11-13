@@ -27,6 +27,7 @@ impl Editor {
                 self.create_world(kind, p);
                 self.tool = Tool::CreateWorld(kind);
             }
+            Tool::PlacePrefab(kind) => self.place_prefab(kind, view, cursor, false),
             Tool::CreateMech(kind) => {
                 let p = self.snapped_point_pub(view, cursor);
                 self.create_mech(kind, p);

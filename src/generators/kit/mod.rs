@@ -23,11 +23,13 @@ pub struct Kit {
     pub xf: Mat4,
     /// UV tiles per metre.
     pub uv_scale: f32,
+    /// Mid detail: windows get frames and sills.
+    pub mid: bool,
 }
 
 impl Default for Kit {
     fn default() -> Self {
-        Self { m: EditablePoly::new(), mat: 1, sg: 0, xf: Mat4::IDENTITY, uv_scale: 0.5 }
+        Self { m: EditablePoly::new(), mat: 1, sg: 0, xf: Mat4::IDENTITY, uv_scale: 0.5, mid: false }
     }
 }
 

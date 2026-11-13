@@ -66,7 +66,7 @@ impl Dock {
             Dock::UvEditor => "Edit UVWs",
             Dock::CharacterStudio => "MakeHuman",
             Dock::FaceCloner => "Face Cloner",
-            Dock::BuildingsBrowser => "Buildings & Props Browser",
+            Dock::BuildingsBrowser => "Prefab Library",
             Dock::PaintBox => "PaintBox",
             Dock::Help => "Help",
             Dock::Preferences => "Preferences",
