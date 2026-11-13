@@ -1,11 +1,14 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 13 residential, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 17 commercial & office, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
 //! Settlement Material IDs (`kit::ids`).
 
 pub mod arch;
+mod commercial_a;
+mod commercial_b;
+mod commercial_c;
 mod doodads;
 mod houses;
 pub mod infra;
@@ -17,8 +20,11 @@ mod modern_b;
 pub mod parts;
 mod residential_a;
 mod residential_b;
+mod shops;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_commercial;
 #[cfg(test)]
 mod tests_residential;
 #[cfg(test)]
@@ -174,6 +180,11 @@ impl BuildingParams {
                     residential_b::build(&mut b, hx, hy, floors)
                 }
             }
+            Category::Commercial => match self.kind {
+                K::CornerShop | K::Cafe | K::Diner | K::Restaurant | K::Bakery | K::Pharmacy => commercial_a::build(&mut b, hx, hy, floors),
+                K::Supermarket | K::Mall | K::Hotel | K::Motel | K::Bank | K::Cinema => commercial_b::build(&mut b, hx, hy, floors),
+                _ => commercial_c::build(&mut b, hx, hy, floors),
+            },
         }
         b.kit.finish()
     }

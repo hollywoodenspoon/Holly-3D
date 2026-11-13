@@ -1483,3 +1483,39 @@ Not done yet:
   - the walk-up's bays and the tower's balconies are the same colour as their walls, so they read weakly in thumbnails;
   - more styles per house;
   - the next zones (commercial/office, industrial/utilities, services/transport, parks/lot details/rural).
+
+## 44. Prefab Library, part H2b: commercial and office buildings
+- **17 new kinds** under a new **Commercial & Office** category, second in the library. They are appended after Residential (indices 57–73), so saved scenes and seeds keep their meaning.
+  - **Shops and places to eat:**
+    - Corner Shop: wrap-around shopfront with flats above.
+    - Café: terrace tables with parasols.
+    - Diner: steel bands, ribbon windows and a pylon sign.
+    - Restaurant: brick, tall windows, canopy and planters.
+    - Bakery: bow window and an awning.
+    - Pharmacy: glowing cross and parking.
+  - **Big boxes:**
+    - Supermarket: car park, trolley shelter and loading dock.
+    - Shopping Mall: two anchor stores and a glazed atrium.
+    - Hotel: podium, porte-cochère, slab tower with balconies and a crown sign.
+    - Motel: outside walkways, a door per room, lobby, pylon sign and parking.
+    - Bank: steps, columns and a pediment.
+    - Cinema: glowing marquee, blade sign and poster cases.
+  - **Car-focused:**
+    - Car Dealership: glass showroom, forecourt cars and flags.
+    - Drive-Through: drive lane, menu board, pay window and a tall pylon.
+  - **Offices:**
+    - Low-Rise Office: ribbon glazing and parking.
+    - Mid-Rise Office: curtain wall and a set-back crown.
+    - Office Campus: three blocks round a lawn, glazed bridges and parking.
+- **Shared pieces** in `buildings/shops.rs`: shopfronts, flat boxes with parapets, signs, pylon signs, parking lots with painted bays and parked cars, café tables, planters and canopies.
+- Settlements count Commercial kinds as buildings, so they take ruin damage.
+- **Tests:**
+  - every kind builds valid, deterministic meshes at both detail levels, within budget;
+  - every kind has glazing, stands on the ground and fits its lot;
+  - heights are sensible;
+  - car parks have painted bays;
+  - turning Signs off removes the glow.
+- **Not done yet:**
+  - flat roofs all use the roof colour, so the big boxes read a bit alike from above;
+  - the showroom glass reads as lit white in thumbnails;
+  - no interiors.

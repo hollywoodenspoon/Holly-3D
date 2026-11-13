@@ -65,6 +65,10 @@ pub enum BuildingKind {
     BeachHut,
     WalkUp,
     TowerBlock,
+    // Commercial & office (17), appended after Residential
+    CornerShop, Cafe, Diner, Restaurant, Bakery, Pharmacy,
+    Supermarket, Mall, Hotel, Motel, Bank, Cinema,
+    CarDealer, DriveThru, LowRiseOffice, MidRiseOffice, OfficeCampus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -74,10 +78,11 @@ pub enum Category {
     Infrastructure,
     Props,
     Residential,
+    Commercial,
 }
 
 impl Category {
-    pub const ALL: [Category; 5] = [Self::Residential, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 6] = [Self::Residential, Self::Commercial, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -85,6 +90,7 @@ impl Category {
             Self::Infrastructure => "Bridges & Infrastructure",
             Self::Props => "Doodads & Street Props",
             Self::Residential => "Residential",
+            Self::Commercial => "Commercial & Office",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -93,7 +99,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 57] = {
+    pub const ALL: [BuildingKind; 74] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -140,19 +146,11 @@ impl BuildingKind {
             Bench,
             Fountain,
             RubblePile,
-            Cottage,
-            Bungalow,
-            Farmhouse,
-            LogCabin,
-            AFrame,
-            Villa,
-            Victorian,
-            ModernBox,
-            RowHouses,
-            Duplex,
-            BeachHut,
-            WalkUp,
-            TowerBlock,
+            Cottage, Bungalow, Farmhouse, LogCabin, AFrame, Villa, Victorian,
+            ModernBox, RowHouses, Duplex, BeachHut, WalkUp, TowerBlock,
+            CornerShop, Cafe, Diner, Restaurant, Bakery, Pharmacy,
+            Supermarket, Mall, Hotel, Motel, Bank, Cinema,
+            CarDealer, DriveThru, LowRiseOffice, MidRiseOffice, OfficeCampus,
         ]
     };
 
@@ -163,7 +161,8 @@ impl BuildingKind {
             14..=25 => Category::Medieval,
             26..=30 => Category::Infrastructure,
             31..=43 => Category::Props,
-            _ => Category::Residential,
+            44..=56 => Category::Residential,
+            _ => Category::Commercial,
         }
     }
 
@@ -233,6 +232,23 @@ impl BuildingKind {
             BeachHut => "Beach Hut",
             WalkUp => "Walk-Up Apartments",
             TowerBlock => "Residential Tower",
+            CornerShop => "Corner Shop",
+            Cafe => "Café",
+            Diner => "Diner",
+            Restaurant => "Restaurant",
+            Bakery => "Bakery",
+            Pharmacy => "Pharmacy",
+            Supermarket => "Supermarket",
+            Mall => "Shopping Mall",
+            Hotel => "Hotel",
+            Motel => "Motel",
+            Bank => "Bank",
+            Cinema => "Cinema",
+            CarDealer => "Car Dealership",
+            DriveThru => "Drive-Through",
+            LowRiseOffice => "Low-Rise Office",
+            MidRiseOffice => "Mid-Rise Office",
+            OfficeCampus => "Office Campus",
         }
     }
 
@@ -297,12 +313,29 @@ impl BuildingKind {
             BeachHut => (2.4, 2.6, 1),
             WalkUp => (16.0, 14.0, 4),
             TowerBlock => (24.0, 22.0, 18),
+            CornerShop => (10.0, 10.0, 2),
+            Cafe => (9.0, 8.0, 1),
+            Diner => (16.0, 8.0, 1),
+            Restaurant => (14.0, 12.0, 1),
+            Bakery => (7.0, 9.0, 2),
+            Pharmacy => (14.0, 12.0, 1),
+            Supermarket => (56.0, 64.0, 1),
+            Mall => (90.0, 80.0, 2),
+            Hotel => (30.0, 24.0, 14),
+            Motel => (36.0, 22.0, 2),
+            Bank => (16.0, 18.0, 1),
+            Cinema => (22.0, 30.0, 1),
+            CarDealer => (36.0, 34.0, 1),
+            DriveThru => (24.0, 30.0, 1),
+            LowRiseOffice => (36.0, 40.0, 3),
+            MidRiseOffice => (26.0, 22.0, 10),
+            OfficeCampus => (60.0, 50.0, 4),
         }
     }
 
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (self.category() != Category::Props || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut)
+        (self.category() != Category::Props || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru)
     }
 }
