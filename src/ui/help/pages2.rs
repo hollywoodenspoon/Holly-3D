@@ -85,6 +85,7 @@ pub const RENDER: Page = Page {
             "F10 > Luxon Lens FX (Bokeh, Anamorphic & Glare): 5 to 9 aperture blades (with rotation) shape the depth-of-field bokeh; Cat's-Eye squeezes it near the frame edges.",
             "Anamorphic Streak Flare and a 4 / 6 / 8 point Starburst add glare to highlights above the Flare Threshold.",
             "Material Editor > Ink / Toon Outline > Interior Pen Lines draws soft folds and Panel Groove seams. Toon materials have Manga Halftone Shadows.",
+            "Material Editor > Alpha: Blend shows texture alpha as see-through; Cut-out makes it solid or a hole (hair cards, leaves, fences), with no sorting problems and no haze. Holes let light and AO through.",
             "Display tab > Shadow & Reflection Catcher: the ground renders transparent except for shadows, AO and reflections, ready for a photo backplate.",
             "🎞 Turntable / Sprites (F9 toolbar or F10): a 360° PNG sequence, or an N / NE / E ... sprite atlas PNG + .json at a 30°, 35.264° or 45° pitch.",
         ]),

@@ -159,6 +159,11 @@ pub struct Material {
     /// shadows, AO and reflections other objects put on it.
     #[serde(default)]
     pub shadow_catcher: bool,
+    /// "Alpha: Cut-out": texture alpha is either fully there or gone (at
+    /// 50 %), with no blending. Hair cards, lashes and leaves use it so
+    /// they need no depth sorting and leave no haze.
+    #[serde(default)]
+    pub alpha_cutout: bool,
 }
 
 impl Default for Material {
@@ -189,6 +194,7 @@ impl Default for Material {
             paint: None,
             principled: Default::default(),
             shadow_catcher: false,
+            alpha_cutout: false,
         }
     }
 }

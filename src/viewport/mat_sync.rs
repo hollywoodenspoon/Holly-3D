@@ -148,7 +148,12 @@ pub fn standard(m: &Material, tex: &MatTextures, see_through: bool) -> StandardM
         emissive_texture,
         double_sided: true,
         cull_mode: None,
-        alpha_mode: if blended { AlphaMode::Blend } else { AlphaMode::Opaque },
+        // Cut-out alpha: MSAA alpha-to-coverage (no sorting, soft edges).
+        alpha_mode: match (blended, m.alpha_cutout) {
+            (true, _) => AlphaMode::Blend,
+            (false, true) => AlphaMode::AlphaToCoverage,
+            _ => AlphaMode::Opaque,
+        },
         ..default()
     };
     let pr = &m.principled;
@@ -203,5 +208,8 @@ mod tests {
         (paint.principled.clearcoat, paint.principled.anisotropy) = (1.0, 0.7);
         let p = standard(&paint, &none, false);
         assert!(p.clearcoat == 1.0 && (p.anisotropy_strength - 0.7).abs() < 1e-6, "Principled lobes preview in the viewport");
+        let hair = Material { alpha_cutout: true, ..Default::default() };
+        assert_eq!(standard(&hair, &none, false).alpha_mode, AlphaMode::AlphaToCoverage, "cut-out alpha needs no sorting");
+        assert_eq!(standard(&hair, &none, true).alpha_mode, AlphaMode::Blend, "X-Ray still blends");
     }
 }

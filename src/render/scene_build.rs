@@ -221,7 +221,7 @@ impl RenderScene {
         let emitters = super::emitters::Emitters::build(&bvh, &materials);
         let translucent = bvh.tris.iter().any(|t| {
             let m = &materials[t.mat];
-            m.opacity < 0.999 || m.active_map(crate::materials::MapChannel::Opacity).is_some() || t.col.iter().any(|c| c.w < 0.999)
+            m.opacity < 0.999 || m.alpha_cutout || m.active_map(crate::materials::MapChannel::Opacity).is_some() || t.col.iter().any(|c| c.w < 0.999)
         });
         Self {
             bvh,

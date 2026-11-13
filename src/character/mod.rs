@@ -19,6 +19,8 @@ pub mod wardrobe;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_look;
 
 pub use params::CharacterParams;
 

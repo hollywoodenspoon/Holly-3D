@@ -1386,3 +1386,14 @@ Not done yet:
    - Checked under Xvfb (X11): pop out, previews drawn in the new window, M in the pop-out closes it, M in the main window reopens it popped, closing the OS window docks it back and updates prefs.
    - **Not checked:** Wayland / niri (app ids, tiling). The right-pane tabs cannot pop out yet.
 6. ✅ **Rebrand:** source, help, README, CLAUDE.md and packaging no longer name other modelling apps or plugins. GhostTown is now **Demiurge Settlement** (old scenes and saved button sets still load; a modifier still carrying its old default name is renamed on load), the Slate view is the **Node Graph** view, the second key set is **Classic**, and the window title is "Ilex". Licence notices and credits keep the names they need. `src/brand_tests.rs` fails if an old name comes back outside the legacy-loading files.
+
+## 40. MakeHuman look, part A: hair and eyes
+
+- **Alpha: Blend / Cut-out** (`Material.alpha_cutout`, Material Editor combo). Cut-out makes alpha either solid or a hole at 50 %. The viewport draws it with MSAA alpha-to-coverage, so there is no per-mesh sorting. In F9, camera rays skip holes at the same depth, so what shows through keeps its full shading.
+- **Alpha-aware occlusion:** sky occlusion, AO (raytracer and path tracer) now pass through holes and see-through surfaces instead of treating them as solid.
+- **MakeHuman hair:** cut-out alpha; roughness 0.55 with a light sheen instead of the glossy look from `.mhmat` shininess; lifted 4 mm off the scalp so the skin no longer pokes through in patches. Brows and lashes keep soft blending (roughness 0.7). Hair and clothes saved with the old 0.999-opacity blending switch to cut-out on load.
+- **Defaults:** new characters use the high-res eyes; new realistic archetypes get MakeHuman hair (short02 for men, ponytail01 for women, long01 for long hair). Anime archetypes and beards stay stylised.
+- **Renderer fixes found on the way:** a ray landing exactly on a shared triangle edge could miss both triangles (black pin-holes), and a ray running along a BVH box face could get NaN in the slab test.
+- **Eyes:** the iris colour matches the MakeHuman texture (the "brown" texture is a warm red-brown). The old blocky look came from the low-res eyes.
+- Check renders: `LOOK_SHOTS=dir cargo test --lib character_look_renders -- --ignored`.
+- Not done yet: hair and eye colour tint pickers (part B, MakeHuman window).

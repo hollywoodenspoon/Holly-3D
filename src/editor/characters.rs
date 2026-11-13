@@ -55,6 +55,7 @@ impl Editor {
     pub fn create_archetype(&mut self, a: Archetype, at: Vec3) -> ObjId {
         let mut p = CharacterParams { mh: MhAssets::face_kit(), ..Default::default() };
         a.apply(&mut p);
+        MhAssets::default_hair(&mut p);
         self.create_character(p, at)
     }
 
@@ -106,6 +107,8 @@ mod tests {
         let id = ed.create_archetype(Archetype::Elf, Vec3::ZERO);
         let polys = ed.scene.objects[id].evaluated_mesh.counts().2;
         assert!(polys > 13000);
+        let (_, p) = ed.character().unwrap();
+        assert_eq!((p.mh.hair.as_deref(), p.eyes), (Some("long01"), crate::character::params::Eyes::High), "MakeHuman hair, high-res eyes");
         assert!(ed.scene.objects[id].material.is_some());
         let (_, mut p) = ed.character().unwrap();
         p.creature = Creature::Slime;

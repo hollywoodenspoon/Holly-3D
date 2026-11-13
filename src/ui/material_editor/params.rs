@@ -25,11 +25,24 @@ fn emission(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     ui.end_row();
 }
 
+/// "Alpha: Blend / Cut-out": how texture alpha and Opacity show.
+fn alpha_mode(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
+    ui.label("Alpha");
+    let label = if m.alpha_cutout { "Cut-out" } else { "Blend" };
+    egui::ComboBox::from_id_salt("mat_alpha_mode").selected_text(label).show_ui(ui, |ui| {
+        t.r(ui.selectable_value(&mut m.alpha_cutout, false, "Blend")).on_hover_text("See-through by the alpha amount (glass decals, smoke)");
+        t.r(ui.selectable_value(&mut m.alpha_cutout, true, "Cut-out"))
+            .on_hover_text("Alpha is either solid or a hole, at 50 %: hair cards, lashes, leaves, fences");
+    });
+    ui.end_row();
+}
+
 fn physical(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     color(ui, t, "Base Color", &mut m.base_color);
     num(ui, t, "Metallic", &mut m.metallic, 0.0..=1.0, 0.0);
     num(ui, t, "Roughness", &mut m.roughness, 0.0..=1.0, 0.6);
     num(ui, t, "Opacity", &mut m.opacity, 0.0..=1.0, 1.0);
+    alpha_mode(ui, t, m);
     ui.label("Catcher");
     t.r(ui.checkbox(&mut m.shadow_catcher, "Shadow & Reflection Catcher"))
         .on_hover_text("Transparent in the render's alpha except for shadows, AO and reflections (CPU Path Tracer)");
@@ -52,6 +65,7 @@ fn toon(ui: &mut egui::Ui, t: &mut Track, m: &mut Material) {
     num(ui, t, "Screentone Cell (px)", &mut m.toon.screentone_scale, 2.0..=32.0, 6.0);
     num(ui, t, "Highlight Size", &mut m.roughness, 0.02..=1.0, 0.5);
     num(ui, t, "Opacity", &mut m.opacity, 0.0..=1.0, 1.0);
+    alpha_mode(ui, t, m);
     emission(ui, t, m);
 }
 

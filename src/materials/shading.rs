@@ -156,6 +156,9 @@ pub fn base_surface(m: &Material, uv: Vec2, p: Vec3, vcol: Vec4) -> Surface {
     if let Some((n, a)) = m.active_map(MapChannel::Opacity) {
         alpha *= 1.0 - a + a * n.sample_scalar(uv, p);
     }
+    if m.alpha_cutout {
+        alpha = if alpha >= 0.5 { 1.0 } else { 0.0 };
+    }
     if let Some((n, a)) = m.active_map(MapChannel::Emission) {
         emissive += lin(n.sample(uv, p).truncate()) * a * m.emissive_strength.max(1.0);
     }

@@ -132,7 +132,11 @@ fn materials_follow_the_assets_and_keep_user_edits() {
     }
     assert_eq!(get(&ms, ids::SKIN).name, "Skin: Young Asian Female");
     assert!(get(&ms, ids::SKIN).mat.principled.sss_weight > 0.0, "skin keeps its SSS");
-    assert!(get(&ms, ids::EYEBROWS).mat.opacity < 1.0, "brows blend their alpha");
+    let brows = get(&ms, ids::EYEBROWS).mat;
+    assert!(!brows.alpha_cutout && brows.opacity < 1.0, "brows blend softly");
+    assert!(get(&ms, ids::CLOTHES).mat.alpha_cutout || get(&ms, ids::CLOTHES).mat.opacity == 1.0, "clothes never haze");
+    assert!(brows.roughness >= 0.6, "brows are not glossy");
+    assert!(!get(&ms, ids::EYES).mat.alpha_cutout, "eyes have no holes");
     // A user edit survives a re-sync.
     ms.subs.iter_mut().find(|s| s.id == ids::CLOTHES).unwrap().mat.roughness = 0.123;
     materials::sync(&mh, None, &mut ms);

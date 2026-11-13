@@ -118,7 +118,7 @@ impl<'a> PathTracer<'a> {
                 sh.s = camera_view(m, &sh.s);
                 (albedo, rough) = (sh.s.base, sh.s.roughness);
                 let reach = self.t.cfg.gi.ao_radius.max(1e-3);
-                ao = if rs.bvh.occluded(sh.p + sh.ng * self.t.eps, crate::render::trace::cosine_dir(sh.n, rng), reach) { 0.0 } else { 1.0 };
+                ao = self.t.transmittance(sh.p + sh.ng * self.t.eps, crate::render::trace::cosine_dir(sh.n, rng), reach);
                 if m.shadow_catcher {
                     let c = self.catch(&sh, d, ao, nested, rng);
                     l.iter_mut().zip(c.groups).for_each(|(a, b)| *a += b);

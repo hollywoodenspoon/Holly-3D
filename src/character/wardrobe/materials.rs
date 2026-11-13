@@ -32,9 +32,15 @@ fn set_base_map(m: &mut Material, key: &str, tex: TexHandle) {
     let slot = m.map_mut(MapChannel::BaseColor);
     (slot.node, slot.enabled, slot.amount) = (Some(MapNode::Bitmap { path: format!("makehuman:{key}"), tex: Some(tex) }), true, 100.0);
     m.base_color = [1.0; 3];
-    if has_alpha {
-        // Just under 1 so the viewport blends the texture's alpha.
-        m.opacity = 0.999;
+    // Hair cards and clothes: the alpha cuts holes instead of blending, so
+    // there is no draw-order mess and no haze over the skin.
+    m.alpha_cutout = has_alpha;
+}
+
+/// Brows and lashes are a single soft layer on the skin: they blend.
+fn blend_alpha(m: &mut Material) {
+    if m.alpha_cutout {
+        (m.alpha_cutout, m.opacity) = (false, 0.999);
     }
 }
 
@@ -46,10 +52,22 @@ pub fn from_mhmat(name: String, mm: &MhMat, key: &str, tex: Option<TexHandle>) -
     if let Some(t) = tex {
         set_base_map(&mut m, key, t);
     }
-    if mm.transparent {
-        m.opacity = m.opacity.min(0.999);
-    }
     m
+}
+
+/// Hair, brows and lashes: soft and fairly rough with a light sheen, not
+/// the glossy helmet a high `.mhmat` shininess gives.
+fn soften_hair(cat: Category, m: &mut Material) {
+    let rough = match cat {
+        Category::Hair => 0.55,
+        Category::Eyebrows | Category::Eyelashes => {
+            blend_alpha(m);
+            0.7
+        }
+        _ => return,
+    };
+    m.roughness = rough;
+    (m.principled.sheen, m.principled.sheen_tint) = (0.25, 0.6);
 }
 
 fn put(ms: &mut MultiSub, id: u16, name: &str, make: impl FnOnce() -> Material) {
@@ -85,11 +103,19 @@ pub fn sync(mh: &MhAssets, face_skin: Option<&TexHandle>, ms: &mut MultiSub) {
     let pieces = mh.pieces();
     // Drop pieces that were taken off (only the ones this module made).
     ms.subs.retain(|s| s.id < ids::EYEBROWS || !PREFIXES.iter().any(|p| s.name.starts_with(p)) || pieces.iter().any(|(_, _, id)| *id == s.id));
+    // Scenes saved before cut-out alpha: their hair and clothes blended at 0.999.
+    for s in ms.subs.iter_mut().filter(|s| s.mat.opacity == 0.999 && (s.name.starts_with("Hair: ") || s.name.starts_with("Clothes: "))) {
+        (s.mat.opacity, s.mat.alpha_cutout) = (1.0, true);
+    }
     for (cat, name, id) in pieces {
         let Some(it) = library::item(cat, name) else { continue };
         let label = format!("{}{}", prefix(cat), library::pretty(name));
         let key = format!("{}/{}", it.folder, it.mat.diffuse_texture.clone().unwrap_or_default());
-        put(ms, id, &label, || from_mhmat(label.clone(), &it.mat, &key, it.texture()));
+        put(ms, id, &label, || {
+            let mut m = from_mhmat(label.clone(), &it.mat, &key, it.texture());
+            soften_hair(cat, &mut m);
+            m
+        });
     }
     match &mh.skin {
         _ if face_skin.is_some() => put_cloned_skin(ms, face_skin.unwrap()),
@@ -116,7 +142,7 @@ pub fn sync(mh: &MhAssets, face_skin: Option<&TexHandle>, ms: &mut MultiSub) {
                 let mm = library::material(&format!("eyes/materials/{c}.mhmat")).unwrap_or_default();
                 let key = format!("eyes/materials/{}", mm.diffuse_texture.clone().unwrap_or_default());
                 let mut m = from_mhmat(label.clone(), &mm, &key, library::texture(&key));
-                (m.roughness, m.opacity) = (0.08, 1.0);
+                (m.roughness, m.opacity, m.alpha_cutout) = (0.08, 1.0, false);
                 m
             });
         }
