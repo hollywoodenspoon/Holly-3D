@@ -65,6 +65,18 @@ pub fn params(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) -> (Opti
         }
     });
     ui.label(dim("Parts only appear on the types that have them (a kiosk has no fire escape)."));
+    if p.kind.category() == Category::Residential {
+        ui.label(RichText::new("Lot").strong());
+        egui::Grid::new("building_lot").num_columns(2).show(ui, |ui| {
+            for (i, (label, on)) in p.lot.flags().into_iter().enumerate() {
+                t.r(ui.checkbox(on, label));
+                if i % 2 == 1 {
+                    ui.end_row();
+                }
+            }
+        });
+        ui.label(dim("Garden, driveway, garage and fence around detached houses."));
+    }
     ui.separator();
     let pile = p.kind == BuildingKind::RubblePile;
     let out = super::ruin::destruction(ui, t, &mut p.ruin, "building", pile);
@@ -106,6 +118,7 @@ fn kind_combo(ui: &mut egui::Ui, t: &mut Track, p: &mut BuildingParams) {
                         stairs: p.stairs,
                         ruin: p.ruin.clone(),
                         detail: p.detail,
+                        lot: p.lot,
                         ..BuildingParams::of(k)
                     };
                     (t.started, t.changed) = (true, true);

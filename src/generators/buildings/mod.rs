@@ -1,5 +1,5 @@
 //! Standalone Buildings & Props (Create -> Geometry -> Buildings & Props):
-//! 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
+//! 13 residential, 14 modern and 12 medieval buildings, 5 bridges / infrastructure pieces
 //! and 13 street doodads (including the PR 7 Rubble Pile), each its own parametric object with Width,
 //! Length, Floors, Seed, part toggles, `[✓] Emissive Lights` and a
 //! Procedural | Photo material style. Ground at z = 0, front facing -Y,
@@ -7,6 +7,7 @@
 
 pub mod arch;
 mod doodads;
+mod houses;
 pub mod infra;
 mod kinds;
 mod medieval_a;
@@ -14,10 +15,17 @@ mod medieval_b;
 mod modern_a;
 mod modern_b;
 pub mod parts;
+mod residential_a;
+mod residential_b;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_residential;
+#[cfg(test)]
+mod tests_shots;
 
 pub use arch::StairKind;
+pub use houses::Lot;
 pub use kinds::{BuildingKind, Category};
 pub use parts::Parts;
 
@@ -89,6 +97,8 @@ pub struct BuildingParams {
     pub ruin: RuinParams,
     /// Standard or Mid detail (frames, sills, trims).
     pub detail: Detail,
+    /// Garden, driveway, garage and fence (Residential prefabs).
+    pub lot: Lot,
 }
 
 impl Default for BuildingParams {
@@ -113,6 +123,7 @@ impl BuildingParams {
             stairs: StairKind::Straight,
             ruin: RuinParams::default(),
             detail: Detail::Standard,
+            lot: Lot::default(),
         }
     }
 
@@ -156,6 +167,13 @@ impl BuildingParams {
             }
             Category::Infrastructure => infra::build(&mut b, hx, hy, floors),
             Category::Props => doodads::build(&mut b, hx, hy),
+            Category::Residential => {
+                if matches!(self.kind, K::Cottage | K::Bungalow | K::Farmhouse | K::LogCabin | K::AFrame | K::BeachHut) {
+                    residential_a::build(&mut b, hx, hy, floors)
+                } else {
+                    residential_b::build(&mut b, hx, hy, floors)
+                }
+            }
         }
         b.kit.finish()
     }

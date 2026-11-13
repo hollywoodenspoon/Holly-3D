@@ -9,10 +9,10 @@ fn mat_ids(m: &EditablePoly) -> HashSet<u16> {
 }
 
 #[test]
-fn all_44_types_build_valid_deterministic_meshes() {
-    assert_eq!(BuildingKind::ALL.len(), 44);
+fn all_57_types_build_valid_deterministic_meshes() {
+    assert_eq!(BuildingKind::ALL.len(), 57);
     let counts: Vec<usize> = Category::ALL.iter().map(|c| c.kinds().count()).collect();
-    assert_eq!(counts, vec![14, 12, 5, 13]);
+    assert_eq!(counts, vec![13, 14, 12, 5, 13]);
     for k in BuildingKind::ALL {
         let p = BuildingParams::of(k);
         let m = p.build();

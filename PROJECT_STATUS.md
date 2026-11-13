@@ -1445,3 +1445,41 @@ Not done yet:
   - snap sockets, Sets, Group/Ungroup and "My Prefabs";
   - raytraced thumbnails (they are still flat-shaded);
   - the new building kinds, which come next in batches.
+
+## 43. Prefab Library, part H2a: residential buildings
+- **13 new Residential kinds** under a new **Residential** category (first in the library and the type combo). They are appended to the end of `BuildingKind`, so saved scenes and seeds keep their meaning.
+  - **Houses:** Cottage, Bungalow, Farmhouse, Log Cabin, A-Frame Cabin, Villa, Victorian House, Modern House, Beach Hut.
+  - **Mid density:** Row Houses / Terrace, Duplex, Walk-Up Apartments.
+  - **High density:** Residential Tower.
+- **What each kind has:**
+  - **Cottage:** steep gable, dormers, chimney and porch.
+  - **Bungalow:** brick, low hip roof and veranda.
+  - **Farmhouse:** full-width porch and two chimneys.
+  - **Log Cabin:** stacked logs and a stone chimney.
+  - **A-Frame Cabin:** a glass gable end and a deck.
+  - **Villa:** stucco, hipped roofs, a side wing, a balcony and a columned entrance.
+  - **Victorian House:** steep gable, corner turret with a cone roof, two-storey bay window and porch.
+  - **Modern House:** flat roofs, an upper box, a glazed ground floor and ribbon windows.
+  - **Row Houses / Terrace:** one unit about every 5.5 m in alternating colours, each with its own door, stoop and chimney.
+  - **Duplex:** mirrored doors and porches.
+  - **Walk-Up Apartments:** stacked bay windows, a stoop, a cornice and a fire escape.
+  - **Residential Tower:** glazed lobby, balconies on every floor and a plant room.
+  - **Beach Hut:** plank walls, double doors and side windows.
+- **Shared house builder** in `buildings/houses.rs`:
+  - walled storeys with windows, front shutters and a door;
+  - gable, hip or flat-with-parapet roofs that follow the longer side.
+- **Lot** (`BuildingParams.lot`, `#[serde(default)]`): Garden (lawn, path, bushes), Driveway, Garage and Fence (picket fence with gaps).
+  - The checkboxes show for Residential kinds.
+  - Old scenes load with the default lot: garden and fence.
+- Settlements count Residential kinds as houses.
+- **Check renders:** `PREFAB_SHOTS=dir PREFAB_CAT=Residential cargo test --lib prefab_check_renders -- --ignored` writes one 3/4 front render per kind, which makes the thumbnail sheet.
+- **Tests:**
+  - every residential kind builds valid, deterministic meshes at Standard and Mid detail, within a polygon budget and with finite UVs;
+  - windows and roofs are present;
+  - heights make sense;
+  - the lot adds geometry and the garage sits beside the house;
+  - old scenes get the default lot.
+- **Not done yet:**
+  - the walk-up's bays and the tower's balconies are the same colour as their walls, so they read weakly in thumbnails;
+  - more styles per house;
+  - the next zones (commercial/office, industrial/utilities, services/transport, parks/lot details/rural).
