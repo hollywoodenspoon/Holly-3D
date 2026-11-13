@@ -177,6 +177,22 @@ impl BuildingKind {
             Curtains => "Curtains",
             WallMirror => "Wall Mirror",
             FloorPlant => "Floor Plant",
+            Fridge => "Fridge",
+            Cooker => "Cooker",
+            Microwave => "Microwave",
+            Dishwasher => "Dishwasher",
+            WashingMachine => "Washing Machine",
+            KettleToaster => "Kettle & Toaster",
+            CoffeeMachine => "Coffee Machine",
+            Television => "Television",
+            PcSetup => "PC Setup",
+            Laptop => "Laptop",
+            Speakers => "Speakers",
+            AirConditioner => "Air Conditioner",
+            Radiator => "Radiator",
+            Fan => "Fan",
+            VendingMachine => "Vending Machine",
+            ArcadeCabinet => "Arcade Cabinet",
         }
     }
 }

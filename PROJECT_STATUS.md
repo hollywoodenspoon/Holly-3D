@@ -1706,3 +1706,31 @@ Not done yet:
   - no room shell yet, and no wall/ceiling sockets: wall cabinets, mirrors and curtains must be placed by hand;
   - the appliance batch (fridge, washer, electronics…) is next.
 
+
+## 53. Prefab Library, part H3d: appliances & electronics
+- **New category "Appliances & Electronics"** (indices 171–186), appended after Lighting & Decor:
+  - Fridge: fridge-freezer, or side-by-side doors with a dispenser when the lot is wide; magnets and a note.
+  - Cooker: oven door with window and handle, control dials, a four-ring hob with a pan and a pot, splashback.
+  - Microwave, Dishwasher, and Washing Machine: the washer has a porthole door, detergent drawer, dial and display, and is a dryer with a dark door about 30% of the time by seed.
+  - Kettle & Toaster: a jug kettle on its base and a two-slot toaster.
+  - Coffee Machine: an espresso machine with group head, portafilter, steam wand, drip tray and cups.
+  - Television: on splayed feet or a pedestal, with a soundbar.
+  - PC Setup: a tower with a glass side and lit fans, one or two monitors, keyboard, mouse mat and headphones.
+  - Laptop: opened to about 110°, with a phone and a mug.
+  - Speakers: two tower speakers with drivers and a port, plus an amplifier.
+  - Air Conditioner: an indoor split unit at 2.1 m and the outdoor condenser, joined by a pipe.
+  - Radiator: a finned panel on brackets with a valve.
+  - Fan: a pedestal fan with a caged three-blade rotor.
+  - Vending Machine: an open, lit display bay with shelves of products, a keypad and a pickup flap.
+  - Arcade Cabinet: profiled sides, lit marquee and screen, a joystick and buttons, and a coin door.
+- Counter-top pieces stand at z = 0, so Drop on Surfaces puts them on worktops and desks. Screens and displays glow unless Emissive is off.
+- **Tests:** `tests_appliances.rs` covers:
+  - index placement, plus valid, deterministic meshes at both detail levels;
+  - floor contact, and heights for the fridge, cooker, counter-top pieces, the vending and arcade machines, and the high AC unit;
+  - the glowing screens, and that they switch off.
+  - The generic "stands on the ground" check allows 0.15 m tall for this category (a laptop is short).
+- **Not done yet:**
+  - no hinged doors or openable parts;
+  - fridge and cooker have no interiors;
+  - the vending machine has no glass pane, because the thumbnail renderer draws GLASS opaque and it hid the products;
+  - the room-shell generator is next.

@@ -6,6 +6,8 @@
 //! Settlement Material IDs (`kit::ids`).
 
 pub mod arch;
+mod appliances;
+mod appliances_b;
 mod commercial_a;
 mod commercial_b;
 mod commercial_c;
@@ -41,6 +43,8 @@ mod transport;
 mod utilities;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_appliances;
 #[cfg(test)]
 mod tests_commercial;
 #[cfg(test)]
@@ -249,6 +253,13 @@ impl BuildingParams {
             Category::Decor => {
                 b.kit.uv_scale = 2.0;
                 decor::build(&mut b, hx, hy)
+            }
+            Category::Appliances => {
+                b.kit.uv_scale = 2.0;
+                match self.kind {
+                    K::Microwave | K::KettleToaster | K::CoffeeMachine | K::Television | K::PcSetup | K::Laptop | K::Speakers => appliances_b::build(&mut b, hx, hy),
+                    _ => appliances::build(&mut b, hx, hy),
+                }
             }
         }
         b.kit.finish()

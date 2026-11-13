@@ -178,6 +178,22 @@ impl BuildingKind {
             Curtains => (2.2, 0.3, 1),
             WallMirror => (0.9, 0.2, 1),
             FloorPlant => (0.6, 0.6, 1),
+            Fridge => (0.7, 0.7, 1),
+            Cooker => (0.6, 0.6, 1),
+            Microwave => (0.5, 0.38, 1),
+            Dishwasher => (0.6, 0.6, 1),
+            WashingMachine => (0.6, 0.6, 1),
+            KettleToaster => (0.6, 0.3, 1),
+            CoffeeMachine => (0.32, 0.4, 1),
+            Television => (1.25, 0.3, 1),
+            PcSetup => (1.4, 0.6, 1),
+            Laptop => (0.6, 0.45, 1),
+            Speakers => (1.6, 0.35, 1),
+            AirConditioner => (1.6, 0.6, 1),
+            Radiator => (1.0, 0.12, 1),
+            Fan => (0.5, 0.5, 1),
+            VendingMachine => (0.9, 0.8, 1),
+            ArcadeCabinet => (0.65, 0.8, 1),
         }
     }
 }
