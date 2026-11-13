@@ -137,6 +137,14 @@ impl BuildingKind {
             HoseReel => "Hose Reel",
             BackyardPool => "Backyard Pool",
             PorchSteps => "Porch & Steps",
+            Barn => "Barn",
+            Greenhouse => "Greenhouse",
+            Polytunnel => "Polytunnel",
+            Henhouse => "Henhouse & Run",
+            Haystacks => "Haystacks",
+            Orchard => "Orchard",
+            Paddock => "Paddock",
+            Beehives => "Beehives",
         }
     }
 
@@ -275,6 +283,14 @@ impl BuildingKind {
             HoseReel => (0.8, 1.4, 1),
             BackyardPool => (8.0, 5.0, 1),
             PorchSteps => (4.0, 4.0, 1),
+            Barn => (18.0, 12.0, 1),
+            Greenhouse => (4.0, 6.0, 1),
+            Polytunnel => (6.0, 16.0, 1),
+            Henhouse => (5.0, 3.0, 1),
+            Haystacks => (16.0, 12.0, 1),
+            Orchard => (20.0, 15.0, 1),
+            Paddock => (24.0, 18.0, 1),
+            Beehives => (8.0, 4.0, 1),
         }
     }
 }

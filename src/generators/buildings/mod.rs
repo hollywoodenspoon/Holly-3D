@@ -27,6 +27,7 @@ mod modern_b;
 pub mod parts;
 mod residential_a;
 mod residential_b;
+mod rural;
 mod services;
 mod services_b;
 mod shops;
@@ -38,6 +39,8 @@ mod tests;
 mod tests_commercial;
 #[cfg(test)]
 mod tests_garden;
+#[cfg(test)]
+mod tests_rural;
 #[cfg(test)]
 mod tests_industrial;
 #[cfg(test)]
@@ -221,6 +224,7 @@ impl BuildingParams {
                 K::Mailbox | K::GardenBeds | K::Hedge | K::PicketFence | K::Patio | K::Barbecue | K::SwingSet | K::Trampoline => garden::build(&mut b, hx, hy),
                 _ => garden_b::build(&mut b, hx, hy),
             },
+            Category::Rural => rural::build(&mut b, hx, hy),
         }
         b.kit.finish()
     }

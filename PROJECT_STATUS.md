@@ -1632,3 +1632,18 @@ Not done yet:
 - **Not done yet:**
   - no socket snapping yet: the porch, fence and hedge don't snap to houses or to each other;
   - the in-ground pool is a flat water surface, not a dug basin.
+
+## 49. Prefab Library, part H2g: rural and farm
+- **8 new kinds** under a new **Rural & Farm** category, appended after Garden & Lot (indices 131–138). None of them has a Floors slider.
+  - Barn: red (or timber) barn with a gambrel roof, sliding doors with cross braces, a hay loft door with a hoist beam, and a lean-to with a tin roof when the lot is wide enough.
+  - Greenhouse: glass house on a low brick wall, frame and ridge, a door, staging benches with potted plants.
+  - Polytunnel: half-round plastic tunnel with hoops, a framed door and crop rows inside.
+  - Henhouse & Run: coop on legs with a nesting box, ramp and a wire run, plus a few hens.
+  - Haystacks: round bales (lying and standing) and a stepped stack of square bales on earth.
+  - Orchard: rows of fruit trees with fruit in the crowns, a ladder and fruit crates.
+  - Paddock: post-and-rail fence with an open five-bar gate, a water trough and a field shelter.
+  - Beehives: a row of stacked box hives on stands among wildflowers.
+- **Tests:** every kind builds valid, deterministic meshes within budget, stands on the ground and fits its lot; the barn is tall, the hives are low, and the greenhouse, paddock and orchard have glass, water and foliage.
+- **Not done yet:**
+  - the farmhouse, stable, windmill and silo from the plan already exist elsewhere (Farmhouse in Residential, Windmill in Medieval, Silo Cluster in Industrial); a dedicated stable is not built yet;
+  - the hens and bees are simple blocks, not animals.

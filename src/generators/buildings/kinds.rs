@@ -80,6 +80,8 @@ pub enum BuildingKind {
     // Garden & lot details (16)
     Mailbox, GardenBeds, Hedge, PicketFence, Patio, Barbecue, SwingSet, Trampoline,
     GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
+    // Rural (8)
+    Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -94,10 +96,11 @@ pub enum Category {
     Services,
     Parks,
     Garden,
+    Rural,
 }
 
 impl Category {
-    pub const ALL: [Category; 10] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
+    pub const ALL: [Category; 11] = [Self::Residential, Self::Commercial, Self::Industrial, Self::Services, Self::Parks, Self::Garden, Self::Rural, Self::Modern, Self::Medieval, Self::Infrastructure, Self::Props];
     pub fn label(self) -> &'static str {
         match self {
             Self::Modern => "Modern Buildings",
@@ -110,6 +113,7 @@ impl Category {
             Self::Services => "Services & Transport",
             Self::Parks => "Parks & Leisure",
             Self::Garden => "Garden & Lot",
+            Self::Rural => "Rural & Farm",
         }
     }
     pub fn kinds(self) -> impl Iterator<Item = BuildingKind> {
@@ -118,7 +122,7 @@ impl Category {
 }
 
 impl BuildingKind {
-    pub const ALL: [BuildingKind; 131] = {
+    pub const ALL: [BuildingKind; 139] = {
         use BuildingKind::*;
         [
             GlassSkyscraper,
@@ -177,6 +181,7 @@ impl BuildingKind {
             Playground, SportsCourt, SportsField, Stadium, SwimmingPool, Plaza, Monument, ParkPond, Bandstand, SkatePark,
             Mailbox, GardenBeds, Hedge, PicketFence, Patio, Barbecue, SwingSet, Trampoline,
             GardenShed, Doghouse, WashingLine, WheelieBins, GardenGnome, HoseReel, BackyardPool, PorchSteps,
+            Barn, Greenhouse, Polytunnel, Henhouse, Haystacks, Orchard, Paddock, Beehives,
         ]
     };
 
@@ -192,7 +197,8 @@ impl BuildingKind {
             74..=87 => Category::Industrial,
             88..=104 => Category::Services,
             105..=114 => Category::Parks,
-            _ => Category::Garden,
+            115..=130 => Category::Garden,
+            _ => Category::Rural,
         }
     }
 
@@ -205,6 +211,6 @@ impl BuildingKind {
     /// Whether Floors means anything for this type.
     pub fn has_floors(self) -> bool {
         use BuildingKind::*;
-        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
+        (!matches!(self.category(), Category::Props | Category::Industrial | Category::Parks | Category::Garden | Category::Rural) || matches!(self, SandbagWall)) && !matches!(self, LogCabin | AFrame | BeachHut | Cafe | Diner | Restaurant | Pharmacy | Supermarket | Bank | Cinema | CarDealer | DriveThru | Clinic | PostOffice | Temple | Cemetery | BusStop | BusDepot | MetroEntrance | TramStop | AirportTerminal)
     }
 }
