@@ -18,8 +18,6 @@ fn intersect(i: u32, o: vec3<f32>, d: vec3<f32>, best: ptr<function, Hit>) {
     if (vv < 0.0 || uu + vv > 1.0) { return; }
     let tt = dot(e2, q) * inv;
     if (tt > 0.0 && tt < (*best).t) {
-        // PR 4: alpha-tested see-through surfaces skip the hit here.
-        if (FEAT_OPACITY && !opaque_at(i, uu, vv)) { return; }
         *best = Hit(tt, uu, vv, i);
     }
 }
@@ -60,9 +58,4 @@ fn closest(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> Hit {
 
 fn occluded(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> bool {
     return closest(o, d, tmax).tri != 0xffffffffu;
-}
-
-// Hook for alpha testing (PR 4); every surface is opaque until then.
-fn opaque_at(i: u32, u: f32, v: f32) -> bool {
-    return true;
 }

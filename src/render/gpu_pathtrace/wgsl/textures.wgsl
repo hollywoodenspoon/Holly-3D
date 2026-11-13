@@ -9,7 +9,7 @@
 // One texel: (base rgb, alpha), (emission rgb, metallic), (roughness, tangent normal).
 struct Tx { a: vec4<f32>, b: vec4<f32>, c: vec4<f32> }
 
-struct TexHit { ok: bool, base: vec3<f32>, emit: vec3<f32>, mr: vec2<f32>, n: vec3<f32> }
+struct TexHit { ok: bool, base: vec3<f32>, emit: vec3<f32>, mr: vec2<f32>, n: vec3<f32>, alpha: f32 }
 
 fn auxf(i: u32) -> f32 { return bitcast<f32>(aux[i]); }
 
@@ -24,6 +24,13 @@ fn texel(off: u32, i: u32) -> Tx {
 
 fn tx_mad(acc: Tx, x: Tx, k: f32) -> Tx {
     return Tx(acc.a + x.a * k, acc.b + x.b * k, acc.c + x.c * k);
+}
+
+// Cut-out materials (flag 16): the filtered alpha snaps back to 0 or 1,
+// as the CPU thresholds it at the exact UV.
+fn cut(x: Tx, flags: u32) -> Tx {
+    if ((flags & 16u) == 0u) { return x; }
+    return Tx(vec4<f32>(x.a.xyz, select(0.0, 1.0, x.a.w >= 0.5)), x.b, x.c);
 }
 
 fn tex_index(i: i32, n: u32, wrap: bool) -> u32 {
@@ -75,7 +82,7 @@ fn qrot(q: vec4<f32>, v: vec3<f32>) -> vec3<f32> {
 fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) -> TexHit {
     let x = tri * 16u;
     let id = aux[x + 6u];
-    if (!FEAT_TEXTURES || id == 0xffffffffu) { return TexHit(false, vec3<f32>(0.0), vec3<f32>(0.0), vec2<f32>(0.0), n); }
+    if (!FEAT_TEXTURES || id == 0xffffffffu) { return TexHit(false, vec3<f32>(0.0), vec3<f32>(0.0), vec2<f32>(0.0), n, 1.0); }
     let e = u.tex.x + id * 12u;
     let flags = aux[e + 3u];
     let tilt = (flags & 4u) != 0u;
@@ -96,7 +103,7 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
         let framed = abs(det) > 1e-12;
         let dpdu = select(vec3<f32>(0.0), (e1 * d2.y - e2 * d1.y) / det, framed);
         let dpdv = select(vec3<f32>(0.0), (e2 * d1.x - e1 * d2.x) / det, framed);
-        if (evaluated) { s = live_shade(aux[e], uv, p, dpdu, dpdv); } else { s = tex_lookup(e, uv); }
+        if (evaluated) { s = live_shade(aux[e], uv, p, dpdu, dpdv); } else { s = cut(tex_lookup(e, uv), flags); }
         if (tilt && framed) {
             let b = perturb(n, dpdu, dpdv, s.c.yzw);
             if (dot(b, ng) > 0.0) { nn = b; }
@@ -130,12 +137,12 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
         for (var j = 0u; j < 3u; j++) {
             if (k[j] <= 0.0) { continue; }
             var sj: Tx;
-            if (evaluated) { sj = live_shade(aux[e], uvs[j], tp, fu[j], fv[j]); } else { sj = tex_lookup(e, uvs[j]); }
+            if (evaluated) { sj = live_shade(aux[e], uvs[j], tp, fu[j], fv[j]); } else { sj = cut(tex_lookup(e, uvs[j]), flags); }
             s = tx_mad(s, sj, k[j]);
             nacc += select(n, perturb(n, du[j], dv[j], sj.c.yzw), tilt) * k[j];
         }
         let b = select(n, normalize(nacc), dot(nacc, nacc) > 1e-24);
         if (dot(b, ng) > 0.0) { nn = b; }
     }
-    return TexHit(true, s.a.xyz, s.b.xyz, vec2<f32>(s.b.w, s.c.x), nn);
+    return TexHit(true, s.a.xyz, s.b.xyz, vec2<f32>(s.b.w, s.c.x), nn, clamp(s.a.w, 0.0, 1.0));
 }

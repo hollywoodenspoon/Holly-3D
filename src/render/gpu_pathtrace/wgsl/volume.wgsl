@@ -82,8 +82,10 @@ fn volume_segment(o: vec3<f32>, d: vec3<f32>, t: f32, beta: ptr<function, vec3<f
             let l = lights[j];
             let inc = incident(l, p);
             if (inc.k <= 0.0) { continue; }
-            if ((u.counts.w & F_SHADOWS) != 0u && l.misc.y > 0.5 && occluded(p, inc.dir, min(inc.dist - u.background.w, 1e30))) { continue; }
-            li += l.rad.xyz * (inc.k * hg_phase(dot(d, inc.dir), g));
+            var vis = 1.0;
+            if ((u.counts.w & F_SHADOWS) != 0u && l.misc.y > 0.5) { vis = transmit(p, inc.dir, min(inc.dist - u.background.w, 1e30)); }
+            if (vis <= 0.0) { continue; }
+            li += l.rad.xyz * (inc.k * vis * hg_phase(dot(d, inc.dir), g));
         }
         inscatter += li * u.vol0.xyz * (weight * u.vol2.w);
         tr *= step_tr;

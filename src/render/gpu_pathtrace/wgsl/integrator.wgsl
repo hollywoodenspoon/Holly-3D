@@ -21,8 +21,15 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
     var depth = vec4<u32>(0u);
     // Dispersion: the colour channel this path follows once split (-1 = none).
     var channel = -1;
+    var passes = 0u;
+    // Shadow catcher seen by the camera: its shadow, AO and reflection weight
+    // while the nested reflection path runs (`alpha` is then that path's coverage).
+    var caught = false;
+    var catch_d = vec2<f32>(0.0);
+    var catch_f = 0.0;
     let eps = u.background.w;
-    for (var guard = 0; guard < 64; guard++) {
+    // Room for every bounce plus 32 see-through passes.
+    for (var guard = 0; guard < 128; guard++) {
         let h = closest(o, d, 1e30);
         if (FEAT_VOLUME) {
             let b0 = beta;
@@ -58,8 +65,9 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         var base = t.c0.xyz * w.x + t.c1.xyz * w.y + t.c2.xyz * w.z;
         var mr = t.mat.xy;
         var emit = t.emit.xyz;
+        var tx = TexHit(false, vec3<f32>(0.0), vec3<f32>(0.0), vec2<f32>(0.0), n, 1.0);
         if (FEAT_TEXTURES) {
-            let tx = tex_shade(h.tri, w, p, ng, n);
+            tx = tex_shade(h.tri, w, p, ng, n);
             if (tx.ok) {
                 base *= tx.base;
                 emit = tx.emit;
@@ -67,11 +75,43 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
                 n = tx.n;
             }
         }
+        if (FEAT_OPACITY) {
+            // Stochastic opacity: pass straight through with probability 1 - alpha.
+            let a = alpha_of(h.tri, w, tx);
+            if (a < 0.999 && passes < 32u && rnd() >= a) {
+                passes += 1u;
+                o = p + d * eps;
+                continue;
+            }
+        }
         let rec = rec_of(h.tri);
         if (camera) {
             alpha = 1.0;
             // Preserve Texture Appearance: the camera sees the surface's own colour.
             if (rec != NO_REC && auxf(rec + 11u) >= 0.0) { emit = base * auxf(rec + 11u); }
+            if ((u.counts.w & F_CATCHER) != 0u && t.light.z > 0.5) {
+                let dark = catch_dark(p, ng, n);
+                alpha = catcher_alpha(dark.x, dark.y, 0.0);
+                if (caught) { break; }
+                // The reflection, unless it sees another catcher, runs as a nested camera path.
+                let ro = p + ng * eps;
+                let rd = d - 2.0 * dot(d, n) * n;
+                let rh = closest(ro, rd, 1e30);
+                if (rh.tri == 0xffffffffu || tris[rh.tri].light.z > 0.5) { break; }
+                caught = true;
+                catch_d = dark;
+                catch_f = catch_fresnel(n, d, mr.y);
+                o = ro;
+                d = rd;
+                beta = vec3<f32>(catch_f);
+                alpha = 0.0;
+                prev_pdf = 0.0;
+                prev_delta = true;
+                depth = vec4<u32>(0u);
+                channel = -1;
+                passes = 0u;
+                continue;
+            }
         }
         if (u.fog.w > 0.0) {
             let f = exp(-u.fog.w * h.t);
@@ -99,6 +139,13 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         if (model == 1u) {
             l += beta * base;
             mix_add(G_EMISSIVE, beta * base);
+            break;
+        }
+        if (model == 3u && rec != NO_REC) {
+            // Like the CPU, toon shading is all direct light, in the Environment group.
+            let lt = beta * toon(p, ng, n, -d, base, mr.y, rec, h.tri);
+            l += lt;
+            mix_add(G_ENV, lt);
             break;
         }
         camera = false;
@@ -146,6 +193,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
         o = at + at_ng * select(-eps, eps, dot(bs.dir, at_ng) >= 0.0);
         d = bs.dir;
     }
+    if (caught) { alpha = catcher_alpha(catch_d.x, catch_d.y, catch_f * alpha); }
     return vec4<f32>(l, alpha);
 }
 

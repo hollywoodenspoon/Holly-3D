@@ -62,13 +62,12 @@ fn a_plain_scene_needs_no_switches_and_no_fallback() {
 }
 
 #[test]
-fn every_fallback_reason_is_listed_once() {
+fn see_through_surfaces_and_the_sky_need_no_fallback() {
     let mut rs = empty();
     rs.translucent = true;
     rs.procedural = Some(Default::default());
-    let r = reasons(&rs);
-    assert_eq!(r, ["see-through (opacity) surfaces"], "the sky renders on the GPU now");
-    assert_eq!(super::pack::unsupported(&rs), Some(r[0]));
+    assert!(reasons(&rs).is_empty(), "opacity and the sky render on the GPU now: {:?}", reasons(&rs));
+    assert_eq!(super::pack::unsupported(&rs), None);
     let f = Features::of(&rs);
     assert_eq!(f.0, Features::ENV_MAP | Features::OPACITY);
 }

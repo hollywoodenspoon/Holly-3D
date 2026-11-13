@@ -51,6 +51,9 @@ pub fn source() -> String {
         include_str!("wgsl/volume.wgsl"),
         include_str!("wgsl/textures.wgsl"),
         include_str!("wgsl/live.wgsl"),
+        include_str!("wgsl/opacity.wgsl"),
+        include_str!("wgsl/toon.wgsl"),
+        include_str!("wgsl/catcher.wgsl"),
         include_str!("wgsl/integrator.wgsl"),
     ]
     .join("\n")
@@ -135,16 +138,19 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     u4(&mut b, [cfg.width, cfg.height, region[2] - region[0], region[3] - region[1]]);
     u4(&mut b, [region[0], region[1], spp, seed]);
     u4(&mut b, [ps.max_bounces.clamp(1, 8), ps.diffuse_bounces, ps.glossy_bounces, ps.transmission_bounces]);
-    let flags = u32::from(rs.camera.is_ortho()) | u32::from(cfg.shadows) << 1 | u32::from(cfg.gi.softbox) << 2 | u32::from(cfg.gi.emitter_samples > 0) << 3 | u32::from(rs.procedural.is_some()) << 4;
+    let flags = u32::from(rs.camera.is_ortho()) | u32::from(cfg.shadows) << 1 | u32::from(cfg.gi.softbox) << 2 | u32::from(cfg.gi.emitter_samples > 0) << 3 | u32::from(rs.procedural.is_some()) << 4
+        | u32::from(rs.materials.iter().any(|m| m.shadow_catcher)) << 5;
     u4(&mut b, [p.n_lights, p.n_emitters, ps.rr_start, flags]);
     b.v3(rs.background, Tracer::new(rs, cfg).eps);
-    b.v3(rs.sky, 0.0);
-    b.v3(rs.ambient, 0.0);
+    // The catcher's contact AO: strength in sky.w, reach in ambient.w.
+    let gi = &cfg.gi;
+    b.v3(rs.sky, gi.ao_strength.clamp(0.0, 1.0) * f32::from(u8::from(gi.ao)));
+    b.v3(rs.ambient, gi.ao_radius.max(1e-3));
     let (fc, fd) = rs.fog.unwrap_or_default();
     b.v3(fc, fd);
     b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
     u4(&mut b, [tex.table, tex.count, tex.records, tex.rec_count]);
-    volume(&mut b, rs, mix::groups(rs, cfg));
+    volume(&mut b, rs, mix::groups(rs, cfg), cfg.gi.emitter_samples);
     b.0
 }
 
@@ -152,18 +158,19 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
 const PARAMS_BYTES: u64 = 64 + 4 * 16 + 5 * 16 + 16 + 5 * 16;
 
 /// The volume block of `Params` (`vol0..vol4`, see `wgsl/volume.wgsl`);
-/// zeros when the scene has no mist. `vol4.y` carries the LightMix group count.
-fn volume(b: &mut pack::Buf, rs: &RenderScene, groups: usize) {
+/// zeros when the scene has no mist. `vol4.y` carries the LightMix group
+/// count and `vol4.z` the glowing-triangle picks toon materials take.
+fn volume(b: &mut pack::Buf, rs: &RenderScene, groups: usize, picks: u32) {
     let Some(m) = &rs.volume else {
         (0..4).for_each(|_| b.v4(Vec4::ZERO));
-        b.v4(Vec4::new(0.0, groups as f32, 0.0, 0.0));
+        b.v4(Vec4::new(0.0, groups as f32, picks as f32, 0.0));
         return;
     };
     b.v3(m.albedo, m.density);
     b.v4(Vec4::new(m.base, m.falloff, m.wisps, m.inv_scale));
     b.v4(Vec4::new(m.wind.x, m.wind.y, m.g, m.intensity));
     b.v3(rs.camera.eye(), rs.radius * 6.0);
-    b.v4(Vec4::new(m.steps as f32, groups as f32, 0.0, 0.0));
+    b.v4(Vec4::new(m.steps as f32, groups as f32, picks as f32, 0.0));
 }
 
 /// Renders `region` on the GPU with progressive passes like the CPU tracer.
@@ -260,9 +267,11 @@ pub fn render(
 fn primary(t: &Tracer, cfg: &RenderSettings, x: u32, y: u32) -> Accum {
     let ndc = Vec2::new((x as f32 + 0.5) / cfg.width as f32 * 2.0 - 1.0, 1.0 - (y as f32 + 0.5) / cfg.height as f32 * 2.0);
     let ray = t.rs.camera.ray(ndc, cfg.width as f32 / cfg.height as f32);
-    let g = t.rs.bvh.closest(ray.origin, ray.dir, f32::INFINITY).map_or(GSample::EMPTY, |h| {
+    // Cut-out holes are skipped, as the CPU tracer's G-buffer does.
+    let (o, hit) = t.past_holes(ray.origin, ray.dir);
+    let g = hit.map_or(GSample::EMPTY, |h| {
         let tri = &t.rs.bvh.tris[h.tri];
-        GSample { obj: tri.obj, mat: tri.mat as u32, depth: h.t, normal: t.interp(&h, ray.origin, ray.dir).n }
+        GSample { obj: tri.obj, mat: tri.mat as u32, depth: o.distance(ray.origin) + h.t, normal: t.interp(&h, o, ray.dir).n }
     });
     Accum { sum: Vec4::ZERO, back: t.backdrop(ray.dir), g, n: 0, stats: Welford::ZERO, ..Accum::EMPTY }
 }
@@ -288,3 +297,9 @@ mod tests_area;
 mod tests_live;
 #[cfg(test)]
 mod tests_mix;
+#[cfg(test)]
+mod tests_opacity;
+#[cfg(test)]
+mod tests_toon;
+#[cfg(test)]
+mod tests_catcher;

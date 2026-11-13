@@ -34,9 +34,9 @@ struct Tri {
     n0: vec4<f32>, n1: vec4<f32>, n2: vec4<f32>,
     c0: vec4<f32>, c1: vec4<f32>, c2: vec4<f32>,
     mat: vec4<f32>,   // metallic, roughness, transmission, ior
-    emit: vec4<f32>,  // emitted radiance, model (0 standard, 1 unlit, 2 crystal)
+    emit: vec4<f32>,  // emitted radiance, model (0 standard, 1 unlit, 2 crystal, 3 toon)
     att: vec4<f32>,   // crystal attenuation rgb, thickness
-    light: vec4<f32>, // emitter pick probability, area
+    light: vec4<f32>, // emitter pick probability, area, shadow catcher (1)
 }
 
 struct Node { lo: vec4<f32>, hi: vec4<f32> }
@@ -70,6 +70,8 @@ const F_SOFTBOX: u32 = 4u;
 const F_NEE: u32 = 8u;
 // The sky is the procedural one (LightMix: Sun & Sky, else Environment).
 const F_PROC_SKY: u32 = 16u;
+// The scene has Shadow & Reflection Catcher surfaces (tri.light.z = 1).
+const F_CATCHER: u32 = 32u;
 
 // Feature switches, set per scene by the host as pipeline-overridable
 // constants (`super::features`), so a scene only compiles what it uses and a

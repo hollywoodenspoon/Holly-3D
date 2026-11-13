@@ -6,7 +6,7 @@
 //!   origin (World / Triplanar projection space);
 //! * at `table`, 12 words per texture: texel offset, width, height, flags
 //!   (1 wrap, 2 triplanar, 4 tilts normals, 8 live maps: the offset is
-//!   then a [`live::record`]), UV origin and span, triplanar scale and
+//!   then a [`live::record`], 16 cut-out alpha), UV origin and span, triplanar scale and
 //!   blend exponent;
 //! * then the baked texels ([`super::bake`]), the live-map records and,
 //!   when there are any, the noise tables ([`live::tables`]);
@@ -22,7 +22,7 @@ use bevy::math::Vec2;
 pub const NONE: u32 = u32::MAX;
 pub const TRI_WORDS: usize = 16;
 pub const TEX_WORDS: usize = 12;
-pub const REC_WORDS: usize = 16;
+pub const REC_WORDS: usize = 28;
 
 pub struct Store {
     pub words: Vec<u32>,
@@ -48,15 +48,16 @@ pub fn textured(m: &Material) -> bool {
     super::features::mapped(m)
 }
 
-/// Materials with a record: Principled lobes, or a camera glow of their own.
+/// Materials with a record: Principled lobes, a camera glow of their own, or toon.
 pub fn has_record(m: &Material) -> bool {
-    m.principled.active() || m.decoupled()
+    m.principled.active() || m.decoupled() || m.model == crate::materials::ShadingModel::Toon
 }
 
 /// A material's record: anisotropy, rotation (deg), clearcoat, clearcoat
 /// roughness | sheen, sheen tint, SSS weight, Abbe number | Beer
 /// absorption exponent per unit length (rgb), camera glow brightness (< 0
-/// = off) | random-walk extinction and single-scatter albedo (rgb).
+/// = off) | random-walk extinction and single-scatter albedo (rgb) |
+/// toon steps, shadow tint (rgb) | toon specular, rim, rim colour (rgb), 3 unused.
 pub fn record(m: &Material) -> [f32; REC_WORDS] {
     use crate::materials::principled::Principled;
     let p = &m.principled;
@@ -68,13 +69,18 @@ pub fn record(m: &Material) -> [f32; REC_WORDS] {
     };
     let glow = if m.decoupled() { m.direct_camera_brightness.clamp(0.0, 2.0) } else { -1.0 };
     let col = crate::materials::shading::lin3(p.sss_color);
+    let t = &m.toon;
+    let (tint, rim) = (crate::materials::shading::lin3(t.shadow_tint), crate::materials::shading::lin3(t.rim_color));
     let alb = col.to_array().map(Principled::walk_albedo);
     let (aniso, cc, sheen, sss) = (p.anisotropy.clamp(0.0, 1.0), p.clearcoat.clamp(0.0, 1.0), p.sheen.clamp(0.0, 1.0), p.sss_weight.clamp(0.0, 1.0));
     #[rustfmt::skip]
     let r = [aniso, p.aniso_rotation, cc, p.clearcoat_roughness.clamp(0.0, 1.0),
         sheen, p.sheen_tint.clamp(0.0, 1.0), sss, p.abbe.max(0.0),
         ab.x, ab.y, ab.z, glow,
-        1.0 / p.mean_free_path(), alb[0], alb[1], alb[2]];
+        1.0 / p.mean_free_path(), alb[0], alb[1], alb[2],
+        t.steps as f32, tint.x, tint.y, tint.z,
+        t.specular, t.rim, rim.x, rim.y,
+        rim.z, 0.0, 0.0, 0.0];
     r
 }
 
@@ -161,7 +167,7 @@ pub fn build(rs: &RenderScene) -> Store {
         let scale = f(1.0 / pr.size.max(1e-4));
         match b {
             Some(b) => {
-                let flags = u32::from(b.space.wrap) | u32::from(pr.on()) << 1 | u32::from(b.normal) << 2;
+                let flags = u32::from(b.space.wrap) | u32::from(pr.on()) << 1 | u32::from(b.normal) << 2 | u32::from(m.alpha_cutout) << 4;
                 let (lo, span) = (b.space.lo, b.space.span);
                 w.extend([off, b.w, b.h, flags, f(lo.x), f(lo.y), f(span.x), f(span.y), scale, f(k), 0, 0]);
                 off += b.words.len() as u32;

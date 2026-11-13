@@ -76,6 +76,11 @@ fn diff(gpu: &[Pixel], cpu: &[Pixel]) -> Diff {
 
 /// Renders `rs` on both tracers and checks they match (`None` = no adapter).
 pub(super) fn parity(name: &str, rs: &RenderScene) -> Option<Diff> {
+    parity_with(name, rs, |_| {})
+}
+
+/// [`parity`] with settings changed by `tweak` on both tracers.
+pub(super) fn parity_with(name: &str, rs: &RenderScene, tweak: impl Fn(&mut RenderSettings)) -> Option<Diff> {
     let g = match gpu() {
         Ok(g) => g,
         Err(e) if std::env::var_os("MINIMAX_REQUIRE_GPU").is_none() => {
@@ -86,11 +91,14 @@ pub(super) fn parity(name: &str, rs: &RenderScene) -> Option<Diff> {
     };
     eprintln!("{}", g.name);
     assert_eq!(pack::unsupported(rs), None, "{name} renders on the GPU");
-    let r = settings(ComputeDevice::Gpu);
+    let mut r = settings(ComputeDevice::Gpu);
+    tweak(&mut r);
     let mut passes = 0;
     let gpu_px = super::render(g, rs, &r, [0, 0, 24, 24], &AtomicBool::new(false), |_, _| passes += 1).expect("GPU render").0;
     assert_eq!(passes, r.path.schedule().len(), "progressive passes stream from the GPU too");
-    let (cpu_px, label) = pathtrace::run(rs, &settings(ComputeDevice::Cpu), [0, 0, 24, 24], &AtomicBool::new(false), |_, _| {});
+    let mut rc = settings(ComputeDevice::Cpu);
+    tweak(&mut rc);
+    let (cpu_px, label) = pathtrace::run(rs, &rc, [0, 0, 24, 24], &AtomicBool::new(false), |_, _| {});
     assert_eq!(label, "CPU");
     let d = diff(&gpu_px, &cpu_px);
     let (eg, ec) = d.energy;
@@ -137,12 +145,19 @@ fn scenes_the_gpu_cannot_draw_fall_back_to_the_cpu() {
     let mut rs = scene_with(|s| {
         s.add_light(Light::new(LightKind::DiscArea), None, Vec3::new(0.0, 0.0, 2.0), Vec3::ZERO);
     });
-    // Area lights run on the GPU now; catchers and opacity still need the CPU.
-    (rs.translucent, rs.materials[0].shadow_catcher) = (true, true);
-    assert_eq!(super::features::reasons(&rs), ["Shadow & Reflection Catcher surfaces", "see-through (opacity) surfaces"]);
+    // Area lights, opacity, toon and catchers run on the GPU now; a 3D map on
+    // a procedural surface can be neither baked nor evaluated there.
+    rs.translucent = true;
+    (rs.materials[0].shadow_catcher, rs.materials[1].model) = (true, crate::materials::ShadingModel::Toon);
+    let m = &mut rs.materials[2];
+    m.proc.pattern = crate::materials::proc_engine::Pattern::Rock;
+    let cracks = crate::materials::maps::MapNode::Cracks { scale: 2.0, width: 0.05, vary: 0.5, seed: 1, color_a: [0.8; 3], color_b: [0.1; 3] };
+    m.maps[crate::materials::maps::MapChannel::BaseColor as usize] = crate::materials::maps::MapSlot { node: Some(cracks), ..Default::default() };
+    let why = super::features::CPU_ONLY[0];
+    assert_eq!(super::features::reasons(&rs), [why]);
     let mut r = settings(ComputeDevice::Gpu);
     r.path.samples = 2;
     let (px, label) = pathtrace::run(&rs, &r, [0, 0, 24, 24], &AtomicBool::new(false), |_, _| {});
     assert_eq!(px.len(), 24 * 24);
-    assert_eq!(label, "CPU (Shadow & Reflection Catcher surfaces and see-through (opacity) surfaces need the CPU tracer)");
+    assert_eq!(label, format!("CPU ({why} need the CPU tracer)"));
 }

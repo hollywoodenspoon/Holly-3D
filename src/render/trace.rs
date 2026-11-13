@@ -202,7 +202,7 @@ impl<'a> Tracer<'a> {
 
     /// First hit along a ray that is not a Cut-out hole. Holes are skipped
     /// at the same depth, so what shows through them keeps its full shading.
-    fn past_holes(&self, mut o: Vec3, d: Vec3) -> (Vec3, Option<super::bvh::Hit>) {
+    pub(crate) fn past_holes(&self, mut o: Vec3, d: Vec3) -> (Vec3, Option<super::bvh::Hit>) {
         for _ in 0..32 {
             let Some(h) = self.rs.bvh.closest(o, d, f32::INFINITY) else { return (o, None) };
             if !self.rs.materials[self.rs.bvh.tris[h.tri].mat].alpha_cutout || self.interp(&h, o, d).s.alpha > 0.0 {

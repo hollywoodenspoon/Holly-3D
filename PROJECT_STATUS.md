@@ -1976,4 +1976,20 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **AOV passes** (Direct, Indirect, Specular, Albedo, Normal, Depth and the rest) and the **albedo-guided À-Trous denoiser** are still CPU-only. A GPU render with LightMix uses the bilateral denoiser, like any GPU render.
   - **Memory:** at 3840×2160 with 12 groups the buffer takes about 1.2 GB. A GPU whose buffer limit is smaller falls back to the CPU instead of splitting the render into tiles.
   - **Speed** with LightMix on hasn't been timed on her RX 9060 XT; only lavapipe here.
-  - Opacity, the Shadow & Reflection Catcher and toon still need the CPU (PR 4b).
+  - ~~Opacity, the Shadow & Reflection Catcher and toon still need the CPU (PR 4b).~~ Done in §64.
+
+## 64. GPU kernel parity, PR 4b: see-through surfaces, the Shadow & Reflection Catcher and toon on the GPU
+- **See-through surfaces render on the GPU** (`wgsl/opacity.wgsl`): material opacity, opacity maps, vertex alpha and Cut-out.
+  - **Camera and bounce paths** pass straight through a surface with probability 1 − alpha (up to 32 passes), as the CPU does, before the surface is shaded or fogged.
+  - **Shadow rays** from lights, area lights, glowing surfaces and the mist's light loop are dimmed by every see-through surface they cross (`transmit`, up to 8 hits), so light, glow and godrays shine through them.
+  - **Cut-out** snaps the baked alpha back to 0 or 1 at 0.5, so filtered texels don't leave half-clear fringes. Live-map materials apply the threshold to their opacity on the host.
+  - The G-buffer (object/material IDs, depth, normals for the denoiser) skips Cut-out holes, as on the CPU.
+- **Cel / toon materials** (`wgsl/toon.wgsl`): steps, shadow tint, specular band, rim light and rim colour come from the material record (now 28 words). The light comes from every scene light (area lights with their shadow samples), glowing surfaces and the ambient term, as on the CPU, and goes into the Environment LightMix group.
+- **Shadow & Reflection Catcher** (`wgsl/catcher.wgsl`): the alpha combines the shadow fraction over the lights, contact AO (strength and radius from Render Setup) and the reflection's coverage. The reflection is traced as a fresh camera path, so what it shows is shaded like anything else; it is skipped when it would hit another catcher.
+- **CPU fallback:** the only reasons left are 3D maps the GPU can neither bake nor evaluate (mixed with bitmaps, node graphs, procedural surfaces or paint) and more than 1.5 GB of textures.
+- **Tests:** `tests_opacity.rs` (a half-clear veil; a cut-out checker card, an invisible ghost card and a live-map card in mist), `tests_toon.rs` (a cel sphere with rim and specular, a flat toon box and a rect area light; the record stride), `tests_catcher.rs` (a matte catcher with contact AO; a glossy catcher reflecting the scene). Each compares the GPU image with the CPU one (energy, block error, bias and coverage).
+- **Not done yet:**
+  - **Soft shadows on see-through surfaces:** the GPU sends one jittered shadow ray per light per sample, where the CPU loops over the light's shadow samples. They converge to the same image, but the GPU is noisier at low sample counts.
+  - **AOV passes and the À-Trous denoiser** are still CPU-only (see §63).
+  - **Speed** with many stacked see-through cards (hair, foliage) hasn't been timed on her RX 9060 XT; each costs up to 8 shadow hits.
+  - Everything else from the GPU parity plan is done; next is the Clouds plan.

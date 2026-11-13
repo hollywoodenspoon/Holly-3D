@@ -174,7 +174,7 @@ fn a_settlement_street_renders_on_the_gpu_like_the_cpu() {
     let mut c = ViewCamera::new(ViewKind::Perspective);
     (c.target, c.distance) = (Vec3::new(0.0, 0.0, 0.3), 5.0);
     let rs = RenderScene::build(&s, c, false);
-    assert!(!reasons(&rs).contains(&CPU_ONLY[3]), "{:?}", reasons(&rs));
+    assert!(!reasons(&rs).contains(&CPU_ONLY[0]), "{:?}", reasons(&rs));
     assert_eq!(super::textures::planned_bytes(&rs), 0, "live maps bake nothing");
     parity("Settlement street", &rs);
 }
