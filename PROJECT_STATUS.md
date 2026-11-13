@@ -1930,3 +1930,23 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Opacity, shadow catcher and toon still use the CPU** (PR 4b next: opacity first).
   - **No GPU test yet for area lights in mist**, although the shared `incident()` means they light it. The march takes one area sample per step, as on the CPU.
   - **A big area light almost touching geometry** (a disc 0.2 above a box) differed in one 4×4 block (GPU 2.0 vs CPU 2.8) at the test's low sample count. I didn't investigate further; normal set-ups agree.
+
+## 62. GPU kernel parity, PR 4c: prefab materials on the GPU (live maps)
+- **Prefab Library and Settlement scenes now render on the GPU.** Their materials use 3D maps (Noise, Cracks, Grunge, Wood) or Bricks on World / Triplanar projection. A UV grid cannot hold these, so before this PR the whole scene fell back to the CPU ("maps the GPU cannot bake").
+- **Live maps (`live.rs`, `wgsl/live.wgsl`).** A material that cannot be baked but uses only maps the kernel knows gets a small record instead of a texture. The kernel then evaluates its maps at every hit.
+  - Map kinds the kernel knows: Noise (Perlin / Fractal / Cellular), Bricks (all four kinds), Cracks, Grunge (Dirt / Rust / Scratches / Stains), Wood, Checker, Gradient and Stripes.
+  - Channels: base colour, metallic, roughness, bump (central differences, as on the CPU) and emission.
+  - It works with UV mapping and with World / Triplanar blending, using the same projection frames as `relief::triplanar_normal`.
+  - The noise matches the CPU exactly: the noise crate's Perlin, Fbm and Worley are ported line by line, using its own permutation tables (uploaded once per scene, 9 × 256 words). The pattern maps' hash, fbm and Voronoi are ported too.
+- **Memory:** live materials bake nothing (0 bytes of textures), so they also don't count towards the 1.5 GB cap.
+- **CPU-only reason, reworded:** "maps the GPU cannot bake or evaluate (3D or non-repeating maps mixed with bitmaps, node graphs, procedural surfaces or paint)".
+- **Tests (`tests_live.rs`):**
+  - every map kind and sub-kind (19 materials) and every prefab live material (Settlement, Medieval Castle, Modern City, Alpine Terrain) are checked on colour, emission, metallic, roughness and bump normal. Each is evaluated at 96 points by a compute entry and compared with `base_surface` and `base_tangent_normal`; at most 2 of the 96 points may differ by more than 0.01 (f32 rounding at cell borders);
+  - a Settlement street (cobble road, stone facade, rusted metal, curbs and a triplanar cracks wall) renders on the GPU like the CPU;
+  - a bitmap mixed with a 3D map still falls back.
+  - Mutation checks catch: the Perlin scale factor, Worley's far cell, the pattern hash, Rust-style `fract` on negative coordinates, the bump sign, emission without sRGB decoding, and the fractal noise lacunarity (2 instead of 2π/3).
+- **Not done yet:**
+  - **3D maps mixed with bitmaps, node graphs (Levels, Color Correct, Height Blend, …), procedural surfaces or paint still use the CPU.** Live maps take single map leaves only, which is all the prefab packs use.
+  - **Opacity maps** (e.g. Settlement ID 29 smoke) still need the CPU; that comes with PR 4b.
+  - **LightMix only works with the CPU path tracer** (Holly's report). It is queued next: per-group buffers on the GPU.
+  - **Speed:** live maps cost more per hit than a baked lookup (Cracks runs 27 Voronoi cells plus several fbm calls, and bump adds four more evaluations). I haven't timed this on her RX 9060 XT; only lavapipe here.

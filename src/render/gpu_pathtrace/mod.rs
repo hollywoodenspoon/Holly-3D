@@ -9,6 +9,7 @@
 pub mod bake;
 pub mod envmap;
 pub mod features;
+pub mod live;
 pub mod pack;
 pub mod textures;
 
@@ -48,6 +49,7 @@ pub fn source() -> String {
         include_str!("wgsl/area.wgsl"),
         include_str!("wgsl/volume.wgsl"),
         include_str!("wgsl/textures.wgsl"),
+        include_str!("wgsl/live.wgsl"),
         include_str!("wgsl/integrator.wgsl"),
     ]
     .join("\n")
@@ -269,3 +271,5 @@ mod tests_tex;
 mod tests_volume;
 #[cfg(test)]
 mod tests_area;
+#[cfg(test)]
+mod tests_live;

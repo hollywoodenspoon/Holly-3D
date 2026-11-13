@@ -5,13 +5,16 @@
 //!   record (`u32`, [`NONE`] = none), the object's rotation quaternion and
 //!   origin (World / Triplanar projection space);
 //! * at `table`, 12 words per texture: texel offset, width, height, flags
-//!   (1 wrap, 2 triplanar, 4 tilts normals), UV origin and span, triplanar
-//!   scale and blend exponent;
-//! * then the baked texels ([`super::bake`]);
+//!   (1 wrap, 2 triplanar, 4 tilts normals, 8 live maps: the offset is
+//!   then a [`live::record`]), UV origin and span, triplanar scale and
+//!   blend exponent;
+//! * then the baked texels ([`super::bake`]), the live-map records and,
+//!   when there are any, the noise tables ([`live::tables`]);
 //! * at `records`, [`REC_WORDS`] per material with Principled lobes or
 //!   Preserve Texture Appearance ([`record`]).
 
-use super::bake::{self, Space};
+use super::bake::{self, Baked, Space};
+use super::live;
 use crate::materials::Material;
 use crate::render::scene_build::RenderScene;
 use bevy::math::Vec2;
@@ -77,7 +80,7 @@ pub fn record(m: &Material) -> [f32; REC_WORDS] {
 
 /// Total store size for the scene's mapped materials (bytes).
 pub fn planned_bytes(rs: &RenderScene) -> u64 {
-    used(rs).iter().map(|&i| bake::bytes(&rs.materials[i])).sum()
+    used(rs).iter().filter(|&&i| !live::live(&rs.materials[i])).map(|&i| bake::bytes(&rs.materials[i])).sum()
 }
 
 /// Indices of the mapped materials some triangle uses.
@@ -125,18 +128,21 @@ pub fn build(rs: &RenderScene) -> Store {
         return Store::empty();
     }
     let mut id = vec![NONE; rs.materials.len()];
-    let baked: Vec<_> = mats
+    // Live-map materials carry an empty grid; their record goes after the texels.
+    let baked: Vec<Option<Baked>> = mats
         .iter()
         .enumerate()
         .map(|(k, &mi)| {
             id[mi] = k as u32;
-            bake::bake(&rs.materials[mi], space(rs, mi))
+            let m = &rs.materials[mi];
+            (!live::live(m)).then(|| bake::bake(m, space(rs, mi)))
         })
         .collect();
     let n = rs.bvh.tris.len();
     let table = n * TRI_WORDS;
-    let texels: usize = baked.iter().map(|b| b.words.len()).sum();
-    let mut w = Vec::with_capacity(table + baked.len() * TEX_WORDS + texels);
+    let texels: usize = baked.iter().flatten().map(|b| b.words.len()).sum();
+    let lives = baked.iter().filter(|b| b.is_none()).count();
+    let mut w = Vec::with_capacity(table + baked.len() * TEX_WORDS + texels + lives * live::WORDS);
     let f = |x: f32| x.to_bits();
     for t in &rs.bvh.tris {
         let (rot, origin) = rs.frames.get(t.obj as usize).copied().unwrap_or_default();
@@ -146,16 +152,37 @@ pub fn build(rs: &RenderScene) -> Store {
         w.extend([f(origin.x), f(origin.y), f(origin.z), 0]);
     }
     let mut off = (table + baked.len() * TEX_WORDS) as u32;
+    let mut live_off = off + texels as u32;
+    let tables = live_off + (lives * live::WORDS) as u32;
     for (b, &mi) in baked.iter().zip(&mats) {
-        let pr = &rs.materials[mi].projection;
-        let flags = u32::from(b.space.wrap) | u32::from(pr.on()) << 1 | u32::from(b.normal) << 2;
+        let m = &rs.materials[mi];
+        let pr = &m.projection;
         let k = 1.0 + (1.0 - pr.blend.clamp(0.0, 1.0)) * 15.0;
-        let (lo, span) = (b.space.lo, b.space.span);
-        w.extend([off, b.w, b.h, flags, f(lo.x), f(lo.y), f(span.x), f(span.y), f(1.0 / pr.size.max(1e-4)), f(k), 0, 0]);
-        off += b.words.len() as u32;
+        let scale = f(1.0 / pr.size.max(1e-4));
+        match b {
+            Some(b) => {
+                let flags = u32::from(b.space.wrap) | u32::from(pr.on()) << 1 | u32::from(b.normal) << 2;
+                let (lo, span) = (b.space.lo, b.space.span);
+                w.extend([off, b.w, b.h, flags, f(lo.x), f(lo.y), f(span.x), f(span.y), scale, f(k), 0, 0]);
+                off += b.words.len() as u32;
+            }
+            None => {
+                let flags = 8 | u32::from(pr.on()) << 1 | u32::from(live::tilts(m)) << 2;
+                w.extend([live_off, 0, 0, flags, 0, 0, f(1.0), f(1.0), scale, f(k), 0, 0]);
+                live_off += live::WORDS as u32;
+            }
+        }
     }
-    for b in &baked {
+    for b in baked.iter().flatten() {
         w.extend_from_slice(&b.words);
+    }
+    for (b, &mi) in baked.iter().zip(&mats) {
+        if b.is_none() {
+            w.extend(live::record(&rs.materials[mi], tables));
+        }
+    }
+    if lives > 0 {
+        w.extend(live::tables());
     }
     let records = w.len() as u32;
     for &mi in &recs {

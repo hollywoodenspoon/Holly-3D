@@ -1,7 +1,8 @@
 // Texture store lookups (FEAT_TEXTURES; layout in src/render/gpu_pathtrace/textures.rs).
 // Matches Tracer::interp: UV maps with a normal map tilting the shading
 // normal along the triangle's UV frame, or World / Triplanar projections
-// blended by the object-space geometric normal.
+// blended by the object-space geometric normal. Live-map materials
+// (flag 8) evaluate their maps per hit (live.wgsl) instead of a lookup.
 
 @group(0) @binding(9) var<storage, read> aux: array<u32>;
 
@@ -80,19 +81,24 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
     let tilt = (flags & 4u) != 0u;
     var s: Tx;
     var nn = n;
+    let evaluated = (flags & 8u) != 0u;
     if ((flags & 2u) == 0u) {
         let uv0 = vec2<f32>(auxf(x), auxf(x + 1u));
         let uv1 = vec2<f32>(auxf(x + 2u), auxf(x + 3u));
         let uv2 = vec2<f32>(auxf(x + 4u), auxf(x + 5u));
-        s = tex_lookup(e, uv0 * w.x + uv1 * w.y + uv2 * w.z);
+        let uv = uv0 * w.x + uv1 * w.y + uv2 * w.z;
         let t = tris[tri];
         let e1 = t.p1.xyz - t.p0.xyz;
         let e2 = t.p2.xyz - t.p0.xyz;
         let d1 = uv1 - uv0;
         let d2 = uv2 - uv0;
         let det = d1.x * d2.y - d2.x * d1.y;
-        if (tilt && abs(det) > 1e-12) {
-            let b = perturb(n, (e1 * d2.y - e2 * d1.y) / det, (e2 * d1.x - e1 * d2.x) / det, s.c.yzw);
+        let framed = abs(det) > 1e-12;
+        let dpdu = select(vec3<f32>(0.0), (e1 * d2.y - e2 * d1.y) / det, framed);
+        let dpdv = select(vec3<f32>(0.0), (e2 * d1.x - e1 * d2.x) / det, framed);
+        if (evaluated) { s = live_shade(aux[e], uv, p, dpdu, dpdv); } else { s = tex_lookup(e, uv); }
+        if (tilt && framed) {
+            let b = perturb(n, dpdu, dpdv, s.c.yzw);
             if (dot(b, ng) > 0.0) { nn = b; }
         }
     } else {
@@ -116,11 +122,15 @@ fn tex_shade(tri: u32, w: vec3<f32>, p: vec3<f32>, ng: vec3<f32>, n: vec3<f32>) 
         let az = qrot(q, vec3<f32>(0.0, 0.0, size));
         var du = array<vec3<f32>, 3>(ay, ax, ax);
         var dv = array<vec3<f32>, 3>(az, az, ay);
+        // The same frames in projection space (relief::triplanar_normal).
+        var fu = array<vec3<f32>, 3>(vec3<f32>(0.0, size, 0.0), vec3<f32>(size, 0.0, 0.0), vec3<f32>(size, 0.0, 0.0));
+        var fv = array<vec3<f32>, 3>(vec3<f32>(0.0, 0.0, size), vec3<f32>(0.0, 0.0, size), vec3<f32>(0.0, size, 0.0));
         s = Tx(vec4<f32>(0.0), vec4<f32>(0.0), vec4<f32>(0.0));
         var nacc = vec3<f32>(0.0);
         for (var j = 0u; j < 3u; j++) {
             if (k[j] <= 0.0) { continue; }
-            let sj = tex_lookup(e, uvs[j]);
+            var sj: Tx;
+            if (evaluated) { sj = live_shade(aux[e], uvs[j], tp, fu[j], fv[j]); } else { sj = tex_lookup(e, uvs[j]); }
             s = tx_mad(s, sj, k[j]);
             nacc += select(n, perturb(n, du[j], dv[j], sj.c.yzw), tilt) * k[j];
         }
