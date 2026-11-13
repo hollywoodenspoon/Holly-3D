@@ -69,7 +69,19 @@ pub fn tab(ui: &mut egui::Ui, r: &mut RenderSettings) {
     });
     ui.checkbox(&mut p.lightmix, "Luxon LightMix Buffers (relight per light group in F9, CPU tracer)")
         .on_hover_text("Keeps one buffer per light group so the Frame Window's LightMix can relight the render live");
+    ui.horizontal(|ui| {
+        ui.label("GPU Sky Bake");
+        egui::ComboBox::from_id_salt("rs_sky_bake").selected_text(format!("{} x {}", p.sky_bake, p.sky_bake / 2)).show_ui(ui, |ui| {
+            for w in crate::render::pathtrace::settings::PathSettings::SKY_BAKE {
+                ui.selectable_value(&mut p.sky_bake, w, format!("{w} x {}", w / 2));
+            }
+        });
+    })
+    .response
+    .on_hover_text("Size of the image the GPU bakes the procedural sky into (reflections and sky light); camera rays still see the exact sky. HDRIs upload at their own size.");
     ui.checkbox(&mut r.shadows, "Shadows");
     ui.checkbox(&mut r.outlines, "Universal Ink Outline Pass");
-    ui.label(dim("Multi-bounce paths with MIS (light + BSDF sampling, power heuristic) and Russian Roulette. Auto uses the wgpu GPU kernel and falls back to the CPU."));
+    let cpu_only = crate::render::gpu_pathtrace::features::CPU_ONLY.map(|r| format!("• {r}")).join("\n");
+    ui.label(dim("Multi-bounce paths with MIS (light + BSDF sampling, power heuristic) and Russian Roulette. Auto uses the wgpu GPU kernel and falls back to the CPU."))
+        .on_hover_text(format!("Scenes with any of these still render on the CPU (the Frame Window names every one it found):\n{cpu_only}"));
 }

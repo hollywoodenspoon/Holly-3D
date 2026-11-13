@@ -68,6 +68,9 @@ pub struct PathSettings {
     pub min_samples: u32,
     /// Keep one buffer per light group for the Frame Window's LightMix.
     pub lightmix: bool,
+    /// Width of the equirect image the GPU kernel bakes the procedural sky
+    /// into (height is half); HDRIs upload at their own size.
+    pub sky_bake: u32,
 }
 
 impl Default for PathSettings {
@@ -86,6 +89,7 @@ impl Default for PathSettings {
             noise_threshold: 0.02,
             min_samples: 8,
             lightmix: true,
+            sky_bake: 1024,
         }
     }
 }
@@ -94,6 +98,8 @@ impl PathSettings {
     pub const BOUNCES: std::ops::RangeInclusive<u32> = 1..=8;
     pub const THRESHOLD: std::ops::RangeInclusive<f32> = 0.002..=0.10;
     pub const MIN_SAMPLES: std::ops::RangeInclusive<u32> = 4..=32;
+    /// GPU sky bake widths offered in Render Setup.
+    pub const SKY_BAKE: [u32; 4] = [512, 1024, 2048, 4096];
 
     /// Samples per pixel after each progressive pass: 1, 2, 4, 8, ... target.
     pub fn schedule(&self) -> Vec<u32> {

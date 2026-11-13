@@ -37,9 +37,9 @@ pub fn run_mix(
     let mut on_pass = on_pass;
     let gpu = match cfg.path.device {
         ComputeDevice::Cpu => Err("CPU selected".to_string()),
-        _ => match crate::render::gpu_pathtrace::pack::unsupported(rs) {
-            Some(why) => Err(format!("{why} need the CPU tracer")),
-            None => crate::render::gpu_pathtrace::gpu(),
+        _ => match crate::render::gpu_pathtrace::features::reasons(rs).as_slice() {
+            [] => crate::render::gpu_pathtrace::gpu(),
+            why => Err(format!("{} need the CPU tracer", crate::render::gpu_pathtrace::features::join(why))),
         },
     };
     let fallback = match gpu {

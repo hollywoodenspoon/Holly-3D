@@ -1,11 +1,13 @@
 //! wgpu compute port of the SolidCraft GPU path tracer (MIT / Apache-2.0):
 //! the scene's triangles, binary BVH, lights and emitter table go up as
-//! storage buffers and a WGSL kernel (`kernel.wgsl`) traces progressive
+//! storage buffers and a WGSL kernel (`wgsl/`, joined by [`source`]) traces progressive
 //! passes into an accumulation buffer; the host reads it back after each
 //! pass for the Frame Window and adaptive sampling. With no adapter (headless
 //! CI, no driver) or for features only the CPU has, rendering falls back to
 //! the CPU path tracer.
 
+pub mod envmap;
+pub mod features;
 pub mod pack;
 
 use crate::render::job::Region;
@@ -15,20 +17,57 @@ use crate::render::scene_build::RenderScene;
 use crate::render::settings::RenderSettings;
 use crate::render::trace::{GSample, Pixel, Tracer};
 use bevy::math::{Vec2, Vec4};
-use std::sync::OnceLock;
+use features::Features;
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
+use std::time::Instant;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
 pub struct Gpu {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    pipeline: wgpu::ComputePipeline,
+    module: wgpu::ShaderModule,
+    /// One pipeline per feature mask, built on first use.
+    pipelines: Mutex<HashMap<u32, wgpu::ComputePipeline>>,
     pub name: String,
 }
 
-/// Most samples one dispatch traces per pixel (keeps each submit short so
-/// the driver watchdog never fires).
-const SPP_PER_DISPATCH: u32 = 4;
+/// The kernel's WGSL: every file in `wgsl/`, joined (WGSL takes any
+/// declaration order).
+pub fn source() -> String {
+    [
+        include_str!("wgsl/common.wgsl"),
+        include_str!("wgsl/bvh.wgsl"),
+        include_str!("wgsl/bsdf.wgsl"),
+        include_str!("wgsl/env.wgsl"),
+        include_str!("wgsl/lights.wgsl"),
+        include_str!("wgsl/volume.wgsl"),
+        include_str!("wgsl/integrator.wgsl"),
+    ]
+    .join("\n")
+}
+
+impl Gpu {
+    /// The pipeline for this feature mask (compiled once, then cached).
+    pub fn pipeline(&self, f: Features) -> wgpu::ComputePipeline {
+        let mut cache = self.pipelines.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        cache
+            .entry(f.0)
+            .or_insert_with(|| {
+                let constants = f.constants();
+                self.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                    label: Some("path tracer"),
+                    layout: None,
+                    module: &self.module,
+                    entry_point: Some("main"),
+                    compilation_options: wgpu::PipelineCompilationOptions { constants: &constants, ..Default::default() },
+                    cache: None,
+                })
+            })
+            .clone()
+    }
+}
 
 fn init() -> Result<Gpu, String> {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
@@ -36,17 +75,17 @@ fn init() -> Result<Gpu, String> {
     let adapter = pollster::block_on(instance.request_adapter(&opts)).map_err(|e| format!("no GPU adapter: {e}"))?;
     let desc = wgpu::DeviceDescriptor { label: Some("path tracer"), required_limits: adapter.limits(), ..Default::default() };
     let (device, queue) = pollster::block_on(adapter.request_device(&desc)).map_err(|e| format!("GPU device: {e}"))?;
-    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("path tracer"), source: wgpu::ShaderSource::Wgsl(include_str!("kernel.wgsl").into()) });
-    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("path tracer"),
-        layout: None,
-        module: &module,
-        entry_point: Some("main"),
-        compilation_options: Default::default(),
-        cache: None,
-    });
+    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("path tracer"), source: wgpu::ShaderSource::Wgsl(source().into()) });
     let info = adapter.get_info();
-    Ok(Gpu { device, queue, pipeline, name: format!("GPU: {} ({:?})", info.name, info.backend) })
+    Ok(Gpu { device, queue, module, pipelines: Mutex::default(), name: device_label(&info.name, &format!("{:?}", info.backend), &info.driver) })
+}
+
+/// "GPU: card (backend, driver)", without the driver when it is unknown.
+pub fn device_label(name: &str, backend: &str, driver: &str) -> String {
+    match driver.trim() {
+        "" => format!("GPU: {name} ({backend})"),
+        d => format!("GPU: {name} ({backend}, {d})"),
+    }
 }
 
 /// The shared GPU context, created on first use (`Err` = no usable adapter).
@@ -72,7 +111,7 @@ fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String
     Ok(bytes.as_chunks::<16>().0.iter().map(|c| Vec4::from_array(std::array::from_fn(|i| f32::from_le_bytes([c[4 * i], c[4 * i + 1], c[4 * i + 2], c[4 * i + 3]])))).collect())
 }
 
-fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, p: &pack::Packed) -> Vec<u8> {
+fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed: u32, p: &pack::Packed, env: &envmap::EnvMap) -> Vec<u8> {
     let ps = &cfg.path;
     let inv = rs.camera.view_proj(cfg.width as f32 / cfg.height as f32).inverse();
     let mut b = pack::Buf::default();
@@ -88,6 +127,7 @@ fn params(rs: &RenderScene, cfg: &RenderSettings, region: Region, spp: u32, seed
     b.v3(rs.ambient, 0.0);
     let (fc, fd) = rs.fog.unwrap_or_default();
     b.v3(fc, fd);
+    b.v4(Vec4::new(env.w as f32, env.h as f32, env.turn, env.strength));
     b.0
 }
 
@@ -105,15 +145,17 @@ pub fn render(
     let (rw, rh) = ((x1 - x0) as usize, (y1 - y0) as usize);
     let n = rw * rh;
     let p = pack::pack(rs);
+    let env = envmap::env_map(rs, cfg.path.sky_bake).unwrap_or_else(envmap::EnvMap::none);
     let d = &g.device;
     let size = (n * 16) as u64;
     let accum = storage(d, "accum", &vec![0; n * 16], true);
     let stats = storage(d, "stats", &vec![0; n * 16], true);
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
-    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 4 * 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-    let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false)];
-    let layout = g.pipeline.get_bind_group_layout(0);
-    let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf]
+    let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: 64 + 4 * 16 + 5 * 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+    let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false)];
+    let pipeline = g.pipeline(Features::of(rs));
+    let layout = pipeline.get_bind_group_layout(0);
+    let entries: Vec<_> = [&uniform, &bufs[0], &bufs[1], &bufs[2], &bufs[3], &accum, &stats, &done_buf, &bufs[4]]
         .iter()
         .enumerate()
         .map(|(i, b)| wgpu::BindGroupEntry { binding: i as u32, resource: b.as_entire_binding() })
@@ -123,19 +165,25 @@ pub fn render(
     let tracer = Tracer::new(rs, cfg);
     let mut acc: Vec<Accum> = (0..n).map(|i| primary(&tracer, cfg, x0 + (i % rw) as u32, y0 + (i / rw) as u32)).collect();
     let mut out = vec![Pixel::EMPTY; n];
-    let (mut have, mut seed) = (0, 0u32);
+    let (mut have, mut seed, mut batch) = (0, 0u32, features::SPP_RANGE.0);
     for (pass, &target) in ps.schedule().iter().enumerate() {
         while have < target {
-            let spp = (target - have).min(SPP_PER_DISPATCH);
-            g.queue.write_buffer(&uniform, 0, &params(rs, cfg, region, spp, seed, &p));
+            let spp = (target - have).min(batch);
+            let t0 = Instant::now();
+            g.queue.write_buffer(&uniform, 0, &params(rs, cfg, region, spp, seed, &p, &env));
             let mut enc = d.create_command_encoder(&Default::default());
             {
                 let mut cp = enc.begin_compute_pass(&Default::default());
-                cp.set_pipeline(&g.pipeline);
+                cp.set_pipeline(&pipeline);
                 cp.set_bind_group(0, &bind, &[]);
                 cp.dispatch_workgroups(gx, gy, 1);
             }
             g.queue.submit([enc.finish()]);
+            // Wait for this batch so the next one is sized from its real time.
+            d.poll(wgpu::PollType::wait_indefinitely()).map_err(|e| format!("GPU poll: {e}"))?;
+            if spp == batch {
+                batch = features::next_spp(spp, t0.elapsed().as_secs_f64() * 1e3, features::TARGET_MS);
+            }
             (have, seed) = (have + spp, seed + 1);
             if cancel.load(Ordering::Relaxed) {
                 return Ok(out);
@@ -175,3 +223,8 @@ fn primary(t: &Tracer, cfg: &RenderSettings, x: u32, y: u32) -> Accum {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod tests_features;
+#[cfg(test)]
+mod tests_env;

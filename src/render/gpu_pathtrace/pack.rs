@@ -1,10 +1,8 @@
 //! Flattens a [`RenderScene`] into the GPU path tracer's storage buffers:
 //! triangles (positions, normals, per-vertex surface color, material, emission),
-//! binary BVH nodes, punctual lights and the emitter CDF. Also decides
-//! whether a scene needs features only the CPU tracer has.
+//! binary BVH nodes, punctual lights and the emitter CDF.
 
 use crate::materials::ShadingModel;
-use crate::materials::proc_engine::Pattern;
 use crate::materials::shading::{lin3, surface};
 use crate::render::scene_build::{RShape, RenderScene};
 use bevy::math::{Vec3, Vec4};
@@ -35,42 +33,10 @@ impl Buf {
     }
 }
 
-/// Why this scene renders on the CPU instead (`None` = the GPU handles it).
+/// Why this scene renders on the CPU instead (`None` = the GPU handles it):
+/// the first of [`super::features::reasons`].
 pub fn unsupported(rs: &RenderScene) -> Option<&'static str> {
-    if rs.hdri.is_some() || rs.procedural.is_some() {
-        return Some("HDRI / procedural sky environment");
-    }
-    if rs.volume.is_some() {
-        return Some("volumetric godrays / mist");
-    }
-    if rs.lights.iter().any(|l| matches!(l.shape, RShape::Area(_))) {
-        return Some("area lights");
-    }
-    if rs.lights.iter().any(|l| l.ies != crate::render::IesProfile::None) {
-        return Some("IES light profiles");
-    }
-    if rs.materials.iter().any(|m| m.shadow_catcher) {
-        return Some("Shadow & Reflection Catcher surfaces");
-    }
-    if rs.translucent {
-        return Some("see-through (opacity) surfaces");
-    }
-    for m in &rs.materials {
-        if m.model == ShadingModel::Toon {
-            return Some("cel / toon materials");
-        }
-        let mapped = m.maps.iter().any(|s| s.enabled && s.node.is_some()) || !m.slate_nodes.is_empty();
-        if mapped || m.proc.pattern != Pattern::None || m.paint.is_some() || m.projection.on() {
-            return Some("texture / procedural maps");
-        }
-        if m.principled.active() {
-            return Some("Principled SSS / clearcoat / sheen / anisotropy / dispersion");
-        }
-        if m.decoupled() {
-            return Some("Preserve Texture Appearance materials");
-        }
-    }
-    None
+    super::features::reasons(rs).first().copied()
 }
 
 pub struct Packed {

@@ -53,7 +53,7 @@ pub const RENDER: Page = Page {
         Steps(&[
             "F10 Render Setup: resolution presets, alpha background, camera, anti-aliasing, AO, GI, denoiser, bloom, depth of field.",
             "Pick the renderer: the Veach Path Tracer (default: multi-bounce light, MIS, Russian Roulette) or the fast Classic Raytracer.",
-            "Compute Device: Auto uses the GPU (wgpu Vulkan compute) and falls back to the CPU; HDRI skies, opacity, toon and texture maps render on the CPU.",
+            "Compute Device: Auto uses the GPU (wgpu Vulkan compute) and falls back to the CPU. The dynamic sky and HDRIs render on the GPU (the sky is baked at the Render tab's GPU Sky Bake size); opacity, toon, texture maps, Principled lobes, volumes and area lights still use the CPU. The Frame Window status names the GPU and its driver, or lists every feature that sent the scene to the CPU. GPU batches are sized to about 50 ms, so the desktop stays responsive.",
             "Progressive Preview streams full-frame passes (1, 2, 4 ... samples). Veach MIS & Adaptive Sampling stops pixels whose noise is below the Noise Threshold.",
             "F9 renders the active view into the Veach Rendered Frame Window.",
             "In the Frame Window: save PNG / EXR / JPG, copy, clone the window to compare, and view R / G / B / A channels.",

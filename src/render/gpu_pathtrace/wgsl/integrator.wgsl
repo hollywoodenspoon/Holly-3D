@@ -1,0 +1,107 @@
+// Integrator and entry point (matches PathTracer::radiance).
+
+fn camera_ray(px: vec2<f32>) -> array<vec3<f32>, 2> {
+    let ndc = vec2<f32>(px.x / f32(u.dims.x) * 2.0 - 1.0, 1.0 - px.y / f32(u.dims.y) * 2.0);
+    let a = u.inv_vp * vec4<f32>(ndc, 1.0, 1.0);
+    let far_z = select(1e-4, 0.0, (u.counts.w & F_ORTHO) != 0u);
+    let b = u.inv_vp * vec4<f32>(ndc, far_z, 1.0);
+    let near = a.xyz / a.w;
+    return array<vec3<f32>, 2>(near, normalize(b.xyz / b.w - near));
+}
+
+fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
+    var o = o_in;
+    var d = d_in;
+    var l = vec3<f32>(0.0);
+    var beta = vec3<f32>(1.0);
+    var alpha = 0.0;
+    var camera = true;
+    var prev_pdf = 0.0;
+    var prev_delta = true;
+    var depth = vec4<u32>(0u);
+    let eps = u.background.w;
+    for (var guard = 0; guard < 64; guard++) {
+        let h = closest(o, d, 1e30);
+        if (h.tri == 0xffffffffu) {
+            if (!camera) { l += beta * environment(d); }
+            break;
+        }
+        let t = tris[h.tri];
+        let w = vec3<f32>(1.0 - h.u - h.v, h.u, h.v);
+        let p = t.p0.xyz * w.x + t.p1.xyz * w.y + t.p2.xyz * w.z;
+        let geo = normalize(cross(t.p1.xyz - t.p0.xyz, t.p2.xyz - t.p0.xyz));
+        let entering = dot(geo, d) < 0.0;
+        let ng = select(-geo, geo, entering);
+        var n = normalize(t.n0.xyz * w.x + t.n1.xyz * w.y + t.n2.xyz * w.z);
+        if (dot(n, ng) < 0.0) { n = -n; }
+        let base = t.c0.xyz * w.x + t.c1.xyz * w.y + t.c2.xyz * w.z;
+        if (camera) { alpha = 1.0; }
+        l += beta * volume_segment(o, d, h.t, &beta);
+        if (u.fog.w > 0.0) {
+            let f = exp(-u.fog.w * h.t);
+            l += beta * u.fog.xyz * (1.0 - f);
+            beta *= f;
+        }
+        let model = u32(t.emit.w + 0.5);
+        if (!entering && model == 2u) {
+            beta *= pow(max(t.att.xyz, vec3<f32>(1e-3)), vec3<f32>(h.t / max(t.att.w, 1e-3)));
+        }
+        if (max(t.emit.x, max(t.emit.y, t.emit.z)) > 0.0) {
+            var mis = 1.0;
+            if (!prev_delta && u.counts.y > 0u && (u.counts.w & F_NEE) != 0u && t.light.x > 0.0) {
+                let lp = t.light.x / max(t.light.y, 1e-12) * h.t * h.t / max(abs(dot(geo, d)), 1e-6);
+                mis = power(prev_pdf, lp);
+            }
+            l += beta * t.emit.xyz * mis;
+        }
+        if (model == 1u) {
+            l += beta * base;
+            break;
+        }
+        camera = false;
+        let s = shade_hook(Surf(n, base, t.mat.x, max(t.mat.y * t.mat.y, 2e-3), t.mat.z, max(t.mat.w, 1.0), entering), h.tri, w);
+        let v = -d;
+        l += beta * (punctual(p, ng, s, v) + emitter_nee(p, ng, h.tri, s, v) + area_nee(p, ng, s, v));
+        let bs = bsdf_sample(s, v);
+        if (!bs.ok) { break; }
+        depth.x += 1u;
+        depth[bs.lobe + 1u] += 1u;
+        if (depth.x > u.limits.x || depth[bs.lobe + 1u] > max(u.limits[bs.lobe + 1u], 1u)) { break; }
+        beta *= bs.weight;
+        if (depth.x > u.counts.z) {
+            let survive = clamp(max(beta.x, max(beta.y, beta.z)), 0.0, 0.95);
+            if (rnd() >= survive) { break; }
+            beta /= survive;
+        }
+        if (max(beta.x, max(beta.y, beta.z)) <= 0.0) { break; }
+        prev_pdf = bs.pdf;
+        prev_delta = bs.delta;
+        o = p + ng * select(-eps, eps, dot(bs.dir, ng) >= 0.0);
+        d = bs.dir;
+    }
+    return vec4<f32>(l, alpha);
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    if (id.x >= u.dims.z || id.y >= u.dims.w) { return; }
+    // Keeps the env binding in every variant's layout (the host always binds it).
+    _ = envmap[0];
+    let i = id.y * u.dims.z + id.x;
+    if (done[i] != 0u) { return; }
+    let x = u.origin.x + id.x;
+    let y = u.origin.y + id.y;
+    var a = accum[i];
+    var st = stats[i];
+    for (var k = 0u; k < u.origin.z; k++) {
+        rng_state = pcg(pcg(x * 1973u + y * 9277u + 26699u) ^ pcg(u.origin.w * 7919u + k + u32(st.z) * 31u));
+        let ray = camera_ray(vec2<f32>(f32(x) + rnd(), f32(y) + rnd()));
+        var c = radiance(ray[0], ray[1]);
+        if (any(c != c) || any(abs(c) > vec4<f32>(1e30))) { c = vec4<f32>(0.0, 0.0, 0.0, c.w); }
+        a += c;
+        let lum = dot(c.xyz, vec3<f32>(0.2126, 0.7152, 0.0722));
+        st += vec4<f32>(lum, lum * lum, 1.0, 0.0);
+    }
+    accum[i] = a;
+    stats[i] = st;
+}
