@@ -55,20 +55,21 @@ fn cut_out_mapped_and_live_opacity_in_mist_match_the_cpu() {
     parity("cut-out, mapped and live opacity in mist", &rs);
 }
 
-/// Two cut-out cards filling a close top view: a red checker card at
-/// 90 / 60 % (both snap to solid) and a live-map card at 52 % (solid too),
-/// so a missing threshold shows the grey floor through either.
+/// Two thin cut-out cards in a close top view: a red checker card at
+/// 95 / 80 % (both snap to solid in the bake) and a live-map card at 52 %
+/// (snapped to solid on the host). A missing threshold shows the grey floor
+/// through them, and their shadows fall on floor the camera sees.
 #[test]
 fn cut_out_cards_snap_to_solid_close_up() {
     let mut c = ViewCamera::new(ViewKind::Top);
     (c.target, c.ortho_height) = (Vec3::ZERO, 2.2);
     let rs = scene_seen(|s| {
         let card = Material { alpha_cutout: true, base_color: [0.9, 0.1, 0.1], ..Material::named("Card") };
-        let checker = MapNode::Checker { tiles: 4.0, color_a: [0.9; 3], color_b: [0.6; 3] };
-        add(s, PrimitiveKind::Plane, Vec3::new(-0.55, 0.0, 1.0), Vec3::new(0.55, 1.0, 1.0), with(card, MapChannel::Opacity, checker));
+        let checker = MapNode::Checker { tiles: 4.0, color_a: [0.95; 3], color_b: [0.8; 3] };
+        add(s, PrimitiveKind::Plane, Vec3::new(-0.55, 0.0, 1.0), Vec3::new(0.55, 0.25, 1.0), with(card, MapChannel::Opacity, checker));
         let speckle = MapNode::Noise { kind: NoiseKind::Cellular, scale: 2.3, seed: 9, color_a: [0.1, 0.2, 0.9], color_b: [0.2, 0.1, 0.7] };
         let stencil = with(Material { opacity: 0.52, alpha_cutout: true, ..Material::named("Stencil") }, MapChannel::BaseColor, speckle);
-        add(s, PrimitiveKind::Plane, Vec3::new(0.55, 0.0, 1.0), Vec3::new(0.55, 1.0, 1.0), stencil);
+        add(s, PrimitiveKind::Plane, Vec3::new(0.55, 0.0, 1.0), Vec3::new(0.55, 0.25, 1.0), stencil);
     }, c);
     assert!(rs.translucent && reasons(&rs).is_empty(), "{:?}", reasons(&rs));
     parity("cut-out cards close up", &rs);
