@@ -25,7 +25,7 @@ fn lobes(@builtin(global_invocation_id) id: vec3<u32>) {
     let bm = lobe_in[i * 5u + 3u];
     let r = lobe_in[i * 5u + 4u].x;
     var s = surf(n, bm.xyz, bm.w, max(r * r, 2e-3), 0.0, 1.5, true);
-    s = principled(s, i * 16u, r);
+    s = principled(s, i * RECu, r);
     let e = pr_eval(s, v, l);
     rng_state = pcg(i * 7919u + 17u);
     var sum = vec3<f32>(0.0);
@@ -100,7 +100,7 @@ fn principled_lobes_match_the_cpu_bsdf() {
         Err(e) => panic!("{e}"),
     };
     let cs = cases();
-    let src = format!("{}\n{}", super::source(), ENTRY.replace("SAMPLES", &format!("{SAMPLES}u")));
+    let src = format!("{}\n{}", super::source(), ENTRY.replace("SAMPLES", &format!("{SAMPLES}u")).replace("RECu", &format!("{}u", textures::REC_WORDS)));
     let d = &g.device;
     let module = d.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("lobes"), source: wgpu::ShaderSource::Wgsl(src.into()) });
     let consts = super::features::Features(super::features::Features::PRINCIPLED | super::features::Features::SSS).constants();
