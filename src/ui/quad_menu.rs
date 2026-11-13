@@ -26,7 +26,7 @@ enum Item {
 const TOOLS: [&str; 8] = ["Extrude", "Chamfer", "Bevel", "Inset", "Connect", "Target Weld", "Cut", "QuickSlice"];
 
 fn quadrant(ui: &mut egui::Ui, title: &str, items: &[(&str, Item)], picked: &mut Option<Item>) {
-    egui::Frame::new().fill(theme::card()).stroke(egui::Stroke::new(1.0, theme::border())).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::card()).stroke(egui::Stroke::new(1.0, theme::border())).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
         ui.vertical(|ui| {
             ui.set_width(170.0);
             ui.spacing_mut().item_spacing.y = 2.0;

@@ -43,7 +43,10 @@ fn main() {
     // `--help-shot <id>`: the scene and panels for one Help screenshot (tools/help_shots.sh).
     let args: Vec<String> = std::env::args().collect();
     if let Some(id) = args.iter().position(|a| a == "--help-shot").and_then(|i| args.get(i + 1)) {
+        // Fresh scene, but keep the look from the prefs file (default in tools/help_shots.sh).
+        let theme = editor.prefs.theme.clone();
         editor = Editor::default();
+        editor.prefs.theme = theme;
         if !ilex::ui::help::shots::setup(&mut editor, id) {
             eprintln!("unknown help shot {id}; known: {}", ilex::ui::help::shots::IDS.join(", "));
             std::process::exit(2);

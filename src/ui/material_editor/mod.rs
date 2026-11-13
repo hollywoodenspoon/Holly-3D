@@ -90,22 +90,14 @@ fn slot_grid(ui: &mut egui::Ui, ed: &mut Editor, st: &mut MatEditorUi) {
                 let (rect, resp) = ui.allocate_exact_size(egui::vec2(CELL, CELL), egui::Sense::click());
                 let p = ui.painter();
                 p.image(tex, rect, egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)), Color32::WHITE);
+                crate::ui::viewport_ui::round_corners(p, rect, 10.0, ui.visuals().window_fill);
                 if ed.material_is_hot(id) {
-                    // Hot material: white corner triangles like 3ds Max.
-                    let k = 9.0;
-                    for (corner, dx, dy) in [
-                        (rect.left_top(), 1.0, 1.0),
-                        (rect.right_top(), -1.0, 1.0),
-                        (rect.left_bottom(), 1.0, -1.0),
-                        (rect.right_bottom(), -1.0, -1.0),
-                    ] {
-                        let pts = vec![corner, corner + egui::vec2(k * dx, 0.0), corner + egui::vec2(0.0, k * dy)];
-                        p.add(egui::Shape::convex_polygon(pts, Color32::WHITE, egui::Stroke::NONE));
-                    }
+                    // Hot material (used in the scene): a white dot in the corner.
+                    p.circle_filled(rect.left_top() + egui::vec2(9.0, 9.0), 3.5, Color32::WHITE);
                 }
                 let active = ed.mat_editor.slot == i;
-                let stroke = if active { egui::Stroke::new(2.0, theme::amber()) } else { egui::Stroke::new(1.0, theme::border()) };
-                p.rect_stroke(rect, 2.0, stroke, egui::StrokeKind::Inside);
+                let stroke = if active { egui::Stroke::new(2.0, theme::accent()) } else { egui::Stroke::new(1.0, theme::border()) };
+                p.rect_stroke(rect, 10.0, stroke, egui::StrokeKind::Inside);
                 if resp.clicked() && ed.mat_editor.slot != i {
                     (ed.mat_editor.slot, ed.mat_editor.sub) = (i, 0);
                 }

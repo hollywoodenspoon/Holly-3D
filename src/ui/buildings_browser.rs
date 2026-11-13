@@ -88,8 +88,8 @@ fn tile(ui: &mut egui::Ui, ed: &mut Editor, k: BuildingKind) {
     let fill = if r.hovered() { v.widgets.hovered.bg_fill } else { v.extreme_bg_color };
     let border = if active { super::theme::accent() } else { v.widgets.noninteractive.bg_stroke.color };
     let p = ui.painter_at(rect);
-    p.rect_filled(rect, 4.0, fill);
-    p.rect_stroke(rect, 4.0, Stroke::new(if active { 2.0 } else { 1.0 }, border), egui::StrokeKind::Inside);
+    p.rect_filled(rect, 10.0, fill);
+    p.rect_stroke(rect, 10.0, Stroke::new(if active { 2.0 } else { 1.0 }, border), egui::StrokeKind::Inside);
     let img = egui::Rect::from_min_size(rect.min + egui::vec2(8.0, 6.0), egui::vec2(TILE - 16.0, TILE - 16.0));
     for (pts, c) in thumb(k) {
         let pts: Vec<Pos2> = pts.iter().map(|q| img.min + egui::vec2(q.x, q.y) * img.size()).collect();

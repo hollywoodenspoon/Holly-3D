@@ -14,14 +14,22 @@ fn p(v: Vec2) -> Pos2 {
 }
 
 fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
-    egui::Area::new(egui::Id::new(("vp_labels", vi))).fixed_pos(rect.min + egui::vec2(6.0, 4.0)).order(egui::Order::Middle).show(
+    egui::Area::new(egui::Id::new(("vp_labels", vi))).fixed_pos(rect.min + egui::vec2(10.0, 8.0)).order(egui::Order::Middle).show(
         ui.ctx(),
         |ui| {
             ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 2.0;
-                ui.spacing_mut().button_padding = egui::vec2(4.0, 1.0);
+                // Soft translucent pills over the view.
+                ui.spacing_mut().item_spacing.x = 4.0;
+                ui.spacing_mut().button_padding = egui::vec2(9.0, 3.0);
+                let w = &mut ui.visuals_mut().widgets;
+                w.inactive.weak_bg_fill = Color32::from_black_alpha(110);
+                w.hovered.weak_bg_fill = Color32::from_black_alpha(160);
+                w.open.weak_bg_fill = Color32::from_black_alpha(160);
+                for wv in [&mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
+                    wv.corner_radius = egui::CornerRadius::same(10);
+                }
                 let small = |t: &str| egui::RichText::new(t).size(12.0).color(theme::text());
-                ui.menu_button(small("[ + ]"), |ui| {
+                ui.menu_button(small("+"), |ui| {
                     let v = &mut ed.viewports;
                     if ui.button(if v.maximized { "Restore 2x2 Layout   Alt+W" } else { "Maximize Viewport   Alt+W" }).clicked() {
                         v.active = vi;
@@ -31,7 +39,7 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                     ui.checkbox(&mut v.views[vi].grid, "Show Grid   G");
                 });
                 let kind = ed.viewports.views[vi].camera.kind;
-                ui.menu_button(small(&format!("[ {} ]", ed.view_label(vi))), |ui| {
+                ui.menu_button(small(&format!("{} ⏷", ed.view_label(vi))), |ui| {
                     for k in [ViewKind::Perspective, ViewKind::Top, ViewKind::Front, ViewKind::Left] {
                         if ui.selectable_label(kind == k, k.label()).clicked() {
                             ed.look_through(vi, None);
@@ -57,7 +65,7 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                     });
                 });
                 let label = ed.viewports.views[vi].shading_label();
-                ui.menu_button(small(&format!("[ {label} ]")), |ui| {
+                ui.menu_button(small(&format!("{label} ⏷")), |ui| {
                     let v = &mut ed.viewports.views[vi];
                     if ui.selectable_label(v.shading == Shading::Default, "Default Shading").clicked() {
                         v.shading = Shading::Default;
@@ -168,8 +176,9 @@ fn brush_cursor(painter: &egui::Painter, ed: &Editor, vi: usize, ptr: Vec2) {
 pub fn draw(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect, region: Option<&[Vec2]>, pointer: Option<Vec2>) {
     let painter = ui.painter().with_clip_rect(rect);
     let active = vi == ed.viewports.active;
-    let border = if active { Stroke::new(2.0, theme::amber()) } else { Stroke::new(1.0, theme::border()) };
-    painter.rect_stroke(rect.shrink(1.0), 0.0, border, egui::StrokeKind::Inside);
+    let border = if active { Stroke::new(2.0, theme::accent()) } else { Stroke::new(1.0, theme::border()) };
+    super::frame::round_corners(&painter, rect, super::frame::RADIUS, theme::panel());
+    painter.rect_stroke(rect, super::frame::RADIUS, border, egui::StrokeKind::Inside);
     let cam = ed.viewports.views[vi].camera;
     tripod(&painter, &cam, rect);
     if ed.in_sub_object() && ed.sub == SubObject::Vertex {

@@ -76,16 +76,16 @@ pub fn action(ui: &mut Ui, label: &str, enabled: bool, width: f32) -> bool {
     ui.add_enabled(enabled, egui::Button::new(label).min_size(egui::vec2(width, 24.0))).clicked()
 }
 
-/// Rollout header (collapsing card) with the Max card fill.
+/// Rollout header: a soft rounded card that collapses.
 pub fn rollout(ui: &mut Ui, title: &str, open: bool, body: impl FnOnce(&mut Ui)) {
-    egui::Frame::new().fill(theme::card()).corner_radius(4).inner_margin(egui::Margin::symmetric(8, 6)).show(ui, |ui| {
+    theme::card_frame(theme::card()).inner_margin(egui::Margin::symmetric(10, 8)).show(ui, |ui| {
         ui.set_width(ui.available_width());
-        egui::CollapsingHeader::new(RichText::new(title).strong()).default_open(open).show_unindented(ui, |ui| {
-            ui.add_space(2.0);
+        egui::CollapsingHeader::new(RichText::new(title).strong().color(theme::text())).default_open(open).show_unindented(ui, |ui| {
+            ui.add_space(4.0);
             body(ui);
         });
     });
-    ui.add_space(4.0);
+    ui.add_space(6.0);
 }
 
 pub fn dim(text: &str) -> RichText {

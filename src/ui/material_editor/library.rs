@@ -96,7 +96,7 @@ fn cell(ui: &mut egui::Ui, st: &mut LibraryUi, item: Item, fav: bool, budget: &m
             let p = ui.painter();
             match st.swatch(ui.ctx(), item, budget) {
                 Some(tex) => _ = p.image(tex, rect, egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)), Color32::WHITE),
-                None => _ = p.rect_filled(rect, 4.0, theme::border()),
+                None => _ = p.rect_filled(rect, 10.0, theme::border()),
             }
             let stroke = if resp.hovered() { egui::Stroke::new(2.0, theme::amber()) } else { egui::Stroke::new(1.0, theme::border()) };
             p.rect_stroke(rect, 4.0, stroke, egui::StrokeKind::Inside);

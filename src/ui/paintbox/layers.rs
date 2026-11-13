@@ -97,7 +97,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     let (mut ask, mut visible) = (None, None);
     match ed.paint_stack() {
         Some(s) => {
-            egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(4).show(ui, |ui| {
+            egui::Frame::new().fill(theme::input()).corner_radius(theme::R_CARD).inner_margin(4).show(ui, |ui| {
                 ui.set_width(W - 8.0);
                 for i in (0..s.layers.len()).rev() {
                     row(ui, s, i, &mut ask, &mut visible);

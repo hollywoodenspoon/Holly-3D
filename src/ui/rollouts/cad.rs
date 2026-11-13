@@ -12,7 +12,7 @@ use bevy_egui::egui::{self, RichText};
 fn sections(ui: &mut egui::Ui, ed: &mut Editor) {
     mod_params(ui, ed, |ui, k, t| {
         let ModifierKind::Loft(l) = k else { return };
-        egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
+        egui::Frame::new().fill(theme::input()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
             ui.set_width(CONTENT_W - 12.0);
             ui.set_min_height(60.0);
             if l.sections.is_empty() {

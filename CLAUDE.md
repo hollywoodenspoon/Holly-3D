@@ -348,12 +348,13 @@ Accessible via the `[ 🖌 Viewport Paint ]` button on the top toolbar or by add
 Configure `egui::Style` and `egui::Visuals` on startup in `src/ui/theme.rs`:
 
 ### Color Palette & Styling
-- **Main Panel Fill (`panel_fill`):** `#222327` (Clean dark neutral slate).
-- **Rollout Header / Card Fill (`faint_bg_color`):** `#2B2D31`.
-- **Input / Stack Box Fill (`extreme_bg_color`):** `#18191C`.
-- **3ds Max Signature Amber (`#E59C24`):** Use for active `Q/W/E/R` buttons, active Sub-Object buttons (`1–5`), active Snap toggles, and the currently highlighted row in the Modifier Stack.
-- **Secondary Accent (`#3A7AFE`):** Crisp blue for hover states.
-- **Spacing & Corners:** `item_spacing = vec2(6.0, 6.0)`, `button_padding = vec2(8.0, 5.0)`, `corner_radius = 4.0`.
+- **Default look: "Graphite & Teal"** — mostly monotone dark grey with blue-green highlights (`src/prefs/palette.rs`). Other presets stay selectable in Preferences → Theme.
+- **Main Panel Fill (`panel_fill`):** `#242424` (neutral dark grey, no blue tint).
+- **Rollout Header / Card Fill (`faint_bg_color`):** `#2E2E2E`.
+- **Input / Stack Box Fill (`extreme_bg_color`):** `#1A1A1A`.
+- **Accent Teal (`#26B8B0`):** Use for active `Q/W/E/R` buttons, active Sub-Object buttons (`1–5`), active Snap toggles, the currently highlighted row in the Modifier Stack, and the logo mark. Read it through `theme::accent()`, never a hard-coded colour.
+- **Hover Teal (`#3FD0C7`):** lighter teal for hover/focus (`theme::hover()`).
+- **Soft, rounded look:** round corners everywhere (`theme::R_CONTROL = 8` for controls, `R_CARD = 12` for cards/rollouts, `R_WINDOW = 16` for windows), soft drop shadows on windows and popups instead of hard outlines, viewports drawn as rounded cards with a gap between quadrants, and translucent pill labels over the views. Spacing: `item_spacing = vec2(7.0, 7.0)`, `button_padding = vec2(10.0, 6.0)`.
 - **3ds Max Spinner Behavior (Crucial Helper Function):**
   Wrap every numeric `egui::DragValue` in a helper `max_spinner(ui, &mut value, speed, default_val)` so that **Right-Clicking any numeric spinner immediately resets its value to `default_val` (usually `0.0`)**.
 

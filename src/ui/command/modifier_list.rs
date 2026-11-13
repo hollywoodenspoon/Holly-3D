@@ -32,7 +32,7 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
 
 fn list(ui: &mut egui::Ui, ed: &mut Editor, st: &mut UiState) {
     let mut added = false;
-    egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::input()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
         ui.set_width(CONTENT_W - 12.0);
         ui.add(egui::TextEdit::singleline(&mut ed.modifier_filter).hint_text("Filter (optional)…").desired_width(f32::INFINITY));
         let filter = ed.modifier_filter.to_lowercase();

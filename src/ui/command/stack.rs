@@ -28,7 +28,7 @@ pub fn stack_box(ui: &mut egui::Ui, ed: &mut Editor) {
     let mut set_level = None;
     let mut toggle = None;
     let mut set_sub = None;
-    egui::Frame::new().fill(theme::input()).corner_radius(4).inner_margin(6).show(ui, |ui| {
+    egui::Frame::new().fill(theme::input()).corner_radius(theme::R_CARD).inner_margin(8).show(ui, |ui| {
         ui.set_width(CONTENT_W - 12.0);
         egui::ScrollArea::vertical().max_height(150.0).min_scrolled_height(150.0).id_salt("stack").show(ui, |ui| {
             ui.set_min_height(138.0);
