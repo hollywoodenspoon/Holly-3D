@@ -38,7 +38,6 @@ pub fn for_set(set: KeySet) -> Keymap {
         });
         map.extend([
             (Chord::plain(Key::H), SelectByName),
-            (Chord::shift(Key::Q), Render),
             (Chord::alt(Key::Z), Nav(crate::editor::NavMode::Zoom)),
             (Chord::ctrl_shift(Key::Z), ZoomExtentsAll),
         ]);

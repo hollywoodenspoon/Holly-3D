@@ -38,6 +38,8 @@ pub struct RenderUi {
     /// AOV passes of the last path-traced render and the one shown.
     pub aovs: Option<Box<crate::render::aov::AovBuffers>>,
     pub aov: crate::render::aov::Aov,
+    /// What the previous render looked through (for Render Last, F9).
+    pub last_camera: Option<ViewCamera>,
     /// Turntable / Sprite-Sheet dialog and its background job.
     pub sheet: super::turntable::SheetUi,
 }
@@ -70,10 +72,24 @@ impl Editor {
 
     /// F9 / Render button: opens the RFW and starts rendering.
     pub fn start_render(&mut self) {
+        self.render_from(self.render_camera(), self.render_label());
+    }
+
+    /// F9 Render Last: renders the same view or camera as the previous
+    /// render (the first time, the same as Render).
+    pub fn render_last(&mut self) {
+        match self.rfw.last_camera {
+            Some(c) => self.render_from(c, "last view".into()),
+            None => self.start_render(),
+        }
+    }
+
+    fn render_from(&mut self, cam: ViewCamera, label: String) {
         self.cancel_render();
+        self.rfw.last_camera = Some(cam);
         (self.rfw.lightmix, self.rfw.aovs) = (None, None);
         let (w, h) = (self.render.width, self.render.height);
-        let rs = RenderScene::build(&self.scene, self.render_camera(), self.uses_default_lights());
+        let rs = RenderScene::build(&self.scene, cam, self.uses_default_lights());
         let fb_ok = self.rfw.fb.as_ref().is_some_and(|f| f.width == w && f.height == h);
         let region = if self.rfw.region_mode && fb_ok { clamp_region(self.rfw.region, w, h) } else { [0, 0, w, h] };
         if !fb_ok {
@@ -91,7 +107,7 @@ impl Editor {
             Integrator::PathTracer => RenderJob::pathtrace(rs, cfg, region),
         });
         self.rfw.rfw_open = true;
-        self.rfw.message = format!("Rendering {} ({w}x{h})…", self.render_label());
+        self.rfw.message = format!("Rendering {label} ({w}x{h})…");
         self.status = self.rfw.message.clone();
     }
 

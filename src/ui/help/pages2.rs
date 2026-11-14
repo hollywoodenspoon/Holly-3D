@@ -58,13 +58,14 @@ pub const RENDER: Page = Page {
     id: "render",
     title: "10. Rendering",
     blocks: &[
-        Shot("render", &[m(627.0, 75.0, "Render Setup (F10)"), m(680.0, 75.0, "Veach Rendered Frame Window"), m(735.0, 75.0, "Render (F9)")]),
+        Shot("render", &[m(627.0, 75.0, "Render Setup (F10)"), m(680.0, 75.0, "Veach Rendered Frame Window"), m(735.0, 75.0, "Render (Shift+Q)")]),
         Steps(&[
             "F10 Render Setup: resolution presets, alpha background, camera, anti-aliasing, AO, GI, denoiser, bloom, depth of field.",
             "Pick the renderer: the Veach Path Tracer (default: multi-bounce light, MIS, Russian Roulette) or the fast Classic Raytracer.",
             "Compute Device: Auto uses the GPU (wgpu Vulkan compute) and falls back to the CPU. The dynamic sky, HDRIs, texture and procedural maps (UV or World / Triplanar, with normal and bump relief) render on the GPU: the sky is baked at the Render tab's GPU Sky Bake size and each mapped material is baked once to a texture at its bitmap's size (1024 for procedural maps). Principled lobes (clearcoat, sheen, anisotropy, random-walk SSS, absorption and dispersion), Preserve Texture Appearance glow, volumetric godrays and height mist (with wisps), Rect / Disc / Sphere / Tube area lights (soft shadows, Visible to Camera) and IES profiles render on the GPU too. 3D and non-repeating maps (Noise, Cracks, Grunge, Wood, and Bricks on World / Triplanar materials, as the Prefab Library and Settlement packs use) are evaluated by the GPU at every hit instead of being baked. See-through surfaces (opacity, opacity maps, vertex alpha and Cut-out) render on the GPU too, and light, glow and mist shine through them. Cel / toon materials and the Shadow & Reflection Catcher render on the GPU too. 3D maps mixed with bitmaps, node graphs, procedural surfaces or paint still use the CPU. The Frame Window status names the GPU and its driver, or lists every feature that sent the scene to the CPU. GPU batches are sized to about 50 ms, so the desktop stays responsive.",
             "Progressive Preview streams full-frame passes (1, 2, 4 ... samples). Veach MIS & Adaptive Sampling stops pixels whose noise is below the Noise Threshold.",
-            "F9 renders the active view into the Veach Rendered Frame Window.",
+            "Shift+Q renders the active view into the Veach Rendered Frame Window; F9 (Render Last) renders the same view or camera again; F10 opens Render Setup.",
+            "Ctrl+C turns the active Perspective view into a Target Camera and looks through it. U switches a view between Perspective and Orthographic (also in the view label menu).",
             "In the Frame Window: save PNG / EXR / JPG, copy, clone the window to compare, and view R / G / B / A channels.",
         ]),
         H("Color Grading & Camera RAW"),

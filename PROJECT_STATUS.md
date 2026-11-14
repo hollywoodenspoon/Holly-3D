@@ -2310,3 +2310,10 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **New buttons:** Views → Show Transform Gizmo (`X`), » → Gizmo Size − / + (`-` / `=`), and Preferences → Viewport → Transform gizmo (show, size in pixels).
 - **Tests (10 new):** picking arrows, plane squares and the centre; the end-on axis in Top hides; rings, the view ring and the trackball; back halves of rings never win; scale triangle, strips and axes; axis moves stay on the axis; plane moves stay in the plane and snap per axis; ring and view angles and 5° snapping; trackball direction; scale factors, uniform ratios and local-axis scaling of a rotated object.
 - **Not done yet:** the rotate rings don't turn with the object during a Local-coordinate drag (they redraw at the new angle when the drag ends).
+
+## 80. Render shortcuts, camera from view, Orthographic view
+- `Shift+Q` **Render** (active view or the Render Setup camera); `F9` **Render Last** renders the same view or camera as the previous render (the first time it is the same as Render); `F10` Render Setup as before. Both are in Rendering menu; the header `▶ Render` button is Render.
+- `Ctrl+C` **Create Camera From View** (Views menu): a Target Camera at the active Perspective view's eye, aimed at its pivot with the same field of view; the view then looks through it.
+- `U` **Orthographic / Perspective** (Views menu, and "Orthographic" in every view-label dropdown): switches the active view, keeping its angle and framing; Top / Front / Left become an orbitable Orthographic view.
+- Tooltips moved to `src/ui/actions/tips.rs` to keep `actions/mod.rs` under 350 lines.
+- Test: `orthographic_keeps_angle_and_framing`. 740 lib tests pass, clippy clean.

@@ -137,6 +137,8 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             Entry::Sub("Navigation", NAVIGATION),
             Sep,
             A(CameraView),
+            A(CameraFromView),
+            A(Orthographic),
             Sep,
             A(SceneExplorer),
             A(Ribbon),
@@ -147,6 +149,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
         "Rendering",
         &[
             A(Render),
+            A(RenderLast),
             A(RenderSetup),
             A(FrameWindow),
             A(ColorGrading),

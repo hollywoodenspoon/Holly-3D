@@ -211,6 +211,19 @@ impl ViewCamera {
         }
     }
 
+    /// Perspective -> Orthographic ("U"), same angle and framing: the
+    /// ortho height matches what the perspective view showed at its target.
+    pub fn to_orthographic(&mut self) {
+        self.ortho_height = (2.0 * self.distance * (self.fov_y(1.0) * 0.5).tan()).clamp(0.01, 10_000.0);
+        (self.kind, self.hfov, self.fov) = (ViewKind::User, false, 45f32.to_radians());
+    }
+
+    /// Back to Perspective, same angle; the distance shows the same height.
+    pub fn to_perspective(&mut self) {
+        (self.kind, self.hfov, self.fov) = (ViewKind::Perspective, false, 45f32.to_radians());
+        self.distance = (self.ortho_height * 0.5 / (self.fov * 0.5).tan()).clamp(0.05, 10_000.0);
+    }
+
     /// Z: Zoom Extents — frame a bounding box (min, max).
     pub fn frame(&mut self, min: Vec3, max: Vec3) {
         let c = (min + max) * 0.5;
@@ -238,6 +251,17 @@ mod tests {
         let left = ViewCamera::new(ViewKind::Left);
         assert!((left.forward() - Vec3::X).length() < 1e-5);
         assert!((left.right() - -Vec3::Y).length() < 1e-5);
+    }
+
+    #[test]
+    fn orthographic_keeps_angle_and_framing() {
+        let mut c = ViewCamera::new(ViewKind::Perspective);
+        let (fwd, upp) = (c.forward(), c.units_per_pixel(c.target, 600.0));
+        c.to_orthographic();
+        assert!(c.is_ortho() && (c.forward() - fwd).length() < 1e-6);
+        assert!((c.units_per_pixel(c.target, 600.0) - upp).abs() < upp * 1e-3);
+        c.to_perspective();
+        assert!(!c.is_ortho() && (c.distance - 7.0).abs() < 1e-3);
     }
 
     #[test]
