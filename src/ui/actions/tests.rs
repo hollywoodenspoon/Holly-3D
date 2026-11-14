@@ -100,7 +100,7 @@ fn header_glyphs_exist_in_the_ui_font() {
 fn every_action_runs() {
     let skip = |a: Action| {
         // File dialogs block on a native window.
-        matches!(a, Action::OpenScene | Action::SaveScene | Action::SaveSceneAs | Action::Import | Action::ExportAll | Action::ExportSelected)
+        matches!(a, Action::OpenScene | Action::SaveScene | Action::SaveSceneAs | Action::Import | Action::ImportVdb | Action::ExportAll | Action::ExportSelected)
     };
     for populated in [false, true] {
         let mut ed = Editor::default();

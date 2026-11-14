@@ -68,7 +68,7 @@ fn box_transmittance_matches_beer_lambert() {
 #[test]
 fn ratio_and_delta_tracking_are_unbiased_on_a_grid() {
     let (lo, hi) = (Vec3::ZERO, Vec3::splat(2.0));
-    let src = Source::Grid(Voxels { dims: [4, 4, 4], data: vec![0.6; 64] });
+    let src = Source::Grid(Voxels { dims: [4, 4, 4], data: vec![0.6; 64] }.into());
     let mat = VolumeMat { density: 0.8, ..Default::default() };
     let v = VolumeObj::new(src, lo, hi, Mat4::IDENTITY, mat, 0);
     let want = (-0.6f32 * 0.8 * 2.0).exp();

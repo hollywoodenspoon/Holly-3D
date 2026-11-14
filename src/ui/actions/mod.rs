@@ -23,6 +23,7 @@ pub enum Action {
     SaveScene,
     SaveSceneAs,
     Import,
+    ImportVdb,
     ExportAll,
     ExportSelected,
     // Edit
@@ -119,7 +120,7 @@ impl Action {
     pub fn all() -> Vec<Action> {
         use Action::*;
         let mut v = vec![
-            NewScene, OpenScene, SaveScene, SaveSceneAs, Import, ExportAll, ExportSelected, Undo, Redo, Clone, Delete, SelectAll,
+            NewScene, OpenScene, SaveScene, SaveSceneAs, Import, ImportVdb, ExportAll, ExportSelected, Undo, Redo, Clone, Delete, SelectAll,
             SelectNone, SelectInvert, SelectByName, LockSelection, WindowCrossing, Cancel, RepeatLast, SelectObject, Move, Rotate,
             Scale, Snap, AngleSnap, PercentSnap, SnapSettings,
         ];
@@ -146,6 +147,7 @@ impl Action {
             SaveScene => "Save",
             SaveSceneAs => "Save As...",
             Import => "Import...",
+            ImportVdb => "Import VDB Volume...",
             ExportAll => "Export All...",
             ExportSelected => "Export Selected...",
             Undo => "Undo",
@@ -291,6 +293,7 @@ impl Action {
     pub fn tip(self) -> &'static str {
         use Action::*;
         match self {
+            ImportVdb => "Simulated smoke and fire from an OpenVDB (.vdb) file, as a volume",
             Preferences => "Theme, hotkeys, viewport colours, autosave, units, render defaults and asset packs",
             SelectByName => "Select From Scene: pick objects from a searchable list",
             LockSelection => "Lock Selection: clicks and marquees no longer change what is selected",

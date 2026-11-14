@@ -5,6 +5,7 @@ use super::content_w;
 use crate::editor::{Editor, Tool};
 use crate::generators::WorldKind;
 use crate::modifiers::GeoMode;
+use crate::ui::actions::Action;
 use crate::ui::widgets::{dim, rollout};
 use bevy::math::Vec3;
 use bevy_egui::egui;
@@ -45,6 +46,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
     rollout(ui, "Explosions", true, |ui| {
         world_grid(ui, ed, "dm_pyro", &WorldKind::PYRO, 2);
         ui.label(dim("Drag to size the fireball. Scrub Stage to pick the moment of the blast."));
+        if ui.add_sized([content_w(), 28.0], egui::Button::new("Import VDB Volume...")).on_hover_text(Action::ImportVdb.tip()).clicked() {
+            crate::ui::file_menu::import_vdb(ed);
+        }
+        ui.label(dim("Brings in smoke and fire simulated elsewhere (.vdb): density renders as smoke, temperature as fire."));
     });
     rollout(ui, "Settlements", true, |ui| {
         world_grid(ui, ed, "dm_settlements", &WorldKind::SETTLEMENTS, 2);

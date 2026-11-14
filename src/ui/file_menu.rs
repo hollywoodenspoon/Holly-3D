@@ -56,6 +56,14 @@ pub fn import(ed: &mut Editor) {
     }
 }
 
+/// File -> Import VDB Volume…
+pub fn import_vdb(ed: &mut Editor) {
+    if let Some(p) = crate::ui::rollouts::vdb::pick_file() {
+        let r = ed.import_vdb(&p).map(|_| ());
+        ed.report(r);
+    }
+}
+
 pub fn export(ed: &mut Editor, selected_only: bool) {
     let mut d = rfd::FileDialog::new();
     for f in [Format::Fbx, Format::Obj, Format::Glb, Format::Gltf] {

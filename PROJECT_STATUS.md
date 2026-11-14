@@ -2207,3 +2207,25 @@ No new GPU features yet; this makes the next parity steps safe and visible.
 - **Not done yet:**
   - **Battlefield and Settlement auto-spawned plumes are still mesh**, because they are part of the town mesh.
   - **No light from the fire base**, unlike explosions.
+
+## 74. VDB volume import
+- **What:** File > Import VDB Volume… (also a button in the Demiurge tab's Explosions rollout) loads an OpenVDB file as a **VDB Volume** object.
+  - The density grid renders as smoke (Grey Smoke, Black Smoke, Steam or Cloud look); a temperature / flame grid, picked automatically by name, renders as glowing fire.
+  - Modify tab: Pick VDB File…, Density Grid and Fire Grid pickers, Smoke Look, Up Axis (Y for most simulators, turned to Ilex's Z-up), Scale, Max Resolution (16–384), Smoke Density and Fire Intensity.
+  - Big grids are box-filtered down to Max Resolution along the longest axis. Values are normalised so the densest cell is 1; Smoke Density sets the look.
+  - The scene keeps the path and settings only. Grids are read when needed and cached (by file, grid, up axis, resolution and modification time).
+  - The viewport shows the bounds as a thin cage, and the soft volume preview like other volumes.
+  - Reading uses the `vdb-rs` crate (MIT). It can panic on files it doesn't support, so every read is contained: a bad or unsupported file shows a message in the rollout instead of crashing Ilex. Ilex checks the file's magic number itself.
+- **Tests (7 new):** written with a small test-only VDB writer (format 224, uncompressed, voxels and tiles):
+  - float grids are listed, and density and temperature are picked;
+  - Y-up files stand up in Z;
+  - big grids box-filter to the resolution budget;
+  - tiles are read;
+  - truncated and non-VDB files are errors, not crashes;
+  - the params give smoke and fire media, a cage that matches the bounds, and serde round trips;
+  - an imported file becomes a selected object that the renderers see as two grid volumes.
+- **Not done yet:**
+  - **VDB volumes render on the CPU only**; the GPU path tracer falls back to the CPU for them.
+  - **No animated VDB sequences** (one file, one frame).
+  - **Not tested on real simulation files here** (downloads were blocked); the tests use files written to the format.
+  - **Root-level tiles and the grid background value are ignored** (a limit of the reader crate); half-float and vector grids beyond what the crate reads are not offered.

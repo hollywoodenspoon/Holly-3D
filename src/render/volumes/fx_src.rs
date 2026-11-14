@@ -98,6 +98,7 @@ pub fn first_mat(o: &SceneObject, own: Option<VolumeMat>) -> Option<VolumeMat> {
         BaseObject::World(WorldGen::Trail(p)) => (p.smoke_mat().map(|m| own.unwrap_or(m)).or_else(|| p.flame_mat()), &p.look),
         BaseObject::World(WorldGen::Pyro(p)) => (own.or_else(|| p.mat(Medium::Smoke)), &p.look),
         BaseObject::World(WorldGen::Smoke(p)) => (Some(own.unwrap_or_else(|| p.smoke_mat())), &p.look),
+        BaseObject::World(WorldGen::Vdb(p)) => return p.smoke_mat().map(|m| own.unwrap_or(m)).or_else(|| p.fire_mat()),
         _ => return None,
     };
     let m = m.filter(|_| look.render_as == RenderAs::Volume)?;
@@ -111,6 +112,7 @@ pub fn part_count(o: &SceneObject) -> usize {
         BaseObject::World(WorldGen::Trail(p)) => usize::from(p.smoke_mat().is_some()) + usize::from(p.flame_mat().is_some()),
         BaseObject::World(WorldGen::Pyro(_)) => Medium::ALL.len(),
         BaseObject::World(WorldGen::Smoke(p)) => 1 + usize::from(p.fire_mat().is_some()),
+        BaseObject::World(WorldGen::Vdb(p)) => usize::from(p.smoke_mat().is_some()) + usize::from(p.fire_mat().is_some()),
         _ => 1,
     }
 }

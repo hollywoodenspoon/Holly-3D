@@ -72,7 +72,7 @@ const SKIES: &[Entry] = &[
 pub const MENUS: &[(&str, &[Entry])] = &[
     (
         "File",
-        &[A(NewScene), A(OpenScene), Sep, A(SaveScene), A(SaveSceneAs), Sep, A(Import), A(ExportAll), A(ExportSelected)],
+        &[A(NewScene), A(OpenScene), Sep, A(SaveScene), A(SaveSceneAs), Sep, A(Import), A(ImportVdb), A(ExportAll), A(ExportSelected)],
     ),
     (
         "Edit",

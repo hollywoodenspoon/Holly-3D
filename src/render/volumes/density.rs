@@ -106,8 +106,8 @@ impl Voxels {
 pub enum Source {
     /// Cloud puffs with erosion (Cloud / Cloud Field objects).
     Puffs(super::erode::Cloud),
-    /// A voxel grid over the box.
-    Grid(Voxels),
+    /// A voxel grid over the box (shared: imported VDB grids are large).
+    Grid(std::sync::Arc<Voxels>),
     /// Evenly dense box (any other mesh with a Volume material).
     Uniform,
 }

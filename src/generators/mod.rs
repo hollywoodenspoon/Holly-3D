@@ -17,6 +17,7 @@ pub mod settlement;
 pub mod pyro;
 pub mod smoke;
 pub mod trails;
+pub mod vdb;
 mod sphere;
 mod terrain;
 mod terrain_ids;
@@ -58,6 +59,8 @@ pub enum WorldGen {
     Trail(Box<trails::TrailParams>),
     /// Clouds PR 4: an explosion or mushroom cloud.
     Pyro(Box<pyro::PyroParams>),
+    /// Step C: an imported OpenVDB smoke / fire simulation.
+    Vdb(Box<vdb::VdbParams>),
 }
 
 /// Create-tab buttons.
@@ -73,6 +76,7 @@ pub enum WorldKind {
     CloudField,
     Trail(trails::TrailKind),
     Pyro(pyro::PyroKind),
+    Vdb,
 }
 
 impl WorldKind {
@@ -129,6 +133,7 @@ impl WorldKind {
             Self::CloudField => "Cloud Field",
             Self::Trail(k) => k.label(),
             Self::Pyro(k) => k.label(),
+            Self::Vdb => "VDB Volume",
         }
     }
     pub fn tip(self) -> &'static str {
@@ -143,6 +148,7 @@ impl WorldKind {
             Self::CloudField => "A whole layer of sky: scatters a mix of cloud types",
             Self::Trail(k) => k.tip(),
             Self::Pyro(k) => k.tip(),
+            Self::Vdb => "Simulated smoke and fire imported from an OpenVDB file",
         }
     }
 }
@@ -160,6 +166,7 @@ impl WorldGen {
             WorldKind::CloudField => Self::CloudField(Box::default()),
             WorldKind::Trail(k) => Self::Trail(Box::new(trails::TrailParams::of(k))),
             WorldKind::Pyro(k) => Self::Pyro(Box::new(pyro::PyroParams::of(k))),
+            WorldKind::Vdb => Self::Vdb(Box::default()),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -174,6 +181,7 @@ impl WorldGen {
             Self::CloudField(_) => WorldKind::CloudField,
             Self::Trail(p) => WorldKind::Trail(p.kind),
             Self::Pyro(p) => WorldKind::Pyro(p.kind),
+            Self::Vdb(_) => WorldKind::Vdb,
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -188,6 +196,7 @@ impl WorldGen {
             Self::CloudField(p) => p.build(),
             Self::Trail(p) => p.build(),
             Self::Pyro(p) => p.build(),
+            Self::Vdb(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
@@ -196,6 +205,7 @@ impl WorldGen {
             Self::Cloud(_) => "Cloud",
             Self::Trail(_) => "Trail",
             Self::Pyro(_) => "Explosion",
+            Self::Vdb(_) => "VDB",
             _ => self.kind().label(),
         }
     }
@@ -208,7 +218,7 @@ impl WorldGen {
             Self::Planet(_) => MultiPreset::PlanetStudio,
             Self::Settlement(_) => MultiPreset::Settlement,
             Self::Building(p) => p.style.pack(),
-            Self::Smoke(_) | Self::Trail(_) | Self::Pyro(_) => MultiPreset::SmokeFire,
+            Self::Smoke(_) | Self::Trail(_) | Self::Pyro(_) | Self::Vdb(_) => MultiPreset::SmokeFire,
             Self::Cloud(_) | Self::CloudField(_) => MultiPreset::Clouds,
         }
     }

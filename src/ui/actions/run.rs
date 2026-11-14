@@ -22,6 +22,7 @@ impl Action {
             SaveScene => file_menu::save(ed),
             SaveSceneAs => file_menu::save_as(ed),
             Import => file_menu::import(ed),
+            ImportVdb => file_menu::import_vdb(ed),
             ExportAll => file_menu::export(ed, false),
             ExportSelected => file_menu::export(ed, true),
             Undo => ed.undo(),

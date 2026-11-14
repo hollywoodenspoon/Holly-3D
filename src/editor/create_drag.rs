@@ -300,6 +300,7 @@ impl Editor {
                         s.height = c.max(1.0);
                     }
                 }
+                WorldGen::Vdb(_) => {}
             },
             BaseObject::Mech(MechPart::Gear(g)) => g.module = (2.0 * a / g.teeth.max(1) as f32).max(MIN),
             _ => {}
