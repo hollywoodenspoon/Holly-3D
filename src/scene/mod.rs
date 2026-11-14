@@ -210,9 +210,9 @@ impl SceneObject {
         matches!(self.base, BaseObject::World(WorldGen::Cloud(_) | WorldGen::CloudField(_)))
     }
 
-    /// A Trail object (Clouds PR 3).
-    pub fn is_trail(&self) -> bool {
-        matches!(self.base, BaseObject::World(crate::generators::WorldGen::Trail(_)))
+    /// A Trail or Pyro effect (Clouds PR 3 and 4).
+    pub fn is_fx(&self) -> bool {
+        matches!(self.base, BaseObject::World(crate::generators::WorldGen::Trail(_) | crate::generators::WorldGen::Pyro(_)))
     }
 
     /// World matrix applied to the evaluated mesh.

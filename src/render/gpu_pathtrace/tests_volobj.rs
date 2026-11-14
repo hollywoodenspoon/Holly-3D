@@ -165,3 +165,26 @@ fn a_missile_trail_renders_on_the_gpu() {
     assert!(glows.contains(&1.0) && glows.contains(&0.0), "one medium glows: {glows:?}");
     parity("missile trail", &rs);
 }
+
+#[test]
+fn a_fireball_with_sparks_and_its_light_render_on_the_gpu() {
+    use crate::generators::pyro::{PyroKind, PyroParams};
+    let mut s = Scene::default();
+    floor(&mut s);
+    let p = PyroParams { size: 0.35, sparks: 120, spark_speed: 4.0, debris: 3, ..PyroParams::of(PyroKind::Fireball) };
+    let id = s.add(BaseObject::World(WorldGen::Pyro(Box::new(p))), Vec3::new(1.3, 0.0, 0.0));
+    s.objects[id].evaluate();
+    let rs = seen(&s);
+    assert!(rs.volumes.list.len() >= 3, "fire, smoke and sparks: {}", rs.volumes.list.len());
+    let g = rs.groups.iter().position(|g| g.name == "Explosions").expect("an Explosions LightMix group");
+    let l = rs.lights.iter().find(|l| usize::from(l.group) == g).expect("an explosion light");
+    assert!(l.shadows && l.radiance.max_element() > 0.0 && l.radiance.x > l.radiance.z, "warm, shadowed: {:?}", l.radiance);
+    assert!((l.pos - Vec3::new(1.3, 0.0, 0.0)).length() < 2.0, "near the blast: {:?}", l.pos);
+    parity("fireball", &rs);
+    // Mesh display drops the volumes and the light with them.
+    if let BaseObject::World(WorldGen::Pyro(p)) = &mut s.objects[id].base {
+        p.look.render_as = crate::generators::clouds::RenderAs::Mesh;
+    }
+    let rs = seen(&s);
+    assert!(rs.volumes.list.is_empty() && !rs.groups.iter().any(|g| g.name == "Explosions"));
+}

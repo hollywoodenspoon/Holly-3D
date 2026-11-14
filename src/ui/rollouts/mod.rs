@@ -5,6 +5,7 @@ pub mod buildings;
 pub mod cad;
 pub mod clouds;
 pub mod trails;
+pub mod pyro;
 pub mod deformers;
 pub mod edit_geometry;
 pub mod edit_sub;

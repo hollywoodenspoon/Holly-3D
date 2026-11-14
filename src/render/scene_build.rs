@@ -206,6 +206,7 @@ impl RenderScene {
                 });
             }
         }
+        explosion_lights(scene, &mut lights, &mut groups);
         let mut ambient = lin3(env.ambient) * env.ambient_level;
         if use_rig {
             ambient = ambient.max(Vec3::splat(0.25));
@@ -245,5 +246,28 @@ impl RenderScene {
             groups,
             volumes: super::volumes::Volumes::build(scene),
         }
+    }
+}
+
+/// Clouds PR 4: one point light per visible explosion rendered as a volume,
+/// at the fire's heat-weighted centre; all share the "Explosions" group.
+fn explosion_lights(scene: &Scene, lights: &mut Vec<RLight>, groups: &mut Vec<super::lightmix::GroupInfo>) {
+    let mut group = None;
+    for o in scene.objects.values().filter(|o| !o.hidden && super::volumes::volume_of(scene, o).is_some()) {
+        let crate::scene::BaseObject::World(crate::generators::WorldGen::Pyro(p)) = &o.base else { continue };
+        let Some((c, col)) = p.light() else { continue };
+        let group = *group.get_or_insert_with(|| super::lightmix::light_group(groups, None, "Explosions"));
+        lights.push(RLight {
+            shape: RShape::Point,
+            pos: o.world_matrix().transform_point3(c),
+            radiance: col * K_POINT,
+            range: f32::MAX,
+            atten: Default::default(),
+            shadows: true,
+            softness: 0.0,
+            shadow_tint: Vec3::ZERO,
+            ies: Default::default(),
+            group,
+        });
     }
 }

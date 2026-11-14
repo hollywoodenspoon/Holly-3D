@@ -32,7 +32,7 @@ pub fn volumes_in(on: bool, v: &ViewState) -> bool {
 
 /// A cloud or trail the preview shows as a volume.
 pub fn previewed(scene: &Scene, o: &SceneObject) -> bool {
-    !o.hidden && (o.is_cloud() || o.is_trail()) && volume_of(scene, o).is_some()
+    !o.hidden && (o.is_cloud() || o.is_fx()) && volume_of(scene, o).is_some()
 }
 
 /// True when any viewport has cloud volumes to draw (cameras need fog on).
@@ -129,7 +129,7 @@ fn sync_clouds(
         keep
     });
     // Puffs: on their own layer while a preview exists, else back to meshes.
-    for (id, _) in ed.scene.objects.iter().filter(|(_, o)| o.is_cloud() || o.is_trail()) {
+    for (id, _) in ed.scene.objects.iter().filter(|(_, o)| o.is_cloud() || o.is_fx()) {
         let Some(ent) = map.entity(id) else { continue };
         let want = RenderLayers::layer(if live.contains(&id) { LAYER_PUFFS } else { super::render_sync::LAYER_MESH });
         if let Ok(mut l) = layers.get_mut(ent)
@@ -155,14 +155,9 @@ fn sync_clouds(
     }
 }
 
-/// How many media `o` previews (smoke and flame for a fiery trail).
+/// How many media `o` previews (smoke, flame, dust... for effects).
 fn media(o: &SceneObject) -> usize {
-    match &o.base {
-        crate::scene::BaseObject::World(crate::generators::WorldGen::Trail(p)) => {
-            usize::from(p.smoke_mat().is_some()) + usize::from(p.flame_mat().is_some())
-        }
-        _ => 1,
-    }
+    crate::render::volumes::fx_src::part_count(o)
 }
 
 /// Picks up a finished bake and keeps the fog on the object's transform.

@@ -42,6 +42,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         world_grid(ui, ed, "dm_trails", &WorldKind::TRAILS, 2);
         ui.label(dim("Drag to set a trail's length. The source sits at the pivot; Pick Path Spline makes it follow a spline."));
     });
+    rollout(ui, "Explosions", true, |ui| {
+        world_grid(ui, ed, "dm_pyro", &WorldKind::PYRO, 2);
+        ui.label(dim("Drag to size the fireball. Scrub Stage to pick the moment of the blast."));
+    });
     rollout(ui, "Settlements", true, |ui| {
         world_grid(ui, ed, "dm_settlements", &WorldKind::SETTLEMENTS, 2);
         ui.label(dim("Click, then click in a viewport to place a whole settlement with its Material Pack."));

@@ -126,6 +126,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         WorldGen::Cloud(p) => rollout(ui, "Demiurge Cloud", true, |ui| super::clouds::cloud(ui, &mut t, p)),
         WorldGen::CloudField(p) => rollout(ui, "Demiurge Cloud Field", true, |ui| split = super::clouds::field(ui, &mut t, p)),
         WorldGen::Trail(p) => rollout(ui, "Demiurge Trail", true, |ui| pick_path = super::trails::trail(ui, &mut t, p)),
+        WorldGen::Pyro(p) => rollout(ui, "Demiurge Explosion", true, |ui| super::pyro::pyro(ui, &mut t, p)),
     }
     if pick_path {
         ed.tool = crate::editor::Tool::PickTrailPath;

@@ -2145,3 +2145,32 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **With a picked path**, Length / Turn / Climb are hidden; the spline's own length is used.
   - **Vortex strength** only reads the path's curvature, not speed or lift.
   - **Speed** of long trails in the viewport hasn't been measured on her card.
+
+## 71. Clouds PR 4: Explosions and the mushroom cloud
+- **What:** a new Demiurge object, **Explosion** (Demiurge tab > Explosions, or Create > Demiurge Explosions), with six types:
+  - **Fireball:** a rising ball of fire that cools into rolling black smoke;
+  - **Ground Explosion:** a fire dome on the ground with a dust skirt, ejecta, debris and sparks;
+  - **Flak Burst:** a short flash in the air, then a ragged black puff;
+  - **Aerial Explosion:** a big fireball in the air with showers of white-gold sparks and burning debris;
+  - **Napalm / Fuel Fire:** a long rolling wall of fire under thick black smoke;
+  - **Nuclear Mushroom Cloud:** ground fireball, stem, rolling torus cap with fire on its underside, a condensation ring, an ice cap and a base surge.
+  - **Stage (0–100 %):** the moment of the blast. Each type spans its own time (3 s flak to 60 s mushroom). Stage drives size, rise, how much fire has cooled into smoke, and how dark the smoke gets.
+  - **Parameters:** Seed, Size, Billow, Heat, Smoke Darkness; Sparks (Count, Speed, Speed Spread, Streak Length, Cooling, Orange / White-Gold); Burning Debris; Explosion Light + Light Strength; plus the cloud look rows.
+  - **Rendering:** up to five media per explosion (fire, smoke, dust, vapour, sparks), each its own volume through the cloud pipeline, so fire and sparks glow with their own ramps. Sparks are short glowing streaks along seeded ballistic arcs with drag; burning debris leaves a smoke trail with a glowing tip. At most 8000 puffs (the viewport preview mesh thins sparks to 600).
+  - **Explosion Light:** a shadow-casting point light at the fire's heat-weighted centre, coloured from the fire ramp and sized from the glowing volume. Every explosion's light shares one LightMix group, **Explosions**. Render As: Mesh turns the light off with the volumes.
+  - Help suggests the AgX tonemap so bright fire keeps its colour.
+- **Tests (8 new):**
+  - every type lays seeded, valid puffs above the ground, starts as fire, and every medium has a material;
+  - Stage grows, lifts and cools the fireball, and darkens its smoke;
+  - the mushroom goes from a bare ground fireball to stem, cap and condensation skirt, then an ice cap and a spreading base surge;
+  - sparks fly on ballistic arcs, cool, and reach further when faster;
+  - burning debris leaves smoke trails with glowing tips;
+  - preview mesh vertex/polygon counts, pack IDs, normals and UVs;
+  - the explosion light sits at the fire's centre, is warm, scales with Light Strength and dims as it cools;
+  - a small fireball with sparks packs three or more media on the GPU, matches the CPU image, and adds a warm, shadowed light in the Explosions group (gone again when Render As is Mesh).
+- **Not done yet:**
+  - **The viewport has no explosion light** and shows fire as a warm-tinted fog; F9 shows the true glow and light.
+  - **Sparks are tiny volume streaks**, not particles or motion-blurred lines; very thin streaks can alias at low samples.
+  - **No wind or animation:** Stage is a still slider, not keyed over time.
+  - **Debris is part of the explosion**, not separate Trail objects you can edit.
+  - **Viewport speed** for big blasts (mushroom, 1200 sparks) hasn't been measured on her card.
