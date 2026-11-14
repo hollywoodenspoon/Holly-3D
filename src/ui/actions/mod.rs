@@ -7,6 +7,7 @@ pub mod keymap;
 pub mod keys;
 pub mod layout;
 mod run;
+mod tips;
 #[cfg(test)]
 mod tests;
 
@@ -77,6 +78,9 @@ pub enum Action {
     // Views
     ToggleGrid,
     OrientationCube,
+    ShowGizmo,
+    GizmoSmaller,
+    GizmoBigger,
     Wireframe,
     EdgedFaces,
     PreviewVolumes,
@@ -85,10 +89,13 @@ pub enum Action {
     Maximize,
     SceneExplorer,
     CameraView,
+    CameraFromView,
+    Orthographic,
     Ribbon,
     Nav(NavMode),
     // Rendering
     Render,
+    RenderLast,
     RenderSetup,
     FrameWindow,
     ColorGrading,
@@ -127,12 +134,12 @@ impl Action {
         v.extend(SUBS.map(Sub));
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
-            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube,
-            Wireframe, EdgedFaces, PreviewVolumes, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
+            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube, ShowGizmo, GizmoSmaller, GizmoBigger,
+            Wireframe, EdgedFaces, PreviewVolumes, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, CameraFromView, Orthographic, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
-        v.extend([Render, RenderSetup, FrameWindow, ColorGrading, LightMix, Turntable, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
+        v.extend([Render, RenderLast, RenderSetup, FrameWindow, ColorGrading, LightMix, Turntable, MaterialEditor, MaterialLibrary, Environment, DefaultLights]);
         v.extend(SkyPreset::ALL.map(Sky));
         v.extend([Help, Tour, HotkeyList, About, CrashReports, Preferences]);
         v
@@ -195,6 +202,9 @@ impl Action {
             ShadowCatcher => "Shadow & Reflection Catcher",
             ToggleGrid => "Show Grid",
             OrientationCube => "Orientation Cube",
+            ShowGizmo => "Show Transform Gizmo",
+            GizmoSmaller => "Gizmo Size −",
+            GizmoBigger => "Gizmo Size +",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
             PreviewVolumes => "Preview Volumes",
@@ -203,6 +213,8 @@ impl Action {
             Maximize => "Maximize Viewport",
             SceneExplorer => "Scene Explorer",
             CameraView => "Camera View",
+            CameraFromView => "Create Camera From View",
+            Orthographic => "Orthographic / Perspective",
             Ribbon => "Modeling Ribbon",
             Nav(NavMode::Zoom) => "Zoom",
             Nav(NavMode::ZoomAll) => "Zoom All",
@@ -210,6 +222,7 @@ impl Action {
             Nav(NavMode::Pan) => "Pan View",
             Nav(NavMode::Orbit) => "Orbit",
             Render => "Render",
+            RenderLast => "Render Last",
             RenderSetup => "Render Setup...",
             FrameWindow => "Veach Rendered Frame Window",
             ColorGrading => "Color Grading & Camera RAW",
@@ -287,49 +300,5 @@ impl Action {
             _ => return self.label(),
         };
         s.to_string()
-    }
-
-    /// One-line explanation shown on hover.
-    pub fn tip(self) -> &'static str {
-        use Action::*;
-        match self {
-            ImportVdb => "Simulated smoke and fire from an OpenVDB (.vdb) file, as a volume",
-            Preferences => "Theme, hotkeys, viewport colours, autosave, units, render defaults and asset packs",
-            SelectByName => "Select From Scene: pick objects from a searchable list",
-            LockSelection => "Lock Selection: clicks and marquees no longer change what is selected",
-            WindowCrossing => "Window (fully inside) or Crossing (touching) region selection",
-            PercentSnap => "Scale in 10 % steps",
-            SnapSettings => "Snap types, grid spacing and snap strength",
-            Isolate => "Show only the selection (press again to show everything)",
-            JointTool => "Click two parts to link them with a joint",
-            ContactSets => "Contact Member parts push each other along their hinges and sliders",
-            Paint => "Viewport Paint: VertexPaint / texture projection (PaintBox)",
-            Measure => "Size, centre and counts of the selection",
-            Constrain(c) => c.tip(),
-            SeeThrough => "Draw the selected objects semi-transparent",
-            PreviewVolumes => "Draw clouds as soft volumes in Perspective views (off: the solid preview puffs)",
-            ShadowCatcher => "Render the selected ground transparent except for the shadows, AO and reflections cast on it",
-            CameraView => "Look through the selected (or first) camera",
-            Ribbon => "Big buttons for every Edit Poly tool under the toolbar",
-            Nav(m) => m.label(),
-            DefaultLights => "Light the viewports with the 2-light headlight rig, even with scene lights",
-            Environment => "Background, HDRI, sky, deep space, ambient light and fog",
-            Sky(_) => "One-click sky (opens the Environment window to fine-tune it)",
-            MaterialLibrary => "Browse ~280 ready-made materials (ground, roads, walls, metal, glass...) and apply one with a click",
-            FaceCloner => "Fit the selected character's head to photos or exported video frames of a person",
-            CharacterStudio => "The MakeHuman window: characters (Human, Elf, Dwarf, anime...) with hair, eyes, clothes, skins, poses and Randomise, plus creatures and an asset Library",
-            BuildingsBrowser => "Prefab Library: thumbnails of every building, bridge and street prop, with favourites; click a tile, then click in a viewport to drop it",
-            Turntable => "Render a 360° turntable PNG sequence or a 4 / 8-direction isometric sprite atlas + JSON",
-            LightMix => "Relight the finished F9 render per light group (sun, sky, emissive, each light) without re-rendering",
-            ColorGrading => "Grade the F9 render live: tone, white balance, colour wheels, vignette, grain",
-            Render => "Render the active viewport into the Veach Rendered Frame Window",
-            RemoveSubObjects => "Remove the selected vertices or edges",
-            RepeatLast => "Repeat the previous Edit Poly operation",
-            Cancel => "Leave the current tool, caddy or menu",
-            Help => "How Ilex works, with screenshots (F1 opens the page for what is under the mouse)",
-            Tour => "A short step-by-step tour of the screen",
-            CrashReports => "Crash reports Ilex wrote after a crash: copy one for Claude, restore the unsaved scene, or simulate a test report",
-            _ => "",
-        }
     }
 }

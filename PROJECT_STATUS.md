@@ -2298,3 +2298,22 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Only simulations move**: the camera, lights and other objects stay where they are, since Ilex has no animation timeline yet.
   - **No video file output**: frames are PNGs; join them with a video tool.
   - **Grids are copied to the GPU for every frame**, not kept between frames.
+
+## 79. Ilex's own transform gizmos
+- **What changed:**
+  - The Move, Rotate and Scale gizmos are now drawn and driven by Ilex itself (`src/ui/viewport_ui/gizmo/`), replacing the third-party gizmo crate.
+  - **Move (W):** red / green / blue arrows with X / Y / Z letters; corner squares at the origin move in two axes; the small centre square slides in the view plane.
+  - **Rotate (E):** red / green / blue rings (the back halves are faint), a grey outer ring that turns about the view direction, and a grey inner circle for free trackball rotation. A yellow wedge and a degrees readout show the turn while dragging.
+  - **Scale (R):** axis lines with box tips, strips between two axes for plane scale, and an inner triangle for uniform scale.
+  - The handle under the cursor, or being dragged, turns **yellow**. A readout next to the gizmo shows the offset, angle or percentage while dragging.
+  - Axes and planes seen end-on fade or hide. Shift-drag clone, Edit Poly sub-objects, splines, modifier gizmos, the Slice Plane and Affect Pivot Only work as before. Grid snap steps along the gizmo axes; vertex / edge / face snaps keep to the dragged axis or plane. Angle snap (5°) and Percent snap (10 %) still apply.
+  - **New buttons:** Views → Show Transform Gizmo (`X`), » → Gizmo Size − / + (`-` / `=`), and Preferences → Viewport → Transform gizmo (show, size in pixels).
+- **Tests (10 new):** picking arrows, plane squares and the centre; the end-on axis in Top hides; rings, the view ring and the trackball; back halves of rings never win; scale triangle, strips and axes; axis moves stay on the axis; plane moves stay in the plane and snap per axis; ring and view angles and 5° snapping; trackball direction; scale factors, uniform ratios and local-axis scaling of a rotated object.
+- **Not done yet:** the rotate rings don't turn with the object during a Local-coordinate drag (they redraw at the new angle when the drag ends).
+
+## 80. Render shortcuts, camera from view, Orthographic view
+- `Shift+Q` **Render** (active view or the Render Setup camera); `F9` **Render Last** renders the same view or camera as the previous render (the first time it is the same as Render); `F10` Render Setup as before. Both are in Rendering menu; the header `▶ Render` button is Render.
+- `Ctrl+C` **Create Camera From View** (Views menu): a Target Camera at the active Perspective view's eye, aimed at its pivot with the same field of view; the view then looks through it.
+- `U` **Orthographic / Perspective** (Views menu, and "Orthographic" in every view-label dropdown): switches the active view, keeping its angle and framing; Top / Front / Left become an orbitable Orthographic view.
+- Tooltips moved to `src/ui/actions/tips.rs` to keep `actions/mod.rs` under 350 lines.
+- Test: `orthographic_keeps_angle_and_framing`. 740 lib tests pass, clippy clean.

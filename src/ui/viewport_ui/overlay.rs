@@ -40,8 +40,16 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                 });
                 let kind = ed.viewports.views[vi].camera.kind;
                 ui.menu_button(small(&format!("{} ⏷", ed.view_label(vi))), |ui| {
-                    for k in [ViewKind::Perspective, ViewKind::Top, ViewKind::Front, ViewKind::Left] {
-                        if ui.selectable_label(kind == k, k.label()).clicked() {
+                    for k in [ViewKind::Perspective, ViewKind::User, ViewKind::Top, ViewKind::Front, ViewKind::Left] {
+                        let text = if k == ViewKind::User { "Orthographic   U".to_string() } else { k.label().to_string() };
+                        if ui.selectable_label(kind == k, text).clicked() {
+                            // Perspective <-> Orthographic keeps the angle and framing.
+                            if (k == ViewKind::User) != (kind == ViewKind::User) && matches!(kind, ViewKind::Perspective | ViewKind::User | ViewKind::Camera) {
+                                ed.viewports.active = vi;
+                                ed.toggle_orthographic();
+                                ui.close();
+                                continue;
+                            }
                             ed.look_through(vi, None);
                             let cam = &mut ed.viewports.views[vi].camera;
                             let keep = (cam.target, cam.distance, cam.ortho_height);

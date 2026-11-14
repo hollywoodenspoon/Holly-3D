@@ -15,11 +15,10 @@ use crate::editor::select::SelectOp;
 use crate::viewport::layout::ScreenRect;
 use bevy::math::Vec2;
 use bevy_egui::egui::{self, PointerButton, Sense};
-use transform_gizmo_egui::Gizmo;
 
 #[derive(Default)]
 pub struct ViewportUiState {
-    gizmos: [Gizmo; 4],
+    gizmos: [gizmo::GizmoState; 4],
     /// Region being drawn: viewport and its points (drag start, lasso trail, fence corners).
     region: Option<(usize, Vec<Vec2>)>,
     /// The fence is waiting for more clicks (its first side is drawn).

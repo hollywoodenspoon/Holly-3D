@@ -125,6 +125,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
         &[
             A(ToggleGrid),
             A(OrientationCube),
+            A(ShowGizmo),
             A(Wireframe),
             A(EdgedFaces),
             A(PreviewVolumes),
@@ -136,6 +137,8 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             Entry::Sub("Navigation", NAVIGATION),
             Sep,
             A(CameraView),
+            A(CameraFromView),
+            A(Orthographic),
             Sep,
             A(SceneExplorer),
             A(Ribbon),
@@ -146,6 +149,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
         "Rendering",
         &[
             A(Render),
+            A(RenderLast),
             A(RenderSetup),
             A(FrameWindow),
             A(ColorGrading),
@@ -203,6 +207,8 @@ pub const OVERFLOW: &[Slot] = &[
     Slot::A(SelectByName),
     Slot::A(WindowCrossing),
     Slot::A(SnapSettings),
+    Slot::A(GizmoSmaller),
+    Slot::A(GizmoBigger),
     Slot::Sep,
     Slot::A(Mirror),
     Slot::A(Align),

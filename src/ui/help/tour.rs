@@ -52,7 +52,7 @@ pub const STEPS: [Step; 8] = [
     },
     Step {
         title: "Materials, sky and rendering",
-        text: "M opens the Material Editor, 8 the sky and environment, F9 renders. The Sky menu makes a sky in one click.",
+        text: "M opens the Material Editor, 8 the sky and environment, Shift+Q renders (F9 renders the last view again). The Sky menu makes a sky in one click.",
         shot: "sky",
         marks: &[m(405.0, 75.0, "Sky menu"), m(260.0, 75.0, "Environment")],
     },

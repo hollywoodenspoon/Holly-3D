@@ -148,6 +148,9 @@ pub struct ViewportPrefs {
     pub cube_fit_on_change: bool,
     /// Perspective views draw clouds as soft volumes (Preview Volumes).
     pub preview_volumes: bool,
+    /// Transform gizmo: shown, and its axis length in pixels.
+    pub show_gizmo: bool,
+    pub gizmo_size: f32,
 }
 
 impl Default for ViewportPrefs {
@@ -166,6 +169,8 @@ impl Default for ViewportPrefs {
             show_cube: true,
             cube_fit_on_change: false,
             preview_volumes: true,
+            show_gizmo: true,
+            gizmo_size: 80.0,
         }
     }
 }

@@ -5,7 +5,7 @@
 use super::*;
 use crate::render::lighting::aim;
 use crate::scene::camera::{Camera, CameraKind};
-use crate::viewport::camera::ViewKind;
+use crate::viewport::camera::{ViewCamera, ViewKind};
 
 /// Height cameras are lifted to when placed on the ground grid.
 const EYE_HEIGHT: f32 = 1.6;
@@ -102,6 +102,45 @@ impl Editor {
                 v.cam_obj = None;
             }
         }
+    }
+
+    /// `Ctrl+C`: a Target Camera where the active Perspective view's eye is,
+    /// aimed at its pivot with the same field of view; the view then looks
+    /// through it.
+    pub fn camera_from_view(&mut self) {
+        let vi = self.viewports.active;
+        let v = &self.viewports.views[vi];
+        if v.camera.kind != ViewKind::Perspective {
+            self.status = "Create Camera From View works on a Perspective view — switch the view to Perspective first".into();
+            return;
+        }
+        let (c, aspect) = (v.camera, v.rect.aspect());
+        let hfov = if c.hfov { c.fov } else { 2.0 * ((c.fov * 0.5).tan() * aspect).atan() };
+        let id = self.create_camera(CameraKind::Target, c.eye(), c.target);
+        if let Some(cam) = self.scene.objects[id].camera_mut() {
+            cam.fov = hfov.to_degrees().clamp(1.0, 175.0);
+        }
+        self.look_through(vi, Some(id));
+        self.status = format!("Created {} from the view — the view now looks through it", self.scene.objects[id].name);
+    }
+
+    /// `U`: the active view switches Perspective <-> Orthographic, keeping
+    /// its angle and framing. Top / Front / Left become an Orthographic view
+    /// that can be orbited; a camera view gets an Orthographic copy.
+    pub fn toggle_orthographic(&mut self) {
+        let vi = self.viewports.active;
+        if self.viewports.views[vi].cam_obj.is_some() {
+            let cam = self.viewports.views[vi].camera;
+            self.look_through(vi, None);
+            self.viewports.views[vi].camera = ViewCamera { kind: ViewKind::Perspective, ..cam };
+        }
+        let c = &mut self.viewports.views[vi].camera;
+        match c.kind {
+            ViewKind::Perspective | ViewKind::Camera => c.to_orthographic(),
+            ViewKind::User => c.to_perspective(),
+            _ => c.kind = ViewKind::User,
+        }
+        self.status = format!("{} view", c.kind.label());
     }
 
     /// `C`: the active viewport looks through the selected camera (or the
