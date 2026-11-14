@@ -171,7 +171,7 @@ fn a_fireball_with_sparks_and_its_light_render_on_the_gpu() {
     use crate::generators::pyro::{PyroKind, PyroParams};
     let mut s = Scene::default();
     floor(&mut s);
-    let p = PyroParams { size: 0.35, sparks: 120, spark_speed: 4.0, debris: 3, ..PyroParams::of(PyroKind::Fireball) };
+    let p = PyroParams { size: 0.35, stage: 0.08, sparks: 120, spark_speed: 8.0, debris: 3, ..PyroParams::of(PyroKind::Fireball) };
     let id = s.add(BaseObject::World(WorldGen::Pyro(Box::new(p))), Vec3::new(1.3, 0.0, 0.0));
     s.objects[id].evaluate();
     let rs = seen(&s);
