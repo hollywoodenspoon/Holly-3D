@@ -38,6 +38,23 @@ impl Editor {
         }
     }
 
+    /// Brush Strokes "Apply to All Materials": every material in the scene
+    /// (and every sub-material) gets the edited material's brush settings.
+    pub fn brush_to_all_materials(&mut self) {
+        let brush = self.editing_material().brush.clone();
+        self.checkpoint("Brush Strokes to All Materials");
+        let mut n = 0;
+        for m in self.scene.materials.mats.values_mut() {
+            m.brush = brush.clone();
+            n += 1;
+            for s in m.multi.iter_mut().flat_map(|mu| mu.subs.iter_mut()) {
+                s.mat.brush = brush.clone();
+                n += 1;
+            }
+        }
+        self.status = format!("Brush Strokes {} on {n} materials", if brush.enabled { "on" } else { "off" });
+    }
+
     /// Standard <-> Multi/Sub-Object for the active slot.
     pub fn set_material_multi(&mut self, multi: bool) {
         let keep = self.mat_editor.sub;

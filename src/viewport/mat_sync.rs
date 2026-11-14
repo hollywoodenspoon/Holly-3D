@@ -72,7 +72,7 @@ pub fn to_image(t: &Texture, srgb: bool) -> Image {
 fn bake_all(m: &Material, images: &mut Assets<Image>) -> MatTextures {
     let base = direct_base(m).map(|h| to_image(&h.tex, true));
     // Procedural surfaces are cooked at a higher resolution than plain map bakes.
-    let size = if m.proc.active() { crate::materials::proc_engine::surface::COOK_SIZE } else { BAKE_SIZE };
+    let size = if m.proc.active() || m.brush.enabled { crate::materials::proc_engine::surface::COOK_SIZE } else { BAKE_SIZE };
     let base = base.or_else(|| bake_base(m, size).map(|t| to_image(&t, true)));
     let metal_rough = bake_metal_rough(m, size).map(|t| images.add(to_image(&t, false)));
     MatTextures {

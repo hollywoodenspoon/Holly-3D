@@ -102,7 +102,7 @@ pub fn why_not(m: &Material) -> Option<&'static str> {
 /// Grid size: the largest bitmap's own size, or [`PROC_RES`] when any
 /// map is procedural (paint layers, patterns, node graphs, non-bitmap maps).
 pub fn resolution(m: &Material) -> (u32, u32) {
-    let mut proc = m.proc.pattern != crate::materials::proc_engine::Pattern::None || m.paint.is_some() || !m.slate_nodes.is_empty();
+    let mut proc = m.proc.pattern != crate::materials::proc_engine::Pattern::None || m.paint.is_some() || !m.slate_nodes.is_empty() || m.brush.enabled;
     let (mut w, mut h) = (0, 0);
     for s in m.maps.iter().filter(|s| s.enabled) {
         match &s.node {

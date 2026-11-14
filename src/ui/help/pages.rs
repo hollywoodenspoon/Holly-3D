@@ -239,6 +239,7 @@ pub const MATERIALS: Page = Page {
             "Pick a slot, then a Quick Preset or a Shading model (PBR, Toon, Glass, Unlit).",
             "Select objects and click Assign.",
             "Every material has an Ink / Toon Outline rollout.",
+            "Brush Strokes rollout: tick Painted Normals (or click Gouache, Oil or Concept Art) and the lighting breaks into brush marks, in the viewport and in F9. Size, Length, Strength, Angle, Jitter, Bristles and Seed shape them; Apply to All Materials paints the whole scene.",
             "Principled BSDF rollout: Subsurface Scattering (skin, wax, jade), Anisotropy (brushed metal), Clearcoat (car paint), Cloth Sheen, Absorption and Dispersion for glass. Try the one-click looks.",
             "Maps rollout: image or procedural maps for colour, metal, roughness, bump, opacity and glow.",
             "Procedural maps include Bricks / Tiles, Stripes (road lines), Cracks and Grunge (dirt, rust, scratches).",

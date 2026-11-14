@@ -42,10 +42,17 @@ pub fn base_tangent_normal(m: &Material, uv: Vec2, p: Vec3, dpdu: Vec3, dpdv: Ve
             }
         };
         let t = Vec3::Z.lerp(t, amount).normalize_or(Vec3::Z);
-        // Detail normals add their tilt to the base normal.
-        n = Some(n.map_or(t, |b: Vec3| Vec3::new(b.x + t.x, b.y + t.y, b.z).normalize_or(Vec3::Z)));
+        n = Some(add_tilt(n, t));
+    }
+    if m.brush.enabled {
+        n = Some(add_tilt(n, m.brush.tangent_normal(uv)));
     }
     n
+}
+
+/// Detail normals add their tilt to the base normal.
+fn add_tilt(base: Option<Vec3>, t: Vec3) -> Vec3 {
+    base.map_or(t, |b| Vec3::new(b.x + t.x, b.y + t.y, b.z).normalize_or(Vec3::Z))
 }
 
 /// True when a bitmap's file name says it is a normal map ("nor.jpg",

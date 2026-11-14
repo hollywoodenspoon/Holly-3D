@@ -3,6 +3,7 @@
 //! outline settings shared by every material.
 
 pub mod bake;
+pub mod brush;
 pub mod ghost_pack;
 pub mod import;
 pub mod library;
@@ -19,6 +20,8 @@ pub mod shading;
 mod tests;
 #[cfg(test)]
 mod tests_multi;
+#[cfg(test)]
+mod tests_brush;
 pub(crate) mod tex_serde;
 pub mod texture;
 pub mod triplanar;
@@ -172,6 +175,9 @@ pub struct Material {
     /// Volume shading model parameters.
     #[serde(default)]
     pub volume: volume::VolumeMat,
+    /// Brush Strokes rollout: painted normals.
+    #[serde(default)]
+    pub brush: brush::BrushStrokes,
 }
 
 impl Default for Material {
@@ -204,6 +210,7 @@ impl Default for Material {
             shadow_catcher: false,
             alpha_cutout: false,
             volume: Default::default(),
+            brush: Default::default(),
         }
     }
 }

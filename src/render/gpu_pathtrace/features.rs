@@ -60,10 +60,11 @@ pub fn has_env_map(rs: &RenderScene) -> bool {
     rs.procedural.is_some() || rs.hdri.as_ref().is_some_and(|h| h.image.is_some())
 }
 
-/// The material has maps, a procedural pattern, paint layers or a projection.
+/// The material has maps, a procedural pattern, paint layers, a projection
+/// or brush strokes.
 pub fn mapped(m: &crate::materials::Material) -> bool {
     let maps = m.maps.iter().any(|s| s.enabled && s.node.is_some()) || !m.slate_nodes.is_empty();
-    maps || m.proc.pattern != Pattern::None || m.paint.is_some() || m.projection.on()
+    maps || m.proc.pattern != Pattern::None || m.paint.is_some() || m.projection.on() || m.brush.enabled
 }
 
 /// Everything that still sends a scene to the CPU tracer, in the order
