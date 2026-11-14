@@ -1,6 +1,7 @@
 //! Compact Material Editor (M): 24 sample slots, material toolbar,
 //! preset / shading-model pickers and the Compact or Node Graph parameter views.
 
+mod brush_rollout;
 mod craft_params;
 pub mod library;
 mod maps;
@@ -252,6 +253,7 @@ pub fn show(ctx: &egui::Context, ed: &mut Editor, st: &mut MatEditorUi) {
                     params::mapping(ui, ed);
                     params::basic(ui, ed);
                     principled_rollout::principled(ui, ed);
+                    brush_rollout::rollout_ui(ui, ed);
                     params::outline(ui, ed);
                     maps::rollout(ui, ed);
                     ui.label(dim("Right-click any spinner to reset it."));

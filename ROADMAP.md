@@ -43,6 +43,7 @@
 - Compact Material Editor (`M`): 24 slots, Standard/PBR, Toon, Crystal/Glass, Unlit and Volume shading, quick presets, and an ink outline on every material.
 - Multi/Sub-Object materials, a Material Library of 281 presets, and procedural pattern maps.
 - MaterialCraft: a procedural node engine, a Pattern & Weathering rollout, a layer painter, a mesh map baker, damage stamps, Triplanar mapping and an asset downloader.
+- Brush Strokes (Painted Normals): a material checkbox that repaints the lighting as brush marks (Gouache / Oil / Concept Art looks).
 - Viewport painting: VertexPaint (no UVs needed) and texture projection paint with auto-setup.
 
 ### Rendering (§10F, §22, §25–27, §56–64)

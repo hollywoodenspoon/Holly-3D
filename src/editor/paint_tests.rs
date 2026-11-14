@@ -198,3 +198,19 @@ fn fill_bake_smart_layers_and_export() {
     assert_eq!((img.width(), img.height()), (128, 128));
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn brush_strokes_apply_to_every_material_and_undo() {
+    let (mut ed, _) = box_editor();
+    let other = ed.scene.materials.mats.insert(Preset::PolishedGold.material());
+    let mut multi = Preset::PolishedGold.material();
+    multi.make_multi();
+    let mid = ed.scene.materials.mats.insert(multi);
+    let look = crate::materials::brush::PRESETS[1].1.clone();
+    ed.edit_material(None, |m| m.brush = look.clone());
+    ed.brush_to_all_materials();
+    assert!(ed.scene.materials.mats.values().all(|m| m.brush == look));
+    assert!(ed.scene.materials.mats[mid].multi.as_ref().unwrap().subs.iter().all(|s| s.mat.brush == look), "sub-materials too");
+    ed.undo();
+    assert!(!ed.scene.materials.mats[other].brush.enabled, "one undo step");
+}

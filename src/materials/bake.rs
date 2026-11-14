@@ -14,15 +14,22 @@ pub fn uv_point(uv: Vec2) -> Vec3 {
     Vec3::new(uv.x * 2.0 - 1.0, uv.y * 2.0 - 1.0, 0.0)
 }
 
-fn bake(size: u32, mut f: impl FnMut(Vec2) -> [u8; 4]) -> Texture {
+fn bake(size: u32, f: impl Fn(Vec2) -> [u8; 4] + Sync) -> Texture {
     let mut t = Texture::new(size, size, [0; 4]);
-    for y in 0..size {
-        for x in 0..size {
-            // Row 0 is the top (v = 1), matching `Texture::sample`.
-            let uv = Vec2::new((x as f32 + 0.5) / size as f32, 1.0 - (y as f32 + 0.5) / size as f32);
-            t.data[(y * size + x) as usize] = f(uv);
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get()).min(16);
+    let rows = (size as usize).div_ceil(threads).max(1);
+    std::thread::scope(|sc| {
+        for (i, chunk) in t.data.chunks_mut(rows * size as usize).enumerate() {
+            let f = &f;
+            sc.spawn(move || {
+                for (j, px) in chunk.iter_mut().enumerate() {
+                    let (x, y) = ((j % size as usize) as u32, (i * rows + j / size as usize) as u32);
+                    // Row 0 is the top (v = 1), matching `Texture::sample`.
+                    *px = f(Vec2::new((x as f32 + 0.5) / size as f32, 1.0 - (y as f32 + 0.5) / size as f32));
+                }
+            });
         }
-    }
+    });
     t
 }
 
@@ -69,7 +76,7 @@ pub fn bake_metal_rough(m: &Material, size: u32) -> Option<Texture> {
 /// True when the material tilts its normals (a Bump / Normal map, or a
 /// procedural surface with auto-derived relief).
 pub fn has_relief(m: &Material) -> bool {
-    m.active_map(MapChannel::Bump).is_some() || (m.proc.active() && m.proc.auto_pbr && m.proc.relief > 0.0)
+    m.active_map(MapChannel::Bump).is_some() || (m.proc.active() && m.proc.auto_pbr && m.proc.relief > 0.0) || m.brush.enabled
 }
 
 /// Tangent-space normal map (linear, +Y up the V axis).
