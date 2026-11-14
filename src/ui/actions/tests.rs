@@ -113,6 +113,8 @@ fn every_action_runs() {
             a.run(&mut ed);
         }
     }
+    // Render starts a background job: stop it before the test exits.
+    crate::render::job::join_orphans();
 }
 
 #[test]
@@ -172,3 +174,4 @@ fn glyph_check_tells_drawn_from_missing() {
     assert!(drawable(&ctx, '🔍') && drawable(&ctx, '⟲') && drawable(&ctx, '✔'));
     assert!(!drawable(&ctx, '\u{E001}') && !drawable(&ctx, '\u{2BFF}'));
 }
+

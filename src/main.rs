@@ -100,6 +100,9 @@ fn main() {
     skybox::register(&mut app);
     ilex::viewport::window_icon::register(&mut app);
     app.run();
+    // Let cancelled render threads stop before the GPU driver unloads.
+    drop(app);
+    ilex::render::job::join_orphans();
 }
 
 /// The GPU name for crash reports.

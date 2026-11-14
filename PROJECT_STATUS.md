@@ -2229,3 +2229,4 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **No animated VDB sequences** (one file, one frame).
   - **Not tested on real simulation files here** (downloads were blocked); the tests use files written to the format.
   - **Root-level tiles and the grid background value are ignored** (a limit of the reader crate); half-float and vector grids beyond what the crate reads are not offered.
+- **Also fixed:** a render that was still running when Ilex closed (or when a test ended) could crash the exit. Its thread kept working inside the GPU driver while the process shut down. Dropped render jobs now hand their threads to a list that is joined when the app exits; they were already cancelled, so this is quick.
