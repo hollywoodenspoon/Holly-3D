@@ -34,6 +34,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         world_grid(ui, ed, "dm_worlds", &WorldKind::ALL, 2);
         ui.label(dim("Each world comes with its Multi/Sub-Object pack, so the generated Material IDs render right away."));
     });
+    rollout(ui, "Clouds", true, |ui| {
+        world_grid(ui, ed, "dm_clouds", &WorldKind::CLOUDS, 2);
+        ui.label(dim("Drag to size a cloud, then drag up for its height. A Cloud Field fills a whole sky layer; Break Into Clouds splits it."));
+    });
     rollout(ui, "Settlements", true, |ui| {
         world_grid(ui, ed, "dm_settlements", &WorldKind::SETTLEMENTS, 2);
         ui.label(dim("Click, then click in a viewport to place a whole settlement with its Material Pack."));

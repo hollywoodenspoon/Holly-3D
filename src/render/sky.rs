@@ -29,25 +29,7 @@ impl SkyMode {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(default)]
-pub struct Clouds {
-    pub enabled: bool,
-    /// Fraction of the sky covered (0..1).
-    pub coverage: f32,
-    /// Opacity of the cloud layer (0..1).
-    pub density: f32,
-    /// Cloud deck height (km); higher decks look smaller and flatter.
-    pub altitude: f32,
-    /// Drift (km per hour of Time of Day) along +X.
-    pub wind_speed: f32,
-}
-
-impl Default for Clouds {
-    fn default() -> Self {
-        Self { enabled: true, coverage: 0.4, density: 0.8, altitude: 2.0, wind_speed: 0.5 }
-    }
-}
+pub use super::sky_clouds::{Clouds, CloudsShown};
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]

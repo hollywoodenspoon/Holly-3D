@@ -141,6 +141,8 @@ pub enum MultiPreset {
     SettlementPhoto,
     /// PR 8 Smoke & Fire plumes: fire core, smoke, wisps.
     SmokeFire,
+    /// Clouds PR 1: cloud puffs (Material ID 1).
+    Clouds,
     /// Phase 10A Character Pack: skin, eyes, hair, cloth, metal, leather.
     Character,
 }
@@ -161,7 +163,7 @@ fn glass(name: &str, tint: [f32; 3], attenuation: [f32; 3], roughness: f32) -> M
 }
 
 impl MultiPreset {
-    pub const ALL: [MultiPreset; 9] = [
+    pub const ALL: [MultiPreset; 10] = [
         Self::MedievalCastle,
         Self::ModernCity,
         Self::AlpineTerrain,
@@ -170,6 +172,7 @@ impl MultiPreset {
         Self::Settlement,
         Self::SettlementPhoto,
         Self::SmokeFire,
+        Self::Clouds,
         Self::Character,
     ];
 
@@ -183,6 +186,7 @@ impl MultiPreset {
             Self::Settlement => "Settlement Pack",
             Self::SettlementPhoto => "Settlement Pack (Photo Textures)",
             Self::SmokeFire => "Smoke & Fire Pack",
+            Self::Clouds => "Clouds Pack",
             Self::Character => "Character Pack",
         }
     }
@@ -244,6 +248,7 @@ impl MultiPreset {
                 Material { opacity: 0.999, ..pbr("Smoke", [1.0, 1.0, 1.0], 0.0, 1.0) },
                 Material { opacity: 0.999, ..pbr("Smoke Wisps", [1.0, 1.0, 1.0], 0.0, 1.0) },
             ],
+            Self::Clouds => vec![pbr("Cloud", [0.95, 0.95, 0.96], 0.0, 1.0)],
             // `character::params::ids`.
             Self::Character => vec![
                 skin_material(),

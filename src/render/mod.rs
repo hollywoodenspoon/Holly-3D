@@ -31,6 +31,7 @@ pub mod sample;
 pub mod scene_build;
 pub mod settings;
 pub mod sky;
+pub mod sky_clouds;
 pub mod sky_presets;
 pub mod weather;
 pub mod precip;

@@ -113,6 +113,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let mut w = w.clone();
     let (mut t, mut tex, mut style) = (Track::default(), None, None);
     let mut ruin = super::ruin::Out::default();
+    let mut split = false;
     match &mut w {
         WorldGen::Terrain(p) => rollout(ui, "Demiurge Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
         WorldGen::Ocean(p) => rollout(ui, "Demiurge Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
@@ -122,6 +123,12 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         }
         WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
         WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
+        WorldGen::Cloud(p) => rollout(ui, "Demiurge Cloud", true, |ui| super::clouds::cloud(ui, &mut t, p)),
+        WorldGen::CloudField(p) => rollout(ui, "Demiurge Cloud Field", true, |ui| split = super::clouds::field(ui, &mut t, p)),
+    }
+    if split {
+        ed.break_cloud_field(id);
+        return;
     }
     if let WorldGen::Settlement(_) | WorldGen::Building(_) = &w {
         super::ghosttown::pack_button(ui, ed);

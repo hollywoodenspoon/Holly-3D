@@ -1997,3 +1997,18 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Two mutation blind spots:** the GPU's own cut-out snap (the bake already thresholds, so the snap only tidies filter fringes, which average out) and the shadow-times-reflection overlap in the catcher's alpha (`refl * (1 − dark)`; it only matters where a reflection falls inside a shadow). The parity tests can't see either; both match the CPU code line for line.
   - **Test memory:** scenes with textures or live maps build pipelines of about 8–9 GB on the software driver, so the GPU tests run one at a time (`--test-threads=1`).
   - Everything else from the GPU parity plan is done; next is the Clouds plan.
+
+## 65. Clouds, PR 1: cloud shapes, the Cloud Field and the Clouds dropdown
+- **Cloud objects** (`src/generators/clouds/`): Cumulus, Cumulus Congestus, Cumulonimbus and Stratocumulus, in metres.
+  - Each cloud is a seeded list of puffs (squashed spheres). They are laid out per type: a tapering tower, a tall lumpy tower, a storm tower with a wide flat anvil spreading downwind, or a sheet of rolls with gaps.
+  - **Detail Levels** (1–3) grow smaller puffs on the bigger ones. **Puffiness**, **Lumpiness**, **Base Flatness**, **Wind Shear** and **Wind Direction** shape the result.
+  - The puffs are the one source of truth. Today they build a light preview mesh (one smooth sphere per puff, Material ID 1, the new Clouds Pack). The volume renderer (V1/V2) will turn the same puffs into density.
+- **Cloud Field:** scatters clouds over a layer (Base Height, Layer Thickness, Width, Depth, Coverage, Type Mix, Min/Max Cloud Size, Detail). Clouds are placed by dart throwing so they never overlap, each with its own seed. Storm towers may rise above the layer. **Break Into Clouds** turns the field into separate Cloud objects in the same place, with the same material, as one undo step.
+- **Buttons:** Demiurge tab > Clouds, and Create > Demiurge Clouds. Drag-creation: a cloud drags its width, then its height; a field drags its area.
+- **Environment (8) > Clouds:** Off / 2D Sky Clouds / 3D Cloud Objects / Both. Off or 2D hides the cloud objects in the viewport and in renders. Old scenes load with Both.
+- **2D Sky Resolution:** the sky bake used by renders is 1024, 2048 or 4096 wide (it was fixed at 1024).
+- **Tests:** every type builds a seeded cloud on its base; detail levels; preview mesh vertex/polygon counts, material, UVs, unit normals and a flat base; wind shear; the anvil; field coverage, spacing and type mix; the field mesh on its layer; Break Into Clouds keeps every cloud in place; the dropdown round trip and old-scene defaults; 3D off drops clouds from the render.
+- **Not done yet:**
+  - **Clouds still render as solid white puffs.** Soft, light-scattering clouds need the volume renderer (V1) and Clouds as volumes (V2), which are next.
+  - **Viewport preview of volumes**, erosion noise and the cloud lighting all come with V2.
+  - **Trails, explosions and more cloud types** follow in PRs 3–5 of the Clouds plan.

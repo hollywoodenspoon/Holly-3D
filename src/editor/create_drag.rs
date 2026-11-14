@@ -72,7 +72,7 @@ impl CreateKind {
             Self::Prim(PrimitiveKind::Box) if m.cube => 1,
             Self::Prim(PrimitiveKind::Box | PrimitiveKind::Cylinder | PrimitiveKind::Torus) => 2,
             Self::Prim(PrimitiveKind::Cone) => 3,
-            Self::Geo(_) | Self::World(WorldKind::Terrain | WorldKind::Ocean) => 2,
+            Self::Geo(_) | Self::World(WorldKind::Terrain | WorldKind::Ocean | WorldKind::Cloud(_)) => 2,
             _ => 1,
         }
     }
@@ -81,7 +81,7 @@ impl CreateKind {
     pub fn is_rect(self) -> bool {
         matches!(
             self,
-            Self::Prim(PrimitiveKind::Box | PrimitiveKind::Plane) | Self::World(WorldKind::Terrain | WorldKind::Ocean | WorldKind::Settlement(_) | WorldKind::Building(_))
+            Self::Prim(PrimitiveKind::Box | PrimitiveKind::Plane) | Self::World(WorldKind::Terrain | WorldKind::Ocean | WorldKind::Settlement(_) | WorldKind::Building(_) | WorldKind::CloudField)
         )
     }
 
@@ -285,6 +285,13 @@ impl Editor {
                 WorldGen::Planet(p) => p.radius = a,
                 WorldGen::Settlement(s) => (s.width, s.length) = (a.max(4.0), b.max(4.0)),
                 WorldGen::Building(s) => (s.width, s.length) = (a.max(1.0), b.max(1.0)),
+                WorldGen::Cloud(s) => {
+                    s.size = (2.0 * a).max(1.0);
+                    if d.step > 0 {
+                        s.height = c.max(1.0);
+                    }
+                }
+                WorldGen::CloudField(s) => (s.width, s.depth) = (a.max(10.0), b.max(10.0)),
                 WorldGen::Smoke(s) => {
                     s.base_radius = a.max(0.1);
                     if d.step > 0 {

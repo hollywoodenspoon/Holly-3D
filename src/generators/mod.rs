@@ -5,6 +5,7 @@
 //! seed; Z-up like the rest of the scene.
 
 pub mod buildings;
+pub mod clouds;
 mod erosion;
 pub mod kit;
 mod ocean;
@@ -47,6 +48,10 @@ pub enum WorldGen {
     Building(Box<buildings::BuildingParams>),
     /// PR 8 Smoke & Fire Plume (Create -> Geometry -> Worlds / FX).
     Smoke(Box<smoke::SmokeParams>),
+    /// Clouds PR 1: one 3D cloud (Create -> Geometry -> Worlds / FX).
+    Cloud(Box<clouds::CloudParams>),
+    /// Clouds PR 1: a layer of scattered clouds.
+    CloudField(Box<clouds::CloudFieldParams>),
 }
 
 /// Create-tab buttons.
@@ -58,9 +63,19 @@ pub enum WorldKind {
     Settlement(Era),
     Building(buildings::BuildingKind),
     Smoke,
+    Cloud(clouds::CloudType),
+    CloudField,
 }
 
 impl WorldKind {
+    /// Create -> Geometry -> Clouds buttons.
+    pub const CLOUDS: [WorldKind; 5] = [
+        Self::Cloud(clouds::CloudType::Cumulus),
+        Self::Cloud(clouds::CloudType::Congestus),
+        Self::Cloud(clouds::CloudType::Cumulonimbus),
+        Self::Cloud(clouds::CloudType::Stratocumulus),
+        Self::CloudField,
+    ];
     pub const ALL: [WorldKind; 4] = [Self::Terrain, Self::Ocean, Self::Planet, Self::Smoke];
     /// Create -> Geometry -> Settlement buttons.
     pub const SETTLEMENTS: [WorldKind; 14] = {
@@ -80,6 +95,8 @@ impl WorldKind {
             Self::Settlement(e) => e.short(),
             Self::Building(k) => k.label(),
             Self::Smoke => "Smoke Plume",
+            Self::Cloud(k) => k.label(),
+            Self::CloudField => "Cloud Field",
         }
     }
     pub fn tip(self) -> &'static str {
@@ -90,6 +107,8 @@ impl WorldKind {
             Self::Settlement(e) => e.label(),
             Self::Building(k) => k.category().label(),
             Self::Smoke => "Billowing smoke & fire plume: wind lean, mushroom cap, rise phase",
+            Self::Cloud(k) => k.tip(),
+            Self::CloudField => "A whole layer of sky: scatters a mix of cloud types",
         }
     }
 }
@@ -103,6 +122,8 @@ impl WorldGen {
             WorldKind::Settlement(e) => Self::Settlement(Box::new(SettlementParams::of(e))),
             WorldKind::Building(k) => Self::Building(Box::new(buildings::BuildingParams::of(k))),
             WorldKind::Smoke => Self::Smoke(Box::default()),
+            WorldKind::Cloud(k) => Self::Cloud(Box::new(clouds::CloudParams::of(k))),
+            WorldKind::CloudField => Self::CloudField(Box::default()),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -113,6 +134,8 @@ impl WorldGen {
             Self::Settlement(p) => WorldKind::Settlement(p.era),
             Self::Building(p) => WorldKind::Building(p.kind),
             Self::Smoke(_) => WorldKind::Smoke,
+            Self::Cloud(p) => WorldKind::Cloud(p.kind),
+            Self::CloudField(_) => WorldKind::CloudField,
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -123,11 +146,16 @@ impl WorldGen {
             Self::Settlement(p) => p.build(),
             Self::Building(p) => p.build(),
             Self::Smoke(p) => p.build(),
+            Self::Cloud(p) => p.build(),
+            Self::CloudField(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
     pub fn short(&self) -> &'static str {
-        self.kind().label()
+        match self {
+            Self::Cloud(_) => "Cloud",
+            _ => self.kind().label(),
+        }
     }
     /// The Multi/Sub-Object pack whose IDs this generator assigns.
     pub fn material_pack(&self) -> crate::materials::MultiPreset {
@@ -139,6 +167,7 @@ impl WorldGen {
             Self::Settlement(_) => MultiPreset::Settlement,
             Self::Building(p) => p.style.pack(),
             Self::Smoke(_) => MultiPreset::SmokeFire,
+            Self::Cloud(_) | Self::CloudField(_) => MultiPreset::Clouds,
         }
     }
 }

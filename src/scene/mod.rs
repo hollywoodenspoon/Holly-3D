@@ -204,6 +204,12 @@ impl SceneObject {
         matches!(self.base, BaseObject::Light(_) | BaseObject::Target | BaseObject::Camera(_))
     }
 
+    /// A placed 3D cloud (hidden by Environment -> Clouds: Off / 2D).
+    pub fn is_cloud(&self) -> bool {
+        use crate::generators::WorldGen;
+        matches!(self.base, BaseObject::World(WorldGen::Cloud(_) | WorldGen::CloudField(_)))
+    }
+
     /// World matrix applied to the evaluated mesh.
     pub fn world_matrix(&self) -> Mat4 {
         self.transform.matrix() * self.offset

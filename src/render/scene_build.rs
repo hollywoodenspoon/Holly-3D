@@ -87,7 +87,8 @@ pub struct RenderScene {
 
 fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
     let mut tris = vec![];
-    for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper()) {
+    let clouds = scene.environment.sky.clouds.three_d;
+    for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper() && (clouds || !o.is_cloud())) {
         let mat = o.material.and_then(|id| scene.materials.mats.get(id)).cloned().unwrap_or_else(|| Material {
             base_color: o.wire_color,
             roughness: 0.65,
@@ -209,7 +210,7 @@ impl RenderScene {
         }
         ambient += env.sky.night_ambient();
         let procedural = (env.sky.mode != super::sky::SkyMode::Off).then(|| env.sky.clone());
-        let hdri = super::sky::procedural_hdri(&env.sky, 1024).or_else(|| env.hdri.clone()).filter(|h| h.image.is_some());
+        let hdri = super::sky::procedural_hdri(&env.sky, env.sky.clouds.bake_width()).or_else(|| env.hdri.clone()).filter(|h| h.image.is_some());
         if let Some(h) = hdri.as_ref().filter(|h| h.lighting) {
             ambient += h.image.as_ref().map_or(Vec3::ZERO, |i| i.average()) * h.strength / K_AMBIENT;
         }
