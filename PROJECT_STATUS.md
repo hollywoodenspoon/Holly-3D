@@ -2193,3 +2193,17 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Mammatus is its own cloud**, not pouches added under an existing Cumulonimbus anvil.
   - **Lenticular lenses don't follow terrain** or wind; they are placed where the object is.
   - **The Cloud Bank runs along X only**; rotate the object to aim it.
+
+## 73. Smoke plumes render as volumes
+- **What:** the Smoke & Fire Plume object now has **Render As** and the cloud look rows (Edge Softness, Erosion, Wispiness, Density), like clouds, trails and explosions.
+  - New plumes render as volumes: a smoke medium per style (black oily smoke, grey chimney smoke, white steam) and, when Fire Base Intensity is above 0, a glowing flame medium at the source. Both go through the same pipeline as trails, so they render on the CPU and the GPU and show in the viewport volume preview.
+  - The volume uses the plume's own lobes: same column physics, wind lean, sway, rise phase and mushroom cap. Turbulence cards stay mesh-only (erosion and wisps do that job in a volume).
+  - **Old scenes keep their mesh:** plumes saved before this option load with Render As: Mesh.
+  - The mesh plume is unchanged: the layout moved to its own file, and a checksum of the mesh matches the old code.
+- **Tests (3 new):**
+  - puffs are deterministic and valid, fire sits at the base, smoke thins as it spreads, and the styles' media get lighter from battlefield to steam;
+  - old plumes load as Mesh, and new plumes round-trip as Volume;
+  - a burning plume renders as smoke and flame volumes with GPU = CPU, and Render As: Mesh drops the volumes.
+- **Not done yet:**
+  - **Battlefield and Settlement auto-spawned plumes are still mesh**, because they are part of the town mesh.
+  - **No light from the fire base**, unlike explosions.

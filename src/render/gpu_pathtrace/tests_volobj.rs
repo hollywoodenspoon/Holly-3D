@@ -188,3 +188,23 @@ fn a_fireball_with_sparks_and_its_light_render_on_the_gpu() {
     let rs = seen(&s);
     assert!(rs.volumes.list.is_empty() && !rs.groups.iter().any(|g| g.name == "Explosions"));
 }
+
+/// A burning smoke plume: smoke and flame volumes, CPU = GPU; Render As
+/// Mesh brings back the old surface plume.
+#[test]
+fn a_burning_smoke_plume_renders_on_the_gpu() {
+    use crate::generators::smoke::SmokeParams;
+    let mut s = Scene::default();
+    floor(&mut s);
+    let p = SmokeParams { height: 2.2, base_radius: 0.15, top_spread: 3.0, lobes: 10, fire: 80.0, ..SmokeParams::default() };
+    let id = s.add(BaseObject::World(WorldGen::Smoke(Box::new(p))), Vec3::new(1.0, 0.0, 0.0));
+    s.objects[id].evaluate();
+    s.add_light(Light::new(LightKind::FreeDirect), None, Vec3::new(-2.0, -1.0, 3.0), Vec3::ZERO);
+    let rs = seen(&s);
+    assert_eq!(rs.volumes.list.len(), 2, "smoke and flame");
+    parity("smoke plume", &rs);
+    if let BaseObject::World(WorldGen::Smoke(p)) = &mut s.objects[id].base {
+        p.look.render_as = crate::generators::clouds::RenderAs::Mesh;
+    }
+    assert!(seen(&s).volumes.list.is_empty());
+}

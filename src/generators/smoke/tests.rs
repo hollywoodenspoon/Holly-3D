@@ -64,3 +64,35 @@ fn town_plumes_use_the_ghosttown_ids() {
     assert!(set.iter().all(|&i| i == crate::generators::kit::ids::EMBERS || i == crate::generators::kit::ids::SMOKE), "{set:?}");
     assert!(m.bounds().unwrap().min.z > 0.0);
 }
+
+#[test]
+fn plume_puffs_feed_the_volume_renderers() {
+    let p = SmokeParams { fire: 80.0, ..Default::default() };
+    assert_eq!(p.look.render_as, crate::generators::clouds::RenderAs::Volume, "new plumes are volumes");
+    let puffs = p.puffs();
+    assert_eq!(puffs, p.puffs(), "deterministic");
+    let (fire, smoke): (Vec<_>, Vec<_>) = puffs.iter().partition(|q| q.fire);
+    assert!(!fire.is_empty() && smoke.len() >= p.lobes as usize, "flame tongues and every lobe");
+    let low = |v: &[&PlumePuff]| v.iter().map(|q| q.c.z).fold(f32::MAX, f32::min);
+    assert!(low(&fire) < low(&smoke) + 1.0, "fire at the base");
+    assert!(puffs.iter().all(|q| q.r > 0.0 && q.sq > 0.0 && (0.05..=1.0).contains(&q.w) && q.c.is_finite()));
+    // Thinner as it spreads.
+    let top = smoke.iter().max_by(|a, b| a.c.z.total_cmp(&b.c.z)).unwrap();
+    assert!(top.w < smoke.iter().map(|q| q.w).fold(0.0, f32::max));
+    assert!(p.fire_mat().unwrap().emission > 0.0);
+    assert!(SmokeParams { fire: 0.0, ..p.clone() }.fire_mat().is_none());
+    assert!(SmokeParams { fire: 0.0, ..p.clone() }.puffs().iter().all(|q| !q.fire));
+    // Darker styles absorb more.
+    let alb = |s: SmokeStyle| SmokeParams { style: s, ..p.clone() }.smoke_mat().albedo().x;
+    assert!(alb(SmokeStyle::Battlefield) < alb(SmokeStyle::Chimney) && alb(SmokeStyle::Chimney) < alb(SmokeStyle::Steam));
+}
+
+#[test]
+fn plumes_saved_before_render_as_keep_their_mesh() {
+    let old: SmokeParams = serde_json::from_str(r#"{"style":"Chimney","height":40.0}"#).unwrap();
+    assert_eq!(old.look.render_as, crate::generators::clouds::RenderAs::Mesh);
+    assert_eq!(old.height, 40.0);
+    let p = SmokeParams::default();
+    let back: SmokeParams = serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
+    assert_eq!(back, p, "round trip keeps Volume");
+}

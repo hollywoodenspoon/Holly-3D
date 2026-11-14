@@ -1,4 +1,4 @@
-//! Clouds PR 3 / 4: media of trails and explosions. Each renders as a few
+//! Clouds PR 3 / 4: media of trails, explosions and smoke plumes. Each renders as a few
 //! volumes (smoke, flame, dust, vapour, sparks), each a soft union of
 //! puffs worn by erosion; glowing media keep a smooth, barely eroded body.
 
@@ -7,6 +7,7 @@ use super::erode::Cloud;
 use crate::generators::WorldGen;
 use crate::generators::clouds::{CloudLook, RenderAs};
 use crate::generators::pyro::{Medium, PyroParams};
+use crate::generators::smoke::SmokeParams;
 use crate::generators::trails::TrailParams;
 use crate::materials::volume::VolumeMat;
 use crate::scene::{BaseObject, SceneObject};
@@ -57,11 +58,26 @@ fn pyro(p: &PyroParams, own: Option<VolumeMat>) -> Vec<Part> {
         .collect()
 }
 
+/// The parts of a smoke plume: smoke (its own Volume material replaces
+/// the style's) and, when it burns, flame.
+fn plume(p: &SmokeParams, own: Option<VolumeMat>) -> Vec<Part> {
+    let puffs = p.puffs();
+    let media = [(false, Some(own.unwrap_or_else(|| p.smoke_mat()))), (true, p.fire_mat())];
+    media
+        .into_iter()
+        .filter_map(|(fire, m)| {
+            let blobs = puffs.iter().filter(|q| q.fire == fire).map(|q| blob(q.c, q.r, q.sq, q.w)).collect();
+            Some(Part { mat: m?, blobs, look: if fire { glow_look() } else { p.look.clone() }, seed: p.seed.wrapping_add(u32::from(fire)) })
+        })
+        .collect()
+}
+
 /// The effect parts of `o` (empty for other objects and `Render As: Mesh`).
 pub fn parts(o: &SceneObject, own: Option<VolumeMat>) -> Vec<Part> {
     let (mut out, look) = match &o.base {
         BaseObject::World(WorldGen::Trail(p)) => (trail(p, own), &p.look),
         BaseObject::World(WorldGen::Pyro(p)) => (pyro(p, own), &p.look),
+        BaseObject::World(WorldGen::Smoke(p)) => (plume(p, own), &p.look),
         _ => return Vec::new(),
     };
     if look.render_as == RenderAs::Mesh {
@@ -81,6 +97,7 @@ pub fn first_mat(o: &SceneObject, own: Option<VolumeMat>) -> Option<VolumeMat> {
     let (m, look) = match &o.base {
         BaseObject::World(WorldGen::Trail(p)) => (p.smoke_mat().map(|m| own.unwrap_or(m)).or_else(|| p.flame_mat()), &p.look),
         BaseObject::World(WorldGen::Pyro(p)) => (own.or_else(|| p.mat(Medium::Smoke)), &p.look),
+        BaseObject::World(WorldGen::Smoke(p)) => (Some(own.unwrap_or_else(|| p.smoke_mat())), &p.look),
         _ => return None,
     };
     let m = m.filter(|_| look.render_as == RenderAs::Volume)?;
@@ -93,6 +110,7 @@ pub fn part_count(o: &SceneObject) -> usize {
     match &o.base {
         BaseObject::World(WorldGen::Trail(p)) => usize::from(p.smoke_mat().is_some()) + usize::from(p.flame_mat().is_some()),
         BaseObject::World(WorldGen::Pyro(_)) => Medium::ALL.len(),
+        BaseObject::World(WorldGen::Smoke(p)) => 1 + usize::from(p.fire_mat().is_some()),
         _ => 1,
     }
 }

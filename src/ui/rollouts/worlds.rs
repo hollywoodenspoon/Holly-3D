@@ -122,7 +122,10 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
             rollout(ui, "Demiurge Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
         }
         WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
-        WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
+        WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| {
+            super::smoke::params(ui, &mut t, p, "base");
+            super::clouds::look(ui, &mut t, &mut p.look, "smoke_look");
+        }),
         WorldGen::Cloud(p) => rollout(ui, "Demiurge Cloud", true, |ui| super::clouds::cloud(ui, &mut t, p)),
         WorldGen::CloudField(p) => rollout(ui, "Demiurge Cloud Field", true, |ui| split = super::clouds::field(ui, &mut t, p)),
         WorldGen::Trail(p) => rollout(ui, "Demiurge Trail", true, |ui| pick_path = super::trails::trail(ui, &mut t, p)),

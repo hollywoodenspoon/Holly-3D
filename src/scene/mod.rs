@@ -210,9 +210,10 @@ impl SceneObject {
         matches!(self.base, BaseObject::World(WorldGen::Cloud(_) | WorldGen::CloudField(_)))
     }
 
-    /// A Trail or Pyro effect (Clouds PR 3 and 4).
+    /// A Trail, Pyro or Smoke Plume effect (rendered as volume media).
     pub fn is_fx(&self) -> bool {
-        matches!(self.base, BaseObject::World(crate::generators::WorldGen::Trail(_) | crate::generators::WorldGen::Pyro(_)))
+        use crate::generators::WorldGen;
+        matches!(self.base, BaseObject::World(WorldGen::Trail(_) | WorldGen::Pyro(_) | WorldGen::Smoke(_)))
     }
 
     /// World matrix applied to the evaluated mesh.

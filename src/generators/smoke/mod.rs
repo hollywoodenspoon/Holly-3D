@@ -12,12 +12,15 @@
 //! material casts soft partial shadows in F9.
 
 mod column;
+mod layout;
 mod shapes;
 #[cfg(test)]
 mod tests;
 
 pub use column::Column;
 
+use super::clouds::{CloudLook, RenderAs};
+use crate::materials::volume::{EmissionRamp, VolumeMat, VolumePreset};
 use crate::mesh::EditablePoly;
 use bevy::math::Vec3;
 
@@ -85,6 +88,30 @@ pub struct SmokeParams {
     pub cards: bool,
     /// `[✓] Mushroom Cap` (the ring vortex at the top).
     pub mushroom: bool,
+    /// Render As and the soft look. New plumes render as volumes; plumes
+    /// saved before this option keep their mesh.
+    #[serde(default = "mesh_look")]
+    pub look: CloudLook,
+}
+
+fn volume_look() -> CloudLook {
+    CloudLook { erosion: 0.5, wispiness: 0.35, edge_softness: 0.6, ..CloudLook::default() }
+}
+
+fn mesh_look() -> CloudLook {
+    CloudLook { render_as: RenderAs::Mesh, ..volume_look() }
+}
+
+/// One soft puff of a plume for the volume renderers.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PlumePuff {
+    pub c: Vec3,
+    pub r: f32,
+    /// Vertical squash (above 1 = tall flame tongue).
+    pub sq: f32,
+    /// Peak density 0..=1 (thins as the plume spreads; flames: heat).
+    pub w: f32,
+    pub fire: bool,
 }
 
 impl Default for SmokeParams {
@@ -103,6 +130,7 @@ impl Default for SmokeParams {
             lobes: 16,
             cards: true,
             mushroom: true,
+            look: volume_look(),
         }
     }
 }
@@ -130,6 +158,40 @@ impl SmokeParams {
 
     pub fn build_with(&self, ids: SmokeIds) -> EditablePoly {
         shapes::plume(self, ids)
+    }
+
+    /// The plume's lobes as soft puffs (cards are left to erosion and
+    /// wisps): smoke above the fire zone, flame inside it.
+    pub fn puffs(&self) -> Vec<PlumePuff> {
+        let l = layout::layout(self);
+        l.pieces
+            .into_iter()
+            .filter_map(|q| match q {
+                layout::Piece::Lobe { c, r, squash, s, .. } => {
+                    let fire = s < l.fire_zone;
+                    let w = if fire { 1.0 - 0.5 * s / l.fire_zone.max(1e-3) } else { 1.0 - 0.6 * s };
+                    // Soft edges eat into the puff, so it is drawn a little wider
+                    // to keep the mesh plume's silhouette.
+                    Some(PlumePuff { c, r: r * 1.15, sq: squash, w, fire })
+                }
+                layout::Piece::Card { .. } => None,
+            })
+            .collect()
+    }
+
+    /// The smoke medium of the style.
+    pub fn smoke_mat(&self) -> VolumeMat {
+        match self.style {
+            SmokeStyle::Battlefield => VolumeMat { density: 1.0, ..VolumePreset::BlackSmoke.params() },
+            SmokeStyle::Chimney => VolumeMat { density: 0.5, ..VolumePreset::GreySmoke.params() },
+            SmokeStyle::Steam => VolumeMat { scatter: [0.96, 0.96, 0.97], density: 0.35, g_forward: 0.6, ..VolumePreset::CumulusCloud.params() },
+        }
+    }
+
+    /// The flame medium, when the plume burns (Fire Base Intensity above 0).
+    pub fn fire_mat(&self) -> Option<VolumeMat> {
+        let f = (self.fire / 100.0).clamp(0.0, 1.0);
+        (f > 0.0).then(|| VolumeMat { ramp: EmissionRamp::Fire, emission: 4.0 + 8.0 * f, density: 1.2, ..VolumePreset::Fire.params() })
     }
 }
 
