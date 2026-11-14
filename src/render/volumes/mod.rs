@@ -20,7 +20,7 @@ mod tests_v2;
 #[cfg(test)]
 mod tests_bake;
 
-use crate::generators::clouds::{CloudLook, CloudShape, CloudType, RenderAs};
+use crate::generators::clouds::{CloudLook, CloudShape, RenderAs};
 use crate::materials::volume::{VolumeMat, VolumePreset};
 use crate::materials::{Material, ShadingModel};
 use crate::scene::{BaseObject, Scene, SceneObject};
@@ -80,14 +80,14 @@ fn cloud_look(o: &SceneObject) -> Option<&CloudLook> {
 /// Environment's 3D clouds switch render nothing.
 pub fn volume_of(scene: &Scene, o: &SceneObject) -> Option<VolumeMat> {
     let own = volume_material(scene, o).map(|m| m.volume.clone());
-    if matches!(&o.base, BaseObject::World(WorldGen::Trail(_) | WorldGen::Pyro(_))) {
+    if o.is_fx() {
         return fx_src::first_mat(o, own);
     }
     let Some(look) = cloud_look(o) else { return own };
     if look.render_as == RenderAs::Mesh || !scene.environment.sky.clouds.three_d {
         return None;
     }
-    let storm = matches!(&o.base, BaseObject::World(WorldGen::Cloud(p)) if p.kind == CloudType::Cumulonimbus);
+    let storm = matches!(&o.base, BaseObject::World(WorldGen::Cloud(p)) if p.kind.stormy());
     let mut m = own.unwrap_or_else(|| if storm { VolumePreset::StormCloud } else { VolumePreset::CumulusCloud }.params());
     m.density *= look.density.max(0.0);
     Some(m)

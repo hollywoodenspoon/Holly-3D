@@ -77,13 +77,15 @@ pub enum WorldKind {
 
 impl WorldKind {
     /// Create -> Geometry -> Clouds buttons.
-    pub const CLOUDS: [WorldKind; 5] = [
-        Self::Cloud(clouds::CloudType::Cumulus),
-        Self::Cloud(clouds::CloudType::Congestus),
-        Self::Cloud(clouds::CloudType::Cumulonimbus),
-        Self::Cloud(clouds::CloudType::Stratocumulus),
-        Self::CloudField,
-    ];
+    pub const CLOUDS: [WorldKind; 9] = {
+        let mut out = [Self::CloudField; 9];
+        let mut i = 0;
+        while i < 8 {
+            out[i] = Self::Cloud(clouds::CloudType::ALL[i]);
+            i += 1;
+        }
+        out
+    };
     /// Create -> Geometry -> Trails buttons.
     pub const TRAILS: [WorldKind; 6] = {
         let mut out = [Self::Terrain; 6];

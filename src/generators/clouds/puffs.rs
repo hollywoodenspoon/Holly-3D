@@ -52,25 +52,28 @@ fn profile(kind: CloudType, t: f32) -> f32 {
         CloudType::Congestus => 0.85 - 0.35 * t,
         CloudType::Cumulonimbus => 0.42 - 0.1 * t,
         CloudType::Stratocumulus => 1.0,
+        // Cloud Bank towers are cumulus-shaped.
+        CloudType::CloudBank => 1.0 - 0.5 * t,
+        _ => 1.0,
     }
 }
 
-struct Ctx<'a> {
-    p: &'a CloudParams,
-    r: rand_chacha::ChaCha8Rng,
-    out: Vec<Puff>,
+pub(super) struct Ctx<'a> {
+    pub(super) p: &'a CloudParams,
+    pub(super) r: rand_chacha::ChaCha8Rng,
+    pub(super) out: Vec<Puff>,
 }
 
 impl Ctx<'_> {
-    fn lump(&mut self, k: f32) -> f32 {
+    pub(super) fn lump(&mut self, k: f32) -> f32 {
         1.0 + self.p.lumpiness.clamp(0.0, 1.0) * k * self.r.gen_range(-0.5..0.5)
     }
-    fn polar(&mut self, d: f32) -> Vec2 {
+    pub(super) fn polar(&mut self, d: f32) -> Vec2 {
         let a = self.r.gen_range(0.0..TAU);
         Vec2::from_angle(a) * d * self.r.gen_range(0.0f32..1.0).sqrt()
     }
     /// A stack of `n` body puffs from z = 0 up to `top`, inside the profile.
-    fn tower(&mut self, n: usize, t_max: f32, top: f32, scale: f32) {
+    pub(super) fn tower(&mut self, n: usize, t_max: f32, top: f32, scale: f32) {
         let half = self.p.size.max(1.0) * 0.5;
         for i in 0..n {
             let jitter = if i == 0 { 0.0 } else { self.r.gen_range(-0.3..0.3) };
@@ -147,6 +150,10 @@ pub fn layout(p: &CloudParams) -> CloudShape {
             cx.anvil(10);
         }
         CloudType::Stratocumulus => cx.sheet(),
+        CloudType::Altocumulus => super::more::altocumulus(&mut cx),
+        CloudType::Mammatus => super::more::mammatus(&mut cx),
+        CloudType::Lenticular => super::more::lenticular(&mut cx),
+        CloudType::CloudBank => super::more::bank(&mut cx),
     }
     for level in 1..p.detail.clamp(1, 3) as u8 {
         cx.detail(level);

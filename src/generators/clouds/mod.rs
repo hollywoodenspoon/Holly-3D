@@ -10,6 +10,7 @@
 mod field;
 mod look;
 pub(crate) mod mesh;
+mod more;
 mod puffs;
 #[cfg(test)]
 mod tests;
@@ -32,16 +33,37 @@ pub enum CloudType {
     Cumulonimbus,
     /// A wide sheet of rolls with gaps between them.
     Stratocumulus,
+    /// Clouds PR 5: a high, fine sheet of small puffs in rows.
+    Altocumulus,
+    /// Rounded pouches hanging under a flat anvil layer.
+    Mammatus,
+    /// Smooth stacked lens discs (a standing-wave cloud over mountains).
+    Lenticular,
+    /// A long ridge of piled cumulus towers.
+    CloudBank,
 }
 
 impl CloudType {
-    pub const ALL: [CloudType; 4] = [Self::Cumulus, Self::Congestus, Self::Cumulonimbus, Self::Stratocumulus];
+    pub const ALL: [CloudType; 8] = [
+        Self::Cumulus,
+        Self::Congestus,
+        Self::Cumulonimbus,
+        Self::Stratocumulus,
+        Self::Altocumulus,
+        Self::Mammatus,
+        Self::Lenticular,
+        Self::CloudBank,
+    ];
     pub fn label(self) -> &'static str {
         match self {
             Self::Cumulus => "Cumulus",
             Self::Congestus => "Cumulus Congestus",
             Self::Cumulonimbus => "Cumulonimbus",
             Self::Stratocumulus => "Stratocumulus",
+            Self::Altocumulus => "Altocumulus",
+            Self::Mammatus => "Mammatus",
+            Self::Lenticular => "Lenticular",
+            Self::CloudBank => "Cloud Bank / Wall",
         }
     }
     pub fn tip(self) -> &'static str {
@@ -50,7 +72,15 @@ impl CloudType {
             Self::Congestus => "Tall lumpy tower: a wall to hide behind",
             Self::Cumulonimbus => "Huge storm tower with a flat anvil on top",
             Self::Stratocumulus => "Wide sheet of rolls with gaps: a deck to dive through",
+            Self::Altocumulus => "High, fine sheet of small puffs in rows",
+            Self::Mammatus => "Rounded pouches hanging under a dark anvil layer",
+            Self::Lenticular => "Smooth stacked lens discs, like a standing wave over a mountain",
+            Self::CloudBank => "Long wall of piled cumulus towers: a ridge to fly along",
         }
+    }
+    /// Dark storm material by default (Cumulonimbus, Mammatus).
+    pub fn stormy(self) -> bool {
+        matches!(self, Self::Cumulonimbus | Self::Mammatus)
     }
     /// Typical footprint width and height (metres).
     pub fn default_size(self) -> (f32, f32) {
@@ -59,6 +89,10 @@ impl CloudType {
             Self::Congestus => (420.0, 650.0),
             Self::Cumulonimbus => (1400.0, 2200.0),
             Self::Stratocumulus => (1200.0, 160.0),
+            Self::Altocumulus => (1500.0, 120.0),
+            Self::Mammatus => (1200.0, 400.0),
+            Self::Lenticular => (2000.0, 300.0),
+            Self::CloudBank => (3000.0, 700.0),
         }
     }
 }
@@ -104,8 +138,18 @@ impl CloudParams {
             CloudType::Congestus => (0.6, 0.6, 0.8, 0.1),
             CloudType::Cumulonimbus => (0.5, 0.5, 0.9, 0.15),
             CloudType::Stratocumulus => (0.4, 0.35, 0.6, 0.0),
+            CloudType::Altocumulus => (0.35, 0.4, 0.5, 0.0),
+            CloudType::Mammatus => (0.3, 0.3, 0.0, 0.0),
+            CloudType::Lenticular => (0.1, 0.1, 0.0, 0.0),
+            CloudType::CloudBank => (0.6, 0.55, 0.85, 0.05),
         };
-        Self { kind, seed: 1, size, height, puffiness, lumpiness, base_flatness, shear, shear_dir: 0.0, detail: 3, look: CloudLook::default() }
+        let (detail, look) = match kind {
+            // Lenses are smooth: one detail level, little erosion.
+            CloudType::Lenticular => (1, CloudLook { erosion: 0.15, wispiness: 0.0, edge_softness: 0.7, ..CloudLook::default() }),
+            CloudType::Altocumulus => (2, CloudLook::default()),
+            _ => (3, CloudLook::default()),
+        };
+        Self { kind, seed: 1, size, height, puffiness, lumpiness, base_flatness, shear, shear_dir: 0.0, detail, look }
     }
 
     /// The puff layout.

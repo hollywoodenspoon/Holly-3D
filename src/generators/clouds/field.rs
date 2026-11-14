@@ -21,8 +21,10 @@ pub struct CloudFieldParams {
     pub depth: f32,
     /// Coverage 0..=1: share of the area under cloud.
     pub coverage: f32,
-    /// Type Mix: relative weight per `CloudType::ALL` entry.
-    pub mix: [f32; 4],
+    /// Type Mix: relative weight per `CloudType::ALL` entry (older scenes
+    /// with fewer types load with the new ones at 0).
+    #[serde(deserialize_with = "pad_mix")]
+    pub mix: [f32; 8],
     /// Min / Max Cloud Size (m, footprint of a Cumulus).
     pub min_size: f32,
     pub max_size: f32,
@@ -41,7 +43,7 @@ impl Default for CloudFieldParams {
             width: 4000.0,
             depth: 4000.0,
             coverage: 0.3,
-            mix: [1.0, 0.3, 0.0, 0.0],
+            mix: [1.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             min_size: 250.0,
             max_size: 600.0,
             detail: 2,
@@ -64,7 +66,21 @@ fn type_scale(k: CloudType) -> f32 {
         CloudType::Congestus => 1.2,
         CloudType::Cumulonimbus => 3.0,
         CloudType::Stratocumulus => 2.5,
+        CloudType::Altocumulus => 2.0,
+        CloudType::Mammatus => 2.5,
+        CloudType::Lenticular => 3.0,
+        CloudType::CloudBank => 4.0,
     }
+}
+
+/// Reads a Type Mix of any length, padding missing types with 0.
+fn pad_mix<'de, D: serde::Deserializer<'de>>(d: D) -> Result<[f32; 8], D::Error> {
+    let v: Vec<f32> = serde::Deserialize::deserialize(d)?;
+    let mut out = [0.0; 8];
+    for (o, w) in out.iter_mut().zip(v) {
+        *o = w;
+    }
+    Ok(out)
 }
 
 impl CloudFieldParams {
@@ -80,7 +96,7 @@ impl CloudFieldParams {
                 return Some(*k);
             }
         }
-        Some(CloudType::ALL[3])
+        CloudType::ALL.iter().zip(self.mix).rev().find(|(_, w)| *w > 0.0).map(|(k, _)| *k)
     }
 
     /// The seeded clouds of the field (each with its own seed).
@@ -103,7 +119,7 @@ impl CloudFieldParams {
             }
             let (dw, dh) = kind.default_size();
             let tall = size * dh / dw;
-            let height = if kind == CloudType::Cumulonimbus { tall } else { tall.min(self.thickness.max(1.0)) };
+            let height = if kind.stormy() { tall } else { tall.min(self.thickness.max(1.0)) };
             let i = out.len() as u32;
             let params = CloudParams { seed: (hash(self.seed, i) * 1e6) as u32, size, height, detail: self.detail.clamp(1, 3), look: self.look.clone(), ..CloudParams::of(kind) };
             let z = self.base_height + r.gen_range(-0.05..0.05) * self.thickness;

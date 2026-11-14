@@ -2174,3 +2174,22 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **No wind or animation:** Stage is a still slider, not keyed over time.
   - **Debris is part of the explosion**, not separate Trail objects you can edit.
   - **Viewport speed** for big blasts (mushroom, 1200 sparks) hasn't been measured on her card.
+
+## 72. Clouds PR 5: four more cloud types
+- **What:** four new types in the Clouds rollout, the Demiurge tab, Create > Demiurge Clouds and the Cloud Field Type Mix:
+  - **Altocumulus:** a fine sheet of small puffs in slightly wavy rows, with gaps;
+  - **Mammatus:** a flat storm layer with rounded pouches hanging below it, each joined to the layer by a neck; it uses the Storm Cloud look, like a Cumulonimbus;
+  - **Lenticular:** two or three smooth lens discs stacked with gaps, each smaller than the one below. It uses one detail level and little erosion, so it stays smooth;
+  - **Cloud Bank / Wall:** a long ridge of cumulus towers piled close along X, with the tallest in the middle.
+  - Each type has its own default size and preset (Puffiness, Lumpiness, Base Flatness, Wind Shear), and works with the existing sliders, detail levels, wind shear and volume rendering.
+  - **Cloud Field:** the Type Mix now has eight weights. Older scenes with four weights load with the new types at 0.
+- **Tests (5 new, plus the per-type test covering all eight types):**
+  - Altocumulus has many small puffs;
+  - Mammatus has pouches below its layer, and is stormy;
+  - Lenticular is smooth, with lenses that shrink upward;
+  - Cloud Bank is more than three times longer than it is wide;
+  - an old Cloud Field with four mix weights loads.
+- **Not done yet:**
+  - **Mammatus is its own cloud**, not pouches added under an existing Cumulonimbus anvil.
+  - **Lenticular lenses don't follow terrain** or wind; they are placed where the object is.
+  - **The Cloud Bank runs along X only**; rotate the object to aim it.

@@ -101,12 +101,12 @@ fn field_covers_its_layer_without_overlaps() {
 
 #[test]
 fn field_type_mix_controls_the_types() {
-    let only_sc = CloudFieldParams { mix: [0.0, 0.0, 0.0, 1.0], ..Default::default() };
+    let only_sc = CloudFieldParams { mix: [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], ..Default::default() };
     assert!(only_sc.placements().iter().all(|p| p.params.kind == CloudType::Stratocumulus));
-    let mixed = CloudFieldParams { mix: [1.0, 1.0, 0.0, 0.0], coverage: 0.5, ..Default::default() };
+    let mixed = CloudFieldParams { mix: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], coverage: 0.5, ..Default::default() };
     let kinds: std::collections::HashSet<_> = mixed.placements().iter().map(|p| p.params.kind).collect();
     assert!(kinds.contains(&CloudType::Cumulus) && kinds.contains(&CloudType::Congestus));
-    assert!(CloudFieldParams { mix: [0.0; 4], ..Default::default() }.placements().is_empty());
+    assert!(CloudFieldParams { mix: [0.0; 8], ..Default::default() }.placements().is_empty());
     let none = CloudFieldParams { coverage: 0.0, ..Default::default() };
     assert!(none.placements().is_empty() && none.build().vertices.is_empty());
 }
@@ -119,4 +119,51 @@ fn field_mesh_sits_on_the_layer() {
     let lo = m.vertices.values().map(|v| v.position.z).fold(f32::INFINITY, f32::min);
     assert!(lo > f.base_height - 0.2 * f.thickness, "the field floats at its base height ({lo})");
     assert!(m.vertices.values().all(|v| v.position.is_finite() && v.position.distance(Vec3::ZERO) < 1e5));
+}
+
+#[test]
+fn altocumulus_is_a_sheet_of_many_small_puffs() {
+    let p = CloudParams::of(CloudType::Altocumulus);
+    let s = p.shape();
+    let body: Vec<_> = s.puffs.iter().filter(|q| q.level == 0).collect();
+    assert!(body.len() >= 50, "many puffs ({})", body.len());
+    assert!(body.iter().all(|q| q.r < p.size * 0.06), "each puff is small");
+}
+
+#[test]
+fn mammatus_hangs_pouches_below_its_layer() {
+    let p = CloudParams::of(CloudType::Mammatus);
+    let s = p.shape();
+    let body: Vec<_> = s.puffs.iter().filter(|q| q.level == 0).collect();
+    let low = body.iter().filter(|q| q.c.z < p.height * 0.35).count();
+    let high = body.iter().filter(|q| q.c.z > p.height * 0.7).count();
+    assert!(low >= 10 && high >= 10, "pouches ({low}) under a layer ({high})");
+    assert!(CloudType::Mammatus.stormy() && !CloudType::Lenticular.stormy());
+}
+
+#[test]
+fn lenticular_lenses_are_smooth_and_shrink_upward() {
+    let p = CloudParams::of(CloudType::Lenticular);
+    assert_eq!(p.detail, 1, "smooth: no puffs on puffs");
+    let s = p.shape();
+    let width_at = |z0: f32, z1: f32| s.puffs.iter().filter(|q| q.c.z >= z0 && q.c.z < z1).map(|q| q.c.truncate().length()).fold(0.0f32, f32::max);
+    let h = p.height;
+    let (a, b, c) = (width_at(0.0, h / 3.0), width_at(h / 3.0, 2.0 * h / 3.0), width_at(2.0 * h / 3.0, h * 1.5));
+    assert!(a > b && b > c && c > 0.0, "stacked lenses shrink upward ({a} {b} {c})");
+}
+
+#[test]
+fn cloud_bank_is_a_long_narrow_wall() {
+    let p = CloudParams { shear: 0.0, ..CloudParams::of(CloudType::CloudBank) };
+    let (lo, hi) = p.shape().bounds();
+    let d = hi - lo;
+    assert!(d.x > 3.0 * d.y, "long along X ({} vs {})", d.x, d.y);
+}
+
+#[test]
+fn old_field_with_four_type_weights_loads() {
+    let json = r#"{"seed":3,"mix":[0.5,0.0,0.0,1.0]}"#;
+    let f: CloudFieldParams = serde_json::from_str(json).unwrap();
+    assert_eq!(f.mix, [0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]);
+    assert_eq!(f.seed, 3);
 }
