@@ -11,7 +11,7 @@ pub mod majorant;
 mod render;
 pub mod settings;
 mod tracking;
-pub mod trail_src;
+pub mod fx_src;
 
 #[cfg(test)]
 mod tests;
@@ -80,8 +80,8 @@ fn cloud_look(o: &SceneObject) -> Option<&CloudLook> {
 /// Environment's 3D clouds switch render nothing.
 pub fn volume_of(scene: &Scene, o: &SceneObject) -> Option<VolumeMat> {
     let own = volume_material(scene, o).map(|m| m.volume.clone());
-    if let BaseObject::World(WorldGen::Trail(p)) = &o.base {
-        return trail_src::media(p, own).into_iter().next().map(|(_, m)| m);
+    if matches!(&o.base, BaseObject::World(WorldGen::Trail(_) | WorldGen::Pyro(_))) {
+        return fx_src::first_mat(o, own);
     }
     let Some(look) = cloud_look(o) else { return own };
     if look.render_as == RenderAs::Mesh || !scene.environment.sky.clouds.three_d {
@@ -100,9 +100,9 @@ fn blobs(s: &CloudShape, flat: f32, at: Vec3, out: &mut Vec<Blob>) {
 
 /// Every medium `o` renders as: its source, local bounds and material.
 pub fn parts_of(scene: &Scene, o: &SceneObject) -> Vec<(Source, Vec3, Vec3, VolumeMat)> {
-    if let BaseObject::World(WorldGen::Trail(p)) = &o.base {
+    if o.is_fx() {
         let own = volume_material(scene, o).map(|m| m.volume.clone());
-        return trail_src::media(p, own).into_iter().filter_map(|(flame, m)| trail_src::source(p, flame).map(|(s, lo, hi)| (s, lo, hi, m))).collect();
+        return fx_src::parts(o, own).into_iter().map(fx_src::source).collect();
     }
     let (Some(m), Some((src, lo, hi))) = (volume_of(scene, o), source_of(o)) else { return Vec::new() };
     (m.density > 0.0).then_some((src, lo, hi, m)).into_iter().collect()
