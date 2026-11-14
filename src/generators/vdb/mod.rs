@@ -174,6 +174,6 @@ impl VdbParams {
             let rot = Quat::from_rotation_arc(Vec3::X, d.normalize_or(Vec3::X));
             k.cuboid((p + q) * 0.5, Vec3::new(d.length() * 0.5 + t * 0.5, t * 0.5, t * 0.5), rot);
         }
-        k.m
+        k.finish()
     }
 }
