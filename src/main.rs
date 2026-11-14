@@ -7,7 +7,7 @@ use ilex::primitives::PrimitiveKind;
 use ilex::prefs::Preferences;
 use ilex::ui::UiPlugin;
 use ilex::ui::actions::keymap;
-use ilex::viewport::{light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox, volume_sync};
+use ilex::viewport::{cloud_preview, light_icons, light_sync, lines, mat_sync, multi_sync, outline, render_sync, skybox, volume_sync};
 
 fn main() {
     // Crash reporter first, so even a crash during start-up is recorded.
@@ -96,6 +96,7 @@ fn main() {
     outline::register(&mut app);
     light_sync::register(&mut app);
     volume_sync::register(&mut app);
+    cloud_preview::register(&mut app);
     skybox::register(&mut app);
     ilex::viewport::window_icon::register(&mut app);
     app.run();

@@ -127,6 +127,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
             A(OrientationCube),
             A(Wireframe),
             A(EdgedFaces),
+            A(PreviewVolumes),
             A(SeeThrough),
             Sep,
             A(ZoomExtents),

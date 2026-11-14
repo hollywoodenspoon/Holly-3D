@@ -146,6 +146,8 @@ pub struct ViewportPrefs {
     pub show_cube: bool,
     /// A cube click also frames the selection (Zoom Extents).
     pub cube_fit_on_change: bool,
+    /// Perspective views draw clouds as soft volumes (Preview Volumes).
+    pub preview_volumes: bool,
 }
 
 impl Default for ViewportPrefs {
@@ -163,6 +165,7 @@ impl Default for ViewportPrefs {
             pan_speed: 1.0,
             show_cube: true,
             cube_fit_on_change: false,
+            preview_volumes: true,
         }
     }
 }

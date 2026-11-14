@@ -44,6 +44,13 @@ pub struct RenderMap {
     objs: HashMap<ObjId, ObjRender>,
 }
 
+impl RenderMap {
+    /// The mesh entity drawing object `id`.
+    pub fn entity(&self, id: ObjId) -> Option<Entity> {
+        self.objs.get(&id).map(|r| r.entity)
+    }
+}
+
 pub fn setup_scene(mut commands: Commands, mut egui_settings: ResMut<EguiGlobalSettings>) {
     egui_settings.auto_create_primary_context = false;
     for i in 0..4 {
@@ -113,6 +120,9 @@ pub fn sync_cameras(
         let mut want = vec![view_layer(vc.0), LAYER_OVERLAY];
         if v.shading == Shading::Default {
             want.push(LAYER_MESH);
+            if !super::cloud_preview::volumes_in(vp.preview_volumes, v) {
+                want.push(super::cloud_preview::LAYER_PUFFS);
+            }
         }
         let want = RenderLayers::from_layers(&want);
         if *layers != want {

@@ -47,7 +47,9 @@ pub const SKY: Page = Page {
             "For smoke, fire or any other mesh: press M, pick the Volume (Cloud / Smoke / Fire) shading model and assign the material. The object then renders as a soft, light-scattering volume filling its bounding box.",
             "Volume presets: Cumulus Cloud, Storm Cloud, Thin Haze, Black Smoke, Grey Smoke, Fire and Fireball. Scatter Colour, Absorption, Density, Forward g, Back g, Back Lobe Blend, Glow Ramp, Glow Strength and Temperature Cooling tune them.",
             "Volumes cast soft shadows on the ground and on each other, and the camera can sit inside one. F10 > Effects > Volumes sets Max Volume Bounces, Cloud Bounce Boost, Shadow Quality and Noise Detail (how finely clouds erode). Volumes render in the raytracer and in the path tracer on the CPU or the GPU.",
+            "Perspective views with Default Shading show volume clouds as soft volumes too, baked in the background after each edit. Preview Volumes (the shading menu, the Views menu or the Display tab) switches back to the solid preview puffs; Wireframe and the flat views always show the puffs.",
         ]),
+        Shot("clouds", &[m(615.0, 440.0, "A cloud previewed as a soft volume"), m(240.0, 60.0, "Shading menu: Preview Volumes")]),
         ShowMe("Open Environment and Effects", Show::Act(Action::Environment)),
     ],
 };

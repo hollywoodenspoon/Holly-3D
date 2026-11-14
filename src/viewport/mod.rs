@@ -2,6 +2,7 @@
 
 pub mod camera;
 pub mod camera_icons;
+pub mod cloud_preview;
 pub mod gpu;
 pub mod joint_gizmos;
 pub mod layout;

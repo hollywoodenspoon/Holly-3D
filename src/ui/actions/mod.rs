@@ -78,6 +78,7 @@ pub enum Action {
     OrientationCube,
     Wireframe,
     EdgedFaces,
+    PreviewVolumes,
     ZoomExtents,
     ZoomExtentsAll,
     Maximize,
@@ -126,7 +127,7 @@ impl Action {
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube,
-            Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
+            Wireframe, EdgedFaces, PreviewVolumes, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
@@ -194,6 +195,7 @@ impl Action {
             OrientationCube => "Orientation Cube",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
+            PreviewVolumes => "Preview Volumes",
             ZoomExtents => "Zoom Extents",
             ZoomExtentsAll => "Zoom Extents All",
             Maximize => "Maximize Viewport",
@@ -302,6 +304,7 @@ impl Action {
             Measure => "Size, centre and counts of the selection",
             Constrain(c) => c.tip(),
             SeeThrough => "Draw the selected objects semi-transparent",
+            PreviewVolumes => "Draw clouds as soft volumes in Perspective views (off: the solid preview puffs)",
             ShadowCatcher => "Render the selected ground transparent except for the shadows, AO and reflections cast on it",
             CameraView => "Look through the selected (or first) camera",
             Ribbon => "Big buttons for every Edit Poly tool under the toolbar",

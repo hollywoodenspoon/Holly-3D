@@ -182,6 +182,7 @@ pub fn sync_lights(
     // Headlight rig follows the active viewport camera.
     let cam = &ed.viewports.active_view().camera;
     let rig_lights = headlight_rig(cam.forward(), cam.right(), cam.up());
+    let clouds = super::cloud_preview::any_volumes(ed);
     for (r, mut d, mut tf, mut vis) in &mut rig {
         let rl = rig_lights[r.0];
         let want = if use_rig { Visibility::Inherited } else { Visibility::Hidden };
@@ -196,6 +197,12 @@ pub fn sync_lights(
         let c = Color::linear_rgb(rl.color.x, rl.color.y, rl.color.z);
         if d.illuminance != illum || d.color != c {
             (d.illuminance, d.color) = (illum, c);
+        }
+        // Both rig lights cast shadows while clouds preview as volumes (the
+        // fog raymarch samples their shadow maps).
+        let shadows = clouds;
+        if d.shadow_maps_enabled != shadows {
+            d.shadow_maps_enabled = shadows;
         }
     }
     // Ambient = environment tint * level + every Skylight that is on.

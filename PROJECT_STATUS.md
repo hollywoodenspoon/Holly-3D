@@ -2084,8 +2084,34 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - GPU/CPU parity for a heavily eroded, wispy cloud at Ultra detail;
   - the packed buffer carries the erosion fields.
 - **Not done yet:**
-  - **Viewport preview of the volume** (V2b): the viewport still shows the light puff mesh.
+  - **Viewport preview of the volume** (V2b): done, see §69.
   - **Lighting contrast:** clouds look soft and evenly lit at the default density and Bounce Boost. Darker bases and stronger self-shadowing may need tuning once Holly sees renders on her machine.
   - **Tall towers:** a default Congestus breaks into separate lumps, because the puff layout from PR 1 leaves gaps that erosion widens.
   - **The Cloud Field** is still a union of separate clouds, with no 2D coverage map across the layer.
   - **Speed** on her RX 9060 XT hasn't been measured. Erosion adds a 27-cell Worley lookup per density sample.
+
+## 69. Clouds V2b: soft volume preview in the viewport
+- **What:** Perspective views with Default Shading now show volume clouds as soft, lit volumes instead of the solid preview puffs.
+  - **Bake** (`src/render/volumes/bake.rs`):
+    - Each cloud's eroded density (the F9 density at Low noise detail) is baked into a 3D texture of about 110k voxels.
+    - The bake runs on a worker thread after each edit, keyed on the object version and its volume material, so moving a cloud needs no new bake.
+    - The box is padded 6% and its outer voxels stay empty, so puffs fade instead of showing flat cuts.
+  - **Display** (`src/viewport/cloud_preview.rs`):
+    - Bevy's raymarched fog volumes draw the baked texture.
+    - The puffs move to their own render layer, which only views without the preview draw.
+    - Wireframe and the flat views keep the puffs.
+  - **Lighting:**
+    - Both headlight-rig lights turn volumetric and cast shadows while clouds are previewed. Bevy drops every fog volume unless some light is volumetric, and it only flags volumetric lights that sort first, so both rig lights need it.
+    - Because the rig lights the cloud from behind the camera, the preview scatters light nearly evenly and caps its density at an optical depth of 2. With the real values the fog's built-in self-shadowing turned the cloud black.
+  - **Preview Volumes** toggle (on by default; saved in prefs): in the shading menu, the Views menu and the Display tab.
+  - New help screenshot `clouds` on the Rendering page.
+- **Tests (3 new):**
+  - voxel dims follow the box shape and budget;
+  - voxel centres hold the renderer's density, the box faces stay empty and the puffs clear every face;
+  - only volume clouds get a preview (not Render As: Mesh, not a plain box).
+- **Not done yet:**
+  - **Speed** on her RX 9060 XT hasn't been measured. A volume raymarch per cloud plus two shadow maps runs every frame. With many clouds in a Cloud Field, a coarser budget may be needed.
+  - **Scene lights:** with your own lights in the scene, only shadow-casting ones light the preview. A mix of volumetric and non-volumetric directional lights can leave a cloud dark (the Bevy sorting issue above).
+  - **The preview is an approximation:** coarse voxels, near-even scattering, no sky light (Bevy's fog ambient term fades to nothing across a whole cloud). F9 is the truth.
+  - **No refine when idle:** the bake stays at one resolution.
+  - **Smoke and fire** with a Volume material on an ordinary mesh still show their mesh. Only clouds preview as volumes.

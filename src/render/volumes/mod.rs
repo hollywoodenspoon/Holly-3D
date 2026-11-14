@@ -4,6 +4,7 @@
 //! meshes fill their local bounding box. Collisions come from delta tracking
 //! and shadows from ratio tracking, both stepping through a majorant grid.
 
+pub mod bake;
 pub mod density;
 pub mod erode;
 pub mod majorant;
@@ -15,6 +16,8 @@ mod tracking;
 mod tests;
 #[cfg(test)]
 mod tests_v2;
+#[cfg(test)]
+mod tests_bake;
 
 use crate::generators::clouds::{CloudLook, CloudShape, CloudType, RenderAs};
 use crate::materials::volume::{VolumeMat, VolumePreset};
