@@ -94,6 +94,11 @@ impl Action {
             }
             EdgedFaces => flip(&mut ed.viewports.active_view_mut().edged_faces),
             PreviewVolumes => flip(&mut ed.prefs.viewport.preview_volumes),
+            ShowGizmo => flip(&mut ed.prefs.viewport.show_gizmo),
+            GizmoSmaller | GizmoBigger => {
+                let g = &mut ed.prefs.viewport.gizmo_size;
+                *g = (*g * if self == GizmoBigger { 1.15 } else { 1.0 / 1.15 }).clamp(30.0, 300.0);
+            }
             ZoomExtents => ed.zoom_extents(false),
             ZoomExtentsAll => ed.zoom_extents(true),
             Maximize => flip(&mut ed.viewports.maximized),
@@ -166,6 +171,7 @@ impl Action {
             Wireframe => v.is_some_and(|v| v.shading == Shading::Wireframe),
             EdgedFaces => v.is_some_and(|v| v.edged_faces),
             PreviewVolumes => ed.prefs.viewport.preview_volumes,
+            ShowGizmo => ed.prefs.viewport.show_gizmo,
             Maximize => ed.viewports.maximized,
             SceneExplorer => ed.explorer_visible,
             Ribbon => ed.iface.ribbon,

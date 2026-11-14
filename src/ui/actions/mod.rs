@@ -77,6 +77,9 @@ pub enum Action {
     // Views
     ToggleGrid,
     OrientationCube,
+    ShowGizmo,
+    GizmoSmaller,
+    GizmoBigger,
     Wireframe,
     EdgedFaces,
     PreviewVolumes,
@@ -127,7 +130,7 @@ impl Action {
         v.extend(SUBS.map(Sub));
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
-            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube,
+            ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube, ShowGizmo, GizmoSmaller, GizmoBigger,
             Wireframe, EdgedFaces, PreviewVolumes, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
@@ -195,6 +198,9 @@ impl Action {
             ShadowCatcher => "Shadow & Reflection Catcher",
             ToggleGrid => "Show Grid",
             OrientationCube => "Orientation Cube",
+            ShowGizmo => "Show Transform Gizmo",
+            GizmoSmaller => "Gizmo Size −",
+            GizmoBigger => "Gizmo Size +",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
             PreviewVolumes => "Preview Volumes",
@@ -307,6 +313,8 @@ impl Action {
             Measure => "Size, centre and counts of the selection",
             Constrain(c) => c.tip(),
             SeeThrough => "Draw the selected objects semi-transparent",
+            ShowGizmo => "Show or hide the Move / Rotate / Scale gizmo",
+            GizmoSmaller | GizmoBigger => "Make the transform gizmo smaller or larger",
             PreviewVolumes => "Draw clouds as soft volumes in Perspective views (off: the solid preview puffs)",
             ShadowCatcher => "Render the selected ground transparent except for the shadows, AO and reflections cast on it",
             CameraView => "Look through the selected (or first) camera",

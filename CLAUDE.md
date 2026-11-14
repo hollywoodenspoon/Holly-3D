@@ -15,7 +15,7 @@ This is a personal 3D polygon modeling, painting, and rendering application buil
 Use these crates instead of writing low-level rendering, gizmo math, booleans, or UV packers from scratch:
 - `bevy = "0.20.0"` — Core engine, PBR/Transmission/Toon rendering, picking, and viewport management.
 - `bevy_egui = "0.43.1"` — UI panels, Command Panel, Floating Caddies, Quad Menus, Material Editor (`M`), and Render Setup (`F10`).
-- `transform-gizmo-egui` (or `transform-gizmo-bevy`) — Explicit 3-axis Move, Rotate, and Scale gizmo handles with planar squares.
+- Transform gizmos are Ilex's own (`src/ui/viewport_ui/gizmo/`): Move arrows + plane squares, Rotate rings + view ring + trackball, Scale axes + plane strips + uniform triangle; the active handle turns yellow.
 - `slotmap = "1.0"` — Arena storage for `EditablePoly` vertices, edges, and polygons.
 - `glam` — Linear algebra (re-exported via Bevy's `bevy::math`).
 - `noise = "0.9"` — Perlin, Worley/Cellular, and FBM 3D noise for the **Rock / Crystal / Stalagmite Generator**.

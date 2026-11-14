@@ -22,7 +22,7 @@
 
 ### Viewport and transforms (§3)
 - Pan, orbit and zoom; Zoom Extents (`Z`); 4-view (`Alt+W`); wireframe and edged faces (`F3` / `F4`); See-Through; grid.
-- Move, Rotate and Scale gizmos with plane handles, plus Shift-drag clone (Copy / Instance / Reference).
+- Ilex's own Move, Rotate and Scale gizmos (arrows and plane squares; rings, view ring and trackball; axes, plane strips and uniform triangle; yellow active handle), plus Shift-drag clone (Copy / Instance / Reference) (§79).
 - Snaps: grid, pivot, vertex, edge, midpoint, face and angle. Selection regions: rectangle, circle, fence and lasso.
 - Align dialog, Mirror, Array dialog (1D / 2D / 3D with preview), undo and redo for everything.
 

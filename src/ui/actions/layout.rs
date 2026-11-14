@@ -125,6 +125,7 @@ pub const MENUS: &[(&str, &[Entry])] = &[
         &[
             A(ToggleGrid),
             A(OrientationCube),
+            A(ShowGizmo),
             A(Wireframe),
             A(EdgedFaces),
             A(PreviewVolumes),
@@ -203,6 +204,8 @@ pub const OVERFLOW: &[Slot] = &[
     Slot::A(SelectByName),
     Slot::A(WindowCrossing),
     Slot::A(SnapSettings),
+    Slot::A(GizmoSmaller),
+    Slot::A(GizmoBigger),
     Slot::Sep,
     Slot::A(Mirror),
     Slot::A(Align),

@@ -71,10 +71,14 @@ pub fn setup(ed: &mut Editor, id: &str) -> bool {
             ed.tab = CommandTab::Create;
             ed.tool = Tool::Create(PrimitiveKind::Box);
         }
-        "transform" => {
+        "transform" | "gizmo-rotate" | "gizmo-scale" => {
             demo(ed);
             select_first(ed);
-            ed.mode = TransformMode::Move;
+            ed.mode = match id {
+                "gizmo-rotate" => TransformMode::Rotate,
+                "gizmo-scale" => TransformMode::Scale,
+                _ => TransformMode::Move,
+            };
         }
         "editpoly" | "ribbon" => {
             ed.create_primitive(PrimitiveKind::Box, Vec3::ZERO);

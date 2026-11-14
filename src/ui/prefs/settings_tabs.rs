@@ -44,6 +44,13 @@ pub fn viewports(ui: &mut egui::Ui, ed: &mut Editor) {
             ui.add(egui::Slider::new(val, 0.25..=4.0).logarithmic(true).suffix("×"));
         });
     }
+    heading(ui, "Transform gizmo");
+    ui.checkbox(&mut v.show_gizmo, "Show the Move / Rotate / Scale gizmo");
+    ui.horizontal(|ui| {
+        ui.label("Gizmo size");
+        crate::ui::widgets::max_spinner_range(ui, &mut v.gizmo_size, 1.0, 80.0, 30.0..=300.0);
+        ui.label(dim("px (right-click resets)"));
+    });
     if reset_button(ui, "viewport settings") {
         *v = ViewportPrefs::default();
     }
