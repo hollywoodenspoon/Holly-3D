@@ -22,6 +22,25 @@ impl Editor {
         self.status = format!("Created {} with the {}", self.scene.objects[id].name, pack.label());
     }
 
+    /// File -> Import VDB Volume…: a VDB Volume object at the origin with
+    /// the file's smoke and fire grids picked.
+    pub fn import_vdb(&mut self, path: &str) -> Result<ObjId, String> {
+        let p = crate::generators::vdb::VdbParams::for_file(path)?;
+        self.checkpoint("Import VDB Volume");
+        let w = WorldGen::Vdb(Box::new(p));
+        let pack = w.material_pack();
+        let id = self.scene.add(BaseObject::World(w), Vec3::ZERO);
+        self.give_pack(id, pack);
+        self.scene.select_only(Some(id));
+        self.sub = SubObject::Object;
+        self.tab = CommandTab::Modify;
+        let o = &self.scene.objects[id];
+        let BaseObject::World(WorldGen::Vdb(p)) = &o.base else { return Ok(id) };
+        let problem = p.problem();
+        self.status = if problem.is_empty() { format!("Imported {} from {path}", o.name) } else { format!("Imported {}: {problem}", o.name) };
+        Ok(id)
+    }
+
     fn give_pack(&mut self, id: ObjId, pack: MultiPreset) {
         let mut m = Material::named(pack.label());
         pack.apply(&mut m);

@@ -23,6 +23,7 @@ pub enum Action {
     SaveScene,
     SaveSceneAs,
     Import,
+    ImportVdb,
     ExportAll,
     ExportSelected,
     // Edit
@@ -78,6 +79,7 @@ pub enum Action {
     OrientationCube,
     Wireframe,
     EdgedFaces,
+    PreviewVolumes,
     ZoomExtents,
     ZoomExtentsAll,
     Maximize,
@@ -118,7 +120,7 @@ impl Action {
     pub fn all() -> Vec<Action> {
         use Action::*;
         let mut v = vec![
-            NewScene, OpenScene, SaveScene, SaveSceneAs, Import, ExportAll, ExportSelected, Undo, Redo, Clone, Delete, SelectAll,
+            NewScene, OpenScene, SaveScene, SaveSceneAs, Import, ImportVdb, ExportAll, ExportSelected, Undo, Redo, Clone, Delete, SelectAll,
             SelectNone, SelectInvert, SelectByName, LockSelection, WindowCrossing, Cancel, RepeatLast, SelectObject, Move, Rotate,
             Scale, Snap, AngleSnap, PercentSnap, SnapSettings,
         ];
@@ -126,7 +128,7 @@ impl Action {
         v.extend([
             SelectRing, SelectLoop, RemoveSubObjects, Array, Mirror, Align, Isolate, JointTool, ContactSets, Paint, BuildingsBrowser, CharacterStudio, FaceCloner, ConvertToPoly,
             ConvertToSpline, Measure, HideSelected, HideUnselected, UnhideAll, FreezeSelected, UnfreezeAll, SeeThrough, ShadowCatcher, ToggleGrid, OrientationCube,
-            Wireframe, EdgedFaces, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
+            Wireframe, EdgedFaces, PreviewVolumes, ZoomExtents, ZoomExtentsAll, Maximize, SceneExplorer, CameraView, Ribbon,
         ]);
         v.extend(SplineConstraint::ALL.map(Constrain));
         v.extend(NAVS.map(Nav));
@@ -145,6 +147,7 @@ impl Action {
             SaveScene => "Save",
             SaveSceneAs => "Save As...",
             Import => "Import...",
+            ImportVdb => "Import VDB Volume...",
             ExportAll => "Export All...",
             ExportSelected => "Export Selected...",
             Undo => "Undo",
@@ -194,6 +197,7 @@ impl Action {
             OrientationCube => "Orientation Cube",
             Wireframe => "Wireframe",
             EdgedFaces => "Edged Faces",
+            PreviewVolumes => "Preview Volumes",
             ZoomExtents => "Zoom Extents",
             ZoomExtentsAll => "Zoom Extents All",
             Maximize => "Maximize Viewport",
@@ -289,6 +293,7 @@ impl Action {
     pub fn tip(self) -> &'static str {
         use Action::*;
         match self {
+            ImportVdb => "Simulated smoke and fire from an OpenVDB (.vdb) file, as a volume",
             Preferences => "Theme, hotkeys, viewport colours, autosave, units, render defaults and asset packs",
             SelectByName => "Select From Scene: pick objects from a searchable list",
             LockSelection => "Lock Selection: clicks and marquees no longer change what is selected",
@@ -302,6 +307,7 @@ impl Action {
             Measure => "Size, centre and counts of the selection",
             Constrain(c) => c.tip(),
             SeeThrough => "Draw the selected objects semi-transparent",
+            PreviewVolumes => "Draw clouds as soft volumes in Perspective views (off: the solid preview puffs)",
             ShadowCatcher => "Render the selected ground transparent except for the shadows, AO and reflections cast on it",
             CameraView => "Look through the selected (or first) camera",
             Ribbon => "Big buttons for every Edit Poly tool under the toolbar",

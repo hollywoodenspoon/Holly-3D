@@ -30,7 +30,14 @@ fn earth(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
     });
     let c = &mut s.clouds;
     rollout(ui, "Procedural Clouds", true, |ui| {
-        t.r(ui.checkbox(&mut c.enabled, "Enable Clouds"));
+        ui.horizontal(|ui| {
+            ui.label("2D Sky Resolution");
+            egui::ComboBox::from_id_salt("sky_res").selected_text(format!("{} px", c.bake_width())).show_ui(ui, |ui| {
+                for w in [1024, 2048, 4096] {
+                    t.r(ui.selectable_value(&mut c.res_2d, w, format!("{w} x {}", w / 2)));
+                }
+            });
+        });
         ui.add_enabled_ui(c.enabled, |ui| {
             grid(ui, "sky_clouds", |ui| {
                 num_row(ui, t, "Cloud Coverage", &mut c.coverage, 0.0..=1.0, 0.4);
@@ -69,6 +76,25 @@ fn space(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
     });
 }
 
+/// Clouds: Off / 2D Sky Clouds / 3D Cloud Objects / Both.
+fn clouds_row(ui: &mut egui::Ui, c: &mut crate::render::sky::Clouds, t: &mut Track) {
+    use crate::render::sky::CloudsShown;
+    ui.horizontal(|ui| {
+        ui.label("Clouds");
+        let cur = c.shown();
+        egui::ComboBox::from_id_salt("clouds_shown").selected_text(cur.label()).show_ui(ui, |ui| {
+            for s in CloudsShown::ALL {
+                if ui.selectable_label(s == cur, s.label()).clicked() {
+                    c.set_shown(s);
+                    (t.started, t.changed) = (true, true);
+                }
+            }
+        })
+        .response
+        .on_hover_text("2D clouds are painted on the sky; 3D clouds are the Cloud objects placed from Demiurge -> Clouds");
+    });
+}
+
 /// The whole section (edits `env`; changes are reported through `t`).
 pub fn rows(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
     ui.separator();
@@ -82,6 +108,7 @@ pub fn rows(ui: &mut egui::Ui, env: &mut Environment, t: &mut Track) {
             }
         }
     });
+    clouds_row(ui, &mut env.sky.clouds, t);
     if env.sky.mode == SkyMode::Off {
         return;
     }

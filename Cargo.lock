@@ -2019,6 +2019,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "blosc-src"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9046dd58971db0226346fde214143d16a6eb12f535b5320d0ea94fcea420631"
+dependencies = [
+ "cc",
+ "lz4-sys",
+]
+
+[[package]]
 name = "boolmesh"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3295,6 +3305,12 @@ dependencies = [
 
 [[package]]
 name = "glam"
+version = "0.24.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5418c17512bdf42730f9032c74e1ae39afc408745ebb2acf72fbc4691c17945"
+
+[[package]]
+name = "glam"
 version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f70749695b063ecbf6b62949ccccde2e733ec3ecbbd71d467dca4e5c6c97cca0"
@@ -3684,6 +3700,7 @@ dependencies = [
  "ufbx",
  "ureq",
  "uvunwrap",
+ "vdb-rs",
  "wgpu",
  "winit",
 ]
@@ -4096,6 +4113,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52d3a9855747c17eaf4383823f135220716ab49bea5fbea7dd42cc9a92f8aa31"
 dependencies = [
  "logos-codegen",
+]
+
+[[package]]
+name = "lz4-sys"
+version = "1.11.1+lz4-1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bd8c0d6c6ed0cd30b3652886bb8711dc4bb01d637a68105a3d5158039b418e6"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]
@@ -6394,6 +6421,24 @@ checksum = "b53d0f7f2d0182759a549f1f313ce16b07d8f9ba93098157b5fa10ee3e61117f"
 dependencies = [
  "quote",
  "unsynn",
+]
+
+[[package]]
+name = "vdb-rs"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddd7c7f05c3fffea2ea595d9645b81ca7c0fc53c739992b1145ed478cd01f400"
+dependencies = [
+ "bitflags 2.13.2",
+ "bitvec",
+ "blosc-src",
+ "bytemuck",
+ "byteorder",
+ "flate2",
+ "glam 0.24.2",
+ "half",
+ "log",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

@@ -5,6 +5,7 @@
 //! seed; Z-up like the rest of the scene.
 
 pub mod buildings;
+pub mod clouds;
 mod erosion;
 pub mod kit;
 mod ocean;
@@ -13,7 +14,11 @@ mod planet_layers;
 mod planet_surface;
 pub mod ruin;
 pub mod settlement;
+pub mod pyro;
 pub mod smoke;
+pub mod smoke_sim;
+pub mod trails;
+pub mod vdb;
 mod sphere;
 mod terrain;
 mod terrain_ids;
@@ -47,6 +52,18 @@ pub enum WorldGen {
     Building(Box<buildings::BuildingParams>),
     /// PR 8 Smoke & Fire Plume (Create -> Geometry -> Worlds / FX).
     Smoke(Box<smoke::SmokeParams>),
+    /// Clouds PR 1: one 3D cloud (Create -> Geometry -> Worlds / FX).
+    Cloud(Box<clouds::CloudParams>),
+    /// Clouds PR 1: a layer of scattered clouds.
+    CloudField(Box<clouds::CloudFieldParams>),
+    /// Clouds PR 3: a contrail, smoke or flame trail.
+    Trail(Box<trails::TrailParams>),
+    /// Clouds PR 4: an explosion or mushroom cloud.
+    Pyro(Box<pyro::PyroParams>),
+    /// Step C: an imported OpenVDB smoke / fire simulation.
+    Vdb(Box<vdb::VdbParams>),
+    /// Step D: a grid smoke / fire simulation baked in the background.
+    SmokeSim(Box<smoke_sim::SmokeSimParams>),
 }
 
 /// Create-tab buttons.
@@ -58,10 +75,49 @@ pub enum WorldKind {
     Settlement(Era),
     Building(buildings::BuildingKind),
     Smoke,
+    Cloud(clouds::CloudType),
+    CloudField,
+    Trail(trails::TrailKind),
+    Pyro(pyro::PyroKind),
+    Vdb,
+    SmokeSim,
+    FireSim,
 }
 
 impl WorldKind {
+    /// Create -> Geometry -> Clouds buttons.
+    pub const CLOUDS: [WorldKind; 9] = {
+        let mut out = [Self::CloudField; 9];
+        let mut i = 0;
+        while i < 8 {
+            out[i] = Self::Cloud(clouds::CloudType::ALL[i]);
+            i += 1;
+        }
+        out
+    };
+    /// Create -> Geometry -> Trails buttons.
+    pub const TRAILS: [WorldKind; 6] = {
+        let mut out = [Self::Terrain; 6];
+        let mut i = 0;
+        while i < 6 {
+            out[i] = Self::Trail(trails::TrailKind::ALL[i]);
+            i += 1;
+        }
+        out
+    };
+    /// Create -> Geometry -> Explosions buttons.
+    pub const PYRO: [WorldKind; 6] = {
+        let mut out = [Self::Terrain; 6];
+        let mut i = 0;
+        while i < 6 {
+            out[i] = Self::Pyro(pyro::PyroKind::ALL[i]);
+            i += 1;
+        }
+        out
+    };
     pub const ALL: [WorldKind; 4] = [Self::Terrain, Self::Ocean, Self::Planet, Self::Smoke];
+    /// Create -> Geometry -> Simulations buttons.
+    pub const SIMS: [WorldKind; 2] = [Self::SmokeSim, Self::FireSim];
     /// Create -> Geometry -> Settlement buttons.
     pub const SETTLEMENTS: [WorldKind; 14] = {
         let mut out = [Self::Terrain; 14];
@@ -80,6 +136,13 @@ impl WorldKind {
             Self::Settlement(e) => e.short(),
             Self::Building(k) => k.label(),
             Self::Smoke => "Smoke Plume",
+            Self::Cloud(k) => k.label(),
+            Self::CloudField => "Cloud Field",
+            Self::Trail(k) => k.label(),
+            Self::Pyro(k) => k.label(),
+            Self::Vdb => "VDB Volume",
+            Self::SmokeSim => "Smoke Simulation",
+            Self::FireSim => "Fire Simulation",
         }
     }
     pub fn tip(self) -> &'static str {
@@ -90,6 +153,13 @@ impl WorldKind {
             Self::Settlement(e) => e.label(),
             Self::Building(k) => k.category().label(),
             Self::Smoke => "Billowing smoke & fire plume: wind lean, mushroom cap, rise phase",
+            Self::Cloud(k) => k.tip(),
+            Self::CloudField => "A whole layer of sky: scatters a mix of cloud types",
+            Self::Trail(k) => k.tip(),
+            Self::Pyro(k) => k.tip(),
+            Self::Vdb => "Simulated smoke and fire imported from an OpenVDB file",
+            Self::SmokeSim => "Rising, swirling smoke simulated on a grid, frame by frame",
+            Self::FireSim => "Burning fuel simulated on a grid: flames below, soot above",
         }
     }
 }
@@ -103,6 +173,13 @@ impl WorldGen {
             WorldKind::Settlement(e) => Self::Settlement(Box::new(SettlementParams::of(e))),
             WorldKind::Building(k) => Self::Building(Box::new(buildings::BuildingParams::of(k))),
             WorldKind::Smoke => Self::Smoke(Box::default()),
+            WorldKind::Cloud(k) => Self::Cloud(Box::new(clouds::CloudParams::of(k))),
+            WorldKind::CloudField => Self::CloudField(Box::default()),
+            WorldKind::Trail(k) => Self::Trail(Box::new(trails::TrailParams::of(k))),
+            WorldKind::Pyro(k) => Self::Pyro(Box::new(pyro::PyroParams::of(k))),
+            WorldKind::Vdb => Self::Vdb(Box::default()),
+            WorldKind::SmokeSim => Self::SmokeSim(Box::default()),
+            WorldKind::FireSim => Self::SmokeSim(Box::new(smoke_sim::SmokeSimParams::fire_preset())),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -113,6 +190,12 @@ impl WorldGen {
             Self::Settlement(p) => WorldKind::Settlement(p.era),
             Self::Building(p) => WorldKind::Building(p.kind),
             Self::Smoke(_) => WorldKind::Smoke,
+            Self::Cloud(p) => WorldKind::Cloud(p.kind),
+            Self::CloudField(_) => WorldKind::CloudField,
+            Self::Trail(p) => WorldKind::Trail(p.kind),
+            Self::Pyro(p) => WorldKind::Pyro(p.kind),
+            Self::Vdb(_) => WorldKind::Vdb,
+            Self::SmokeSim(p) => if p.sim.fuel > 0.0 { WorldKind::FireSim } else { WorldKind::SmokeSim },
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -123,11 +206,24 @@ impl WorldGen {
             Self::Settlement(p) => p.build(),
             Self::Building(p) => p.build(),
             Self::Smoke(p) => p.build(),
+            Self::Cloud(p) => p.build(),
+            Self::CloudField(p) => p.build(),
+            Self::Trail(p) => p.build(),
+            Self::Pyro(p) => p.build(),
+            Self::Vdb(p) => p.build(),
+            Self::SmokeSim(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
     pub fn short(&self) -> &'static str {
-        self.kind().label()
+        match self {
+            Self::Cloud(_) => "Cloud",
+            Self::Trail(_) => "Trail",
+            Self::Pyro(_) => "Explosion",
+            Self::Vdb(_) => "VDB",
+            Self::SmokeSim(_) => "SmokeSim",
+            _ => self.kind().label(),
+        }
     }
     /// The Multi/Sub-Object pack whose IDs this generator assigns.
     pub fn material_pack(&self) -> crate::materials::MultiPreset {
@@ -138,7 +234,8 @@ impl WorldGen {
             Self::Planet(_) => MultiPreset::PlanetStudio,
             Self::Settlement(_) => MultiPreset::Settlement,
             Self::Building(p) => p.style.pack(),
-            Self::Smoke(_) => MultiPreset::SmokeFire,
+            Self::Smoke(_) | Self::Trail(_) | Self::Pyro(_) | Self::Vdb(_) | Self::SmokeSim(_) => MultiPreset::SmokeFire,
+            Self::Cloud(_) | Self::CloudField(_) => MultiPreset::Clouds,
         }
     }
 }

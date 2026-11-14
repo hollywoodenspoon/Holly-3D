@@ -92,6 +92,7 @@ pub fn basic(ui: &mut egui::Ui, ed: &mut Editor) {
         ShadingModel::Toon => "Cel / Toon Ramp Parameters",
         ShadingModel::Crystal => "Crystal / Glass Parameters",
         ShadingModel::Unlit => "Unlit Parameters",
+        ShadingModel::Volume => "Volume Parameters",
     };
     rollout(ui, title, true, |ui| {
         edit(ed, |m, t| {
@@ -100,6 +101,7 @@ pub fn basic(ui: &mut egui::Ui, ed: &mut Editor) {
                 ShadingModel::Toon => toon(ui, t, m),
                 ShadingModel::Crystal => crystal(ui, t, m),
                 ShadingModel::Unlit => unlit(ui, t, m),
+                ShadingModel::Volume => super::volume_rollout::volume(ui, t, m),
             });
             None
         });

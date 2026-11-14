@@ -11,6 +11,7 @@ use bevy::math::Vec4;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 use std::time::Instant;
 
 /// Pixel rectangle `[x0, y0, x1, y1)` inside the output image.
@@ -46,11 +47,30 @@ pub struct RenderJob {
     /// LightMix buffers once a path-traced render finished (CPU or GPU).
     pub lightmix: Option<Box<super::lightmix::Buffers>>,
     pub aovs: Option<Box<super::aov::AovBuffers>>,
+    thread: Option<JoinHandle<()>>,
+}
+
+/// Threads of cancelled or dropped jobs that may still be winding down.
+static ORPHANS: Mutex<Vec<JoinHandle<()>>> = Mutex::new(Vec::new());
+
+/// Waits for every dropped render job's thread to stop (they were
+/// cancelled, so this is quick). Call before the process exits: a render
+/// thread still inside the GPU driver while it unloads crashes the exit.
+pub fn join_orphans() {
+    let threads = std::mem::take(&mut *ORPHANS.lock().unwrap_or_else(|e| e.into_inner()));
+    for t in threads {
+        let _ = t.join();
+    }
 }
 
 impl Drop for RenderJob {
     fn drop(&mut self) {
         self.cancel.store(true, Ordering::Relaxed);
+        if let Some(t) = self.thread.take() {
+            let mut list = ORPHANS.lock().unwrap_or_else(|e| e.into_inner());
+            list.retain(|t| !t.is_finished());
+            list.push(t);
+        }
     }
 }
 
@@ -144,14 +164,15 @@ impl RenderJob {
     fn new(px_total: u64) -> (Self, Sender<Msg>, Arc<AtomicBool>) {
         let (tx, rx) = channel();
         let cancel = Arc::new(AtomicBool::new(false));
-        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new(), lightmix: None, aovs: None };
+        let job = Self { rx: Mutex::new(rx), cancel: cancel.clone(), started: Instant::now(), px_done: 0, px_total, pass_label: String::new(), lightmix: None, aovs: None, thread: None };
         (job, tx, cancel)
     }
 
     /// Starts the built-in raytracer on a background thread.
-    pub fn raytrace(rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
-        let (job, tx, cancel) = Self::new(u64::from(region[2] - region[0]) * u64::from(region[3] - region[1]));
-        std::thread::spawn(move || {
+    pub fn raytrace(mut rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+        rs.volumes.set_detail(cfg.volumes.noise_detail);
+        let (mut job, tx, cancel) = Self::new(u64::from(region[2] - region[0]) * u64::from(region[3] - region[1]));
+        job.thread = Some(std::thread::spawn(move || {
             let t0 = Instant::now();
             let w = region[2] - region[0];
             let px = raytrace_region(&rs, &cfg, region, &cancel, |[x0, y0, tw, _], tile| {
@@ -163,17 +184,18 @@ impl RenderJob {
             }
             let _ = tx.send(block(region[0], region[1], w, &px));
             let _ = tx.send(Msg::Done(Ok(format!("Rendered {}x{} in {:.1}s", cfg.width, cfg.height, t0.elapsed().as_secs_f32()))));
-        });
+        }));
         job
     }
 
     /// Starts the progressive path tracer: the wgpu GPU kernel when the
     /// Compute Device allows and an adapter exists, else the CPU tracer.
-    pub fn pathtrace(rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+    pub fn pathtrace(mut rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+        rs.volumes.set_detail(cfg.volumes.noise_detail);
         let passes = cfg.path.schedule().len() as u64;
         let px = u64::from(region[2] - region[0]) * u64::from(region[3] - region[1]);
-        let (job, tx, cancel) = Self::new(px * passes);
-        std::thread::spawn(move || {
+        let (mut job, tx, cancel) = Self::new(px * passes);
+        job.thread = Some(std::thread::spawn(move || {
             let t0 = Instant::now();
             let w = region[2] - region[0];
             let (px, device, mix) = super::pathtrace::run_mix(&rs, &cfg, region, &cancel, |info, img| {
@@ -193,7 +215,7 @@ impl RenderJob {
             }
             let secs = t0.elapsed().as_secs_f32();
             let _ = tx.send(Msg::Done(Ok(format!("Rendered {}x{} (path traced on {device}) in {secs:.1}s", cfg.width, cfg.height))));
-        });
+        }));
         job
     }
 

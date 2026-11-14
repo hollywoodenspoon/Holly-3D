@@ -22,6 +22,7 @@ impl Action {
             SaveScene => file_menu::save(ed),
             SaveSceneAs => file_menu::save_as(ed),
             Import => file_menu::import(ed),
+            ImportVdb => file_menu::import_vdb(ed),
             ExportAll => file_menu::export(ed, false),
             ExportSelected => file_menu::export(ed, true),
             Undo => ed.undo(),
@@ -92,6 +93,7 @@ impl Action {
                 v.shading = if v.shading == Shading::Wireframe { Shading::Default } else { Shading::Wireframe };
             }
             EdgedFaces => flip(&mut ed.viewports.active_view_mut().edged_faces),
+            PreviewVolumes => flip(&mut ed.prefs.viewport.preview_volumes),
             ZoomExtents => ed.zoom_extents(false),
             ZoomExtentsAll => ed.zoom_extents(true),
             Maximize => flip(&mut ed.viewports.maximized),
@@ -163,6 +165,7 @@ impl Action {
             OrientationCube => ed.prefs.viewport.show_cube,
             Wireframe => v.is_some_and(|v| v.shading == Shading::Wireframe),
             EdgedFaces => v.is_some_and(|v| v.edged_faces),
+            PreviewVolumes => ed.prefs.viewport.preview_volumes,
             Maximize => ed.viewports.maximized,
             SceneExplorer => ed.explorer_visible,
             Ribbon => ed.iface.ribbon,

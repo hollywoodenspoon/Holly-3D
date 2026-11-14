@@ -25,7 +25,8 @@ fn hit_alpha(h: Hit, d: vec3<f32>) -> f32 {
 // Light passing along a shadow ray (0 = blocked): opaque hits stop it,
 // see-through ones dim it by their alpha and let it on (up to `u.vol4.w`,
 // 8, of them: a uniform so drivers don't unroll the BVH walk 8 times).
-fn transmit(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> f32 {
+// Volume objects dim it further (`transmit`).
+fn transmit_surface(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> f32 {
     if (!FEAT_OPACITY) { return select(1.0, 0.0, occluded(o, d, tmax)); }
     var at = o;
     var left = tmax;
@@ -43,4 +44,11 @@ fn transmit(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> f32 {
         left -= step;
     }
     return tr;
+}
+
+// Light passing along a shadow ray through surfaces and volume objects.
+fn transmit(o: vec3<f32>, d: vec3<f32>, tmax: f32) -> f32 {
+    let s = transmit_surface(o, d, tmax);
+    if (!FEAT_VOLOBJ || s <= 0.0) { return s; }
+    return s * vo_transmit(o, d, tmax);
 }

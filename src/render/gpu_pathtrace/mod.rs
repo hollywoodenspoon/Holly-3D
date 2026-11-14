@@ -13,6 +13,7 @@ pub mod live;
 pub mod mix;
 pub mod pack;
 pub mod textures;
+pub mod volobj;
 
 use crate::render::job::Region;
 use crate::render::pathtrace::adaptive::{Welford, converged};
@@ -29,8 +30,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
 pub struct Gpu {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    pub(crate) device: wgpu::Device,
+    pub(crate) queue: wgpu::Queue,
     module: wgpu::ShaderModule,
     /// One pipeline per feature mask, built on first use.
     pipelines: Mutex<HashMap<u32, wgpu::ComputePipeline>>,
@@ -49,6 +50,7 @@ pub fn source() -> String {
         include_str!("wgsl/lights.wgsl"),
         include_str!("wgsl/area.wgsl"),
         include_str!("wgsl/volume.wgsl"),
+        include_str!("wgsl/volobj.wgsl"),
         include_str!("wgsl/textures.wgsl"),
         include_str!("wgsl/live.wgsl"),
         include_str!("wgsl/opacity.wgsl"),
@@ -116,7 +118,7 @@ fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String
 }
 
 /// `size` bytes of `src` as floats.
-fn read_floats(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<f32>, String> {
+pub(crate) fn read_floats(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<f32>, String> {
     let dst = g.device.create_buffer(&wgpu::BufferDescriptor { label: Some("readback"), size, usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let mut enc = g.device.create_command_encoder(&Default::default());
     enc.copy_buffer_to_buffer(src, 0, &dst, 0, size);
@@ -206,6 +208,11 @@ pub fn render(
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
     let k = mix::groups(rs, cfg);
     let group_buf = mix::buffer(d, n, k, limit)?;
+    let vol_bytes = volobj::pack(rs, cfg);
+    if vol_bytes.len() as u64 > limit {
+        return Err(format!("volumes ({} MB) exceed this GPU's {} MB buffer limit", vol_bytes.len() >> 20, limit >> 20));
+    }
+    let vol_buf = storage(d, "volume objects", &vol_bytes, false);
     let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: PARAMS_BYTES, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false), storage(d, "textures", &tex_bytes, false)];
     let pipeline = g.pipeline(Features(Features::of(rs).0 | if k > 0 { Features::LIGHTMIX } else { 0 }));
@@ -214,7 +221,7 @@ pub fn render(
         .iter()
         .enumerate()
         .map(|(i, b)| (i as u32, *b))
-        .chain([(12, &group_buf)])
+        .chain([(12, &group_buf), (13, &vol_buf)])
         .map(|(i, b)| wgpu::BindGroupEntry { binding: i, resource: b.as_entire_binding() })
         .collect();
     let bind = d.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("path tracer"), layout: &layout, entries: &entries });
@@ -310,3 +317,5 @@ mod tests_opacity;
 mod tests_toon;
 #[cfg(test)]
 mod tests_catcher;
+#[cfg(test)]
+mod tests_volobj;

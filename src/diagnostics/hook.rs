@@ -7,7 +7,22 @@
 use super::recovery::{self, Bundle};
 use super::report::{self, BuildInfo, CrashInfo};
 use super::{breadcrumbs, state};
+use std::cell::Cell;
 use std::sync::atomic::{AtomicBool, Ordering};
+
+thread_local! {
+    /// Set while `contain` runs a fallible third-party parser on this thread.
+    static CONTAINED: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Runs `f`, turning a panic inside it into an error message instead of a
+/// crash report (for file parsers that panic on input they do not support).
+pub fn contain<T>(f: impl FnOnce() -> T) -> Result<T, String> {
+    let was = CONTAINED.with(|c| c.replace(true));
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+    CONTAINED.with(|c| c.set(was));
+    r.map_err(|e| e.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| e.downcast_ref::<String>().cloned()).unwrap_or_else(|| "unsupported data".into()))
+}
 
 /// Set once the first real crash has been written; later panics on other
 /// threads (often knock-on effects) do not overwrite it.
@@ -62,6 +77,9 @@ pub fn simulate() -> Option<Bundle> {
 pub fn install() {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |p| {
+        if CONTAINED.with(Cell::get) {
+            return;
+        }
         if !REPORTED.swap(true, Ordering::SeqCst) {
             let payload = p.payload();
             let message = payload

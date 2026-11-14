@@ -1997,3 +1997,304 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Two mutation blind spots:** the GPU's own cut-out snap (the bake already thresholds, so the snap only tidies filter fringes, which average out) and the shadow-times-reflection overlap in the catcher's alpha (`refl * (1 − dark)`; it only matters where a reflection falls inside a shadow). The parity tests can't see either; both match the CPU code line for line.
   - **Test memory:** scenes with textures or live maps build pipelines of about 8–9 GB on the software driver, so the GPU tests run one at a time (`--test-threads=1`).
   - Everything else from the GPU parity plan is done; next is the Clouds plan.
+
+## 65. Clouds, PR 1: cloud shapes, the Cloud Field and the Clouds dropdown
+- **Cloud objects** (`src/generators/clouds/`): Cumulus, Cumulus Congestus, Cumulonimbus and Stratocumulus, in metres.
+  - Each cloud is a seeded list of puffs (squashed spheres). They are laid out per type: a tapering tower, a tall lumpy tower, a storm tower with a wide flat anvil spreading downwind, or a sheet of rolls with gaps.
+  - **Detail Levels** (1–3) grow smaller puffs on the bigger ones. **Puffiness**, **Lumpiness**, **Base Flatness**, **Wind Shear** and **Wind Direction** shape the result.
+  - The puffs are the one source of truth. Today they build a light preview mesh (one smooth sphere per puff, Material ID 1, the new Clouds Pack). The volume renderer (V1/V2) will turn the same puffs into density.
+- **Cloud Field:** scatters clouds over a layer (Base Height, Layer Thickness, Width, Depth, Coverage, Type Mix, Min/Max Cloud Size, Detail). Clouds are placed by dart throwing so they never overlap, each with its own seed. Storm towers may rise above the layer. **Break Into Clouds** turns the field into separate Cloud objects in the same place, with the same material, as one undo step.
+- **Buttons:** Demiurge tab > Clouds, and Create > Demiurge Clouds. Drag-creation: a cloud drags its width, then its height; a field drags its area.
+- **Environment (8) > Clouds:** Off / 2D Sky Clouds / 3D Cloud Objects / Both. Off or 2D hides the cloud objects in the viewport and in renders. Old scenes load with Both.
+- **2D Sky Resolution:** the sky bake used by renders is 1024, 2048 or 4096 wide (it was fixed at 1024).
+- **Tests:** every type builds a seeded cloud on its base; detail levels; preview mesh vertex/polygon counts, material, UVs, unit normals and a flat base; wind shear; the anvil; field coverage, spacing and type mix; the field mesh on its layer; Break Into Clouds keeps every cloud in place; the dropdown round trip and old-scene defaults; 3D off drops clouds from the render.
+- **Not done yet:**
+  - **Clouds still render as solid white puffs.** Soft, light-scattering clouds need the volume renderer (V1) and Clouds as volumes (V2), which are next.
+  - **Viewport preview of volumes**, erosion noise and the cloud lighting all come with V2.
+  - **Trails, explosions and more cloud types** follow in PRs 3–5 of the Clouds plan.
+
+## 66. Clouds V1a: the volume renderer core (CPU)
+- **Volume shading model** (`src/materials/volume.rs`): Material Editor > Volume (Cloud / Smoke / Fire). Scatter Colour, Absorption, Density (extinction per metre), a two-lobe phase (Forward g, Back g, Back Lobe Blend), a Glow Ramp (Blackbody or Fire), Glow Strength and Temperature Cooling.
+  - Presets: Cumulus Cloud, Storm Cloud, Thin Haze, Black Smoke, Grey Smoke, Fire, Fireball.
+  - Old scenes load unchanged (the new fields default).
+- **Volume objects** (`src/render/volumes/`): any object whose material (Material ID 1 of a Multi/Sub-Object) uses the Volume model renders as a participating medium and makes no triangles.
+  - Clouds and Cloud Fields use a soft union of their puffs (Base Flatness flattens the underside). Any other mesh fills its local bounding box. The object's move, rotate and scale apply.
+  - A majorant grid (16–48 cells along the longest side) bounds the density per cell. Puff volumes keep a per-cell puff list so a lookup touches only a few puffs.
+  - **Delta tracking** finds real collisions; **ratio tracking** gives shadow transmittance. Rays step through the grid with a 3D DDA in local space, with `t` kept in world metres. A uniform box gets exact Beer-Lambert.
+- **Path tracer:** at a collision a path adds the glow, multiplies by the albedo, takes light from every scene light (shadowed through surfaces and volumes, times the phase), then samples the next direction from the two-lobe phase. A path that leaves picks up the sky. Max Volume Bounces caps the scatters; Russian roulette after 3.
+- **Raytracer:** a short random walk through the volumes from the first collision (the same light at each scatter, sky where it leaves), so both renderers give the same look.
+- **Shadows:** every shadow ray (lights, sky occlusion, AO, mist) now also passes through volumes, so clouds shade the ground and themselves.
+- **F10 > Effects > Volumes rollout:** Max Volume Bounces (8), Cloud Bounce Boost (0.5: two weaker, wider light octaves that stand in for the many bounces inside thick clouds) and Shadow Quality (1, 2 or 4 transmittance estimates).
+- **GPU:** a scene with volume objects falls back to the CPU with the reason "volume objects", shown in the Render tab.
+- **Tests** (`src/render/volumes/tests.rs`):
+  - volume objects make no triangles and trigger the GPU fallback;
+  - box transmittance matches Beer-Lambert (full, half and miss);
+  - ratio and delta tracking are unbiased on a voxel grid;
+  - the majorant bounds every cloud density, and Base Flatness cuts the underside;
+  - clouds shadow the ground, scaled with the object;
+  - a camera inside a volume scatters and renders in both tracers;
+  - more bounces and the boost brighten a white cloud without gaining energy;
+  - preset serde and old settings load.
+- **Not done yet:**
+  - **Clouds don't default to a Volume material yet**: the Clouds Pack still uses surface materials, so a cloud needs a Volume material from the Material Editor. V2 makes clouds volumes by default, adds erosion noise (Noise Detail) and a viewport preview.
+  - **Voxel grid source** works in the renderer, but nothing creates one yet (smoke and explosion PRs will).
+  - **Emissive polygons** light volumes only when a scattered path hits them (no next-event sample on them yet).
+  - **Noise:** sun shadows inside dense clouds are noisy at low sample counts (ratio tracking gives 0-or-1 estimates there). Shadow Quality and the denoiser help.
+  - **Mist** (Environment `8`) keeps its own raymarch.
+  - **Speed** on her Ryzen 7 5700X hasn't been timed; a 384×240 cloud at 96 samples per pixel took about 8 s here.
+
+## 67. Clouds V1b: volume objects on the GPU
+- **What:** the GPU path tracer now renders volume objects (puff clouds and evenly filled boxes, smoke and fire) instead of sending those scenes to the CPU.
+  - A new feature switch, `FEAT_VOLOBJ`, compiles the volume code only for scenes that use it.
+  - `src/render/gpu_pathtrace/volobj.rs` packs each volume's world-to-local matrix, majorant grid, per-cell puff lists, puffs and a 16-step glow ramp into one storage buffer (binding 13).
+  - `wgsl/volobj.wgsl` runs the same delta tracking (collisions), ratio tracking (shadows, with the exact Beer-Lambert shortcut in uniform cells), 3D DDA, two-lobe phase sampling and light sampling with the Cloud Bounce Boost octaves as the CPU.
+  - Shadow rays from surfaces pass through volumes too (`transmit` = surfaces x volumes), so clouds shadow the ground on the GPU.
+- **Tests (5 new):**
+  - the packed buffer mirrors the CPU grids (matrix, majorants, cell lists, glow);
+  - puff and box volumes turn the GPU switch on and need no CPU fallback;
+  - GPU/CPU parity for a sunlit cumulus, an absorbing smoke box with Smooth shadows, and a glowing fire (image energy within 0.4% on the software Vulkan device).
+- **Not done yet:**
+  - ~~Voxel-grid volumes still render on the CPU~~ (done in §76).
+  - **The glow ramp** is sampled at 16 densities and interpolated, so the GPU glow differs very slightly from the CPU's exact curve.
+  - **Speed** on her RX 9060 XT hasn't been measured; the parity scenes here ran on a software rasteriser.
+
+## 68. Clouds V2: clouds render as volumes
+- **What:** Cloud and Cloud Field objects now render as volumes in F9 by default, with no material set-up.
+  - A new **Render As: Volume / Mesh** choice sits in the Cloud and Cloud Field rollouts. Mesh renders the preview mesh as before.
+  - Without a Volume material a cloud uses the Cumulus Cloud preset, or Storm Cloud for a Cumulonimbus. Its own Volume material still wins.
+  - New **Cloud Volume** rows:
+    - **Edge Softness:** how much of each puff fades out.
+    - **Erosion:** noise cuts billows into the surface.
+    - **Wispiness:** extra erosion towards the top.
+    - **Density:** a multiplier on the material's density.
+  - **Erosion** (`src/render/volumes/erode.rs`):
+    - Worley cells plus billow noise, contrast-stretched.
+    - It cuts down to a depth inside the cloud, measured by a second, fully soft union of the puffs.
+    - It only ever lowers density, so the majorant grid stays valid.
+    - The same noise runs in the GPU kernel.
+  - F10 > Volumes adds **Noise Detail** (Low / Medium / High / Ultra: 1 to 4 billow octaves).
+  - The Environment's 3D clouds switch now hides cloud volumes too.
+- **Tests (5 new):**
+  - a cloud renders as a volume with the right preset, Storm preset and Density;
+  - Render As: Mesh keeps triangles;
+  - a field is one volume;
+  - erosion never raises density, keeps cores and carves edges;
+  - softer edges spread density;
+  - noise is bounded and deterministic, Noise Detail sets the octaves, and old scenes load as volume clouds;
+  - GPU/CPU parity for a heavily eroded, wispy cloud at Ultra detail;
+  - the packed buffer carries the erosion fields.
+- **Not done yet:**
+  - **Viewport preview of the volume** (V2b): done, see §69.
+  - **Lighting contrast:** clouds look soft and evenly lit at the default density and Bounce Boost. Darker bases and stronger self-shadowing may need tuning once Holly sees renders on her machine.
+  - **Tall towers:** a default Congestus breaks into separate lumps, because the puff layout from PR 1 leaves gaps that erosion widens.
+  - **The Cloud Field** is still a union of separate clouds, with no 2D coverage map across the layer.
+  - **Speed** on her RX 9060 XT hasn't been measured. Erosion adds a 27-cell Worley lookup per density sample.
+
+## 69. Clouds V2b: soft volume preview in the viewport
+- **What:** Perspective views with Default Shading now show volume clouds as soft, lit volumes instead of the solid preview puffs.
+  - **Bake** (`src/render/volumes/bake.rs`):
+    - Each cloud's eroded density (the F9 density at Low noise detail) is baked into a 3D texture of about 110k voxels.
+    - The bake runs on a worker thread after each edit, keyed on the object version and its volume material, so moving a cloud needs no new bake.
+    - The box is padded 6% and its outer voxels stay empty, so puffs fade instead of showing flat cuts.
+  - **Display** (`src/viewport/cloud_preview.rs`):
+    - Bevy's raymarched fog volumes draw the baked texture.
+    - The puffs move to their own render layer, which only views without the preview draw.
+    - Wireframe and the flat views keep the puffs.
+  - **Lighting:**
+    - Both headlight-rig lights turn volumetric and cast shadows while clouds are previewed. Bevy drops every fog volume unless some light is volumetric, and it only flags volumetric lights that sort first, so both rig lights need it.
+    - Because the rig lights the cloud from behind the camera, the preview scatters light nearly evenly and caps its density at an optical depth of 2. With the real values the fog's built-in self-shadowing turned the cloud black.
+  - **Preview Volumes** toggle (on by default; saved in prefs): in the shading menu, the Views menu and the Display tab.
+  - New help screenshot `clouds` on the Rendering page.
+- **Tests (3 new):**
+  - voxel dims follow the box shape and budget;
+  - voxel centres hold the renderer's density, the box faces stay empty and the puffs clear every face;
+  - only volume clouds get a preview (not Render As: Mesh, not a plain box).
+- **Not done yet:**
+  - **Speed** on her RX 9060 XT hasn't been measured. A volume raymarch per cloud plus two shadow maps runs every frame. With many clouds in a Cloud Field, a coarser budget may be needed.
+  - **Scene lights:** with your own lights in the scene, only shadow-casting ones light the preview. A mix of volumetric and non-volumetric directional lights can leave a cloud dark (the Bevy sorting issue above).
+  - **The preview is an approximation:** coarse voxels, near-even scattering, no sky light (Bevy's fog ambient term fades to nothing across a whole cloud). F9 is the truth.
+  - **No refine when idle:** the bake stays at one resolution.
+  - **Smoke and fire** with a Volume material on an ordinary mesh still show their mesh. Only clouds preview as volumes.
+
+## 70. Clouds PR 3: Trails
+- **What:** a new Demiurge object, **Trail** (Demiurge tab > Trails, or Create > Demiurge Trails), with six types:
+  - **Contrail:** one white trail per engine, with a clear gap behind the engine, then it widens, breaks into puffs and fades;
+  - **Wingtip Vortices:** thin white spirals off both wingtips, stronger where the path turns hard;
+  - **Afterburner Flame:** a glowing exhaust cone with shock diamonds; Throttle sets its length and glow;
+  - **Vapor Cone:** a short white shell around the body, densest at the front;
+  - **Damage Smoke:** a thick black or grey trail with optional fire at the start;
+  - **Missile Trail:** a bright motor flame and a thick white curving smoke trail.
+  - **Path:** the built-in arc (Length, Turn, Climb) or a picked spline (Pick Path Spline, then click it; Reverse and Clear buttons). The picked spline is copied into the trail's own space.
+  - **Parameters:** Seed, Sources and Spacing, Start Gap, Start/End Radius, Spread, Breakup, Fade, Dissipation Length, Throttle, Shock Diamonds, Spiral Turns, plus the cloud look rows (Edge Softness, Erosion, Wispiness, Density).
+  - **Rendering:** a trail is a chain of puffs (at most 6000) that reuses the cloud volume pipeline. Each puff now carries its own peak density, on the CPU and the GPU (the GPU puff record grew from 6 to 7 floats). Smoke and flame are two separate media, so the flame glows with its own ramp. A Volume material on the trail replaces its smoke.
+  - **Viewport:** the soft volume preview (§69) shows each medium; the flame shows as a warm-tinted fog.
+  - The preview mesh puts flame on Material ID 1 and smoke on ID 2 (Smoke & Fire pack).
+- **Tests (9 new):**
+  - every type lays seeded, valid puffs with the right media;
+  - contrails keep the start gap, widen and fade;
+  - Dissipation Length and a picked path bound the trail;
+  - vortices strengthen in turns;
+  - afterburner throttle and shock diamonds;
+  - preview mesh vertex/polygon counts, Material IDs, normals and UVs;
+  - huge trails stay under the puff cap;
+  - picking a spline sets the path in trail space;
+  - a missile trail packs two media on the GPU (one glowing) and matches the CPU image.
+- **Not done yet:**
+  - **No attach-to-object:** a trail doesn't follow a moving aircraft or mech; move it with the object by hand.
+  - **The viewport flame** is a tinted lit fog with no real emission. F9 shows the true glow.
+  - **With a picked path**, Length / Turn / Climb are hidden; the spline's own length is used.
+  - **Vortex strength** only reads the path's curvature, not speed or lift.
+  - **Speed** of long trails in the viewport hasn't been measured on her card.
+
+## 71. Clouds PR 4: Explosions and the mushroom cloud
+- **What:** a new Demiurge object, **Explosion** (Demiurge tab > Explosions, or Create > Demiurge Explosions), with six types:
+  - **Fireball:** a rising ball of fire that cools into rolling black smoke;
+  - **Ground Explosion:** a fire dome on the ground with a dust skirt, ejecta, debris and sparks;
+  - **Flak Burst:** a short flash in the air, then a ragged black puff;
+  - **Aerial Explosion:** a big fireball in the air with showers of white-gold sparks and burning debris;
+  - **Napalm / Fuel Fire:** a long rolling wall of fire under thick black smoke;
+  - **Nuclear Mushroom Cloud:** ground fireball, stem, rolling torus cap with fire on its underside, a condensation ring, an ice cap and a base surge.
+  - **Stage (0–100 %):** the moment of the blast. Each type spans its own time (3 s flak to 60 s mushroom). Stage drives size, rise, how much fire has cooled into smoke, and how dark the smoke gets.
+  - **Parameters:** Seed, Size, Billow, Heat, Smoke Darkness; Sparks (Count, Speed, Speed Spread, Streak Length, Cooling, Orange / White-Gold); Burning Debris; Explosion Light + Light Strength; plus the cloud look rows.
+  - **Rendering:** up to five media per explosion (fire, smoke, dust, vapour, sparks), each its own volume through the cloud pipeline, so fire and sparks glow with their own ramps. Sparks are short glowing streaks along seeded ballistic arcs with drag; burning debris leaves a smoke trail with a glowing tip. At most 8000 puffs (the viewport preview mesh thins sparks to 600).
+  - **Explosion Light:** a shadow-casting point light at the fire's heat-weighted centre, coloured from the fire ramp and sized from the glowing volume. Every explosion's light shares one LightMix group, **Explosions**. Render As: Mesh turns the light off with the volumes.
+  - Help suggests the AgX tonemap so bright fire keeps its colour.
+- **Tests (8 new):**
+  - every type lays seeded, valid puffs above the ground, starts as fire, and every medium has a material;
+  - Stage grows, lifts and cools the fireball, and darkens its smoke;
+  - the mushroom goes from a bare ground fireball to stem, cap and condensation skirt, then an ice cap and a spreading base surge;
+  - sparks fly on ballistic arcs, cool, and reach further when faster;
+  - burning debris leaves smoke trails with glowing tips;
+  - preview mesh vertex/polygon counts, pack IDs, normals and UVs;
+  - the explosion light sits at the fire's centre, is warm, scales with Light Strength and dims as it cools;
+  - a small fireball with sparks packs three or more media on the GPU, matches the CPU image, and adds a warm, shadowed light in the Explosions group (gone again when Render As is Mesh).
+- **Not done yet:**
+  - **The viewport has no explosion light** and shows fire as a warm-tinted fog; F9 shows the true glow and light.
+  - **Sparks are tiny volume streaks**, not particles or motion-blurred lines; very thin streaks can alias at low samples.
+  - **No wind or animation:** Stage is a still slider, not keyed over time.
+  - **Debris is part of the explosion**, not separate Trail objects you can edit.
+  - **Viewport speed** for big blasts (mushroom, 1200 sparks) hasn't been measured on her card.
+
+## 72. Clouds PR 5: four more cloud types
+- **What:** four new types in the Clouds rollout, the Demiurge tab, Create > Demiurge Clouds and the Cloud Field Type Mix:
+  - **Altocumulus:** a fine sheet of small puffs in slightly wavy rows, with gaps;
+  - **Mammatus:** a flat storm layer with rounded pouches hanging below it, each joined to the layer by a neck; it uses the Storm Cloud look, like a Cumulonimbus;
+  - **Lenticular:** two or three smooth lens discs stacked with gaps, each smaller than the one below. It uses one detail level and little erosion, so it stays smooth;
+  - **Cloud Bank / Wall:** a long ridge of cumulus towers piled close along X, with the tallest in the middle.
+  - Each type has its own default size and preset (Puffiness, Lumpiness, Base Flatness, Wind Shear), and works with the existing sliders, detail levels, wind shear and volume rendering.
+  - **Cloud Field:** the Type Mix now has eight weights. Older scenes with four weights load with the new types at 0.
+- **Tests (5 new, plus the per-type test covering all eight types):**
+  - Altocumulus has many small puffs;
+  - Mammatus has pouches below its layer, and is stormy;
+  - Lenticular is smooth, with lenses that shrink upward;
+  - Cloud Bank is more than three times longer than it is wide;
+  - an old Cloud Field with four mix weights loads.
+- **Not done yet:**
+  - **Mammatus is its own cloud**, not pouches added under an existing Cumulonimbus anvil.
+  - **Lenticular lenses don't follow terrain** or wind; they are placed where the object is.
+  - **The Cloud Bank runs along X only**; rotate the object to aim it.
+
+## 73. Smoke plumes render as volumes
+- **What:** the Smoke & Fire Plume object now has **Render As** and the cloud look rows (Edge Softness, Erosion, Wispiness, Density), like clouds, trails and explosions.
+  - New plumes render as volumes: a smoke medium per style (black oily smoke, grey chimney smoke, white steam) and, when Fire Base Intensity is above 0, a glowing flame medium at the source. Both go through the same pipeline as trails, so they render on the CPU and the GPU and show in the viewport volume preview.
+  - The volume uses the plume's own lobes: same column physics, wind lean, sway, rise phase and mushroom cap. Turbulence cards stay mesh-only (erosion and wisps do that job in a volume).
+  - **Old scenes keep their mesh:** plumes saved before this option load with Render As: Mesh.
+  - The mesh plume is unchanged: the layout moved to its own file, and a checksum of the mesh matches the old code.
+- **Tests (3 new):**
+  - puffs are deterministic and valid, fire sits at the base, smoke thins as it spreads, and the styles' media get lighter from battlefield to steam;
+  - old plumes load as Mesh, and new plumes round-trip as Volume;
+  - a burning plume renders as smoke and flame volumes with GPU = CPU, and Render As: Mesh drops the volumes.
+- **Not done yet:**
+  - **Battlefield and Settlement auto-spawned plumes are still mesh**, because they are part of the town mesh.
+  - **No light from the fire base**, unlike explosions.
+
+## 74. VDB volume import
+- **What:** File > Import VDB Volume… (also a button in the Demiurge tab's Explosions rollout) loads an OpenVDB file as a **VDB Volume** object.
+  - The density grid renders as smoke (Grey Smoke, Black Smoke, Steam or Cloud look); a temperature / flame grid, picked automatically by name, renders as glowing fire.
+  - Modify tab: Pick VDB File…, Density Grid and Fire Grid pickers, Smoke Look, Up Axis (Y for most simulators, turned to Ilex's Z-up), Scale, Max Resolution (16–384), Smoke Density and Fire Intensity.
+  - Big grids are box-filtered down to Max Resolution along the longest axis. Values are normalised so the densest cell is 1; Smoke Density sets the look.
+  - The scene keeps the path and settings only. Grids are read when needed and cached (by file, grid, up axis, resolution and modification time).
+  - The viewport shows the bounds as a thin cage, and the soft volume preview like other volumes.
+  - Reading uses the `vdb-rs` crate (MIT). It can panic on files it doesn't support, so every read is contained: a bad or unsupported file shows a message in the rollout instead of crashing Ilex. Ilex checks the file's magic number itself.
+- **Tests (7 new):** written with a small test-only VDB writer (format 224, uncompressed, voxels and tiles):
+  - float grids are listed, and density and temperature are picked;
+  - Y-up files stand up in Z;
+  - big grids box-filter to the resolution budget;
+  - tiles are read;
+  - truncated and non-VDB files are errors, not crashes;
+  - the params give smoke and fire media, a cage that matches the bounds, and serde round trips;
+  - an imported file becomes a selected object that the renderers see as two grid volumes.
+- **Not done yet:**
+  - ~~VDB volumes render on the CPU only~~ (done in §76).
+  - **No animated VDB sequences** (one file, one frame).
+  - **Not tested on real simulation files here** (downloads were blocked); the tests use files written to the format.
+  - **Root-level tiles and the grid background value are ignored** (a limit of the reader crate); half-float and vector grids beyond what the crate reads are not offered.
+- **Also fixed:** a render that was still running when Ilex closed (or when a test ended) could crash the exit. Its thread kept working inside the GPU driver while the process shut down. Dropped render jobs now hand their threads to a list that is joined when the app exits; they were already cancelled, so this is quick.
+
+## 75. Smoke & Fire Simulation (step D, part 1: the solver and the object)
+- **What:** a grid fluid solver for smoke and fire, and a **Smoke Simulation** object (Demiurge tab > Smoke & Fire Simulation: Smoke Simulation and Fire Simulation buttons; also Create > Demiurge Simulations).
+  - The solver (`src/generators/smoke_sim/`) works on a box of cells standing on the object's origin:
+    - hot gas rises (buoyancy), and smoke weighs it down;
+    - **swirl** (vorticity confinement) keeps the small eddies that make tendrils;
+    - fuel burns where it is hot enough, releasing heat and soot;
+    - wind pushes the gas;
+    - a pressure solve keeps the flow from bunching up (closed floor, open sides and top);
+    - smoke, heat and fuel move with the flow (MacCormack with clamping, so tendrils stay sharp), and smoke fades while heat cools;
+    - the source is a sphere near the floor with seeded noise (Turbulence) on its smoke, speed and sideways gusts, so the plume breaks into billows and each seed gives a different one;
+    - fast flows take smaller steps automatically, and the work is spread over all CPU cores.
+  - Frames **bake in the background**, one worker per set of settings, and the three most recent bakes are kept. The viewport and renderers show any frame that's ready; a frame not baked yet shows the latest that is. The rollout has a Frame slider, a progress bar and Re-bake.
+  - Modify tab: Frame, Look (Smoke Look, Smoke Density, Fire Intensity), Domain (width, depth, height, Resolution), Source (radius, height, speed, smoke, heat, fuel, turbulence), Forces (buoyancy, smoke weight, swirl, wind X/Y), Burning (when Fuel is above 0), Fading & Timing (smoke fade, cooling, frames, frames per second, pressure iterations), Random Seed. It shows the grid size and the memory the bake takes.
+  - The frames render as voxel volumes through the same path as VDB volumes: smoke with the chosen look, flames with the fire glow ramp. The viewport shows the domain as a cage and the soft volume preview, which refreshes as frames finish.
+  - Bake workers are stopped and joined when Ilex exits.
+  - Defaults: a 4 x 4 x 8 m domain at Resolution 96 (48 x 48 x 96 cells), 96 frames at 24 fps. The Fire Simulation preset cools faster, so its flames stay at the base and the soot rises above them.
+- **Tests (10 new):**
+  - the grid follows size and resolution;
+  - the pressure solve removes most of the divergence of a smooth flow;
+  - hot smoke rises higher than cold smoke;
+  - the same seed gives the same result, and a new seed changes it;
+  - fuel burns into heat and soot;
+  - wind carries smoke downwind;
+  - swirl concentrates vorticity into stronger eddies;
+  - values stay finite and bounded over a long run with fire and strong swirl;
+  - the background bake matches the solver frame for frame, and the object renders its frames as volumes;
+  - the fire preset has smoke and fire media, a valid cage and a serde round trip.
+- **Not done yet:**
+  - ~~The solver runs on the CPU~~ (done in §77).
+  - ~~Simulation volumes render on the CPU only~~ (done in §76).
+  - **No frame-sequence render yet**: F9 renders the frame shown; rendering a range of frames to numbered images comes with the rest of step D.
+  - **No collision objects or mesh emitters**: the source is a sphere, and nothing in the scene blocks the gas.
+  - **Bakes live in memory only**: they are not saved with the scene, so a reopened scene bakes again.
+
+## 76. GPU rendering of voxel-grid volumes (step D, part 3)
+- **What changed:**
+  - The GPU path tracer now renders **voxel-grid volumes**: imported VDB smoke and fire, and Smoke & Fire Simulation frames. Before, any scene with one fell back to the CPU.
+  - Each grid's voxels go into the GPU volume buffer next to the cloud puffs (a new volume kind, "voxels"). The kernel samples them trilinearly, the same way the CPU tracer does, inside the same delta and ratio tracking.
+  - Scenes whose grids add up to more than 1 GB still render on the CPU; the Render tab's tooltip lists that reason. If the volume buffer is bigger than the GPU's buffer limit, the render falls back to the CPU with a message saying so.
+- **Tests (1 new):** a baked Fire Simulation packs both grids (kind, dimensions and every voxel value match the CPU's), the GPU accepts the scene, and the GPU image matches the CPU path tracer's (energy 19.83 vs 19.76 on the software Vulkan device).
+- **Not done yet:**
+  - ~~The solver still runs on the CPU~~ (done in §77).
+  - ~~No frame-sequence render yet~~ (done in §78).
+  - **Grids are copied to the GPU for every render**, not kept between renders; a long frame sequence will upload each frame again.
+
+## 77. GPU smoke solver (step D, part 4)
+- **What changed:**
+  - Smoke & Fire Simulations now **solve on the GPU** as compute kernels: emission, buoyancy and wind, swirl, burning, the pressure solve, MacCormack advection and fading all run on the graphics card. A new "Solve on the GPU" checkbox (on by default) in the simulation rollout switches it.
+  - The CPU solver stays as the reference and the fallback: with no GPU, or if a GPU step fails, the bake carries on from the last frame on the CPU. The bake status says which one ran ("Baked 96 frames on the GPU").
+  - Emission is computed once on the CPU and shared by both solvers, so the source noise matches exactly.
+- **Tests (2 new):** a burning fire with wind, simulated for 12 frames on both solvers, matches frame by frame (smoke, heat and velocity differ by about 1e-7, the test allows 1e-3); a second run checks an even pressure-iteration count with no swirl. Both skip when the machine has no GPU.
+- **Not done yet:**
+  - ~~No frame-sequence render yet~~ (done in §78).
+  - **Each GPU frame is read back to the CPU** for the bake and the renderer; nothing stays on the GPU between steps of the pipeline.
+  - **No collisions or mesh emitters**: the source is still the sphere at the bottom of the domain.
+  - **Bakes live in memory only** and are not saved with the scene.
+
+## 78. Rendering simulation frames (step D, part 5)
+- **What changed:**
+  - The Turntable / Sprite Sheet dialog has a third mode, **🔥 Simulation Frames**: it renders frames Start to End of every Smoke & Fire Simulation in the scene from the render camera, with the F10 settings, as numbered PNGs (`simulation_0001.png` …). An **All** button sets the range to the longest simulation.
+  - **Render Frames…** in the simulation rollout opens the dialog on that mode, with the range set to that simulation's frames.
+  - Each frame waits until the background bake has reached it, so a render can start while the bake is still running. Cancel stops it between frames.
+- **Tests (1 new):** a small simulation renders frames 2–3 to two PNGs of the right size, and each render shows its own baked frame.
+- **Not done yet:**
+  - **Only simulations move**: the camera, lights and other objects stay where they are, since Ilex has no animation timeline yet.
+  - **No video file output**: frames are PNGs; join them with a video tool.
+  - **Grids are copied to the GPU for every frame**, not kept between frames.

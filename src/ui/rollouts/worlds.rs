@@ -113,6 +113,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let mut w = w.clone();
     let (mut t, mut tex, mut style) = (Track::default(), None, None);
     let mut ruin = super::ruin::Out::default();
+    let (mut split, mut pick_path, mut sim_frames) = (false, false, None);
     match &mut w {
         WorldGen::Terrain(p) => rollout(ui, "Demiurge Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
         WorldGen::Ocean(p) => rollout(ui, "Demiurge Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
@@ -121,7 +122,31 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
             rollout(ui, "Demiurge Settlement", true, |ui| ruin = super::ghosttown::settlement_params(ui, &mut t, p, true))
         }
         WorldGen::Building(p) => rollout(ui, "Building Parameters", true, |ui| (style, ruin) = super::buildings::params(ui, &mut t, p)),
-        WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| super::smoke::params(ui, &mut t, p, "base")),
+        WorldGen::Smoke(p) => rollout(ui, "Demiurge Smoke & Fire Plume", true, |ui| {
+            super::smoke::params(ui, &mut t, p, "base");
+            super::clouds::look(ui, &mut t, &mut p.look, "smoke_look");
+        }),
+        WorldGen::Cloud(p) => rollout(ui, "Demiurge Cloud", true, |ui| super::clouds::cloud(ui, &mut t, p)),
+        WorldGen::CloudField(p) => rollout(ui, "Demiurge Cloud Field", true, |ui| split = super::clouds::field(ui, &mut t, p)),
+        WorldGen::Trail(p) => rollout(ui, "Demiurge Trail", true, |ui| pick_path = super::trails::trail(ui, &mut t, p)),
+        WorldGen::Pyro(p) => rollout(ui, "Demiurge Explosion", true, |ui| super::pyro::pyro(ui, &mut t, p)),
+        WorldGen::Vdb(p) => rollout(ui, "VDB Volume", true, |ui| super::vdb::vdb(ui, &mut t, p)),
+        WorldGen::SmokeSim(p) => rollout(ui, "Demiurge Smoke Simulation", true, |ui| {
+            if super::smoke_sim::sim(ui, &mut t, p) {
+                sim_frames = Some(p.sim.frames.clamp(1, 2000));
+            }
+        }),
+    }
+    if let Some(n) = sim_frames {
+        ed.open_sim_sequence(n);
+    }
+    if pick_path {
+        ed.tool = crate::editor::Tool::PickTrailPath;
+        ed.status = "Pick Path Spline: click a spline in a viewport".into();
+    }
+    if split {
+        ed.break_cloud_field(id);
+        return;
     }
     if let WorldGen::Settlement(_) | WorldGen::Building(_) = &w {
         super::ghosttown::pack_button(ui, ed);

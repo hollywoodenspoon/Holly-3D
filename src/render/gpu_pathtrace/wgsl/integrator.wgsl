@@ -22,6 +22,7 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
     // Dispersion: the colour channel this path follows once split (-1 = none).
     var channel = -1;
     var passes = 0u;
+    var vol_bounces = 0u;
     // Shadow catcher seen by the camera: its shadow, AO and reflection weight
     // while the nested reflection path runs (`alpha` is then that path's coverage).
     var caught = false;
@@ -36,6 +37,35 @@ fn radiance(o_in: vec3<f32>, d_in: vec3<f32>) -> vec4<f32> {
             let lv = b0 * volume_segment(o, d, h.t, &beta);
             l += lv;
             mix_add(G_VOLUME, lv);
+        }
+        if (FEAT_VOLOBJ) {
+            // A real collision inside a volume object: glow, then scatter.
+            let c = vo_collide(o, d, h.t);
+            if (c.v >= 0) {
+                let p = o + d * c.t;
+                let gl = beta * vo_glow(c.v, c.dens);
+                l += gl;
+                mix_add(G_VOLUME, gl);
+                if (camera) {
+                    alpha = 1.0;
+                    camera = false;
+                }
+                beta *= vo_albedo(c.v);
+                vol_bounces += 1u;
+                if (vol_bounces > u32(vobj[1u] + 0.5) || max(beta.x, max(beta.y, beta.z)) <= 0.0) { break; }
+                mix_beta = beta;
+                l += beta * vo_nee(c.v, p, d);
+                if (vol_bounces > 3u) {
+                    let survive = clamp(max(beta.x, max(beta.y, beta.z)), 0.0, 0.95);
+                    if (rnd() >= survive) { break; }
+                    beta /= survive;
+                }
+                o = p;
+                d = vo_sample_phase(c.v, d);
+                prev_pdf = 0.0;
+                prev_delta = true;
+                continue;
+            }
         }
         if (FEAT_AREA && camera) {
             let a = area_seen(o, d, h.t);
@@ -208,6 +238,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let x = u.origin.x + id.x;
     let y = u.origin.y + id.y;
     _ = groups[0];
+    _ = vobj[0];
     var a = accum[i];
     var st = stats[i];
     var gsum: array<vec3<f32>, 12>;

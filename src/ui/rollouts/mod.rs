@@ -3,6 +3,10 @@
 pub mod adv_mods;
 pub mod buildings;
 pub mod cad;
+pub mod clouds;
+pub mod trails;
+pub mod pyro;
+pub mod vdb;
 pub mod deformers;
 pub mod edit_geometry;
 pub mod edit_sub;
@@ -13,6 +17,7 @@ pub mod modifiers;
 pub mod planet;
 pub mod ruin;
 pub mod smoke;
+pub mod smoke_sim;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;

@@ -11,6 +11,7 @@ pub mod boolean;
 pub mod cad;
 pub mod cameras;
 pub mod characters;
+pub mod clouds;
 pub mod create_drag;
 pub mod drag;
 pub mod file;

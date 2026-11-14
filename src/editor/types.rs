@@ -106,6 +106,8 @@ pub enum Tool {
     RefineSpline,
     /// Editable Spline Boolean: click the second spline.
     PickSplineBoolean,
+    /// Trail: click a spline for the trail to follow.
+    PickTrailPath,
     /// Loft: click shapes to add them as cross-sections (stays active).
     PickLoftShape,
     /// Create a light; target lights take a second click for the target.
@@ -158,6 +160,7 @@ impl Tool {
             Tool::Joint { .. } => Some("Assemble Joint: click the mount point on the parent part"),
             Tool::RefineSpline => Some("Refine: click on a segment to add a vertex (Esc to stop)"),
             Tool::PickSplineBoolean => Some("Boolean: click the other closed spline"),
+            Tool::PickTrailPath => Some("Trail: click the spline to follow"),
             Tool::PickLoftShape => Some("Loft: click shapes to add them as sections (Esc to stop)"),
             Tool::PickMaterial => Some("Pick Material: click an object to load its material into the active slot"),
             Tool::PickFocus => Some("Depth of Field: click the object to keep in focus"),

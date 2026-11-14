@@ -74,6 +74,8 @@ fn label_menus(ui: &egui::Ui, ed: &mut Editor, vi: usize, rect: egui::Rect) {
                         v.shading = Shading::Wireframe;
                     }
                     ui.checkbox(&mut v.edged_faces, "Edged Faces   F4");
+                    ui.checkbox(&mut ed.prefs.viewport.preview_volumes, "Preview Volumes")
+                        .on_hover_text(crate::ui::actions::Action::PreviewVolumes.tip());
                     ui.separator();
                     ui.label(small("Background"));
                     let env = &mut ed.prefs.viewport.use_env_background;

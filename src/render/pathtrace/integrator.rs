@@ -84,6 +84,7 @@ impl<'a> PathTracer<'a> {
         let (mut alpha, mut g, mut camera) = (0.0, None, true);
         let (mut prev_pdf, mut prev_delta, mut passes) = (0.0f32, true, 0);
         let mut depth = Depths::default();
+        let mut vol_bounces = 0u32;
         // Dispersion: the color channel this path follows once split.
         let mut channel = None;
         let (mut direct, mut lobe, mut albedo, mut rough, mut ao) = (None, 0u8, Vec3::ZERO, 0.0, 1.0);
@@ -93,6 +94,33 @@ impl<'a> PathTracer<'a> {
                 let v = self.t.march(m, o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t), rng);
                 l[VOLUME as usize] += beta * v.inscatter;
                 beta *= v.transmittance;
+            }
+            if !rs.volumes.is_empty()
+                && let Some(c) = rs.volumes.collide(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t), rng)
+            {
+                // A real collision inside a volume object: glow, then scatter.
+                let v = &rs.volumes.list[c.vol];
+                let p = o + d * c.t;
+                l[VOLUME as usize] += beta * v.mat.glow(c.density);
+                if camera {
+                    (alpha, camera) = (1.0, false);
+                }
+                beta *= v.mat.albedo();
+                vol_bounces += 1;
+                if vol_bounces > self.t.cfg.volumes.max_bounces.clamp(1, 64) || beta.max_element() <= 0.0 {
+                    break;
+                }
+                self.t.volume_nee(v, p, d, rng, |g, li| l[g as usize] += beta * li);
+                if vol_bounces > 3 {
+                    let survive = beta.max_element().clamp(0.0, 0.95);
+                    if rng.f() >= survive {
+                        break;
+                    }
+                    beta /= survive;
+                }
+                (o, d) = (p, crate::render::volumes::sample_phase(&v.mat, d, rng));
+                (prev_pdf, prev_delta) = (0.0, true);
+                continue;
             }
             if camera && let Some((le, gi)) = self.t.area_seen(o, d, hit.as_ref().map_or(f32::INFINITY, |h| h.t)) {
                 (l[gi as usize], alpha) = (l[gi as usize] + beta * le, 1.0);

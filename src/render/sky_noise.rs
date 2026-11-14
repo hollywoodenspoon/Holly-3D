@@ -7,7 +7,7 @@ pub(super) fn smooth(a: f32, b: f32, x: f32) -> f32 {
     t * t * (3.0 - 2.0 * t)
 }
 
-pub(super) fn hash3(x: i32, y: i32, z: i32) -> f32 {
+pub(crate) fn hash3(x: i32, y: i32, z: i32) -> f32 {
     let mut h = (x as u32).wrapping_mul(0x8da6_b343) ^ (y as u32).wrapping_mul(0xd816_3841) ^ (z as u32).wrapping_mul(0xcb1a_b31f);
     h ^= h >> 13;
     h = h.wrapping_mul(0x5bd1_e995);
@@ -16,7 +16,7 @@ pub(super) fn hash3(x: i32, y: i32, z: i32) -> f32 {
 }
 
 /// Smooth 3D value noise in 0..1.
-fn vnoise(p: Vec3) -> f32 {
+pub(crate) fn vnoise(p: Vec3) -> f32 {
     let i = p.floor();
     let f = p - i;
     let u = f * f * (Vec3::splat(3.0) - f * 2.0);

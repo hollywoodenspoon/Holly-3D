@@ -44,6 +44,37 @@ fn gi_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
     });
 }
 
+/// Volume objects (materials with the Volume shading model).
+fn volumes_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
+    use crate::render::volumes::{NoiseDetail, ShadowQuality};
+    let v = &mut ed.render.volumes;
+    rollout(ui, "Volumes (Clouds, Smoke, Fire)", false, |ui| {
+        grid(ui, "fx_vol", |ui| {
+            ui.label("Max Volume Bounces");
+            max_spinner_range(ui, &mut v.max_bounces, 0.2, 8, 1..=64).on_hover_text("Scattering events a path tracer path may take inside volumes");
+            ui.end_row();
+            ui.label("Cloud Bounce Boost");
+            max_spinner_range(ui, &mut v.boost, 0.01, 0.5, 0.0..=1.0).on_hover_text("Brightens thick clouds the way many light bounces would, at the cost of one");
+            ui.end_row();
+            ui.label("Shadow Quality");
+            egui::ComboBox::from_id_salt("vol_shadow_q").selected_text(v.shadow_quality.label()).show_ui(ui, |ui| {
+                for q in ShadowQuality::ALL {
+                    ui.selectable_value(&mut v.shadow_quality, q, q.label());
+                }
+            });
+            ui.end_row();
+            ui.label("Noise Detail");
+            egui::ComboBox::from_id_salt("vol_noise_d").selected_text(v.noise_detail.label()).show_ui(ui, |ui| {
+                for d in NoiseDetail::ALL {
+                    ui.selectable_value(&mut v.noise_detail, d, d.label()).on_hover_text("Octaves of the noise that erodes clouds into billows and wisps");
+                }
+            });
+            ui.end_row();
+        });
+        ui.label(dim("Clouds render as volumes by default. Give any other object a Volume material (Material Editor) to render it as smoke or fire."));
+    });
+}
+
 /// Tone operator + Exposure + Contrast; true when anything changed.
 pub fn tone_row(ui: &mut egui::Ui, tone: &mut Tone) -> bool {
     let before = *tone;
@@ -122,6 +153,7 @@ fn post_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
 /// The tab body.
 pub fn tab(ui: &mut egui::Ui, ed: &mut Editor) {
     gi_rollout(ui, ed);
+    volumes_rollout(ui, ed);
     post_rollout(ui, ed);
     super::render_lens::rollout_ui(ui, ed);
     if ui.button("🎞 Render Turntable / Sprite Sheet...").on_hover_text("360° PNG sequence or 4 / 8-direction isometric sprite atlas + JSON").clicked() {

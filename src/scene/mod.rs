@@ -204,6 +204,19 @@ impl SceneObject {
         matches!(self.base, BaseObject::Light(_) | BaseObject::Target | BaseObject::Camera(_))
     }
 
+    /// A placed 3D cloud (hidden by Environment -> Clouds: Off / 2D).
+    pub fn is_cloud(&self) -> bool {
+        use crate::generators::WorldGen;
+        matches!(self.base, BaseObject::World(WorldGen::Cloud(_) | WorldGen::CloudField(_)))
+    }
+
+    /// A Trail, Pyro, Smoke Plume or VDB Volume effect (rendered as volume
+    /// media).
+    pub fn is_fx(&self) -> bool {
+        use crate::generators::WorldGen;
+        matches!(self.base, BaseObject::World(WorldGen::Trail(_) | WorldGen::Pyro(_) | WorldGen::Smoke(_) | WorldGen::Vdb(_) | WorldGen::SmokeSim(_)))
+    }
+
     /// World matrix applied to the evaluated mesh.
     pub fn world_matrix(&self) -> Mat4 {
         self.transform.matrix() * self.offset

@@ -9,6 +9,7 @@ mod multi;
 mod params;
 mod principled_rollout;
 mod slate;
+mod volume_rollout;
 
 use crate::editor::{Editor, Tool};
 use crate::materials::{MatId, Material, MultiPreset, Preset, SLOT_COUNT, ShadingModel, preview};

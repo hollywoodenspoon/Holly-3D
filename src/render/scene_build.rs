@@ -83,11 +83,14 @@ pub struct RenderScene {
     pub translucent: bool,
     /// LightMix groups (fixed four, then the scene lights).
     pub groups: Vec<super::lightmix::GroupInfo>,
+    /// Objects with a Volume material (clouds, smoke, fire) as media.
+    pub volumes: super::volumes::Volumes,
 }
 
 fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
     let mut tris = vec![];
-    for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper()) {
+    let clouds = scene.environment.sky.clouds.three_d;
+    for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper() && (clouds || !o.is_cloud()) && super::volumes::volume_of(scene, o).is_none()) {
         let mat = o.material.and_then(|id| scene.materials.mats.get(id)).cloned().unwrap_or_else(|| Material {
             base_color: o.wire_color,
             roughness: 0.65,
@@ -203,13 +206,14 @@ impl RenderScene {
                 });
             }
         }
+        explosion_lights(scene, &mut lights, &mut groups);
         let mut ambient = lin3(env.ambient) * env.ambient_level;
         if use_rig {
             ambient = ambient.max(Vec3::splat(0.25));
         }
         ambient += env.sky.night_ambient();
         let procedural = (env.sky.mode != super::sky::SkyMode::Off).then(|| env.sky.clone());
-        let hdri = super::sky::procedural_hdri(&env.sky, 1024).or_else(|| env.hdri.clone()).filter(|h| h.image.is_some());
+        let hdri = super::sky::procedural_hdri(&env.sky, env.sky.clouds.bake_width()).or_else(|| env.hdri.clone()).filter(|h| h.image.is_some());
         if let Some(h) = hdri.as_ref().filter(|h| h.lighting) {
             ambient += h.image.as_ref().map_or(Vec3::ZERO, |i| i.average()) * h.strength / K_AMBIENT;
         }
@@ -240,6 +244,30 @@ impl RenderScene {
             emitters,
             translucent,
             groups,
+            volumes: super::volumes::Volumes::build(scene),
         }
+    }
+}
+
+/// Clouds PR 4: one point light per visible explosion rendered as a volume,
+/// at the fire's heat-weighted centre; all share the "Explosions" group.
+fn explosion_lights(scene: &Scene, lights: &mut Vec<RLight>, groups: &mut Vec<super::lightmix::GroupInfo>) {
+    let mut group = None;
+    for o in scene.objects.values().filter(|o| !o.hidden && super::volumes::volume_of(scene, o).is_some()) {
+        let crate::scene::BaseObject::World(crate::generators::WorldGen::Pyro(p)) = &o.base else { continue };
+        let Some((c, col)) = p.light() else { continue };
+        let group = *group.get_or_insert_with(|| super::lightmix::light_group(groups, None, "Explosions"));
+        lights.push(RLight {
+            shape: RShape::Point,
+            pos: o.world_matrix().transform_point3(c),
+            radiance: col * K_POINT,
+            range: f32::MAX,
+            atten: Default::default(),
+            shadows: true,
+            softness: 0.0,
+            shadow_tint: Vec3::ZERO,
+            ies: Default::default(),
+            group,
+        });
     }
 }
