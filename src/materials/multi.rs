@@ -248,7 +248,7 @@ impl MultiPreset {
                 Material { opacity: 0.999, ..pbr("Smoke", [1.0, 1.0, 1.0], 0.0, 1.0) },
                 Material { opacity: 0.999, ..pbr("Smoke Wisps", [1.0, 1.0, 1.0], 0.0, 1.0) },
             ],
-            Self::Clouds => vec![pbr("Cloud", [0.95, 0.95, 0.96], 0.0, 1.0)],
+            Self::Clouds => vec![pbr("Cloud", [0.95, 0.95, 0.96], 0.0, 1.0), pbr("Cloud Base", [0.62, 0.64, 0.68], 0.0, 1.0)],
             // `character::params::ids`.
             Self::Character => vec![
                 skin_material(),
