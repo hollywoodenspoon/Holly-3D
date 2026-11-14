@@ -32,15 +32,14 @@ pub fn vdb(ui: &mut egui::Ui, t: &mut Track, p: &mut VdbParams) {
         ui.label("File:");
         ui.label(egui::RichText::new(name).strong()).on_hover_text(&p.path);
     });
-    if ui.button("Pick VDB File…").on_hover_text("Choose another .vdb file; its density and temperature grids are picked automatically").clicked() {
-        if let Some(path) = pick_file() {
-            if let Ok(n) = VdbParams::for_file(&path) {
-                *p = VdbParams { style: p.style, up: p.up, scale: p.scale, resolution: p.resolution, density: p.density, fire: p.fire, ..n };
-            } else {
-                p.path = path;
-            }
-            (t.started, t.changed) = (true, true);
+    let pick = ui.button("Pick VDB File…").on_hover_text("Choose another .vdb file; its density and temperature grids are picked automatically");
+    if let Some(path) = pick.clicked().then(pick_file).flatten() {
+        if let Ok(n) = VdbParams::for_file(&path) {
+            *p = VdbParams { style: p.style, up: p.up, scale: p.scale, resolution: p.resolution, density: p.density, fire: p.fire, ..n };
+        } else {
+            p.path = path;
         }
+        (t.started, t.changed) = (true, true);
     }
     let grids = float_grids(&p.path).unwrap_or_default();
     grid_combo(ui, t, "vdb_density", "Density Grid:", &mut p.density_grid, &grids);
@@ -74,7 +73,7 @@ pub fn vdb(ui: &mut egui::Ui, t: &mut Track, p: &mut VdbParams) {
         .into_iter()
         .filter(|n| !n.is_empty())
         .filter_map(|n| crate::generators::vdb::grid(&p.path, n, p.up, p.resolution).ok().map(|g| (n, g)))
-        .map(|(n, g)| format!("{n}: {} active voxels → {}×{}×{}", g.active, g.vox.dims[0], g.vox.dims[1], g.vox.dims[2]))
+        .map(|(n, g)| format!("{n}: {} active voxels, resampled to {} x {} x {}", g.active, g.vox.dims[0], g.vox.dims[1], g.vox.dims[2]))
         .collect();
     ui.label(dim(&format!(
         "{}. The scene saves the file path, not the voxels; keep the .vdb next to the scene. Max Resolution trades detail for memory and render speed.",
