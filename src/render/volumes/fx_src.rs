@@ -99,11 +99,21 @@ pub fn first_mat(o: &SceneObject, own: Option<VolumeMat>) -> Option<VolumeMat> {
         BaseObject::World(WorldGen::Pyro(p)) => (own.or_else(|| p.mat(Medium::Smoke)), &p.look),
         BaseObject::World(WorldGen::Smoke(p)) => (Some(own.unwrap_or_else(|| p.smoke_mat())), &p.look),
         BaseObject::World(WorldGen::Vdb(p)) => return p.smoke_mat().map(|m| own.unwrap_or(m)).or_else(|| p.fire_mat()),
+        BaseObject::World(WorldGen::SmokeSim(p)) => return p.smoke_mat().map(|m| own.unwrap_or(m)).or_else(|| p.fire_mat()),
         _ => return None,
     };
     let m = m.filter(|_| look.render_as == RenderAs::Volume)?;
     let m = VolumeMat { density: m.density * look.density.max(0.0), ..m };
     (m.density > 0.0).then_some(m)
+}
+
+/// Changes when what `o` shows changes without an edit (a simulation
+/// frame finishing its bake), so previews refresh.
+pub fn stamp(o: &SceneObject) -> u64 {
+    match &o.base {
+        BaseObject::World(WorldGen::SmokeSim(p)) => p.stamp(),
+        _ => 0,
+    }
 }
 
 /// How many parts `o` may have, cheaply (viewport preview bookkeeping).
@@ -113,6 +123,7 @@ pub fn part_count(o: &SceneObject) -> usize {
         BaseObject::World(WorldGen::Pyro(_)) => Medium::ALL.len(),
         BaseObject::World(WorldGen::Smoke(p)) => 1 + usize::from(p.fire_mat().is_some()),
         BaseObject::World(WorldGen::Vdb(p)) => usize::from(p.smoke_mat().is_some()) + usize::from(p.fire_mat().is_some()),
+        BaseObject::World(WorldGen::SmokeSim(p)) => usize::from(p.smoke_mat().is_some()) + usize::from(p.fire_mat().is_some()),
         _ => 1,
     }
 }

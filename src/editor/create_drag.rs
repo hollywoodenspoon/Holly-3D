@@ -301,6 +301,13 @@ impl Editor {
                     }
                 }
                 WorldGen::Vdb(_) => {}
+                WorldGen::SmokeSim(s) => {
+                    s.sim.size[0] = (2.0 * a).max(0.5);
+                    s.sim.size[1] = (2.0 * b.max(a)).max(0.5);
+                    if d.step > 0 {
+                        s.sim.size[2] = c.max(0.5);
+                    }
+                }
             },
             BaseObject::Mech(MechPart::Gear(g)) => g.module = (2.0 * a / g.teeth.max(1) as f32).max(MIN),
             _ => {}

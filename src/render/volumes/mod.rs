@@ -105,6 +105,9 @@ pub fn parts_of(scene: &Scene, o: &SceneObject) -> Vec<(Source, Vec3, Vec3, Volu
         if let BaseObject::World(WorldGen::Vdb(p)) = &o.base {
             return p.parts(own).into_iter().map(|q| (q.src, q.lo, q.hi, q.mat)).collect();
         }
+        if let BaseObject::World(WorldGen::SmokeSim(p)) = &o.base {
+            return p.parts(own).into_iter().map(|q| (q.src, q.lo, q.hi, q.mat)).collect();
+        }
         return fx_src::parts(o, own).into_iter().map(fx_src::source).collect();
     }
     let (Some(m), Some((src, lo, hi))) = (volume_of(scene, o), source_of(o)) else { return Vec::new() };

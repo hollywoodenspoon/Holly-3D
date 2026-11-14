@@ -2230,3 +2230,36 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Not tested on real simulation files here** (downloads were blocked); the tests use files written to the format.
   - **Root-level tiles and the grid background value are ignored** (a limit of the reader crate); half-float and vector grids beyond what the crate reads are not offered.
 - **Also fixed:** a render that was still running when Ilex closed (or when a test ended) could crash the exit. Its thread kept working inside the GPU driver while the process shut down. Dropped render jobs now hand their threads to a list that is joined when the app exits; they were already cancelled, so this is quick.
+
+## 75. Smoke & Fire Simulation (step D, part 1: the solver and the object)
+- **What:** a grid fluid solver for smoke and fire, and a **Smoke Simulation** object (Demiurge tab > Smoke & Fire Simulation: Smoke Simulation and Fire Simulation buttons; also Create > Demiurge Simulations).
+  - The solver (`src/generators/smoke_sim/`) works on a box of cells standing on the object's origin:
+    - hot gas rises (buoyancy), and smoke weighs it down;
+    - **swirl** (vorticity confinement) keeps the small eddies that make tendrils;
+    - fuel burns where it is hot enough, releasing heat and soot;
+    - wind pushes the gas;
+    - a pressure solve keeps the flow from bunching up (closed floor, open sides and top);
+    - smoke, heat and fuel move with the flow (MacCormack with clamping, so tendrils stay sharp), and smoke fades while heat cools;
+    - the source is a sphere near the floor with seeded noise (Turbulence), so each seed gives a different plume;
+    - fast flows take smaller steps automatically, and the work is spread over all CPU cores.
+  - Frames **bake in the background**, one worker per set of settings, and the three most recent bakes are kept. The viewport and renderers show any frame that's ready; a frame not baked yet shows the latest that is. The rollout has a Frame slider, a progress bar and Re-bake.
+  - Modify tab: Frame, Look (Smoke Look, Smoke Density, Fire Intensity), Domain (width, depth, height, Resolution), Source (radius, height, speed, smoke, heat, fuel, turbulence), Forces (buoyancy, smoke weight, swirl, wind X/Y), Burning (when Fuel is above 0), Fading & Timing (smoke fade, cooling, frames, frames per second, pressure iterations), Random Seed. It shows the grid size and the memory the bake takes.
+  - The frames render as voxel volumes through the same path as VDB volumes: smoke with the chosen look, flames with the fire glow ramp. The viewport shows the domain as a cage and the soft volume preview, which refreshes as frames finish.
+  - Bake workers are stopped and joined when Ilex exits.
+- **Tests (10 new):**
+  - the grid follows size and resolution;
+  - the pressure solve removes most of the divergence of a smooth flow;
+  - hot smoke rises higher than cold smoke;
+  - the same seed gives the same result, and a new seed changes it;
+  - fuel burns into heat and soot;
+  - wind carries smoke downwind;
+  - swirl adds vorticity;
+  - values stay finite and bounded over a long run with fire and strong swirl;
+  - the background bake matches the solver frame for frame, and the object renders its frames as volumes;
+  - the fire preset has smoke and fire media, a valid cage and a serde round trip.
+- **Not done yet:**
+  - **The solver runs on the CPU.** The GPU compute solver (with a CPU/GPU parity test) is the next part of step D.
+  - **Simulation volumes render on the CPU only**, like VDB volumes; the GPU path tracer falls back to the CPU for them.
+  - **No frame-sequence render yet**: F9 renders the frame shown; rendering a range of frames to numbered images comes with the rest of step D.
+  - **No collision objects or mesh emitters**: the source is a sphere, and nothing in the scene blocks the gas.
+  - **Bakes live in memory only**: they are not saved with the scene, so a reopened scene bakes again.

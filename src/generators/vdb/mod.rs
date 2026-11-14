@@ -49,7 +49,7 @@ impl VdbStyle {
             Self::Cloud => "Cloud",
         }
     }
-    fn mat(self) -> VolumeMat {
+    pub(crate) fn mat(self) -> VolumeMat {
         match self {
             Self::GreySmoke => VolumePreset::GreySmoke.params(),
             Self::BlackSmoke => VolumePreset::BlackSmoke.params(),
@@ -161,19 +161,23 @@ impl VdbParams {
         String::new()
     }
 
-    /// The viewport cage: the twelve edges of the bounds as thin beams (a
-    /// 1 m cage while the file is missing).
+    /// The viewport cage of the bounds (a 1 m cage while the file is missing).
     pub fn build(&self) -> EditablePoly {
         let (lo, hi) = self.bounds().unwrap_or((Vec3::new(-0.5, -0.5, 0.0), Vec3::new(0.5, 0.5, 1.0)));
-        let t = ((hi - lo).length() * 0.004).max(1e-3);
-        let mut k = Kit::new();
-        let corner = |i: usize| Vec3::new(if i & 1 == 0 { lo.x } else { hi.x }, if i & 2 == 0 { lo.y } else { hi.y }, if i & 4 == 0 { lo.z } else { hi.z });
-        for (a, b) in [(0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3), (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)] {
-            let (p, q) = (corner(a), corner(b));
-            let d = q - p;
-            let rot = Quat::from_rotation_arc(Vec3::X, d.normalize_or(Vec3::X));
-            k.cuboid((p + q) * 0.5, Vec3::new(d.length() * 0.5 + t * 0.5, t * 0.5, t * 0.5), rot);
-        }
-        k.finish()
+        cage(lo, hi)
     }
+}
+
+/// The twelve edges of the box `lo..hi` as thin beams (a volume's cage).
+pub fn cage(lo: Vec3, hi: Vec3) -> EditablePoly {
+    let t = ((hi - lo).length() * 0.004).max(1e-3);
+    let mut k = Kit::new();
+    let corner = |i: usize| Vec3::new(if i & 1 == 0 { lo.x } else { hi.x }, if i & 2 == 0 { lo.y } else { hi.y }, if i & 4 == 0 { lo.z } else { hi.z });
+    for (a, b) in [(0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3), (4, 6), (5, 7), (0, 4), (1, 5), (2, 6), (3, 7)] {
+        let (p, q) = (corner(a), corner(b));
+        let d = q - p;
+        let rot = Quat::from_rotation_arc(Vec3::X, d.normalize_or(Vec3::X));
+        k.cuboid((p + q) * 0.5, Vec3::new(d.length() * 0.5 + t * 0.5, t * 0.5, t * 0.5), rot);
+    }
+    k.finish()
 }

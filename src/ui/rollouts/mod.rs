@@ -17,6 +17,7 @@ pub mod modifiers;
 pub mod planet;
 pub mod ruin;
 pub mod smoke;
+pub mod smoke_sim;
 pub mod selection;
 pub mod smoothing;
 pub mod spline;

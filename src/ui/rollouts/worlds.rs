@@ -131,6 +131,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         WorldGen::Trail(p) => rollout(ui, "Demiurge Trail", true, |ui| pick_path = super::trails::trail(ui, &mut t, p)),
         WorldGen::Pyro(p) => rollout(ui, "Demiurge Explosion", true, |ui| super::pyro::pyro(ui, &mut t, p)),
         WorldGen::Vdb(p) => rollout(ui, "VDB Volume", true, |ui| super::vdb::vdb(ui, &mut t, p)),
+        WorldGen::SmokeSim(p) => rollout(ui, "Demiurge Smoke Simulation", true, |ui| super::smoke_sim::sim(ui, &mut t, p)),
     }
     if pick_path {
         ed.tool = crate::editor::Tool::PickTrailPath;

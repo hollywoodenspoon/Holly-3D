@@ -16,6 +16,7 @@ pub mod ruin;
 pub mod settlement;
 pub mod pyro;
 pub mod smoke;
+pub mod smoke_sim;
 pub mod trails;
 pub mod vdb;
 mod sphere;
@@ -61,6 +62,8 @@ pub enum WorldGen {
     Pyro(Box<pyro::PyroParams>),
     /// Step C: an imported OpenVDB smoke / fire simulation.
     Vdb(Box<vdb::VdbParams>),
+    /// Step D: a grid smoke / fire simulation baked in the background.
+    SmokeSim(Box<smoke_sim::SmokeSimParams>),
 }
 
 /// Create-tab buttons.
@@ -77,6 +80,8 @@ pub enum WorldKind {
     Trail(trails::TrailKind),
     Pyro(pyro::PyroKind),
     Vdb,
+    SmokeSim,
+    FireSim,
 }
 
 impl WorldKind {
@@ -111,6 +116,8 @@ impl WorldKind {
         out
     };
     pub const ALL: [WorldKind; 4] = [Self::Terrain, Self::Ocean, Self::Planet, Self::Smoke];
+    /// Create -> Geometry -> Simulations buttons.
+    pub const SIMS: [WorldKind; 2] = [Self::SmokeSim, Self::FireSim];
     /// Create -> Geometry -> Settlement buttons.
     pub const SETTLEMENTS: [WorldKind; 14] = {
         let mut out = [Self::Terrain; 14];
@@ -134,6 +141,8 @@ impl WorldKind {
             Self::Trail(k) => k.label(),
             Self::Pyro(k) => k.label(),
             Self::Vdb => "VDB Volume",
+            Self::SmokeSim => "Smoke Simulation",
+            Self::FireSim => "Fire Simulation",
         }
     }
     pub fn tip(self) -> &'static str {
@@ -149,6 +158,8 @@ impl WorldKind {
             Self::Trail(k) => k.tip(),
             Self::Pyro(k) => k.tip(),
             Self::Vdb => "Simulated smoke and fire imported from an OpenVDB file",
+            Self::SmokeSim => "Rising, swirling smoke simulated on a grid, frame by frame",
+            Self::FireSim => "Burning fuel simulated on a grid: flames below, soot above",
         }
     }
 }
@@ -167,6 +178,8 @@ impl WorldGen {
             WorldKind::Trail(k) => Self::Trail(Box::new(trails::TrailParams::of(k))),
             WorldKind::Pyro(k) => Self::Pyro(Box::new(pyro::PyroParams::of(k))),
             WorldKind::Vdb => Self::Vdb(Box::default()),
+            WorldKind::SmokeSim => Self::SmokeSim(Box::default()),
+            WorldKind::FireSim => Self::SmokeSim(Box::new(smoke_sim::SmokeSimParams::fire_preset())),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -182,6 +195,7 @@ impl WorldGen {
             Self::Trail(p) => WorldKind::Trail(p.kind),
             Self::Pyro(p) => WorldKind::Pyro(p.kind),
             Self::Vdb(_) => WorldKind::Vdb,
+            Self::SmokeSim(p) => if p.sim.fuel > 0.0 { WorldKind::FireSim } else { WorldKind::SmokeSim },
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -197,6 +211,7 @@ impl WorldGen {
             Self::Trail(p) => p.build(),
             Self::Pyro(p) => p.build(),
             Self::Vdb(p) => p.build(),
+            Self::SmokeSim(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
@@ -206,6 +221,7 @@ impl WorldGen {
             Self::Trail(_) => "Trail",
             Self::Pyro(_) => "Explosion",
             Self::Vdb(_) => "VDB",
+            Self::SmokeSim(_) => "SmokeSim",
             _ => self.kind().label(),
         }
     }
@@ -218,7 +234,7 @@ impl WorldGen {
             Self::Planet(_) => MultiPreset::PlanetStudio,
             Self::Settlement(_) => MultiPreset::Settlement,
             Self::Building(p) => p.style.pack(),
-            Self::Smoke(_) | Self::Trail(_) | Self::Pyro(_) | Self::Vdb(_) => MultiPreset::SmokeFire,
+            Self::Smoke(_) | Self::Trail(_) | Self::Pyro(_) | Self::Vdb(_) | Self::SmokeSim(_) => MultiPreset::SmokeFire,
             Self::Cloud(_) | Self::CloudField(_) => MultiPreset::Clouds,
         }
     }

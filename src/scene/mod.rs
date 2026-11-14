@@ -214,7 +214,7 @@ impl SceneObject {
     /// media).
     pub fn is_fx(&self) -> bool {
         use crate::generators::WorldGen;
-        matches!(self.base, BaseObject::World(WorldGen::Trail(_) | WorldGen::Pyro(_) | WorldGen::Smoke(_) | WorldGen::Vdb(_)))
+        matches!(self.base, BaseObject::World(WorldGen::Trail(_) | WorldGen::Pyro(_) | WorldGen::Smoke(_) | WorldGen::Vdb(_) | WorldGen::SmokeSim(_)))
     }
 
     /// World matrix applied to the evaluated mesh.

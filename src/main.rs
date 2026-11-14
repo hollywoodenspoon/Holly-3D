@@ -103,6 +103,7 @@ fn main() {
     // Let cancelled render threads stop before the GPU driver unloads.
     drop(app);
     ilex::render::job::join_orphans();
+    ilex::generators::smoke_sim::shutdown();
 }
 
 /// The GPU name for crash reports.

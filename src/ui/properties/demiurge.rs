@@ -51,6 +51,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         }
         ui.label(dim("Brings in smoke and fire simulated elsewhere (.vdb): density renders as smoke, temperature as fire."));
     });
+    rollout(ui, "Smoke & Fire Simulation", true, |ui| {
+        world_grid(ui, ed, "dm_sims", &WorldKind::SIMS, 2);
+        ui.label(dim("Drag to size the simulation box, then drag up for its height. Frames bake in the background; scrub Frame to watch the smoke rise."));
+    });
     rollout(ui, "Settlements", true, |ui| {
         world_grid(ui, ed, "dm_settlements", &WorldKind::SETTLEMENTS, 2);
         ui.label(dim("Click, then click in a viewport to place a whole settlement with its Material Pack."));

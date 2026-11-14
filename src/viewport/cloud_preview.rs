@@ -43,7 +43,7 @@ pub fn any_volumes(ed: &Editor) -> bool {
 #[derive(Component)]
 struct CloudVolume;
 
-type Key = (u64, VolumeMat);
+type Key = (u64, u64, VolumeMat);
 
 #[derive(Default)]
 struct Entry {
@@ -141,7 +141,7 @@ fn sync_clouds(
     for id in live {
         let o = &ed.scene.objects[id];
         let Some(mat) = volume_of(&ed.scene, o) else { continue };
-        let key: Key = (o.version, mat);
+        let key: Key = (o.version, crate::render::volumes::fx_src::stamp(o), mat);
         let mut fresh: Option<Vec<Option<_>>> = None;
         for part in 0..media(o) {
             let e = prev.0.entry((id, part)).or_default();
