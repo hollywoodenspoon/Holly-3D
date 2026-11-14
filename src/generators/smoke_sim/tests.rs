@@ -2,7 +2,7 @@ use super::*;
 use bevy::math::Vec3;
 
 fn small() -> SimParams {
-    SimParams { size: [2.0, 2.0, 4.0], resolution: 24, source_radius: 0.35, source_height: 0.4, pressure_iters: 30, ..Default::default() }
+    SimParams { size: [2.0, 2.0, 4.0], resolution: 24, source_radius: 0.35, source_height: 0.4, pressure_iters: 30, gpu: false, ..Default::default() }
 }
 
 fn run(p: &SimParams, frames: u32) -> SimState {
@@ -165,4 +165,47 @@ fn fire_preset_renders_smoke_and_fire_and_saves() {
     let m = w.build();
     m.validate().unwrap();
     assert_eq!(m.polygons.len(), 12 * 6);
+}
+
+#[test]
+fn simulation_frames_render_to_numbered_pngs() {
+    use crate::generators::WorldGen;
+    use crate::render::scene_build::RenderScene;
+    use crate::render::turntable::{SheetMode, SheetSettings, render_sheet, views};
+    use crate::scene::{BaseObject, Scene};
+    use crate::viewport::camera::{ViewCamera, ViewKind};
+    use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+    let dir = std::env::temp_dir().join(format!("ilex_simseq_{}", std::process::id()));
+    let sim = SimParams { resolution: 12, frames: 4, seed: 4242, ..small() };
+    let mut scene = Scene::default();
+    let id = scene.add(BaseObject::World(WorldGen::SmokeSim(Box::new(SmokeSimParams { sim, frame: 0, ..Default::default() }))), Vec3::ZERO);
+    scene.objects[id].evaluate();
+    assert_eq!(super::sequence::longest(&scene), 4);
+    let mut cam = ViewCamera::new(ViewKind::Perspective);
+    cam.frame(Vec3::new(-1.0, -1.0, 0.0), Vec3::new(1.0, 1.0, 4.0));
+    let s = SheetSettings { mode: SheetMode::Simulation, start: 2, end: 3, folder: dir.to_string_lossy().into(), name: "sim".into(), ..Default::default() };
+    let v = views(&s, Vec3::ZERO, Vec3::ONE, &cam);
+    assert_eq!(v.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>(), ["sim_0002", "sim_0003"]);
+    let mut cfg = crate::render::settings::RenderSettings { aa: 1, width: 24, height: 32, ..Default::default() };
+    cfg.path.integrator = crate::render::pathtrace::settings::Integrator::Classic;
+    let (cancel, done) = (AtomicBool::new(false), AtomicU32::new(0));
+    let mut shown = Vec::new();
+    let rs = RenderScene::build(&scene, cam, true);
+    let prep = |i: usize, rs: &mut RenderScene| {
+        let k = s.start - 1 + i as u32;
+        let ok = super::sequence::show_frame(&mut scene, k, &cancel);
+        rs.volumes = crate::render::volumes::Volumes::build(&scene);
+        if let BaseObject::World(WorldGen::SmokeSim(p)) = &scene.objects[id].base {
+            shown.push(p.bake().frame(p.frame).map(|(f, _)| f));
+        }
+        ok
+    };
+    render_sheet(rs, &cfg, &s, v, prep, &cancel, &done).unwrap();
+    assert_eq!(done.load(Ordering::Relaxed), 2);
+    assert_eq!(shown, [Some(1), Some(2)], "each render waits for its own baked frame");
+    for n in ["sim_0002", "sim_0003"] {
+        let img = image::open(dir.join(format!("{n}.png"))).unwrap();
+        assert_eq!((img.width(), img.height()), (24, 32));
+    }
+    let _ = std::fs::remove_dir_all(&dir);
 }

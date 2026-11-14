@@ -80,7 +80,11 @@ impl SmokeSimParams {
         let b = self.bake();
         let (r, t) = (b.ready(), b.total);
         let shown = b.frame(self.frame).map_or("nothing yet".to_string(), |(k, _)| format!("frame {}", k + 1));
-        if r >= t { format!("Baked {t} frames; showing {shown}") } else { format!("Baking {r} / {t} frames; showing {shown}") }
+        let on = match b.solver() {
+            "" => String::new(),
+            s => format!(" on the {s}"),
+        };
+        if r >= t { format!("Baked {t} frames{on}; showing {shown}") } else { format!("Baking {r} / {t} frames{on}; showing {shown}") }
     }
 
     /// Memory one bake takes (MB).

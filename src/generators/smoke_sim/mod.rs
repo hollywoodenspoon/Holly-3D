@@ -8,11 +8,16 @@
 //! from 0 up to `size.z`. The source is a sphere near the floor.
 
 pub mod bake;
+mod emit;
+mod gpu;
 mod field;
 mod object;
+pub mod sequence;
 mod solver;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_gpu;
 
 pub use bake::shutdown;
 pub use field::{Field, par_fill};
@@ -61,6 +66,8 @@ pub struct SimParams {
     /// Pressure solver iterations (more = less compressible, slower).
     pub pressure_iters: u32,
     pub seed: u32,
+    /// Solve on the GPU when one is available (the CPU otherwise).
+    pub gpu: bool,
 }
 
 impl Default for SimParams {
@@ -89,6 +96,7 @@ impl Default for SimParams {
             frames: 96,
             pressure_iters: 40,
             seed: 1,
+            gpu: true,
         }
     }
 }

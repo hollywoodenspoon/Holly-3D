@@ -30,8 +30,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
 pub struct Gpu {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    pub(crate) device: wgpu::Device,
+    pub(crate) queue: wgpu::Queue,
     module: wgpu::ShaderModule,
     /// One pipeline per feature mask, built on first use.
     pipelines: Mutex<HashMap<u32, wgpu::ComputePipeline>>,
@@ -118,7 +118,7 @@ fn read_back(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<Vec4>, String
 }
 
 /// `size` bytes of `src` as floats.
-fn read_floats(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<f32>, String> {
+pub(crate) fn read_floats(g: &Gpu, src: &wgpu::Buffer, size: u64) -> Result<Vec<f32>, String> {
     let dst = g.device.create_buffer(&wgpu::BufferDescriptor { label: Some("readback"), size, usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let mut enc = g.device.create_command_encoder(&Default::default());
     enc.copy_buffer_to_buffer(src, 0, &dst, 0, size);

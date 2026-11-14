@@ -113,7 +113,7 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
     let mut w = w.clone();
     let (mut t, mut tex, mut style) = (Track::default(), None, None);
     let mut ruin = super::ruin::Out::default();
-    let (mut split, mut pick_path) = (false, false);
+    let (mut split, mut pick_path, mut sim_frames) = (false, false, None);
     match &mut w {
         WorldGen::Terrain(p) => rollout(ui, "Demiurge Terrain Parameters", true, |ui| terrain_params(ui, &mut t, p, true)),
         WorldGen::Ocean(p) => rollout(ui, "Demiurge Ocean Parameters", true, |ui| ocean_params(ui, &mut t, p, true)),
@@ -131,7 +131,14 @@ pub fn base(ui: &mut egui::Ui, ed: &mut Editor) {
         WorldGen::Trail(p) => rollout(ui, "Demiurge Trail", true, |ui| pick_path = super::trails::trail(ui, &mut t, p)),
         WorldGen::Pyro(p) => rollout(ui, "Demiurge Explosion", true, |ui| super::pyro::pyro(ui, &mut t, p)),
         WorldGen::Vdb(p) => rollout(ui, "VDB Volume", true, |ui| super::vdb::vdb(ui, &mut t, p)),
-        WorldGen::SmokeSim(p) => rollout(ui, "Demiurge Smoke Simulation", true, |ui| super::smoke_sim::sim(ui, &mut t, p)),
+        WorldGen::SmokeSim(p) => rollout(ui, "Demiurge Smoke Simulation", true, |ui| {
+            if super::smoke_sim::sim(ui, &mut t, p) {
+                sim_frames = Some(p.sim.frames.clamp(1, 2000));
+            }
+        }),
+    }
+    if let Some(n) = sim_frames {
+        ed.open_sim_sequence(n);
     }
     if pick_path {
         ed.tool = crate::editor::Tool::PickTrailPath;

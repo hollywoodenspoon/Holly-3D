@@ -2259,7 +2259,7 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - the background bake matches the solver frame for frame, and the object renders its frames as volumes;
   - the fire preset has smoke and fire media, a valid cage and a serde round trip.
 - **Not done yet:**
-  - **The solver runs on the CPU.** The GPU compute solver (with a CPU/GPU parity test) is the next part of step D.
+  - ~~The solver runs on the CPU~~ (done in §77).
   - ~~Simulation volumes render on the CPU only~~ (done in §76).
   - **No frame-sequence render yet**: F9 renders the frame shown; rendering a range of frames to numbered images comes with the rest of step D.
   - **No collision objects or mesh emitters**: the source is a sphere, and nothing in the scene blocks the gas.
@@ -2272,6 +2272,29 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - Scenes whose grids add up to more than 1 GB still render on the CPU; the Render tab's tooltip lists that reason. If the volume buffer is bigger than the GPU's buffer limit, the render falls back to the CPU with a message saying so.
 - **Tests (1 new):** a baked Fire Simulation packs both grids (kind, dimensions and every voxel value match the CPU's), the GPU accepts the scene, and the GPU image matches the CPU path tracer's (energy 19.83 vs 19.76 on the software Vulkan device).
 - **Not done yet:**
-  - **The solver still runs on the CPU.** The GPU compute solver with a CPU/GPU parity test is the next part of step D.
-  - **No frame-sequence render yet.**
+  - ~~The solver still runs on the CPU~~ (done in §77).
+  - ~~No frame-sequence render yet~~ (done in §78).
   - **Grids are copied to the GPU for every render**, not kept between renders; a long frame sequence will upload each frame again.
+
+## 77. GPU smoke solver (step D, part 4)
+- **What changed:**
+  - Smoke & Fire Simulations now **solve on the GPU** as compute kernels: emission, buoyancy and wind, swirl, burning, the pressure solve, MacCormack advection and fading all run on the graphics card. A new "Solve on the GPU" checkbox (on by default) in the simulation rollout switches it.
+  - The CPU solver stays as the reference and the fallback: with no GPU, or if a GPU step fails, the bake carries on from the last frame on the CPU. The bake status says which one ran ("Baked 96 frames on the GPU").
+  - Emission is computed once on the CPU and shared by both solvers, so the source noise matches exactly.
+- **Tests (2 new):** a burning fire with wind, simulated for 12 frames on both solvers, matches frame by frame (smoke, heat and velocity differ by about 1e-7, the test allows 1e-3); a second run checks an even pressure-iteration count with no swirl. Both skip when the machine has no GPU.
+- **Not done yet:**
+  - ~~No frame-sequence render yet~~ (done in §78).
+  - **Each GPU frame is read back to the CPU** for the bake and the renderer; nothing stays on the GPU between steps of the pipeline.
+  - **No collisions or mesh emitters**: the source is still the sphere at the bottom of the domain.
+  - **Bakes live in memory only** and are not saved with the scene.
+
+## 78. Rendering simulation frames (step D, part 5)
+- **What changed:**
+  - The Turntable / Sprite Sheet dialog has a third mode, **🔥 Simulation Frames**: it renders frames Start to End of every Smoke & Fire Simulation in the scene from the render camera, with the F10 settings, as numbered PNGs (`simulation_0001.png` …). An **All** button sets the range to the longest simulation.
+  - **Render Frames…** in the simulation rollout opens the dialog on that mode, with the range set to that simulation's frames.
+  - Each frame waits until the background bake has reached it, so a render can start while the bake is still running. Cancel stops it between frames.
+- **Tests (1 new):** a small simulation renders frames 2–3 to two PNGs of the right size, and each render shows its own baked frame.
+- **Not done yet:**
+  - **Only simulations move**: the camera, lights and other objects stay where they are, since Ilex has no animation timeline yet.
+  - **No video file output**: frames are PNGs; join them with a video tool.
+  - **Grids are copied to the GPU for every frame**, not kept between frames.

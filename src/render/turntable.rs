@@ -1,7 +1,8 @@
 //! 1-click Turntable & isometric Sprite-Sheet renderer: N frames orbiting
 //! 360° around the selection (numbered PNG sequence), or a 4 / 8-direction
 //! tactics sprite set (N, NE, E, SE, S, SW, W, NW) at an isometric pitch,
-//! packed into one atlas PNG + `.json` frame metadata.
+//! packed into one atlas PNG + `.json` frame metadata, or a range of
+//! Smoke & Fire Simulation frames from the render camera (numbered PNGs).
 
 use super::framebuffer::FrameBuffer;
 use super::scene_build::RenderScene;
@@ -15,6 +16,8 @@ pub enum SheetMode {
     #[default]
     Turntable,
     Sprites,
+    /// Simulation frames `start..=end` from the render camera.
+    Simulation,
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -35,6 +38,9 @@ pub struct SheetSettings {
     pub selection_only: bool,
     pub folder: String,
     pub name: String,
+    /// Simulation frames to render (1-based, inclusive).
+    pub start: u32,
+    pub end: u32,
 }
 
 impl Default for SheetSettings {
@@ -50,6 +56,8 @@ impl Default for SheetSettings {
             selection_only: true,
             folder: "renders".into(),
             name: "turntable".into(),
+            start: 1,
+            end: 96,
         }
     }
 }
@@ -71,6 +79,10 @@ pub fn facing_yaw(deg: f32) -> f32 {
 
 /// One named camera per frame / direction around the bounds `min..max`.
 pub fn views(s: &SheetSettings, min: Vec3, max: Vec3, base: &ViewCamera) -> Vec<(String, ViewCamera)> {
+    if s.mode == SheetMode::Simulation {
+        let (a, b) = sim_range(s);
+        return (a..=b).map(|k| (format!("{}_{:04}", s.name, k), *base)).collect();
+    }
     let mut cam = *base;
     cam.frame(min, max);
     match s.mode {
@@ -84,6 +96,7 @@ pub fn views(s: &SheetSettings, min: Vec3, max: Vec3, base: &ViewCamera) -> Vec<
                 })
                 .collect()
         }
+        SheetMode::Simulation => unreachable!(),
         SheetMode::Sprites => {
             let names = dir_names(s.dirs);
             names
@@ -98,6 +111,12 @@ pub fn views(s: &SheetSettings, min: Vec3, max: Vec3, base: &ViewCamera) -> Vec<
                 .collect()
         }
     }
+}
+
+/// The simulation frames to render, 1-based and inclusive.
+pub fn sim_range(s: &SheetSettings) -> (u32, u32) {
+    let a = s.start.clamp(1, 2000);
+    (a, s.end.clamp(a, 2000))
 }
 
 /// Atlas grid (columns, rows) for `n` cells: one row for up to 8 cells.
@@ -142,17 +161,19 @@ fn frame(rs: &mut RenderScene, cfg: &RenderSettings, cam: ViewCamera, cancel: &A
 }
 
 /// Renders every view and writes the PNG sequence (turntable) or the atlas
-/// PNG + JSON (sprites). `done` counts finished frames.
+/// PNG + JSON (sprites). `prep` readies the scene for frame `i` first
+/// (simulation frames), returning false when cancelled. `done` counts
+/// finished frames.
 pub fn render_sheet(
     mut rs: RenderScene,
     cfg: &RenderSettings,
     s: &SheetSettings,
     views: Vec<(String, ViewCamera)>,
+    mut prep: impl FnMut(usize, &mut RenderScene) -> bool,
     cancel: &AtomicBool,
     done: &AtomicU32,
 ) -> Result<String, String> {
     let mut cfg = cfg.clone();
-    rs.volumes.set_detail(cfg.volumes.noise_detail);
     (cfg.transparent, cfg.outlines) = (s.transparent || cfg.transparent, s.outline || cfg.outlines);
     if s.mode == SheetMode::Sprites {
         (cfg.width, cfg.height) = (s.cell.max(16), s.cell.max(16));
@@ -164,19 +185,25 @@ pub fn render_sheet(
     let mut atlas = image::RgbaImage::new(cols * w, rows * h);
     let names: Vec<String> = views.iter().map(|(n, _)| n.clone()).collect();
     for (i, (name, cam)) in views.into_iter().enumerate() {
+        if !prep(i, &mut rs) {
+            return Err("Rendering cancelled".into());
+        }
+        rs.volumes.set_detail(cfg.volumes.noise_detail);
         let rgba = frame(&mut rs, &cfg, cam, cancel);
         if cancel.load(Ordering::Relaxed) {
-            return Err("Turntable cancelled".into());
+            return Err("Rendering cancelled".into());
         }
         let img = image::RgbaImage::from_raw(w, h, rgba).ok_or("frame size mismatch")?;
         match s.mode {
-            SheetMode::Turntable => img.save(dir.join(format!("{name}.png"))).map_err(|e| e.to_string())?,
+            SheetMode::Turntable | SheetMode::Simulation => img.save(dir.join(format!("{name}.png"))).map_err(|e| e.to_string())?,
             SheetMode::Sprites => image::imageops::replace(&mut atlas, &img, i64::from(i as u32 % cols * w), i64::from(i as u32 / cols * h)),
         }
         done.fetch_add(1, Ordering::Relaxed);
     }
-    if s.mode == SheetMode::Turntable {
-        return Ok(format!("Saved {} turntable frames to {}", names.len(), dir.display()));
+    match s.mode {
+        SheetMode::Turntable => return Ok(format!("Saved {} turntable frames to {}", names.len(), dir.display())),
+        SheetMode::Simulation => return Ok(format!("Saved {} simulation frames to {}", names.len(), dir.display())),
+        SheetMode::Sprites => {}
     }
     let png = format!("{}.png", s.name);
     atlas.save(dir.join(&png)).map_err(|e| e.to_string())?;
@@ -235,7 +262,7 @@ mod tests {
         cfg.path.integrator = super::super::pathtrace::settings::Integrator::Classic;
         let v = views(&s, Vec3::splat(-0.5), Vec3::splat(0.5), &cam);
         let n = AtomicU32::new(0);
-        render_sheet(rs, &cfg, &s, v, &AtomicBool::new(false), &n).unwrap();
+        render_sheet(rs, &cfg, &s, v, |_, _| true, &AtomicBool::new(false), &n).unwrap();
         assert_eq!(n.load(Ordering::Relaxed), 4);
         let img = image::open(dir.join("box.png")).unwrap().to_rgba8();
         assert_eq!(img.dimensions(), (64, 16));

@@ -78,11 +78,14 @@ fn simulation(ui: &mut egui::Ui, t: &mut Track, s: &mut SimParams) {
         row(ui, t, "Pressure Iterations:", &mut s.pressure_iters, 4..=200, d.pressure_iters, 0.3);
     });
     seed_row(ui, t, &mut s.seed);
+    t.r(ui.checkbox(&mut s.gpu, "Solve on the GPU").on_hover_text("Uses the graphics card when one is available (much faster at high resolution); off, or without a usable GPU, the CPU solves it."));
 }
 
 /// The Smoke Simulation rollout.
-pub fn sim(ui: &mut egui::Ui, t: &mut Track, p: &mut SmokeSimParams) {
+/// Returns true when `[ Render Frames… ]` was clicked.
+pub fn sim(ui: &mut egui::Ui, t: &mut Track, p: &mut SmokeSimParams) -> bool {
     playback(ui, t, p);
+    let render = ui.button("🎞 Render Frames…").on_hover_text("Render a range of simulation frames from the render camera as numbered PNGs").clicked();
     head(ui, "Look");
     ui.horizontal(|ui| {
         ui.label("Smoke Look:");
@@ -106,4 +109,5 @@ pub fn sim(ui: &mut egui::Ui, t: &mut Track, p: &mut SmokeSimParams) {
         n[2],
         p.memory_mb()
     )));
+    render
 }

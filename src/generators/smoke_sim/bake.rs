@@ -5,9 +5,10 @@
 //! being worked out. A few recent bakes are kept; older ones are cancelled
 //! and dropped. `shutdown()` stops and joins every worker (at exit).
 
+use super::gpu::GpuSim;
 use super::{SimParams, SimState};
 use crate::render::volumes::density::Voxels;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -27,6 +28,8 @@ pub struct Bake {
     pub total: u32,
     frames: Mutex<Vec<Arc<Frame>>>,
     cancel: AtomicBool,
+    /// Where the solver runs: 0 not started, 1 CPU, 2 GPU.
+    on: AtomicU8,
 }
 
 impl Bake {
@@ -44,6 +47,11 @@ impl Bake {
         let f = self.lock();
         let k = (i as usize).min(f.len().checked_sub(1)?);
         Some((k as u32, f[k].clone()))
+    }
+
+    /// "GPU", "CPU" or "" before the first frame.
+    pub fn solver(&self) -> &'static str {
+        ["", "CPU", "GPU"][usize::from(self.on.load(Ordering::Relaxed).min(2))]
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Vec<Arc<Frame>>> {
@@ -73,14 +81,31 @@ fn snapshot(p: &SimParams, s: &SimState) -> Frame {
     Frame { smoke: Arc::new(Voxels { dims, data: s.density.d.clone() }), fire: Arc::new(Voxels { dims, data: fire_of(p, s) }) }
 }
 
+/// Steps the GPU solver when allowed and available; any GPU error carries
+/// on from the last frame on the CPU.
 fn run(p: SimParams, b: Arc<Bake>) {
-    let mut s = SimState::new(&p);
+    let mut gpu = if p.gpu { GpuSim::new(&p).ok() } else { None };
+    let mut cpu = if gpu.is_some() { None } else { Some(SimState::new(&p)) };
     for _ in 0..b.total {
         if b.cancel.load(Ordering::Relaxed) {
             return;
         }
-        s.step_frame(&p);
-        let f = Arc::new(snapshot(&p, &s));
+        if let Some(g) = &mut gpu
+            && let Err(e) = g.step_frame(&p)
+        {
+            eprintln!("smoke simulation: {e}; continuing on the CPU");
+            cpu = gpu.take().map(|g| g.state);
+        }
+        let s = match (&gpu, &mut cpu) {
+            (Some(g), _) => &g.state,
+            (None, Some(s)) => {
+                s.step_frame(&p);
+                &*s
+            }
+            (None, None) => return,
+        };
+        b.on.store(if gpu.is_some() { 2 } else { 1 }, Ordering::Relaxed);
+        let f = Arc::new(snapshot(&p, s));
         b.lock().push(f);
     }
 }
@@ -94,7 +119,7 @@ pub fn bake_of(p: &SimParams) -> Arc<Bake> {
         all.push(b.clone());
         return b;
     }
-    let b = Arc::new(Bake { key, total: p.frames.clamp(1, 2000), frames: Mutex::new(Vec::new()), cancel: AtomicBool::new(false) });
+    let b = Arc::new(Bake { key, total: p.frames.clamp(1, 2000), frames: Mutex::new(Vec::new()), cancel: AtomicBool::new(false), on: AtomicU8::new(0) });
     while all.len() >= KEEP {
         all.remove(0).cancel.store(true, Ordering::Relaxed);
     }

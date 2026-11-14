@@ -3,7 +3,9 @@
 
 use super::Editor;
 use crate::render::scene_build::RenderScene;
-use crate::render::turntable::{SheetMode, SheetSettings, render_sheet, views};
+use crate::generators::smoke_sim::sequence;
+use crate::render::turntable::{SheetMode, SheetSettings, render_sheet, sim_range, views};
+use crate::render::volumes::Volumes;
 use bevy::math::Vec3;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::mpsc::{Receiver, channel};
@@ -67,13 +69,39 @@ impl Editor {
         let (tx, rx) = channel();
         let total = v.len() as u32;
         let (c, d) = (cancel.clone(), done.clone());
+        // Simulation frames: the job shows each frame on its own copy of
+        // the scene and rebuilds the volumes from it.
+        let mut scene = (s.mode == SheetMode::Simulation).then(|| self.scene.clone());
+        let first = sim_range(&s).0 - 1;
         std::thread::spawn(move || {
-            let _ = tx.send(render_sheet(rs, &cfg, &s, v, &c, &d));
+            let prep = |i: usize, rs: &mut RenderScene| match &mut scene {
+                Some(sc) => {
+                    let ok = sequence::show_frame(sc, first + i as u32, &c);
+                    rs.volumes = Volumes::build(sc);
+                    ok
+                }
+                None => true,
+            };
+            let _ = tx.send(render_sheet(rs, &cfg, &s, v, prep, &c, &d));
         });
         self.rfw.sheet.job = Some(SheetJob { cancel, done, total, rx: Mutex::new(rx) });
-        let what = if self.rfw.sheet.settings.mode == SheetMode::Turntable { "turntable frames" } else { "sprite directions" };
+        let what = match self.rfw.sheet.settings.mode {
+            SheetMode::Turntable => "turntable frames",
+            SheetMode::Sprites => "sprite directions",
+            SheetMode::Simulation => "simulation frames",
+        };
         self.rfw.sheet.message = format!("Rendering {total} {what}…");
         self.status = self.rfw.sheet.message.clone();
+    }
+
+    /// Opens the sequence dialog on Simulation Frames, 1..=`frames`.
+    pub fn open_sim_sequence(&mut self, frames: u32) {
+        let s = &mut self.rfw.sheet.settings;
+        (s.mode, s.start, s.end) = (SheetMode::Simulation, 1, frames);
+        if s.name == "turntable" {
+            s.name = "simulation".into();
+        }
+        self.rfw.sheet.open = true;
     }
 
     pub fn cancel_sheet(&mut self) {

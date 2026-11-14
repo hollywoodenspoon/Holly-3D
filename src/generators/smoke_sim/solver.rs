@@ -11,10 +11,9 @@
 use super::SimParams;
 use super::field::{Field, par_fill};
 use bevy::math::Vec3;
-use noise::{NoiseFn, Perlin};
 
 /// Scales the Swirl setting so 0..1 spans gentle to strongly curled.
-const SWIRL_GAIN: f32 = 4.0;
+pub(super) const SWIRL_GAIN: f32 = 4.0;
 
 #[derive(Clone, Debug)]
 pub struct SimState {
@@ -64,39 +63,6 @@ impl SimState {
     pub fn source(&self, p: &SimParams) -> (Vec3, f32) {
         let c = Vec3::new((self.n[0] as f32 - 1.0) * 0.5, (self.n[1] as f32 - 1.0) * 0.5, p.source_height / self.h - 0.5);
         (c, (p.source_radius / self.h).max(1.0))
-    }
-
-    fn emit(&mut self, p: &SimParams, dt: f32) {
-        let (c, r) = self.source(p);
-        let noise = Perlin::new(p.seed);
-        let (t, turb) = (f64::from(self.time) * 1.7, p.turbulence.clamp(0.0, 2.0));
-        let lo = (c - r - 1.0).max(Vec3::ZERO);
-        let hi = (c + r + 1.0).min(Vec3::new(self.n[0] as f32 - 1.0, self.n[1] as f32 - 1.0, self.n[2] as f32 - 1.0));
-        for z in lo.z as usize..=hi.z.max(0.0) as usize {
-            for y in lo.y as usize..=hi.y as usize {
-                for x in lo.x as usize..=hi.x as usize {
-                    let q = Vec3::new(x as f32, y as f32, z as f32);
-                    let s = (1.0 - (q - c).length_squared() / (r * r)).max(0.0);
-                    if s <= 0.0 {
-                        continue;
-                    }
-                    let m = q * (0.35 * self.h.recip().min(4.0) / 4.0).max(0.05);
-                    let nz = noise.get([f64::from(m.x), f64::from(m.y), f64::from(m.z), t]) as f32 * turb;
-                    let i = self.density.idx(x, y, z);
-                    let s = s.sqrt();
-                    self.density.d[i] = self.density.d[i].max(p.smoke.max(0.0) * s * (1.0 + nz).max(0.0));
-                    self.temperature.d[i] = self.temperature.d[i].max(p.heat.max(0.0) * s);
-                    self.fuel.d[i] += p.fuel.max(0.0) * s * dt;
-                    let w = p.source_speed * (1.0 + 0.5 * nz);
-                    self.vel[2].d[i] += (w - self.vel[2].d[i]) * s;
-                    // Sideways gusts break the plume's symmetry so eddies form.
-                    let side = |o: f64| noise.get([f64::from(m.x) + o, f64::from(m.y), f64::from(m.z), t]) as f32;
-                    let k = turb * (p.source_speed.abs() + 0.5) * 0.6 * s;
-                    self.vel[0].d[i] += k * side(17.3);
-                    self.vel[1].d[i] += k * side(-31.7);
-                }
-            }
-        }
     }
 
     fn forces(&mut self, p: &SimParams, dt: f32) {
