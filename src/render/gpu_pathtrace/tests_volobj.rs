@@ -208,3 +208,36 @@ fn a_burning_smoke_plume_renders_on_the_gpu() {
     }
     assert!(seen(&s).volumes.list.is_empty());
 }
+
+/// Step D3: a baked fire simulation is two voxel grids (soot and flame);
+/// both pack their voxels for the kernel, the GPU takes the scene, and the
+/// image matches the CPU's.
+#[test]
+fn a_simulated_fire_renders_on_the_gpu() {
+    use crate::generators::smoke_sim::{SimParams, SmokeSimParams};
+    let sim = SimParams { size: [1.2, 1.2, 2.0], resolution: 20, source_radius: 0.25, frames: 12, pressure_iters: 20, ..SmokeSimParams::fire_preset().sim };
+    let p = SmokeSimParams { sim, frame: 11, ..SmokeSimParams::fire_preset() };
+    let b = p.bake();
+    let t0 = std::time::Instant::now();
+    while !b.done() && t0.elapsed().as_secs() < 120 {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(b.done(), "bake finished");
+    let mut s = Scene::default();
+    floor(&mut s);
+    let id = s.add(BaseObject::World(WorldGen::SmokeSim(Box::new(p))), Vec3::new(0.3, 0.0, 0.0));
+    s.objects[id].evaluate();
+    s.add_light(Light::new(LightKind::FreeDirect), None, Vec3::new(-2.0, -1.0, 3.0), Vec3::ZERO);
+    let rs = seen(&s);
+    assert_eq!(rs.volumes.list.len(), 2, "smoke and fire");
+    assert!(reasons(&rs).is_empty(), "the GPU takes voxel grids: {:?}", reasons(&rs));
+    let w: Vec<f32> = pack(&rs, &RenderSettings::default()).chunks(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
+    for (k, v) in rs.volumes.list.iter().enumerate() {
+        let (r, Source::Grid(vox)) = (4 + k * REC, &v.src) else { panic!("a voxel grid") };
+        assert_eq!(w[r + 23].to_bits(), 2, "kind 2 = voxels");
+        assert_eq!([0, 1, 2].map(|i| w[r + 85 + i].to_bits() as usize), vox.dims);
+        let at = w[r + 88].to_bits() as usize;
+        assert_eq!(&w[at..at + vox.data.len()], &vox.data[..]);
+    }
+    parity("simulated fire", &rs);
+}

@@ -2054,7 +2054,7 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - puff and box volumes turn the GPU switch on and need no CPU fallback;
   - GPU/CPU parity for a sunlit cumulus, an absorbing smoke box with Smooth shadows, and a glowing fire (image energy within 0.4% on the software Vulkan device).
 - **Not done yet:**
-  - **Voxel-grid volumes** still render on the CPU (nothing creates one yet; the smoke and explosion PRs will add them to the GPU).
+  - ~~Voxel-grid volumes still render on the CPU~~ (done in §76).
   - **The glow ramp** is sampled at 16 densities and interpolated, so the GPU glow differs very slightly from the CPU's exact curve.
   - **Speed** on her RX 9060 XT hasn't been measured; the parity scenes here ran on a software rasteriser.
 
@@ -2225,7 +2225,7 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - the params give smoke and fire media, a cage that matches the bounds, and serde round trips;
   - an imported file becomes a selected object that the renderers see as two grid volumes.
 - **Not done yet:**
-  - **VDB volumes render on the CPU only**; the GPU path tracer falls back to the CPU for them.
+  - ~~VDB volumes render on the CPU only~~ (done in §76).
   - **No animated VDB sequences** (one file, one frame).
   - **Not tested on real simulation files here** (downloads were blocked); the tests use files written to the format.
   - **Root-level tiles and the grid background value are ignored** (a limit of the reader crate); half-float and vector grids beyond what the crate reads are not offered.
@@ -2260,7 +2260,18 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - the fire preset has smoke and fire media, a valid cage and a serde round trip.
 - **Not done yet:**
   - **The solver runs on the CPU.** The GPU compute solver (with a CPU/GPU parity test) is the next part of step D.
-  - **Simulation volumes render on the CPU only**, like VDB volumes; the GPU path tracer falls back to the CPU for them.
+  - ~~Simulation volumes render on the CPU only~~ (done in §76).
   - **No frame-sequence render yet**: F9 renders the frame shown; rendering a range of frames to numbered images comes with the rest of step D.
   - **No collision objects or mesh emitters**: the source is a sphere, and nothing in the scene blocks the gas.
   - **Bakes live in memory only**: they are not saved with the scene, so a reopened scene bakes again.
+
+## 76. GPU rendering of voxel-grid volumes (step D, part 3)
+- **What changed:**
+  - The GPU path tracer now renders **voxel-grid volumes**: imported VDB smoke and fire, and Smoke & Fire Simulation frames. Before, any scene with one fell back to the CPU.
+  - Each grid's voxels go into the GPU volume buffer next to the cloud puffs (a new volume kind, "voxels"). The kernel samples them trilinearly, the same way the CPU tracer does, inside the same delta and ratio tracking.
+  - Scenes whose grids add up to more than 1 GB still render on the CPU; the Render tab's tooltip lists that reason. If the volume buffer is bigger than the GPU's buffer limit, the render falls back to the CPU with a message saying so.
+- **Tests (1 new):** a baked Fire Simulation packs both grids (kind, dimensions and every voxel value match the CPU's), the GPU accepts the scene, and the GPU image matches the CPU path tracer's (energy 19.83 vs 19.76 on the software Vulkan device).
+- **Not done yet:**
+  - **The solver still runs on the CPU.** The GPU compute solver with a CPU/GPU parity test is the next part of step D.
+  - **No frame-sequence render yet.**
+  - **Grids are copied to the GPU for every render**, not kept between renders; a long frame sequence will upload each frame again.

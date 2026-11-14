@@ -71,7 +71,7 @@ pub fn mapped(m: &crate::materials::Material) -> bool {
 pub const CPU_ONLY: [&str; 3] = [
     "maps the GPU cannot bake or evaluate (3D or non-repeating maps mixed with bitmaps, node graphs, procedural surfaces or paint)",
     "more than 1.5 GB of baked textures",
-    "voxel-grid volumes (render on the CPU for now)",
+    "more than 1 GB of voxel-grid volumes (VDB and simulation frames)",
 ];
 
 /// Every reason this scene renders on the CPU instead (empty = the GPU

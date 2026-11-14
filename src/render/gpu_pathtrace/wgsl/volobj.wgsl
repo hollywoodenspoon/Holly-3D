@@ -32,9 +32,31 @@ fn vo_falloff(d2: f32, edge: f32) -> f32 {
     return x * x * (3.0 - 2.0 * x);
 }
 
+// Trilinear voxel value at local `p` (matches `density::Voxels::sample`).
+fn vo_voxel(b: u32, p: vec3<f32>) -> f32 {
+    let lo = vv3(b + 16u);
+    let hi = vv3(b + 20u);
+    let n = vec3<u32>(vu(b + 85u), vu(b + 86u), vu(b + 87u));
+    let at = vu(b + 88u);
+    let u = clamp((p - lo) / max(hi - lo, vec3<f32>(1e-9)), vec3<f32>(0.0), vec3<f32>(1.0));
+    let g = max(u * vec3<f32>(n) - 0.5, vec3<f32>(0.0));
+    let i0 = min(vec3<u32>(g), n - 1u);
+    let i1 = min(i0 + 1u, n - 1u);
+    let f = g - vec3<f32>(i0);
+    let z0 = at + i0.z * n.y * n.x;
+    let z1 = at + i1.z * n.y * n.x;
+    let y0 = i0.y * n.x;
+    let y1 = i1.y * n.x;
+    let a = mix(mix(vobj[z0 + y0 + i0.x], vobj[z0 + y0 + i1.x], f.x), mix(vobj[z0 + y1 + i0.x], vobj[z0 + y1 + i1.x], f.x), f.y);
+    let c = mix(mix(vobj[z1 + y0 + i0.x], vobj[z1 + y0 + i1.x], f.x), mix(vobj[z1 + y1 + i0.x], vobj[z1 + y1 + i1.x], f.x), f.y);
+    return mix(a, c, f.z);
+}
+
 // 0..=1 shape density at local `p` in grid cell `cell`.
 fn vo_density(b: u32, p: vec3<f32>, cell: u32) -> f32 {
-    if (vu(b + 23u) == 0u) { return 1.0; }
+    let kind = vu(b + 23u);
+    if (kind == 0u) { return 1.0; }
+    if (kind == 2u) { return vo_voxel(b, p); }
     let pair = vu(b + 34u) + cell * 2u;
     let start = vu(pair);
     let n = vu(pair + 1u);

@@ -208,7 +208,11 @@ pub fn render(
     let done_buf = storage(d, "done", &vec![0; n * 4], false);
     let k = mix::groups(rs, cfg);
     let group_buf = mix::buffer(d, n, k, limit)?;
-    let vol_buf = storage(d, "volume objects", &volobj::pack(rs, cfg), false);
+    let vol_bytes = volobj::pack(rs, cfg);
+    if vol_bytes.len() as u64 > limit {
+        return Err(format!("volumes ({} MB) exceed this GPU's {} MB buffer limit", vol_bytes.len() >> 20, limit >> 20));
+    }
+    let vol_buf = storage(d, "volume objects", &vol_bytes, false);
     let uniform = d.create_buffer(&wgpu::BufferDescriptor { label: Some("params"), size: PARAMS_BYTES, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
     let bufs = [storage(d, "tris", &p.tris, false), storage(d, "nodes", &p.nodes, false), storage(d, "lights", &p.lights, false), storage(d, "emitters", &p.emitters, false), storage(d, "envmap", &env.px, false), storage(d, "textures", &tex_bytes, false)];
     let pipeline = g.pipeline(Features(Features::of(rs).0 | if k > 0 { Features::LIGHTMIX } else { 0 }));
