@@ -2012,3 +2012,34 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Clouds still render as solid white puffs.** Soft, light-scattering clouds need the volume renderer (V1) and Clouds as volumes (V2), which are next.
   - **Viewport preview of volumes**, erosion noise and the cloud lighting all come with V2.
   - **Trails, explosions and more cloud types** follow in PRs 3–5 of the Clouds plan.
+
+## 66. Clouds V1a: the volume renderer core (CPU)
+- **Volume shading model** (`src/materials/volume.rs`): Material Editor > Volume (Cloud / Smoke / Fire). Scatter Colour, Absorption, Density (extinction per metre), a two-lobe phase (Forward g, Back g, Back Lobe Blend), a Glow Ramp (Blackbody or Fire), Glow Strength and Temperature Cooling.
+  - Presets: Cumulus Cloud, Storm Cloud, Thin Haze, Black Smoke, Grey Smoke, Fire, Fireball.
+  - Old scenes load unchanged (the new fields default).
+- **Volume objects** (`src/render/volumes/`): any object whose material (Material ID 1 of a Multi/Sub-Object) uses the Volume model renders as a participating medium and makes no triangles.
+  - Clouds and Cloud Fields use a soft union of their puffs (Base Flatness flattens the underside). Any other mesh fills its local bounding box. The object's move, rotate and scale apply.
+  - A majorant grid (16–48 cells along the longest side) bounds the density per cell. Puff volumes keep a per-cell puff list so a lookup touches only a few puffs.
+  - **Delta tracking** finds real collisions; **ratio tracking** gives shadow transmittance. Rays step through the grid with a 3D DDA in local space, with `t` kept in world metres. A uniform box gets exact Beer-Lambert.
+- **Path tracer:** at a collision a path adds the glow, multiplies by the albedo, takes light from every scene light (shadowed through surfaces and volumes, times the phase), then samples the next direction from the two-lobe phase. A path that leaves picks up the sky. Max Volume Bounces caps the scatters; Russian roulette after 3.
+- **Raytracer:** a short random walk through the volumes from the first collision (the same light at each scatter, sky where it leaves), so both renderers give the same look.
+- **Shadows:** every shadow ray (lights, sky occlusion, AO, mist) now also passes through volumes, so clouds shade the ground and themselves.
+- **F10 > Effects > Volumes rollout:** Max Volume Bounces (8), Cloud Bounce Boost (0.5: two weaker, wider light octaves that stand in for the many bounces inside thick clouds) and Shadow Quality (1, 2 or 4 transmittance estimates).
+- **GPU:** a scene with volume objects falls back to the CPU with the reason "volume objects", shown in the Render tab.
+- **Tests** (`src/render/volumes/tests.rs`):
+  - volume objects make no triangles and trigger the GPU fallback;
+  - box transmittance matches Beer-Lambert (full, half and miss);
+  - ratio and delta tracking are unbiased on a voxel grid;
+  - the majorant bounds every cloud density, and Base Flatness cuts the underside;
+  - clouds shadow the ground, scaled with the object;
+  - a camera inside a volume scatters and renders in both tracers;
+  - more bounces and the boost brighten a white cloud without gaining energy;
+  - preset serde and old settings load.
+- **Not done yet:**
+  - **GPU volumes (V1b):** `FEAT_VOLUME` kernel and parity tests.
+  - **Clouds don't default to a Volume material yet**: the Clouds Pack still uses surface materials, so a cloud needs a Volume material from the Material Editor. V2 makes clouds volumes by default, adds erosion noise (Noise Detail) and a viewport preview.
+  - **Voxel grid source** works in the renderer, but nothing creates one yet (smoke and explosion PRs will).
+  - **Emissive polygons** light volumes only when a scattered path hits them (no next-event sample on them yet).
+  - **Noise:** sun shadows inside dense clouds are noisy at low sample counts (ratio tracking gives 0-or-1 estimates there). Shadow Quality and the denoiser help.
+  - **Mist** (Environment `8`) keeps its own raymarch.
+  - **Speed** on her Ryzen 7 5700X hasn't been timed; a 384×240 cloud at 96 samples per pixel took about 8 s here.

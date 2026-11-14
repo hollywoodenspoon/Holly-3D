@@ -38,6 +38,8 @@ pub struct RenderSettings {
     pub gi: super::post::GiSettings,
     /// Post-FX rollout (bloom, depth of field, tonemapping).
     pub post: super::post::PostFx,
+    /// Volumes rollout (volume objects: clouds, smoke, fire).
+    pub volumes: super::volumes::VolumeRender,
 }
 
 impl Default for RenderSettings {
@@ -58,6 +60,7 @@ impl Default for RenderSettings {
             outlines: true,
             gi: Default::default(),
             post: Default::default(),
+            volumes: Default::default(),
         }
     }
 }

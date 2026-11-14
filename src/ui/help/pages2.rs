@@ -41,6 +41,12 @@ pub const SKY: Page = Page {
             "Press 8 and open Luxon Volumetric Godrays & Mist. Tick Enable, or click Cathedral Shafts, Valley Mist or Dusty Hangar.",
             "Mist Base Height and Height Falloff keep mist low in streets and valleys; Wisps add patchy 3D noise that drifts with Wind.",
         ]),
+        H("Clouds, smoke and fire as volumes"),
+        Steps(&[
+            "Press M, pick the Volume (Cloud / Smoke / Fire) shading model and assign the material: the object then renders as a soft, light-scattering volume instead of a surface. Clouds and Cloud Fields fill their puffs; any other mesh fills its bounding box.",
+            "Volume presets: Cumulus Cloud, Storm Cloud, Thin Haze, Black Smoke, Grey Smoke, Fire and Fireball. Scatter Colour, Absorption, Density, Forward g, Back g, Back Lobe Blend, Glow Ramp, Glow Strength and Temperature Cooling tune them.",
+            "Volumes cast soft shadows on the ground and on each other, and the camera can sit inside one. F10 > Effects > Volumes sets Max Volume Bounces, Cloud Bounce Boost and Shadow Quality. Volumes render on the CPU for now.",
+        ]),
         ShowMe("Open Environment and Effects", Show::Act(Action::Environment)),
     ],
 };

@@ -153,7 +153,7 @@ impl<'a> Tracer<'a> {
 
     /// Light passing along a shadow ray (0 = blocked): opaque hits stop it,
     /// see-through surfaces (alpha < 1) dim it by their alpha and let it on.
-    pub(super) fn transmittance(&self, p: Vec3, dir: Vec3, tmax: f32) -> f32 {
+    pub(super) fn surface_transmittance(&self, p: Vec3, dir: Vec3, tmax: f32) -> f32 {
         if !self.rs.bvh.occluded(p, dir, tmax) {
             return 1.0;
         }
@@ -217,6 +217,8 @@ impl<'a> Tracer<'a> {
     /// volumetric godray medium up to the surface.
     pub fn trace(&self, o: Vec3, d: Vec3, depth: u32, rng: &mut Rng) -> (Vec3, f32, Option<GSample>) {
         let (c, a, g) = self.trace_surface(o, d, depth, rng);
+        let vol = if self.rs.volumes.is_empty() { None } else { self.volume_single(o, d, g.map_or(f32::INFINITY, |g| g.depth), rng) };
+        let (c, a, g) = vol.map_or((c, a, g), |l| (l, 1.0, g));
         match self.rs.volume.as_ref().filter(|_| depth == 0) {
             Some(m) => {
                 let v = self.march(m, o, d, g.map_or(f32::INFINITY, |g| g.depth), rng);

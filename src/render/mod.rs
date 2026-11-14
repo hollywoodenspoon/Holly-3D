@@ -10,6 +10,7 @@ pub mod denoise_atrous;
 mod bvh_wide;
 pub mod mis;
 pub mod volumetrics;
+pub mod volumes;
 pub mod pathtrace;
 pub mod emitters;
 pub mod environment;

@@ -65,9 +65,10 @@ pub fn mapped(m: &crate::materials::Material) -> bool {
 
 /// Everything that still sends a scene to the CPU tracer, in the order
 /// [`reasons`] lists it (the Render tab's tooltip shows this list).
-pub const CPU_ONLY: [&str; 2] = [
+pub const CPU_ONLY: [&str; 3] = [
     "maps the GPU cannot bake or evaluate (3D or non-repeating maps mixed with bitmaps, node graphs, procedural surfaces or paint)",
     "more than 1.5 GB of baked textures",
+    "volume objects (clouds, smoke and fire render on the CPU for now)",
 ];
 
 /// Every reason this scene renders on the CPU instead (empty = the GPU
@@ -82,6 +83,7 @@ pub fn reasons(rs: &RenderScene) -> Vec<&'static str> {
     let mats = &rs.materials;
     add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some() && !super::live::supported(m)), CPU_ONLY[0]);
     add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[1]);
+    add(!rs.volumes.is_empty(), CPU_ONLY[2]);
     out
 }
 
