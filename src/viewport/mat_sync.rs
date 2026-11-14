@@ -182,6 +182,11 @@ pub fn standard(m: &Material, tex: &MatTextures, see_through: bool) -> StandardM
             s.diffuse_transmission = 0.0;
         }
         ShadingModel::Unlit => s.unlit = true,
+        // Viewport stand-in for a volume: a soft matte in its scatter colour.
+        ShadingModel::Volume => {
+            s.base_color = color(m.volume.scatter, 0.85);
+            (s.perceptual_roughness, s.reflectance, s.metallic) = (1.0, 0.0, 0.0);
+        }
     }
     s
 }

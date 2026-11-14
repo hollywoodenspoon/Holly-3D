@@ -22,6 +22,7 @@ mod tests_multi;
 pub(crate) mod tex_serde;
 pub mod texture;
 pub mod triplanar;
+pub mod volume;
 
 pub use maps::{MapChannel, MapNode, MapSlot};
 pub use multi::{MultiPreset, MultiSub, SubMaterial};
@@ -44,16 +45,20 @@ pub enum ShadingModel {
     Toon,
     Crystal,
     Unlit,
+    /// A participating medium (clouds, haze, smoke, fire): the object renders
+    /// as a volume, not a surface.
+    Volume,
 }
 
 impl ShadingModel {
-    pub const ALL: [ShadingModel; 4] = [ShadingModel::Physical, ShadingModel::Toon, ShadingModel::Crystal, ShadingModel::Unlit];
+    pub const ALL: [ShadingModel; 5] = [ShadingModel::Physical, ShadingModel::Toon, ShadingModel::Crystal, ShadingModel::Unlit, ShadingModel::Volume];
     pub fn label(self) -> &'static str {
         match self {
             ShadingModel::Physical => "Standard / Physical PBR",
             ShadingModel::Toon => "Cel / Toon Ramp",
             ShadingModel::Crystal => "Refractive Crystal / Glass",
             ShadingModel::Unlit => "Unlit / Emissive",
+            ShadingModel::Volume => "Volume (Cloud / Smoke / Fire)",
         }
     }
 }
@@ -164,6 +169,9 @@ pub struct Material {
     /// they need no depth sorting and leave no haze.
     #[serde(default)]
     pub alpha_cutout: bool,
+    /// Volume shading model parameters.
+    #[serde(default)]
+    pub volume: volume::VolumeMat,
 }
 
 impl Default for Material {
@@ -195,6 +203,7 @@ impl Default for Material {
             principled: Default::default(),
             shadow_catcher: false,
             alpha_cutout: false,
+            volume: Default::default(),
         }
     }
 }
