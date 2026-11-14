@@ -90,7 +90,7 @@ pub struct RenderScene {
 fn gather_tris(scene: &Scene, materials: &mut Vec<Material>) -> Vec<Tri> {
     let mut tris = vec![];
     let clouds = scene.environment.sky.clouds.three_d;
-    for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper() && (clouds || !o.is_cloud()) && super::volumes::volume_material(scene, o).is_none()) {
+    for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper() && (clouds || !o.is_cloud()) && super::volumes::volume_of(scene, o).is_none()) {
         let mat = o.material.and_then(|id| scene.materials.mats.get(id)).cloned().unwrap_or_else(|| Material {
             base_color: o.wire_color,
             roughness: 0.65,

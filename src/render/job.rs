@@ -149,7 +149,8 @@ impl RenderJob {
     }
 
     /// Starts the built-in raytracer on a background thread.
-    pub fn raytrace(rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+    pub fn raytrace(mut rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+        rs.volumes.set_detail(cfg.volumes.noise_detail);
         let (job, tx, cancel) = Self::new(u64::from(region[2] - region[0]) * u64::from(region[3] - region[1]));
         std::thread::spawn(move || {
             let t0 = Instant::now();
@@ -169,7 +170,8 @@ impl RenderJob {
 
     /// Starts the progressive path tracer: the wgpu GPU kernel when the
     /// Compute Device allows and an adapter exists, else the CPU tracer.
-    pub fn pathtrace(rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+    pub fn pathtrace(mut rs: RenderScene, cfg: RenderSettings, region: Region) -> Self {
+        rs.volumes.set_detail(cfg.volumes.noise_detail);
         let passes = cfg.path.schedule().len() as u64;
         let px = u64::from(region[2] - region[0]) * u64::from(region[3] - region[1]);
         let (job, tx, cancel) = Self::new(px * passes);

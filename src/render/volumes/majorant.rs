@@ -36,7 +36,8 @@ impl Grid {
                     g.max[i] = v.max_in((a - lo) / s, (b - lo) / s);
                 }
             }
-            Source::Puffs(blobs) => {
+            Source::Puffs(cloud) => {
+                let (blobs, edge) = (&cloud.blobs, cloud.edge());
                 for (bi, b) in blobs.iter().enumerate() {
                     let h = b.half();
                     let (c0, c1) = (g.cell_of(b.c - h), g.cell_of(b.c + h));
@@ -51,7 +52,7 @@ impl Grid {
                 }
                 for i in 0..n {
                     let (a, b) = g.cell_box(i);
-                    g.max[i] = union(g.lists[i].iter().map(|&k| blobs[k as usize].max_in(a, b)));
+                    g.max[i] = union(g.lists[i].iter().map(|&k| blobs[k as usize].max_in(a, b, edge)));
                 }
             }
         }

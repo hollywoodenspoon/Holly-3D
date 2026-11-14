@@ -6,11 +6,13 @@ use super::features::{Features, reasons};
 use super::tests::{add, parity, parity_with};
 use super::volobj::{GLOW_STEPS, REC, pack};
 use crate::generators::WorldGen;
-use crate::generators::clouds::{CloudParams, CloudType};
+use crate::generators::clouds::{CloudLook, CloudParams, CloudType};
 use crate::materials::volume::VolumePreset;
 use crate::materials::{Material, ShadingModel};
 use crate::primitives::PrimitiveKind;
 use crate::render::scene_build::RenderScene;
+use crate::render::volumes::NoiseDetail;
+use crate::render::volumes::density::Source;
 use crate::render::settings::RenderSettings;
 use crate::render::{Light, LightKind};
 use crate::scene::{BaseObject, Scene};
@@ -37,9 +39,13 @@ fn seen(s: &Scene) -> RenderScene {
 }
 
 fn cloud_scene() -> RenderScene {
+    cloud_with(CloudLook::default())
+}
+
+fn cloud_with(look: CloudLook) -> RenderScene {
     let mut s = Scene::default();
     floor(&mut s);
-    let p = CloudParams { size: 2.0, height: 1.0, detail: 2, ..CloudParams::of(CloudType::Cumulus) };
+    let p = CloudParams { size: 2.0, height: 1.0, detail: 2, look, ..CloudParams::of(CloudType::Cumulus) };
     let id = s.add(BaseObject::World(WorldGen::Cloud(Box::new(p))), Vec3::new(0.0, 0.0, 0.6));
     s.objects[id].material = Some(s.materials.mats.insert(vol(VolumePreset::CumulusCloud, 6.0)));
     s.objects[id].evaluate();
@@ -67,6 +73,9 @@ fn the_packed_buffer_mirrors_the_cpu_grids() {
         assert_eq!(w[start..start + n].iter().map(|f| f.to_bits()).collect::<Vec<_>>(), *list, "cell {c}");
     }
     assert_eq!(r[36], 0.0, "a cloud does not glow");
+    let Source::Puffs(c) = &v.src else { panic!("puffs") };
+    assert_eq!((r[85], r[86], r[87], r[88]), (c.edge(), c.look.erosion, c.look.wispiness, c.inv_scale), "erosion");
+    assert_eq!((&r[89..92], r[92], r[93], r[94]), (&c.offset.to_array()[..], c.z0, c.z1, c.octaves as f32));
     // An empty scene still binds one word; a fire glows along its ramp.
     assert_eq!(pack(&RenderScene::build(&Scene::default(), ViewCamera::new(ViewKind::Top), false), &cfg).len(), 16);
     let mut s = Scene::default();
@@ -117,4 +126,13 @@ fn fire_glow_renders_on_the_gpu() {
     spot.multiplier = 0.5;
     s.add_light(spot, None, Vec3::new(1.0, -1.0, 2.5), Vec3::ZERO);
     parity("fire glow", &seen(&s));
+}
+
+/// Clouds V2: a heavily eroded, wispy cloud at Ultra noise detail (the
+/// Worley and billow noise must match the CPU's).
+#[test]
+fn an_eroded_wispy_cloud_renders_on_the_gpu() {
+    let mut rs = cloud_with(CloudLook { erosion: 1.0, wispiness: 1.0, edge_softness: 0.6, ..Default::default() });
+    rs.volumes.set_detail(NoiseDetail::Ultra);
+    parity("eroded cloud", &rs);
 }

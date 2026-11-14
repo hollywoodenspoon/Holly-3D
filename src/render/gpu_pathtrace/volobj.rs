@@ -15,7 +15,7 @@ use crate::render::volumes::VolumeObj;
 use crate::render::volumes::density::Source;
 
 /// Words per volume record.
-pub const REC: usize = 88;
+pub const REC: usize = 96;
 /// Glow ramp samples over density 0..=1 (the kernel interpolates).
 pub const GLOW_STEPS: usize = 16;
 /// Words per puff.
@@ -46,7 +46,10 @@ fn word(u: usize) -> f32 {
 /// `0..16` world-to-local matrix (columns), `16..20` grid lo + extinction,
 /// `20..24` grid hi + kind (0 uniform, 1 puffs), `24..28` cells per axis +
 /// majorant offset, `28..32` albedo + forward g, `32..36` back g, blend,
-/// cell-list offset, puff offset, `36` glow on, `37..85` glow ramp (rgb).
+/// cell-list offset, puff offset, `36` glow on, `37..85` glow ramp (rgb),
+/// then cloud erosion: `85` edge softness, `86` erosion, `87` wispiness,
+/// `88` noise frequency, `89..92` noise offset, `92..94` base / top z,
+/// `94` octaves.
 fn record(v: &VolumeObj, w: &mut Vec<f32>) -> [f32; REC] {
     let mut r = [0.0f32; REC];
     let g = &v.grid;
@@ -61,7 +64,11 @@ fn record(v: &VolumeObj, w: &mut Vec<f32>) -> [f32; REC] {
     let m = &v.mat;
     r[28..31].copy_from_slice(&m.albedo().to_array());
     (r[31], r[32], r[33]) = (m.g_forward, m.g_back, m.blend.clamp(0.0, 1.0));
-    if let Source::Puffs(blobs) = &v.src {
+    if let Source::Puffs(cloud) = &v.src {
+        let (blobs, l) = (&cloud.blobs, &cloud.look);
+        (r[85], r[86], r[87], r[88]) = (cloud.edge(), l.erosion.clamp(0.0, 1.0), l.wispiness.clamp(0.0, 1.0), cloud.inv_scale);
+        r[89..92].copy_from_slice(&cloud.offset.to_array());
+        (r[92], r[93], r[94]) = (cloud.z0, cloud.z1, cloud.octaves as f32);
         // Cell (start, count) pairs, then the indices they point at.
         let pairs = w.len();
         r[34] = word(pairs);

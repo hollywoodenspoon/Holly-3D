@@ -91,7 +91,7 @@ fn majorant_bounds_every_cloud_density() {
     add(&mut s, BaseObject::World(WorldGen::Cloud(Box::new(p))), Vec3::ZERO, Some(vol_mat(0.05)));
     let rs = RenderScene::build(&s, cam(), true);
     let v = &rs.volumes.list[0];
-    assert!(matches!(v.src, Source::Puffs(ref b) if b.len() > 10));
+    assert!(matches!(v.src, Source::Puffs(ref c) if c.blobs.len() > 10));
     let mut rng = Rng::new(5);
     let (lo, hi) = (v.grid.lo, v.grid.hi);
     let mut dense = 0;

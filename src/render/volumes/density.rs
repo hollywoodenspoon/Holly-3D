@@ -21,33 +21,32 @@ impl Blob {
         Vec3::new(self.r, self.r, self.r * self.sq.max(1e-3))
     }
 
-    /// Falloff 0..=1 at `p`: 1 at the centre, 0 on the surface.
-    pub fn at(&self, p: Vec3) -> f32 {
+    /// Falloff 0..=1 at `p`: 1 at the centre, 0 on the surface; `edge` is
+    /// the share of the radius that fades (Edge Softness).
+    pub fn at(&self, p: Vec3, edge: f32) -> f32 {
         let mut q = (p - self.c) / self.half();
         if q.z < 0.0 {
             q.z /= self.low.max(1e-3);
         }
-        falloff(q.length_squared())
+        falloff(q.length_squared(), edge)
     }
 
     /// Upper bound of the falloff over the box `lo..hi` (closest point in
     /// the blob's scaled space; the full round blob bounds the cut one).
-    pub fn max_in(&self, lo: Vec3, hi: Vec3) -> f32 {
+    pub fn max_in(&self, lo: Vec3, hi: Vec3, edge: f32) -> f32 {
         let h = self.half();
         let q = Vec3::ZERO.clamp((lo - self.c) / h, (hi - self.c) / h);
-        falloff(q.length_squared())
+        falloff(q.length_squared(), edge)
     }
 }
 
-/// Share of a puff's radius that fades out (the rest is fully dense), so
-/// clouds keep defined, cauliflower edges.
-const EDGE: f32 = 0.35;
-
-fn falloff(d2: f32) -> f32 {
+/// Smoothstep falloff over the outer `edge` share of the radius (the rest
+/// is fully dense), so clouds keep defined, cauliflower edges.
+fn falloff(d2: f32, edge: f32) -> f32 {
     if d2 >= 1.0 {
         return 0.0;
     }
-    let x = ((1.0 - d2.sqrt()) / EDGE).min(1.0);
+    let x = ((1.0 - d2.sqrt()) / edge.max(1e-3)).min(1.0);
     x * x * (3.0 - 2.0 * x)
 }
 
@@ -103,8 +102,8 @@ impl Voxels {
 /// Where a volume's density comes from.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Source {
-    /// Cloud puffs (Cloud / Cloud Field objects).
-    Puffs(Vec<Blob>),
+    /// Cloud puffs with erosion (Cloud / Cloud Field objects).
+    Puffs(super::erode::Cloud),
     /// A voxel grid over the box.
     Grid(Voxels),
     /// Evenly dense box (any other mesh with a Volume material).

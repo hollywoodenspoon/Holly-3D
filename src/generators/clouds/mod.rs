@@ -8,12 +8,14 @@
 //! the same puffs into density. Z-up, base of the cloud at z = 0.
 
 mod field;
+mod look;
 mod mesh;
 mod puffs;
 #[cfg(test)]
 mod tests;
 
 pub use field::{CloudFieldParams, Placement};
+pub use look::{CloudLook, RenderAs};
 pub use puffs::{CloudShape, Puff};
 
 use crate::mesh::EditablePoly;
@@ -83,6 +85,8 @@ pub struct CloudParams {
     pub shear_dir: f32,
     /// Detail Levels 1..=3 (puff-on-puff depth).
     pub detail: u32,
+    /// How it renders (Clouds V2: volume by default).
+    pub look: CloudLook,
 }
 
 impl Default for CloudParams {
@@ -101,7 +105,7 @@ impl CloudParams {
             CloudType::Cumulonimbus => (0.5, 0.5, 0.9, 0.15),
             CloudType::Stratocumulus => (0.4, 0.35, 0.6, 0.0),
         };
-        Self { kind, seed: 1, size, height, puffiness, lumpiness, base_flatness, shear, shear_dir: 0.0, detail: 3 }
+        Self { kind, seed: 1, size, height, puffiness, lumpiness, base_flatness, shear, shear_dir: 0.0, detail: 3, look: CloudLook::default() }
     }
 
     /// The puff layout.

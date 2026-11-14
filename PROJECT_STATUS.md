@@ -2057,4 +2057,35 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **Voxel-grid volumes** still render on the CPU (nothing creates one yet; the smoke and explosion PRs will add them to the GPU).
   - **The glow ramp** is sampled at 16 densities and interpolated, so the GPU glow differs very slightly from the CPU's exact curve.
   - **Speed** on her RX 9060 XT hasn't been measured; the parity scenes here ran on a software rasteriser.
-  - Clouds still need a Volume material by hand (V2).
+
+## 68. Clouds V2: clouds render as volumes
+- **What:** Cloud and Cloud Field objects now render as volumes in F9 by default, with no material set-up.
+  - A new **Render As: Volume / Mesh** choice sits in the Cloud and Cloud Field rollouts. Mesh renders the preview mesh as before.
+  - Without a Volume material a cloud uses the Cumulus Cloud preset, or Storm Cloud for a Cumulonimbus. Its own Volume material still wins.
+  - New **Cloud Volume** rows:
+    - **Edge Softness:** how much of each puff fades out.
+    - **Erosion:** noise cuts billows into the surface.
+    - **Wispiness:** extra erosion towards the top.
+    - **Density:** a multiplier on the material's density.
+  - **Erosion** (`src/render/volumes/erode.rs`):
+    - Worley cells plus billow noise, contrast-stretched.
+    - It cuts down to a depth inside the cloud, measured by a second, fully soft union of the puffs.
+    - It only ever lowers density, so the majorant grid stays valid.
+    - The same noise runs in the GPU kernel.
+  - F10 > Volumes adds **Noise Detail** (Low / Medium / High / Ultra: 1 to 4 billow octaves).
+  - The Environment's 3D clouds switch now hides cloud volumes too.
+- **Tests (5 new):**
+  - a cloud renders as a volume with the right preset, Storm preset and Density;
+  - Render As: Mesh keeps triangles;
+  - a field is one volume;
+  - erosion never raises density, keeps cores and carves edges;
+  - softer edges spread density;
+  - noise is bounded and deterministic, Noise Detail sets the octaves, and old scenes load as volume clouds;
+  - GPU/CPU parity for a heavily eroded, wispy cloud at Ultra detail;
+  - the packed buffer carries the erosion fields.
+- **Not done yet:**
+  - **Viewport preview of the volume** (V2b): the viewport still shows the light puff mesh.
+  - **Lighting contrast:** clouds look soft and evenly lit at the default density and Bounce Boost. Darker bases and stronger self-shadowing may need tuning once Holly sees renders on her machine.
+  - **Tall towers:** a default Congestus breaks into separate lumps, because the puff layout from PR 1 leaves gaps that erosion widens.
+  - **The Cloud Field** is still a union of separate clouds, with no 2D coverage map across the layer.
+  - **Speed** on her RX 9060 XT hasn't been measured. Erosion adds a 27-cell Worley lookup per density sample.

@@ -7,8 +7,7 @@
 
 @group(0) @binding(13) var<storage, read> vobj: array<f32>;
 
-const VO_REC: u32 = 88u;
-const VO_EDGE: f32 = 0.35;
+const VO_REC: u32 = 96u;
 const VO_TMIN: f32 = 1e-3;
 // Tracking steps one ray may take through all cells (a safety net).
 const VO_STEPS: u32 = 4096u;
@@ -27,9 +26,9 @@ fn vo_inv(b: u32) -> mat4x4<f32> {
     return mat4x4<f32>(vec4<f32>(vv3(b), vobj[b + 3u]), vec4<f32>(vv3(b + 4u), vobj[b + 7u]), vec4<f32>(vv3(b + 8u), vobj[b + 11u]), vec4<f32>(vv3(b + 12u), vobj[b + 15u]));
 }
 
-fn vo_falloff(d2: f32) -> f32 {
+fn vo_falloff(d2: f32, edge: f32) -> f32 {
     if (d2 >= 1.0) { return 0.0; }
-    let x = min((1.0 - sqrt(d2)) / VO_EDGE, 1.0);
+    let x = min((1.0 - sqrt(d2)) / max(edge, 1e-3), 1.0);
     return x * x * (3.0 - 2.0 * x);
 }
 
@@ -40,16 +39,71 @@ fn vo_density(b: u32, p: vec3<f32>, cell: u32) -> f32 {
     let start = vu(pair);
     let n = vu(pair + 1u);
     let puffs = vu(b + 35u);
+    let edge = vobj[b + 85u];
     var keep = 1.0;
+    var keep_g = 1.0;
     for (var k = 0u; k < n; k++) {
         let q = puffs + vu(start + k) * 6u;
         let r = vobj[q + 3u];
         let h = vec3<f32>(r, r, r * max(vobj[q + 4u], 1e-3));
         var x = (p - vv3(q)) / h;
         if (x.z < 0.0) { x.z /= max(vobj[q + 5u], 1e-3); }
-        keep *= 1.0 - clamp(vo_falloff(dot(x, x)), 0.0, 1.0);
+        let d2 = dot(x, x);
+        keep *= 1.0 - clamp(vo_falloff(d2, edge), 0.0, 1.0);
+        keep_g *= 1.0 - clamp(vo_falloff(d2, 1.0), 0.0, 1.0);
     }
-    return 1.0 - keep;
+    return vo_erode(b, p, 1.0 - keep, 1.0 - keep_g);
+}
+
+// Clouds V2 erosion (matches `volumes::erode`): Worley F1 plus billows.
+fn vo_worley(q: vec3<f32>) -> f32 {
+    let fl = floor(q);
+    let x = i32(fl.x);
+    let y = i32(fl.y);
+    let z = i32(fl.z);
+    var best = 9.0;
+    for (var dz = -1; dz <= 1; dz++) {
+        for (var dy = -1; dy <= 1; dy++) {
+            for (var dx = -1; dx <= 1; dx++) {
+                let cx = x + dx;
+                let cy = y + dy;
+                let cz = z + dz;
+                let j = vec3<f32>(hash3(cx, cy, cz), hash3(cx + 71, cy, cz), hash3(cx, cy + 113, cz));
+                let e = vec3<f32>(f32(cx), f32(cy), f32(cz)) + j - q;
+                best = min(best, dot(e, e));
+            }
+        }
+    }
+    return min(sqrt(best), 1.0);
+}
+
+fn vo_billow(q: vec3<f32>, octaves: u32) -> f32 {
+    var s = 0.0;
+    var a = 0.5;
+    var f = 1.0;
+    var n = 0.0;
+    for (var i = 0u; i < max(octaves, 1u); i++) {
+        s += abs(vnoise(q * f) * 2.0 - 1.0) * a;
+        n += a;
+        a *= 0.5;
+        f *= 2.03;
+    }
+    return s / n;
+}
+
+// Erosion scales the union density `d` by a 0..=1 cut at depth `g`
+// (never above it, so the majorant grid stays valid).
+fn vo_erode(b: u32, p: vec3<f32>, d: f32, g: f32) -> f32 {
+    let er = vobj[b + 86u];
+    if (d <= 0.0 || er <= 0.0) { return d; }
+    let h = clamp((p.z - vobj[b + 92u]) / max(vobj[b + 93u] - vobj[b + 92u], 1e-6), 0.0, 1.0);
+    let s = min(er * (0.6 + vobj[b + 87u] * h), 0.95);
+    let q = p * vobj[b + 88u] + vv3(b + 89u);
+    let raw = 0.55 * vo_worley(q) + 0.45 * vo_billow(q * 2.0, u32(vobj[b + 94u] + 0.5));
+    let c = clamp((raw - 0.15) / 0.6, 0.0, 1.0);
+    let n = c * c * (3.0 - 2.0 * c);
+    let t = clamp((g - s * n) / 0.2, 0.0, 1.0);
+    return d * t * t * (3.0 - 2.0 * t);
 }
 
 // One volume along `o + d t`, `t` in 0..tmax. Collide mode: the nearest

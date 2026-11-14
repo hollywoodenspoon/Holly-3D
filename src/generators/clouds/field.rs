@@ -1,7 +1,7 @@
 //! Cloud Field: scatters a mix of cloud types across a layer of sky with
 //! blue-noise spacing (dart throwing), so a whole sky is one click.
 
-use super::{CloudParams, CloudType};
+use super::{CloudLook, CloudParams, CloudType};
 use crate::generators::{hash, kit::rng};
 use crate::mesh::EditablePoly;
 use bevy::math::{Mat4, Vec2, Vec3};
@@ -28,6 +28,8 @@ pub struct CloudFieldParams {
     pub max_size: f32,
     /// Detail Levels of every cloud (1..=3).
     pub detail: u32,
+    /// How every cloud of the field renders.
+    pub look: CloudLook,
 }
 
 impl Default for CloudFieldParams {
@@ -43,6 +45,7 @@ impl Default for CloudFieldParams {
             min_size: 250.0,
             max_size: 600.0,
             detail: 2,
+            look: CloudLook::default(),
         }
     }
 }
@@ -102,7 +105,7 @@ impl CloudFieldParams {
             let tall = size * dh / dw;
             let height = if kind == CloudType::Cumulonimbus { tall } else { tall.min(self.thickness.max(1.0)) };
             let i = out.len() as u32;
-            let params = CloudParams { seed: (hash(self.seed, i) * 1e6) as u32, size, height, detail: self.detail.clamp(1, 3), ..CloudParams::of(kind) };
+            let params = CloudParams { seed: (hash(self.seed, i) * 1e6) as u32, size, height, detail: self.detail.clamp(1, 3), look: self.look.clone(), ..CloudParams::of(kind) };
             let z = self.base_height + r.gen_range(-0.05..0.05) * self.thickness;
             out.push(Placement { params, offset: xy.extend(z) });
             covered += PI * rad * rad;

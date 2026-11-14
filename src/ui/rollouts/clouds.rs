@@ -2,7 +2,7 @@
 
 use super::spline::grid;
 use super::worlds::{row, seed_row};
-use crate::generators::clouds::{CloudFieldParams, CloudParams, CloudType};
+use crate::generators::clouds::{CloudFieldParams, CloudLook, CloudParams, CloudType, RenderAs};
 use crate::ui::properties::content_w;
 use crate::ui::widgets::{Track, dim};
 use bevy_egui::egui;
@@ -35,7 +35,31 @@ pub fn cloud(ui: &mut egui::Ui, t: &mut Track, p: &mut CloudParams) {
         row(ui, t, "Detail Levels:", &mut p.detail, 1..=3, 3, 0.05);
     });
     let n = p.shape().puffs.len();
-    ui.label(dim(&format!("{n} puffs. The preview mesh is light; the volume renderer will turn the same puffs into soft density.")));
+    look(ui, t, &mut p.look, "cloud_look");
+    ui.label(dim(&format!("{n} puffs. The viewport shows a light preview mesh; F9 renders the same puffs as soft density.")));
+}
+
+/// The Cloud Volume rows shared by a Cloud and a Cloud Field.
+fn look(ui: &mut egui::Ui, t: &mut Track, l: &mut CloudLook, id: &str) {
+    ui.separator();
+    ui.horizontal(|ui| {
+        ui.label("Render As:");
+        egui::ComboBox::from_id_salt(id).width(content_w() - 90.0).selected_text(l.render_as.label()).show_ui(ui, |ui| {
+            for r in RenderAs::ALL {
+                t.r(ui.selectable_value(&mut l.render_as, r, r.label()).on_hover_text(r.tip()));
+            }
+        });
+    });
+    if l.render_as == RenderAs::Mesh {
+        return;
+    }
+    let d = CloudLook::default();
+    grid(ui, &format!("{id}_grid"), |ui| {
+        row(ui, t, "Edge Softness:", &mut l.edge_softness, 0.05..=1.0, d.edge_softness, 0.005);
+        row(ui, t, "Erosion:", &mut l.erosion, 0.0..=1.0, d.erosion, 0.005);
+        row(ui, t, "Wispiness:", &mut l.wispiness, 0.0..=1.0, d.wispiness, 0.005);
+        row(ui, t, "Density:", &mut l.density, 0.0..=20.0, d.density, 0.01);
+    });
 }
 
 /// The Cloud Field rollout; returns true when `[ Break Into Clouds ]` is clicked.
@@ -58,6 +82,7 @@ pub fn field(ui: &mut egui::Ui, t: &mut Track, p: &mut CloudFieldParams) -> bool
             row(ui, t, k.label(), &mut p.mix[i], 0.0..=1.0, d.mix[i], 0.005);
         }
     });
+    look(ui, t, &mut p.look, "field_look");
     let n = p.placements().len();
     ui.label(dim(&format!("{n} clouds, spaced so they never overlap.")));
     ui.add_sized([content_w(), 24.0], egui::Button::new("Break Into Clouds"))

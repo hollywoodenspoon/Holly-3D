@@ -43,9 +43,10 @@ pub const SKY: Page = Page {
         ]),
         H("Clouds, smoke and fire as volumes"),
         Steps(&[
-            "Press M, pick the Volume (Cloud / Smoke / Fire) shading model and assign the material: the object then renders as a soft, light-scattering volume instead of a surface. Clouds and Cloud Fields fill their puffs; any other mesh fills its bounding box.",
+            "Clouds and Cloud Fields render as soft volumes on their own: Render As: Volume is the default in their Modify rollout (Render As: Mesh renders the light preview mesh instead). Edge Softness fades each puff, Erosion cuts billows into the surface, Wispiness tears the tops into wisps and Density thickens or thins the cloud. A cloud uses the Cumulus Cloud look (Storm Cloud for a Cumulonimbus) unless you give it your own Volume material.",
+            "For smoke, fire or any other mesh: press M, pick the Volume (Cloud / Smoke / Fire) shading model and assign the material. The object then renders as a soft, light-scattering volume filling its bounding box.",
             "Volume presets: Cumulus Cloud, Storm Cloud, Thin Haze, Black Smoke, Grey Smoke, Fire and Fireball. Scatter Colour, Absorption, Density, Forward g, Back g, Back Lobe Blend, Glow Ramp, Glow Strength and Temperature Cooling tune them.",
-            "Volumes cast soft shadows on the ground and on each other, and the camera can sit inside one. F10 > Effects > Volumes sets Max Volume Bounces, Cloud Bounce Boost and Shadow Quality. Volumes render in the raytracer and in the path tracer on the CPU or the GPU.",
+            "Volumes cast soft shadows on the ground and on each other, and the camera can sit inside one. F10 > Effects > Volumes sets Max Volume Bounces, Cloud Bounce Boost, Shadow Quality and Noise Detail (how finely clouds erode). Volumes render in the raytracer and in the path tracer on the CPU or the GPU.",
         ]),
         ShowMe("Open Environment and Effects", Show::Act(Action::Environment)),
     ],

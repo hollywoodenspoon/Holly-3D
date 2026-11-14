@@ -152,6 +152,7 @@ pub fn render_sheet(
     done: &AtomicU32,
 ) -> Result<String, String> {
     let mut cfg = cfg.clone();
+    rs.volumes.set_detail(cfg.volumes.noise_detail);
     (cfg.transparent, cfg.outlines) = (s.transparent || cfg.transparent, s.outline || cfg.outlines);
     if s.mode == SheetMode::Sprites {
         (cfg.width, cfg.height) = (s.cell.max(16), s.cell.max(16));

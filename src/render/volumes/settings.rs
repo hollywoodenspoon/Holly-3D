@@ -35,10 +35,12 @@ pub struct VolumeRender {
     /// many bounces in thick clouds by adding weaker, wider light octaves.
     pub boost: f32,
     pub shadow_quality: ShadowQuality,
+    /// Noise Detail: octaves of cloud erosion noise.
+    pub noise_detail: super::NoiseDetail,
 }
 
 impl Default for VolumeRender {
     fn default() -> Self {
-        Self { max_bounces: 8, boost: 0.5, shadow_quality: ShadowQuality::Balanced }
+        Self { max_bounces: 8, boost: 0.5, shadow_quality: ShadowQuality::Balanced, noise_detail: super::NoiseDetail::Medium }
     }
 }

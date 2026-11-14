@@ -46,7 +46,7 @@ fn gi_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
 
 /// Volume objects (materials with the Volume shading model).
 fn volumes_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
-    use crate::render::volumes::ShadowQuality;
+    use crate::render::volumes::{NoiseDetail, ShadowQuality};
     let v = &mut ed.render.volumes;
     rollout(ui, "Volumes (Clouds, Smoke, Fire)", false, |ui| {
         grid(ui, "fx_vol", |ui| {
@@ -63,8 +63,15 @@ fn volumes_rollout(ui: &mut egui::Ui, ed: &mut Editor) {
                 }
             });
             ui.end_row();
+            ui.label("Noise Detail");
+            egui::ComboBox::from_id_salt("vol_noise_d").selected_text(v.noise_detail.label()).show_ui(ui, |ui| {
+                for d in NoiseDetail::ALL {
+                    ui.selectable_value(&mut v.noise_detail, d, d.label()).on_hover_text("Octaves of the noise that erodes clouds into billows and wisps");
+                }
+            });
+            ui.end_row();
         });
-        ui.label(dim("Give any object a Volume material (Material Editor) to render it as cloud, smoke or fire."));
+        ui.label(dim("Clouds render as volumes by default. Give any other object a Volume material (Material Editor) to render it as smoke or fire."));
     });
 }
 

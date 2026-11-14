@@ -95,9 +95,10 @@ mod tests {
         let mut ed = Editor::default();
         ed.create_world(WorldKind::Cloud(CloudType::Cumulus), Vec3::ZERO);
         let cam = ViewCamera::new(ViewKind::Perspective);
-        let on = RenderScene::build(&ed.scene, cam, false).bvh.tris.len();
-        assert!(on > 0);
+        let on = RenderScene::build(&ed.scene, cam, false);
+        assert!(on.bvh.tris.is_empty() && on.volumes.list.len() == 1, "a cloud renders as a volume");
         ed.scene.environment.sky.clouds.set_shown(CloudsShown::TwoD);
-        assert_eq!(RenderScene::build(&ed.scene, cam, false).bvh.tris.len(), 0);
+        let off = RenderScene::build(&ed.scene, cam, false);
+        assert!(off.bvh.tris.is_empty() && off.volumes.is_empty());
     }
 }
