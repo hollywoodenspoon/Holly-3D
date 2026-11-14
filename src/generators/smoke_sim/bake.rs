@@ -64,7 +64,7 @@ fn fire_of(p: &SimParams, s: &SimState) -> Vec<f32> {
     if p.fuel <= 0.0 {
         return vec![0.0; s.temperature.d.len()];
     }
-    let t0 = p.ignition.max(0.05) + 0.5 * p.heat.max(0.0);
+    let t0 = p.ignition.max(0.05) + 0.9 * p.heat.max(0.0);
     s.temperature.d.iter().map(|t| 1.0 - (-(t - t0).max(0.0) * 1.5).exp()).collect()
 }
 

@@ -35,7 +35,7 @@ impl Default for SmokeSimParams {
 impl SmokeSimParams {
     /// A fire: fuel burning at the source, dark soot above.
     pub fn fire_preset() -> Self {
-        let sim = SimParams { fuel: 3.0, smoke: 0.3, heat: 1.2, buoyancy: 2.0, ..SimParams::default() };
+        let sim = SimParams { fuel: 3.0, smoke: 0.3, heat: 1.2, buoyancy: 2.0, cooling: 2.5, swirl: 0.5, ..SimParams::default() };
         Self { sim, style: VdbStyle::BlackSmoke, ..Self::default() }
     }
 

@@ -2240,12 +2240,13 @@ No new GPU features yet; this makes the next parity steps safe and visible.
     - wind pushes the gas;
     - a pressure solve keeps the flow from bunching up (closed floor, open sides and top);
     - smoke, heat and fuel move with the flow (MacCormack with clamping, so tendrils stay sharp), and smoke fades while heat cools;
-    - the source is a sphere near the floor with seeded noise (Turbulence), so each seed gives a different plume;
+    - the source is a sphere near the floor with seeded noise (Turbulence) on its smoke, speed and sideways gusts, so the plume breaks into billows and each seed gives a different one;
     - fast flows take smaller steps automatically, and the work is spread over all CPU cores.
   - Frames **bake in the background**, one worker per set of settings, and the three most recent bakes are kept. The viewport and renderers show any frame that's ready; a frame not baked yet shows the latest that is. The rollout has a Frame slider, a progress bar and Re-bake.
   - Modify tab: Frame, Look (Smoke Look, Smoke Density, Fire Intensity), Domain (width, depth, height, Resolution), Source (radius, height, speed, smoke, heat, fuel, turbulence), Forces (buoyancy, smoke weight, swirl, wind X/Y), Burning (when Fuel is above 0), Fading & Timing (smoke fade, cooling, frames, frames per second, pressure iterations), Random Seed. It shows the grid size and the memory the bake takes.
   - The frames render as voxel volumes through the same path as VDB volumes: smoke with the chosen look, flames with the fire glow ramp. The viewport shows the domain as a cage and the soft volume preview, which refreshes as frames finish.
   - Bake workers are stopped and joined when Ilex exits.
+  - Defaults: a 4 x 4 x 8 m domain at Resolution 96 (48 x 48 x 96 cells), 96 frames at 24 fps. The Fire Simulation preset cools faster, so its flames stay at the base and the soot rises above them.
 - **Tests (10 new):**
   - the grid follows size and resolution;
   - the pressure solve removes most of the divergence of a smooth flow;
@@ -2253,7 +2254,7 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - the same seed gives the same result, and a new seed changes it;
   - fuel burns into heat and soot;
   - wind carries smoke downwind;
-  - swirl adds vorticity;
+  - swirl concentrates vorticity into stronger eddies;
   - values stay finite and bounded over a long run with fire and strong swirl;
   - the background bake matches the solver frame for frame, and the object renders its frames as volumes;
   - the fire preset has smoke and fire media, a valid cage and a serde round trip.

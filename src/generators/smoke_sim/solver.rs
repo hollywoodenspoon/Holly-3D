@@ -89,6 +89,11 @@ impl SimState {
                     self.fuel.d[i] += p.fuel.max(0.0) * s * dt;
                     let w = p.source_speed * (1.0 + 0.5 * nz);
                     self.vel[2].d[i] += (w - self.vel[2].d[i]) * s;
+                    // Sideways gusts break the plume's symmetry so eddies form.
+                    let side = |o: f64| noise.get([f64::from(m.x) + o, f64::from(m.y), f64::from(m.z), t]) as f32;
+                    let k = turb * (p.source_speed.abs() + 0.5) * 0.6 * s;
+                    self.vel[0].d[i] += k * side(17.3);
+                    self.vel[1].d[i] += k * side(-31.7);
                 }
             }
         }
@@ -107,6 +112,10 @@ impl SimState {
     }
 
     /// Curl of the velocity at a cell (1/s).
+    pub fn curl_at(&self, x: usize, y: usize, z: usize) -> Vec3 {
+        self.curl(x, y, z)
+    }
+
     fn curl(&self, x: usize, y: usize, z: usize) -> Vec3 {
         let (x, y, z) = (x as i64, y as i64, z as i64);
         let d = |f: &Field, dx: i64, dy: i64, dz: i64| (f.at(x + dx, y + dy, z + dz) - f.at(x - dx, y - dy, z - dz)) / (2.0 * self.h);

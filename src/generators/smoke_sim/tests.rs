@@ -102,25 +102,24 @@ fn wind_carries_smoke_downwind() {
 }
 
 #[test]
-fn swirl_adds_vorticity() {
-    let curl = |s: &SimState| {
-        let mut t = 0.0;
-        let h = s.h;
+fn swirl_concentrates_vorticity_into_eddies() {
+    // Confinement spins up the existing eddies: the strongest one and the
+    // squared total (enstrophy) grow with Swirl.
+    let measure = |sw: f32| {
+        let s = run(&SimParams { swirl: sw, ..small() }, 16);
+        let (mut sq, mut peak) = (0.0f32, 0.0f32);
         for z in 1..s.n[2] - 1 {
             for y in 1..s.n[1] - 1 {
                 for x in 1..s.n[0] - 1 {
-                    let d = |f: &Field, a: [usize; 3], b: [usize; 3]| (f.get(a[0], a[1], a[2]) - f.get(b[0], b[1], b[2])) / (2.0 * h);
-                    let [u, v, w] = &s.vel;
-                    let c = Vec3::new(d(w, [x, y + 1, z], [x, y - 1, z]) - d(v, [x, y, z + 1], [x, y, z - 1]), d(u, [x, y, z + 1], [x, y, z - 1]) - d(w, [x + 1, y, z], [x - 1, y, z]), d(v, [x + 1, y, z], [x - 1, y, z]) - d(u, [x, y + 1, z], [x, y - 1, z]));
-                    t += c.length();
+                    let w = s.curl_at(x, y, z).length();
+                    (sq, peak) = (sq + w * w, peak.max(w));
                 }
             }
         }
-        t
+        (sq, peak)
     };
-    let calm = run(&SimParams { swirl: 0.0, ..small() }, 16);
-    let swirly = run(&SimParams { swirl: 1.5, ..small() }, 16);
-    assert!(curl(&swirly) > curl(&calm) * 1.05, "{} vs {}", curl(&swirly), curl(&calm));
+    let (calm, swirly) = (measure(0.0), measure(1.0));
+    assert!(swirly.0 > calm.0 * 1.1 && swirly.1 > calm.1 * 1.2, "{calm:?} vs {swirly:?}");
 }
 
 #[test]

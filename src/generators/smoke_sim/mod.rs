@@ -67,7 +67,7 @@ impl Default for SimParams {
     fn default() -> Self {
         Self {
             size: [4.0, 4.0, 8.0],
-            resolution: 64,
+            resolution: 96,
             source_radius: 0.5,
             source_height: 0.5,
             source_speed: 1.5,
