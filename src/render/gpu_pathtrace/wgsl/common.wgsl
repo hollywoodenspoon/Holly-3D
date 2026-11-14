@@ -85,6 +85,7 @@ override FEAT_OPACITY: bool = false;
 override FEAT_LIGHTMIX: bool = false;
 override FEAT_TOON: bool = false;
 override FEAT_CATCHER: bool = false;
+override FEAT_VOLOBJ: bool = false;
 
 var<private> rng_state: u32;
 

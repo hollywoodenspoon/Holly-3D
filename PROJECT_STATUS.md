@@ -2036,10 +2036,25 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - more bounces and the boost brighten a white cloud without gaining energy;
   - preset serde and old settings load.
 - **Not done yet:**
-  - **GPU volumes (V1b):** `FEAT_VOLUME` kernel and parity tests.
   - **Clouds don't default to a Volume material yet**: the Clouds Pack still uses surface materials, so a cloud needs a Volume material from the Material Editor. V2 makes clouds volumes by default, adds erosion noise (Noise Detail) and a viewport preview.
   - **Voxel grid source** works in the renderer, but nothing creates one yet (smoke and explosion PRs will).
   - **Emissive polygons** light volumes only when a scattered path hits them (no next-event sample on them yet).
   - **Noise:** sun shadows inside dense clouds are noisy at low sample counts (ratio tracking gives 0-or-1 estimates there). Shadow Quality and the denoiser help.
   - **Mist** (Environment `8`) keeps its own raymarch.
   - **Speed** on her Ryzen 7 5700X hasn't been timed; a 384×240 cloud at 96 samples per pixel took about 8 s here.
+
+## 67. Clouds V1b: volume objects on the GPU
+- **What:** the GPU path tracer now renders volume objects (puff clouds and evenly filled boxes, smoke and fire) instead of sending those scenes to the CPU.
+  - A new feature switch, `FEAT_VOLOBJ`, compiles the volume code only for scenes that use it.
+  - `src/render/gpu_pathtrace/volobj.rs` packs each volume's world-to-local matrix, majorant grid, per-cell puff lists, puffs and a 16-step glow ramp into one storage buffer (binding 13).
+  - `wgsl/volobj.wgsl` runs the same delta tracking (collisions), ratio tracking (shadows, with the exact Beer-Lambert shortcut in uniform cells), 3D DDA, two-lobe phase sampling and light sampling with the Cloud Bounce Boost octaves as the CPU.
+  - Shadow rays from surfaces pass through volumes too (`transmit` = surfaces x volumes), so clouds shadow the ground on the GPU.
+- **Tests (5 new):**
+  - the packed buffer mirrors the CPU grids (matrix, majorants, cell lists, glow);
+  - puff and box volumes turn the GPU switch on and need no CPU fallback;
+  - GPU/CPU parity for a sunlit cumulus, an absorbing smoke box with Smooth shadows, and a glowing fire (image energy within 0.4% on the software Vulkan device).
+- **Not done yet:**
+  - **Voxel-grid volumes** still render on the CPU (nothing creates one yet; the smoke and explosion PRs will add them to the GPU).
+  - **The glow ramp** is sampled at 16 densities and interpolated, so the GPU glow differs very slightly from the CPU's exact curve.
+  - **Speed** on her RX 9060 XT hasn't been measured; the parity scenes here ran on a software rasteriser.
+  - Clouds still need a Volume material by hand (V2).

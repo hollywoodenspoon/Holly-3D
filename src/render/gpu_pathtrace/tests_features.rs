@@ -36,7 +36,7 @@ fn every_switch_combination_of_the_kernel_validates() {
 fn every_feature_mask_builds_a_gpu_pipeline() {
     let Ok(g) = super::gpu() else { return };
     let scene = Features::LIGHTMIX - 1;
-    let extra = [Features::LIGHTMIX, Features::TOON, Features::CATCHER];
+    let extra = [Features::LIGHTMIX, Features::TOON, Features::CATCHER, Features::VOLOBJ];
     let all = Features::COUNT - 1;
     let masks: Vec<u32> = (0..=scene).chain(extra.iter().flat_map(|&x| [x, scene | x])).chain([all]).collect();
     for &mask in &masks {

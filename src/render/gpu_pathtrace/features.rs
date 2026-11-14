@@ -24,8 +24,10 @@ impl Features {
     pub const TOON: u32 = 256;
     /// Shadow & Reflection Catcher surfaces.
     pub const CATCHER: u32 = 512;
-    pub const NAMES: [&'static str; 10] =
-        ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY", "FEAT_LIGHTMIX", "FEAT_TOON", "FEAT_CATCHER"];
+    /// Volume objects: clouds, smoke and fire as media (`wgsl/volobj.wgsl`).
+    pub const VOLOBJ: u32 = 1024;
+    pub const NAMES: [&'static str; 11] =
+        ["FEAT_TEXTURES", "FEAT_PRINCIPLED", "FEAT_SSS", "FEAT_VOLUME", "FEAT_ENV_MAP", "FEAT_AREA", "FEAT_OPACITY", "FEAT_LIGHTMIX", "FEAT_TOON", "FEAT_CATCHER", "FEAT_VOLOBJ"];
     /// Every mask the kernel can be built with.
     pub const COUNT: u32 = 1 << Self::NAMES.len();
 
@@ -42,6 +44,7 @@ impl Features {
         set(rs.translucent, Self::OPACITY);
         set(rs.materials.iter().any(|m| m.model == crate::materials::ShadingModel::Toon), Self::TOON);
         set(rs.materials.iter().any(|m| m.shadow_catcher), Self::CATCHER);
+        set(!rs.volumes.is_empty(), Self::VOLOBJ);
         Self(f)
     }
 
@@ -68,7 +71,7 @@ pub fn mapped(m: &crate::materials::Material) -> bool {
 pub const CPU_ONLY: [&str; 3] = [
     "maps the GPU cannot bake or evaluate (3D or non-repeating maps mixed with bitmaps, node graphs, procedural surfaces or paint)",
     "more than 1.5 GB of baked textures",
-    "volume objects (clouds, smoke and fire render on the CPU for now)",
+    "voxel-grid volumes (render on the CPU for now)",
 ];
 
 /// Every reason this scene renders on the CPU instead (empty = the GPU
@@ -83,7 +86,7 @@ pub fn reasons(rs: &RenderScene) -> Vec<&'static str> {
     let mats = &rs.materials;
     add(mats.iter().any(|m| mapped(m) && super::bake::why_not(m).is_some() && !super::live::supported(m)), CPU_ONLY[0]);
     add(super::textures::planned_bytes(rs) > super::bake::CAP_BYTES, CPU_ONLY[1]);
-    add(!rs.volumes.is_empty(), CPU_ONLY[2]);
+    add(super::volobj::needs_cpu(rs), CPU_ONLY[2]);
     out
 }
 

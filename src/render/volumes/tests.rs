@@ -44,8 +44,7 @@ fn volume_objects_become_media_not_triangles() {
     let rs = RenderScene::build(&box_scene(0.5), cam(), true);
     assert!(rs.bvh.tris.is_empty(), "a Volume material makes no surface");
     assert_eq!(rs.volumes.list.len(), 1);
-    let reasons = crate::render::gpu_pathtrace::features::reasons(&rs);
-    assert!(reasons.contains(&crate::render::gpu_pathtrace::features::CPU_ONLY[2]), "{reasons:?}");
+    assert!(crate::render::gpu_pathtrace::features::reasons(&rs).is_empty(), "the GPU tracks puff and box volumes");
     // Density 0 or a surface material: no volume.
     assert!(RenderScene::build(&box_scene(0.0), cam(), true).volumes.is_empty());
 }

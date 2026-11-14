@@ -1,0 +1,94 @@
+//! Volume objects for the GPU kernel (`wgsl/volobj.wgsl`): every medium's
+//! transform, majorant grid, per-cell puff lists, puffs and glow ramp in one
+//! flat `f32` buffer (integers bit-cast), read by the same delta / ratio
+//! tracking as the CPU (`crate::render::volumes`).
+//!
+//! Layout (word indices):
+//! - `0..4`: volume count, Max Volume Bounces, Cloud Bounce Boost, shadow estimates.
+//! - `4 + REC * i ..`: one record per volume (see [`record`]).
+//! - then the shared data the records point into: cell majorants, cell
+//!   `(start, count)` pairs, puff indices and puffs (`c.xyz, r, sq, low`).
+
+use crate::render::scene_build::RenderScene;
+use crate::render::settings::RenderSettings;
+use crate::render::volumes::VolumeObj;
+use crate::render::volumes::density::Source;
+
+/// Words per volume record.
+pub const REC: usize = 88;
+/// Glow ramp samples over density 0..=1 (the kernel interpolates).
+pub const GLOW_STEPS: usize = 16;
+/// Words per puff.
+const PUFF: usize = 6;
+
+/// The packed volume buffer (one dummy word when the scene has none).
+pub fn pack(rs: &RenderScene, cfg: &RenderSettings) -> Vec<u8> {
+    let list = &rs.volumes.list;
+    let vs = &cfg.volumes;
+    let mut w: Vec<f32> = vec![f32::from_bits(list.len() as u32), vs.max_bounces.clamp(1, 64) as f32, vs.boost.clamp(0.0, 1.0), vs.shadow_quality.estimates() as f32];
+    w.resize(4 + REC * list.len(), 0.0);
+    for (i, v) in list.iter().enumerate() {
+        let rec = record(v, &mut w);
+        w[4 + REC * i..4 + REC * (i + 1)].copy_from_slice(&rec);
+    }
+    if w.is_empty() {
+        w.push(0.0);
+    }
+    w.iter().flat_map(|f| f.to_le_bytes()).collect()
+}
+
+fn word(u: usize) -> f32 {
+    f32::from_bits(u as u32)
+}
+
+/// One volume's record; its grid and puffs are appended to `w`.
+///
+/// `0..16` world-to-local matrix (columns), `16..20` grid lo + extinction,
+/// `20..24` grid hi + kind (0 uniform, 1 puffs), `24..28` cells per axis +
+/// majorant offset, `28..32` albedo + forward g, `32..36` back g, blend,
+/// cell-list offset, puff offset, `36` glow on, `37..85` glow ramp (rgb).
+fn record(v: &VolumeObj, w: &mut Vec<f32>) -> [f32; REC] {
+    let mut r = [0.0f32; REC];
+    let g = &v.grid;
+    r[..16].copy_from_slice(&v.inv.to_cols_array());
+    r[16..19].copy_from_slice(&g.lo.to_array());
+    r[19] = v.sigma();
+    r[20..23].copy_from_slice(&g.hi.to_array());
+    r[23] = word(usize::from(matches!(v.src, Source::Puffs(_))));
+    r[24..27].copy_from_slice(&g.dims.map(word));
+    r[27] = word(w.len());
+    w.extend_from_slice(&g.max);
+    let m = &v.mat;
+    r[28..31].copy_from_slice(&m.albedo().to_array());
+    (r[31], r[32], r[33]) = (m.g_forward, m.g_back, m.blend.clamp(0.0, 1.0));
+    if let Source::Puffs(blobs) = &v.src {
+        // Cell (start, count) pairs, then the indices they point at.
+        let pairs = w.len();
+        r[34] = word(pairs);
+        w.resize(pairs + 2 * g.lists.len(), 0.0);
+        for (c, list) in g.lists.iter().enumerate() {
+            (w[pairs + 2 * c], w[pairs + 2 * c + 1]) = (word(w.len()), word(list.len()));
+            w.extend(list.iter().map(|&k| word(k as usize)));
+        }
+        r[35] = word(w.len());
+        for b in blobs {
+            w.extend_from_slice(&[b.c.x, b.c.y, b.c.z, b.r, b.sq, b.low]);
+        }
+        debug_assert_eq!(w.len() - word_of(r[35]), PUFF * blobs.len());
+    }
+    let glow: Vec<_> = (0..GLOW_STEPS).map(|k| m.glow(k as f32 / (GLOW_STEPS - 1) as f32)).collect();
+    r[36] = f32::from(u8::from(glow.iter().any(|c| c.max_element() > 0.0)));
+    for (k, c) in glow.iter().enumerate() {
+        r[37 + 3 * k..40 + 3 * k].copy_from_slice(&c.to_array());
+    }
+    r
+}
+
+fn word_of(f: f32) -> usize {
+    f.to_bits() as usize
+}
+
+/// The scene has a volume the kernel cannot read yet (voxel grids).
+pub fn needs_cpu(rs: &RenderScene) -> bool {
+    rs.volumes.list.iter().any(|v| matches!(v.src, Source::Grid(_)))
+}
