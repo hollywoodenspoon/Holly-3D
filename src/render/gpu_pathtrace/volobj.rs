@@ -7,7 +7,7 @@
 //! - `0..4`: volume count, Max Volume Bounces, Cloud Bounce Boost, shadow estimates.
 //! - `4 + REC * i ..`: one record per volume (see [`record`]).
 //! - then the shared data the records point into: cell majorants, cell
-//!   `(start, count)` pairs, puff indices and puffs (`c.xyz, r, sq, low`).
+//!   `(start, count)` pairs, puff indices and puffs (`c.xyz, r, sq, low, w`).
 
 use crate::render::scene_build::RenderScene;
 use crate::render::settings::RenderSettings;
@@ -19,7 +19,7 @@ pub const REC: usize = 96;
 /// Glow ramp samples over density 0..=1 (the kernel interpolates).
 pub const GLOW_STEPS: usize = 16;
 /// Words per puff.
-const PUFF: usize = 6;
+const PUFF: usize = 7;
 
 /// The packed volume buffer (one dummy word when the scene has none).
 pub fn pack(rs: &RenderScene, cfg: &RenderSettings) -> Vec<u8> {
@@ -79,7 +79,7 @@ fn record(v: &VolumeObj, w: &mut Vec<f32>) -> [f32; REC] {
         }
         r[35] = word(w.len());
         for b in blobs {
-            w.extend_from_slice(&[b.c.x, b.c.y, b.c.z, b.r, b.sq, b.low]);
+            w.extend_from_slice(&[b.c.x, b.c.y, b.c.z, b.r, b.sq, b.low, b.w]);
         }
         debug_assert_eq!(w.len() - word_of(r[35]), PUFF * blobs.len());
     }

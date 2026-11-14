@@ -2115,3 +2115,33 @@ No new GPU features yet; this makes the next parity steps safe and visible.
   - **The preview is an approximation:** coarse voxels, near-even scattering, no sky light (Bevy's fog ambient term fades to nothing across a whole cloud). F9 is the truth.
   - **No refine when idle:** the bake stays at one resolution.
   - **Smoke and fire** with a Volume material on an ordinary mesh still show their mesh. Only clouds preview as volumes.
+
+## 70. Clouds PR 3: Trails
+- **What:** a new Demiurge object, **Trail** (Demiurge tab > Trails, or Create > Demiurge Trails), with six types:
+  - **Contrail:** one white trail per engine, with a clear gap behind the engine, then it widens, breaks into puffs and fades;
+  - **Wingtip Vortices:** thin white spirals off both wingtips, stronger where the path turns hard;
+  - **Afterburner Flame:** a glowing exhaust cone with shock diamonds; Throttle sets its length and glow;
+  - **Vapor Cone:** a short white shell around the body, densest at the front;
+  - **Damage Smoke:** a thick black or grey trail with optional fire at the start;
+  - **Missile Trail:** a bright motor flame and a thick white curving smoke trail.
+  - **Path:** the built-in arc (Length, Turn, Climb) or a picked spline (Pick Path Spline, then click it; Reverse and Clear buttons). The picked spline is copied into the trail's own space.
+  - **Parameters:** Seed, Sources and Spacing, Start Gap, Start/End Radius, Spread, Breakup, Fade, Dissipation Length, Throttle, Shock Diamonds, Spiral Turns, plus the cloud look rows (Edge Softness, Erosion, Wispiness, Density).
+  - **Rendering:** a trail is a chain of puffs (at most 6000) that reuses the cloud volume pipeline. Each puff now carries its own peak density, on the CPU and the GPU (the GPU puff record grew from 6 to 7 floats). Smoke and flame are two separate media, so the flame glows with its own ramp. A Volume material on the trail replaces its smoke.
+  - **Viewport:** the soft volume preview (§69) shows each medium; the flame shows as a warm-tinted fog.
+  - The preview mesh puts flame on Material ID 1 and smoke on ID 2 (Smoke & Fire pack).
+- **Tests (9 new):**
+  - every type lays seeded, valid puffs with the right media;
+  - contrails keep the start gap, widen and fade;
+  - Dissipation Length and a picked path bound the trail;
+  - vortices strengthen in turns;
+  - afterburner throttle and shock diamonds;
+  - preview mesh vertex/polygon counts, Material IDs, normals and UVs;
+  - huge trails stay under the puff cap;
+  - picking a spline sets the path in trail space;
+  - a missile trail packs two media on the GPU (one glowing) and matches the CPU image.
+- **Not done yet:**
+  - **No attach-to-object:** a trail doesn't follow a moving aircraft or mech; move it with the object by hand.
+  - **The viewport flame** is a tinted lit fog with no real emission. F9 shows the true glow.
+  - **With a picked path**, Length / Turn / Climb are hidden; the spline's own length is used.
+  - **Vortex strength** only reads the path's curvature, not speed or lift.
+  - **Speed** of long trails in the viewport hasn't been measured on her card.

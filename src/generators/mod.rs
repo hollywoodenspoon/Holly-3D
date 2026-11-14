@@ -15,6 +15,7 @@ mod planet_surface;
 pub mod ruin;
 pub mod settlement;
 pub mod smoke;
+pub mod trails;
 mod sphere;
 mod terrain;
 mod terrain_ids;
@@ -52,6 +53,8 @@ pub enum WorldGen {
     Cloud(Box<clouds::CloudParams>),
     /// Clouds PR 1: a layer of scattered clouds.
     CloudField(Box<clouds::CloudFieldParams>),
+    /// Clouds PR 3: a contrail, smoke or flame trail.
+    Trail(Box<trails::TrailParams>),
 }
 
 /// Create-tab buttons.
@@ -65,6 +68,7 @@ pub enum WorldKind {
     Smoke,
     Cloud(clouds::CloudType),
     CloudField,
+    Trail(trails::TrailKind),
 }
 
 impl WorldKind {
@@ -76,6 +80,16 @@ impl WorldKind {
         Self::Cloud(clouds::CloudType::Stratocumulus),
         Self::CloudField,
     ];
+    /// Create -> Geometry -> Trails buttons.
+    pub const TRAILS: [WorldKind; 6] = {
+        let mut out = [Self::Terrain; 6];
+        let mut i = 0;
+        while i < 6 {
+            out[i] = Self::Trail(trails::TrailKind::ALL[i]);
+            i += 1;
+        }
+        out
+    };
     pub const ALL: [WorldKind; 4] = [Self::Terrain, Self::Ocean, Self::Planet, Self::Smoke];
     /// Create -> Geometry -> Settlement buttons.
     pub const SETTLEMENTS: [WorldKind; 14] = {
@@ -97,6 +111,7 @@ impl WorldKind {
             Self::Smoke => "Smoke Plume",
             Self::Cloud(k) => k.label(),
             Self::CloudField => "Cloud Field",
+            Self::Trail(k) => k.label(),
         }
     }
     pub fn tip(self) -> &'static str {
@@ -109,6 +124,7 @@ impl WorldKind {
             Self::Smoke => "Billowing smoke & fire plume: wind lean, mushroom cap, rise phase",
             Self::Cloud(k) => k.tip(),
             Self::CloudField => "A whole layer of sky: scatters a mix of cloud types",
+            Self::Trail(k) => k.tip(),
         }
     }
 }
@@ -124,6 +140,7 @@ impl WorldGen {
             WorldKind::Smoke => Self::Smoke(Box::default()),
             WorldKind::Cloud(k) => Self::Cloud(Box::new(clouds::CloudParams::of(k))),
             WorldKind::CloudField => Self::CloudField(Box::default()),
+            WorldKind::Trail(k) => Self::Trail(Box::new(trails::TrailParams::of(k))),
         }
     }
     pub fn kind(&self) -> WorldKind {
@@ -136,6 +153,7 @@ impl WorldGen {
             Self::Smoke(_) => WorldKind::Smoke,
             Self::Cloud(p) => WorldKind::Cloud(p.kind),
             Self::CloudField(_) => WorldKind::CloudField,
+            Self::Trail(p) => WorldKind::Trail(p.kind),
         }
     }
     pub fn build(&self) -> EditablePoly {
@@ -148,12 +166,14 @@ impl WorldGen {
             Self::Smoke(p) => p.build(),
             Self::Cloud(p) => p.build(),
             Self::CloudField(p) => p.build(),
+            Self::Trail(p) => p.build(),
         }
     }
     /// Object name prefix (Terrain001…).
     pub fn short(&self) -> &'static str {
         match self {
             Self::Cloud(_) => "Cloud",
+            Self::Trail(_) => "Trail",
             _ => self.kind().label(),
         }
     }
@@ -166,7 +186,7 @@ impl WorldGen {
             Self::Planet(_) => MultiPreset::PlanetStudio,
             Self::Settlement(_) => MultiPreset::Settlement,
             Self::Building(p) => p.style.pack(),
-            Self::Smoke(_) => MultiPreset::SmokeFire,
+            Self::Smoke(_) | Self::Trail(_) => MultiPreset::SmokeFire,
             Self::Cloud(_) | Self::CloudField(_) => MultiPreset::Clouds,
         }
     }

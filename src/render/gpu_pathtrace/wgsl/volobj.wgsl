@@ -43,14 +43,15 @@ fn vo_density(b: u32, p: vec3<f32>, cell: u32) -> f32 {
     var keep = 1.0;
     var keep_g = 1.0;
     for (var k = 0u; k < n; k++) {
-        let q = puffs + vu(start + k) * 6u;
+        let q = puffs + vu(start + k) * 7u;
+        let w = vobj[q + 6u];
         let r = vobj[q + 3u];
         let h = vec3<f32>(r, r, r * max(vobj[q + 4u], 1e-3));
         var x = (p - vv3(q)) / h;
         if (x.z < 0.0) { x.z /= max(vobj[q + 5u], 1e-3); }
         let d2 = dot(x, x);
-        keep *= 1.0 - clamp(vo_falloff(d2, edge), 0.0, 1.0);
-        keep_g *= 1.0 - clamp(vo_falloff(d2, 1.0), 0.0, 1.0);
+        keep *= 1.0 - clamp(vo_falloff(d2, edge) * w, 0.0, 1.0);
+        keep_g *= 1.0 - clamp(vo_falloff(d2, 1.0) * w, 0.0, 1.0);
     }
     return vo_erode(b, p, 1.0 - keep, 1.0 - keep_g);
 }

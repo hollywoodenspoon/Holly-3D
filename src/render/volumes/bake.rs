@@ -3,7 +3,7 @@
 //! The bake runs the same density as the F9 renderers, so the preview shows
 //! the same billows, only coarser.
 
-use super::{NoiseDetail, VolumeObj, source_of, volume_of};
+use super::{NoiseDetail, VolumeObj, parts_of};
 use crate::materials::volume::VolumeMat;
 use crate::scene::{Scene, SceneObject};
 use bevy::math::{Mat4, Vec3};
@@ -41,15 +41,23 @@ pub fn dims_for(size: Vec3, budget: u32) -> [u32; 3] {
 /// Share of the box size added around the puffs on every side.
 const PAD: f32 = 0.06;
 
-/// The preview medium of `o`, if it renders as a cloud volume.
+/// The preview media of `o` (puff volumes only: clouds and trails).
+pub fn preview_volumes(scene: &Scene, o: &SceneObject) -> Vec<VolumeObj> {
+    parts_of(scene, o)
+        .into_iter()
+        .filter(|(src, ..)| matches!(src, super::density::Source::Puffs(_)))
+        .map(|(src, lo, hi, m)| {
+            // Padding keeps the outer puffs off the box faces, where the
+            // coarse grid would show them as flat cuts.
+            let pad = (hi - lo) * PAD;
+            VolumeObj::new(src, lo - pad, hi + pad, Mat4::IDENTITY, m, 0)
+        })
+        .collect()
+}
+
+/// The first preview medium of `o`, if it renders as a puff volume.
 pub fn preview_volume(scene: &Scene, o: &SceneObject) -> Option<VolumeObj> {
-    let m = volume_of(scene, o)?;
-    let (src, lo, hi) = source_of(o)?;
-    // Padding keeps the outer puffs off the box faces, where the coarse
-    // grid would show them as flat cuts.
-    let pad = (hi - lo) * PAD;
-    let (lo, hi) = (lo - pad, hi + pad);
-    (m.density > 0.0 && matches!(src, super::density::Source::Puffs(_))).then(|| VolumeObj::new(src, lo, hi, Mat4::IDENTITY, m, 0))
+    preview_volumes(scene, o).into_iter().next()
 }
 
 /// Bakes `v` at voxel centres with about `budget` voxels (the outer shell

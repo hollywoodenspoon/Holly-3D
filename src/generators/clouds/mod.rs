@@ -9,7 +9,7 @@
 
 mod field;
 mod look;
-mod mesh;
+pub(crate) mod mesh;
 mod puffs;
 #[cfg(test)]
 mod tests;

@@ -13,6 +13,8 @@ pub struct Blob {
     pub sq: f32,
     /// Lower-half height factor (1 = round, small = flat underside).
     pub low: f32,
+    /// Peak density 0..=1 (trails fade and flames cool through it).
+    pub w: f32,
 }
 
 impl Blob {
@@ -28,7 +30,7 @@ impl Blob {
         if q.z < 0.0 {
             q.z /= self.low.max(1e-3);
         }
-        falloff(q.length_squared(), edge)
+        falloff(q.length_squared(), edge) * self.w
     }
 
     /// Upper bound of the falloff over the box `lo..hi` (closest point in
@@ -36,7 +38,7 @@ impl Blob {
     pub fn max_in(&self, lo: Vec3, hi: Vec3, edge: f32) -> f32 {
         let h = self.half();
         let q = Vec3::ZERO.clamp((lo - self.c) / h, (hi - self.c) / h);
-        falloff(q.length_squared(), edge)
+        falloff(q.length_squared(), edge) * self.w
     }
 }
 

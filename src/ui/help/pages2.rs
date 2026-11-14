@@ -132,6 +132,7 @@ pub const GHOSTTOWN: Page = Page {
             "Spawn Rising Smoke Plumes (damaged town or Battlefield modifier) raises plumes from the tallest wrecks and the blast zones.",
             "Clouds (Demiurge tab or Create > Demiurge Clouds): Cumulus, Cumulus Congestus, Cumulonimbus (with its flat anvil) and Stratocumulus. Drag the width, then drag up for the height. Puffiness, Lumpiness, Base Flatness, Wind Shear, Wind Direction and Detail Levels (puffs on puffs) shape each one; sizes are in metres.",
             "Cloud Field fills a sky layer in one go: drag the area, then set Base Height, Layer Thickness, Coverage, the Type Mix and the cloud sizes. Clouds never overlap. Break Into Clouds turns the field into separate Cloud objects you can move one by one.",
+            "Trails (Demiurge tab or Create > Demiurge Trails): Contrail, Wingtip Vortices, Afterburner Flame, Vapor Cone, Damage Smoke and Missile Trail. Drag sets the length. The trail follows a built-in arc (Length, Turn, Climb) or a spline: press Pick Path Spline, then click the spline (Reverse flips it). Start Gap, Start and End Radius, Spread, Breakup, Fade, Dissipation Length and Throttle shape it; smoke and flame render as separate volumes.",
             "Environment (8) > Clouds picks Off, 2D Sky Clouds (painted on the sky), 3D Cloud Objects or Both. 2D Sky Resolution (1024, 2048 or 4096) sharpens the painted clouds in renders.",
         ]),
         ShowMe("Show the Create tab", Show::Tab(CommandTab::Create)),

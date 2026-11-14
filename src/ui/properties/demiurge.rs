@@ -38,6 +38,10 @@ pub fn show(ui: &mut egui::Ui, ed: &mut Editor) {
         world_grid(ui, ed, "dm_clouds", &WorldKind::CLOUDS, 2);
         ui.label(dim("Drag to size a cloud, then drag up for its height. A Cloud Field fills a whole sky layer; Break Into Clouds splits it."));
     });
+    rollout(ui, "Trails", true, |ui| {
+        world_grid(ui, ed, "dm_trails", &WorldKind::TRAILS, 2);
+        ui.label(dim("Drag to set a trail's length. The source sits at the pivot; Pick Path Spline makes it follow a spline."));
+    });
     rollout(ui, "Settlements", true, |ui| {
         world_grid(ui, ed, "dm_settlements", &WorldKind::SETTLEMENTS, 2);
         ui.label(dim("Click, then click in a viewport to place a whole settlement with its Material Pack."));

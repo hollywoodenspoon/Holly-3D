@@ -11,6 +11,7 @@ pub mod majorant;
 mod render;
 pub mod settings;
 mod tracking;
+pub mod trail_src;
 
 #[cfg(test)]
 mod tests;
@@ -79,6 +80,9 @@ fn cloud_look(o: &SceneObject) -> Option<&CloudLook> {
 /// Environment's 3D clouds switch render nothing.
 pub fn volume_of(scene: &Scene, o: &SceneObject) -> Option<VolumeMat> {
     let own = volume_material(scene, o).map(|m| m.volume.clone());
+    if let BaseObject::World(WorldGen::Trail(p)) = &o.base {
+        return trail_src::media(p, own).into_iter().next().map(|(_, m)| m);
+    }
     let Some(look) = cloud_look(o) else { return own };
     if look.render_as == RenderAs::Mesh || !scene.environment.sky.clouds.three_d {
         return None;
@@ -91,7 +95,17 @@ pub fn volume_of(scene: &Scene, o: &SceneObject) -> Option<VolumeMat> {
 
 fn blobs(s: &CloudShape, flat: f32, at: Vec3, out: &mut Vec<Blob>) {
     let low = 1.0 - flat.clamp(0.0, 0.98);
-    out.extend(s.puffs.iter().map(|q| Blob { c: q.c + at, r: q.r, sq: q.sq, low }));
+    out.extend(s.puffs.iter().map(|q| Blob { c: q.c + at, r: q.r, sq: q.sq, low, w: 1.0 }));
+}
+
+/// Every medium `o` renders as: its source, local bounds and material.
+pub fn parts_of(scene: &Scene, o: &SceneObject) -> Vec<(Source, Vec3, Vec3, VolumeMat)> {
+    if let BaseObject::World(WorldGen::Trail(p)) = &o.base {
+        let own = volume_material(scene, o).map(|m| m.volume.clone());
+        return trail_src::media(p, own).into_iter().filter_map(|(flame, m)| trail_src::source(p, flame).map(|(s, lo, hi)| (s, lo, hi, m))).collect();
+    }
+    let (Some(m), Some((src, lo, hi))) = (volume_of(scene, o), source_of(o)) else { return Vec::new() };
+    (m.density > 0.0).then_some((src, lo, hi, m)).into_iter().collect()
 }
 
 fn source_of(o: &SceneObject) -> Option<(Source, Vec3, Vec3)> {
@@ -151,9 +165,7 @@ impl Volumes {
     pub fn build(scene: &Scene) -> Self {
         let mut list = Vec::new();
         for (obj, o) in scene.objects.values().enumerate().filter(|(_, o)| !o.hidden && !o.is_helper()) {
-            let Some(m) = volume_of(scene, o) else { continue };
-            let Some((src, lo, hi)) = source_of(o) else { continue };
-            if m.density > 0.0 {
+            for (src, lo, hi, m) in parts_of(scene, o) {
                 list.push(VolumeObj::new(src, lo, hi, o.world_matrix(), m, obj as u32));
             }
         }

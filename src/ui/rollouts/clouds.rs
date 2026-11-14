@@ -40,7 +40,7 @@ pub fn cloud(ui: &mut egui::Ui, t: &mut Track, p: &mut CloudParams) {
 }
 
 /// The Cloud Volume rows shared by a Cloud and a Cloud Field.
-fn look(ui: &mut egui::Ui, t: &mut Track, l: &mut CloudLook, id: &str) {
+pub(crate) fn look(ui: &mut egui::Ui, t: &mut Track, l: &mut CloudLook, id: &str) {
     ui.separator();
     ui.horizontal(|ui| {
         ui.label("Render As:");

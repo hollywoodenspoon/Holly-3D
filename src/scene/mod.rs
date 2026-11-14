@@ -210,6 +210,11 @@ impl SceneObject {
         matches!(self.base, BaseObject::World(WorldGen::Cloud(_) | WorldGen::CloudField(_)))
     }
 
+    /// A Trail object (Clouds PR 3).
+    pub fn is_trail(&self) -> bool {
+        matches!(self.base, BaseObject::World(crate::generators::WorldGen::Trail(_)))
+    }
+
     /// World matrix applied to the evaluated mesh.
     pub fn world_matrix(&self) -> Mat4 {
         self.transform.matrix() * self.offset

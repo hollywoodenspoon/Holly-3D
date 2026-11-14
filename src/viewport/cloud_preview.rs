@@ -8,7 +8,7 @@ use super::layout::{Shading, ViewState};
 use super::render_sync::RenderMap;
 use crate::editor::Editor;
 use crate::materials::volume::VolumeMat;
-use crate::render::volumes::bake::{Baked, bake, preview_volume};
+use crate::render::volumes::bake::{Baked, bake, preview_volumes};
 use crate::render::volumes::volume_of;
 use crate::scene::{ObjId, Scene, SceneObject};
 use bevy::asset::RenderAssetUsages;
@@ -30,9 +30,9 @@ pub fn volumes_in(on: bool, v: &ViewState) -> bool {
     on && v.shading == Shading::Default && !v.camera.is_ortho()
 }
 
-/// A cloud object the preview shows as a volume.
+/// A cloud or trail the preview shows as a volume.
 pub fn previewed(scene: &Scene, o: &SceneObject) -> bool {
-    !o.hidden && o.is_cloud() && volume_of(scene, o).is_some()
+    !o.hidden && (o.is_cloud() || o.is_trail()) && volume_of(scene, o).is_some()
 }
 
 /// True when any viewport has cloud volumes to draw (cameras need fog on).
@@ -55,7 +55,7 @@ struct Entry {
 }
 
 #[derive(Resource, Default)]
-struct Previews(HashMap<ObjId, Entry>);
+struct Previews(HashMap<(ObjId, usize), Entry>);
 
 pub fn register(app: &mut App) {
     app.init_resource::<Previews>().add_systems(Update, sync_clouds.after(super::render_sync::sync_meshes));
@@ -76,10 +76,20 @@ fn fog_of(m: &VolumeMat, image: Handle<Image>, radius: f32) -> FogVolume {
     // strong forward scattering would leave it black: the preview scatters
     // nearly evenly, keeping only a hint of the material's lobe.
     let g = ((m.g_forward * (1.0 - m.blend) + m.g_back * m.blend) * 0.15).clamp(-0.2, 0.2);
+    // Bevy fog has no emission: flames take their hot colour as a strong
+    // tint on the light they receive.
+    let glow = m.glow(0.9);
+    let (light_color, light_intensity) = if glow.max_element() > 0.0 {
+        let c = glow / glow.max_element();
+        (Color::linear_rgb(c.x, c.y, c.z), PREVIEW_LIGHT * 4.0)
+    } else {
+        (Color::WHITE, PREVIEW_LIGHT)
+    };
     FogVolume {
         fog_color: Color::srgb(m.scatter[0], m.scatter[1], m.scatter[2]),
         density_factor: m.density.clamp(0.0, PREVIEW_DEPTH / radius.max(1e-3)),
-        light_intensity: PREVIEW_LIGHT,
+        light_tint: light_color,
+        light_intensity,
         density_texture: Some(image),
         absorption: a,
         scattering: 1.0 - a,
@@ -111,15 +121,15 @@ fn sync_clouds(
     let on = ed.prefs.viewport.preview_volumes;
     let live: Vec<ObjId> = ed.scene.objects.iter().filter(|(_, o)| on && previewed(&ed.scene, o)).map(|(id, _)| id).collect();
     // Retire previews of deleted, hidden or switched-off clouds.
-    prev.0.retain(|id, e| {
-        let keep = live.contains(id);
+    prev.0.retain(|(id, part), e| {
+        let keep = live.contains(id) && *part < media(&ed.scene.objects[*id]);
         if !keep && let Some(f) = e.fog.take() {
             commands.entity(f).despawn();
         }
         keep
     });
     // Puffs: on their own layer while a preview exists, else back to meshes.
-    for (id, _) in ed.scene.objects.iter().filter(|(_, o)| o.is_cloud()) {
+    for (id, _) in ed.scene.objects.iter().filter(|(_, o)| o.is_cloud() || o.is_trail()) {
         let Some(ent) = map.entity(id) else { continue };
         let want = RenderLayers::layer(if live.contains(&id) { LAYER_PUFFS } else { super::render_sync::LAYER_MESH });
         if let Ok(mut l) = layers.get_mut(ent)
@@ -130,41 +140,65 @@ fn sync_clouds(
     }
     for id in live {
         let o = &ed.scene.objects[id];
-        let e = prev.0.entry(id).or_default();
         let Some(mat) = volume_of(&ed.scene, o) else { continue };
         let key: Key = (o.version, mat);
-        // Start a bake when the cloud changed and none is running for it.
-        let stale = e.key.as_ref() != Some(&key) && e.task.as_ref().is_none_or(|(k, _)| *k != key);
-        if stale && let Some(v) = preview_volume(&ed.scene, o) {
-            e.task = Some((key.clone(), AsyncComputeTaskPool::get().spawn(async move { bake(v, BUDGET) })));
+        let mut fresh: Option<Vec<Option<_>>> = None;
+        for part in 0..media(o) {
+            let e = prev.0.entry((id, part)).or_default();
+            // Start a bake when the object changed and none is running.
+            let stale = e.key.as_ref() != Some(&key) && e.task.as_ref().is_none_or(|(k, _)| *k != key);
+            if stale && let Some(v) = fresh.get_or_insert_with(|| preview_volumes(&ed.scene, o).into_iter().map(Some).collect()).get_mut(part).and_then(Option::take) {
+                e.task = Some((key.clone(), AsyncComputeTaskPool::get().spawn(async move { bake(v, BUDGET) })));
+            }
+            sync_part(&mut commands, &mut images, &mut fogs, o, e);
         }
-        let done = e.task.as_mut().and_then(|(k, task)| block_on(poll_once(task)).map(|b| (k.clone(), b)));
-        if let Some((k, b)) = done {
-            e.key = Some(k);
-            e.task = None;
-            let img = images.add(image_of(&b));
-            e.baked = Some((b.lo, b.hi));
-            let scale = o.world_matrix().to_scale_rotation_translation().0.abs().max_element();
-            let fog = fog_of(&b.mat, img.clone(), (b.hi - b.lo).length() * 0.5 * scale);
-            match e.fog {
-                Some(f) => {
-                    commands.entity(f).insert(fog);
-                }
-                None => e.fog = Some(commands.spawn((CloudVolume, fog, Transform::default())).id()),
-            }
-            if let Some(old) = e.image.replace(img) {
-                images.remove(&old);
-            }
+    }
+}
+
+/// How many media `o` previews (smoke and flame for a fiery trail).
+fn media(o: &SceneObject) -> usize {
+    match &o.base {
+        crate::scene::BaseObject::World(crate::generators::WorldGen::Trail(p)) => {
+            usize::from(p.smoke_mat().is_some()) + usize::from(p.flame_mat().is_some())
         }
-        // Follow the object's transform every frame (moves need no bake).
-        if let (Some(f), Some((lo, hi))) = (e.fog, e.baked) {
-            let local = Mat4::from_scale_rotation_translation((hi - lo).max(Vec3::splat(1e-3)), Quat::IDENTITY, (lo + hi) * 0.5);
-            let tf = Transform::from_matrix(o.world_matrix() * local);
-            if let Ok(mut t) = fogs.get_mut(f)
-                && *t != tf
-            {
-                *t = tf;
+        _ => 1,
+    }
+}
+
+/// Picks up a finished bake and keeps the fog on the object's transform.
+fn sync_part(
+    commands: &mut Commands,
+    images: &mut Assets<Image>,
+    fogs: &mut Query<&mut Transform, With<CloudVolume>>,
+    o: &SceneObject,
+    e: &mut Entry,
+) {
+    let done = e.task.as_mut().and_then(|(k, task)| block_on(poll_once(task)).map(|b| (k.clone(), b)));
+    if let Some((k, b)) = done {
+        e.key = Some(k);
+        e.task = None;
+        let img = images.add(image_of(&b));
+        e.baked = Some((b.lo, b.hi));
+        let scale = o.world_matrix().to_scale_rotation_translation().0.abs().max_element();
+        let fog = fog_of(&b.mat, img.clone(), (b.hi - b.lo).length() * 0.5 * scale);
+        match e.fog {
+            Some(f) => {
+                commands.entity(f).insert(fog);
             }
+            None => e.fog = Some(commands.spawn((CloudVolume, fog, Transform::default())).id()),
+        }
+        if let Some(old) = e.image.replace(img) {
+            images.remove(&old);
+        }
+    }
+    // Follow the object's transform every frame (moves need no bake).
+    if let (Some(f), Some((lo, hi))) = (e.fog, e.baked) {
+        let local = Mat4::from_scale_rotation_translation((hi - lo).max(Vec3::splat(1e-3)), Quat::IDENTITY, (lo + hi) * 0.5);
+        let tf = Transform::from_matrix(o.world_matrix() * local);
+        if let Ok(mut t) = fogs.get_mut(f)
+            && *t != tf
+        {
+            *t = tf;
         }
     }
 }

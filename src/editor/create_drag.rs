@@ -292,6 +292,7 @@ impl Editor {
                     }
                 }
                 WorldGen::CloudField(s) => (s.width, s.depth) = (a.max(10.0), b.max(10.0)),
+                WorldGen::Trail(s) => (s.length, s.dissipation) = ((2.0 * a).max(0.5), (2.0 * a).max(0.5)),
                 WorldGen::Smoke(s) => {
                     s.base_radius = a.max(0.1);
                     if d.step > 0 {

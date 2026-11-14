@@ -72,6 +72,7 @@ impl Editor {
             Tool::PickSpline => self.pick_spline_click(view, cursor),
             Tool::RefineSpline => self.refine_click(view, cursor),
             Tool::PickSplineBoolean => self.spline_boolean_click(view, cursor),
+            Tool::PickTrailPath => self.pick_trail_path_click(view, cursor),
             Tool::PickLoftShape => {
                 if let Some(other) = self.pick_object(view, cursor) {
                     self.pick_loft_section(other);

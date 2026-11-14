@@ -136,3 +136,32 @@ fn an_eroded_wispy_cloud_renders_on_the_gpu() {
     rs.volumes.set_detail(NoiseDetail::Ultra);
     parity("eroded cloud", &rs);
 }
+
+/// Clouds PR 3: a small missile trail is two media (white smoke and a
+/// glowing motor flame); both pack, the flame glows, and the image matches.
+#[test]
+fn a_missile_trail_renders_on_the_gpu() {
+    use crate::generators::trails::{TrailKind, TrailParams};
+    let mut s = Scene::default();
+    floor(&mut s);
+    let p = TrailParams {
+        length: 2.6,
+        dissipation: 2.6,
+        turn: 40.0,
+        climb: 0.6,
+        start_gap: 0.05,
+        start_radius: 0.12,
+        end_radius: 0.45,
+        ..TrailParams::of(TrailKind::MissileTrail)
+    };
+    let id = s.add(BaseObject::World(WorldGen::Trail(Box::new(p))), Vec3::new(1.3, 0.0, 0.5));
+    s.objects[id].evaluate();
+    s.add_light(Light::new(LightKind::FreeDirect), None, Vec3::new(-2.0, -1.0, 3.0), Vec3::ZERO);
+    let rs = seen(&s);
+    assert_eq!(rs.volumes.list.len(), 2, "smoke and flame");
+    let w = pack(&rs, &RenderSettings::default());
+    let f = |i: usize| f32::from_le_bytes(w[4 * i..4 * i + 4].try_into().unwrap());
+    let glows: Vec<f32> = (0..2).map(|k| f(4 + k * REC + 36)).collect();
+    assert!(glows.contains(&1.0) && glows.contains(&0.0), "one medium glows: {glows:?}");
+    parity("missile trail", &rs);
+}

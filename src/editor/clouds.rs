@@ -2,6 +2,8 @@
 //! separate Cloud objects (same material, same world placement) so each
 //! one can be moved with `W`.
 
+mod trails;
+
 use super::*;
 use crate::generators::WorldGen;
 use crate::scene::BaseObject;
